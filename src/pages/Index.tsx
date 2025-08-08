@@ -15,7 +15,7 @@ export default function Index() {
       name: "Анастасия Найденова", 
       role: "Логопед-нейропсихолог",
       description: "Специалист по комплексной диагностике и коррекции",
-      avatar: "https://cdn.poehali.dev/files/e0267916-9472-4727-94bb-b35d14b44dc5.jpg"
+      avatar: "https://cdn.poehali.dev/files/39e06528-df6e-46ad-a501-a6a4de01c57e.jpg"
     },
     {
       name: "Мила Яровець",
