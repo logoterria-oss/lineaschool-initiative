@@ -21,7 +21,7 @@ export default function Index() {
       name: "Мила Яровець",
       role: "Логопед",
       description: "Специалист по работе с младшими школьниками",
-      avatar: "👩‍🏫"
+      avatar: "https://cdn.poehali.dev/files/b6aa3ad4-6e9c-4fe1-8741-3009f1cf33c2.jpg"
     },
     {
       name: "Дарья Еремина",
