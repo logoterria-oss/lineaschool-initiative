@@ -225,8 +225,8 @@ export default function Index() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {specialists.map((specialist, index) => (
-              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center">
-                <CardContent className="p-6">
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center h-full flex flex-col">
+                <CardContent className="p-6 flex flex-col h-full">
                   <div className="w-40 h-40 mx-auto mb-4 rounded-full overflow-hidden">
                     <img 
                       src={specialist.avatar} 
@@ -236,7 +236,7 @@ export default function Index() {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
                   <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{specialist.description}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed flex-grow">{specialist.description}</p>
                 </CardContent>
               </Card>
             ))}
