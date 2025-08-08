@@ -26,7 +26,7 @@ export default function Index() {
     {
       name: "Дарья Еремина",
       role: "Логопед", 
-      description: "Специалист по работе со старшими школьниками",
+      description: "Специалист по коррекции дислексии и дисграфии у старших школьников",
       avatar: "https://cdn.poehali.dev/files/093e20f2-e0ae-4a2e-9d50-61e102662d3e.jpg"
     }
   ];
