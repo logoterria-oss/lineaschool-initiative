@@ -222,9 +222,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши специалисты</h2>
-            <p className="text-lg text-gray-600">
-              Команда профессионалов с многолетним опытом в области коррекции речевых нарушений
-            </p>
+
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
