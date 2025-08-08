@@ -9,7 +9,7 @@ export default function Index() {
       name: "Виктория Абраменко",
       role: "Логопед-нейропсихолог",
       description: "Руководитель центра, диагност, супервизор, автор методических материалов и научных статей",
-      avatar: "https://cdn.poehali.dev/files/861e364d-4a60-45e5-a614-4b55413fbed8.jpg"
+      avatar: "https://cdn.poehali.dev/files/00f8a984-4db0-4798-a44e-25454f9fdb47.jpg"
     },
     {
       name: "Анастасия Найденова", 
