@@ -1,14 +1,378 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import Icon from "@/components/ui/icon";
 
-const Index = () => {
+export default function Index() {
+  const specialists = [
+    {
+      name: "Виктория Абраменко",
+      role: "Логопед-нейропсихолог",
+      description: "Руководитель центра, диагност, супервизор, автор методических материалов и научных статей",
+      avatar: "👩‍⚕️"
+    },
+    {
+      name: "Анастасия Найденова", 
+      role: "Логопед-нейропсихолог",
+      description: "Специалист по комплексной диагностике и коррекции",
+      avatar: "👩‍🔬"
+    },
+    {
+      name: "Мила Яровець",
+      role: "Логопед",
+      description: "Специалист по работе с младшими школьниками",
+      avatar: "👩‍🏫"
+    },
+    {
+      name: "Дарья Еремина",
+      role: "Логопед", 
+      description: "Специалист по работе со старшими школьниками",
+      avatar: "👩‍💼"
+    }
+  ];
+
+  const services = [
+    {
+      title: "Углубленная диагностика",
+      description: "Комплексное обследование для выявления особенностей развития",
+      icon: "Search"
+    },
+    {
+      title: "Индивидуальные планы",
+      description: "Персонализированные программы коррекции с учётом потребностей ребёнка",
+      icon: "FileText"
+    },
+    {
+      title: "Методические материалы",
+      description: "Специально разработанные пособия и упражнения",
+      icon: "BookOpen"
+    },
+    {
+      title: "Онлайн сопровождение",
+      description: "Дистанционные занятия и консультации для родителей",
+      icon: "Video"
+    }
+  ];
+
+  const faqs = [
+    {
+      question: "Что такое дислексия и дисграфия?",
+      answer: "Дислексия и дисграфия — это специфические нарушения обучения, связанные с трудностями в овладении навыками чтения и письма. Наш подход учитывает нейропсихологические особенности развития и позволяет работать с глубинными механизмами этих расстройств."
+    },
+    {
+      question: "Как проходит процесс диагностики?",
+      answer: "Диагностика включает комплексное обследование когнитивных функций, речевого развития и письменной речи. Используются современные нейропсихологические методики для точного определения зон трудностей и составления индивидуального плана коррекции."
+    },
+    {
+      question: "Сколько времени занимает коррекция?",
+      answer: "Длительность коррекции индивидуальна и зависит от степени выраженности нарушений. В среднем программа рассчитана на 6-12 месяцев с возможностью продления при необходимости."
+    },
+    {
+      question: "Можно ли заниматься онлайн?",
+      answer: "Да, мы предлагаем онлайн-формат занятий с использованием специальных интерактивных материалов и постоянной обратной связью со специалистами."
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: "Мария Петрова",
+      text: "Благодаря LineaSchool мой сын Артём значительно улучшил навыки чтения и письма. Индивидуальный подход и профессионализм команды превзошли все ожидания.",
+      rating: 5
+    },
+    {
+      name: "Алексей Смирнов",
+      text: "Виктория Абраменко и её команда помогли нашей дочери справиться с дисграфией. Методы действительно работают, видим результат каждую неделю.",
+      rating: 5
+    },
+    {
+      name: "Елена Козлова",
+      text: "Очень благодарна за комплексный подход. Не только коррекция, но и понимание того, как поддержать ребёнка дома. Рекомендую всем родителям!",
+      rating: 5
+    }
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
+      {/* Navigation */}
+      <nav className="bg-white/80 backdrop-blur-md border-b border-green-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <Icon name="BookOpen" size={20} className="text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-800">LineaSchool</span>
+            </div>
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors">О нас</a>
+              <a href="#services" className="text-gray-600 hover:text-green-600 transition-colors">Услуги</a>
+              <a href="#specialists" className="text-gray-600 hover:text-green-600 transition-colors">Специалисты</a>
+              <a href="#faq" className="text-gray-600 hover:text-green-600 transition-colors">FAQ</a>
+              <Button className="bg-green-500 hover:bg-green-600">
+                Консультация
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="relative py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
+              Инновационная коррекция
+              <span className="block text-green-500">дислексии и дисграфии</span>
+            </h1>
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              Уникальное сочетание традиционных логопедических методик с нейропсихологическими подходами для комплексной помощи школьникам
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8">
+                <Icon name="Calendar" className="mr-2" size={20} />
+                Записаться на диагностику
+              </Button>
+              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8">
+                <Icon name="Play" className="mr-2" size={20} />
+                Смотреть презентацию
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">О LineaSchool</h2>
+            <p className="text-lg text-gray-600 leading-relaxed">
+              LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией. Наш уникальный подход сочетает традиционные логопедические методики с нейропсихологическими методами, обеспечивая комплексную коррекцию.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icon name="Target" size={32} className="text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-3">Наша миссия</h3>
+                <p className="text-gray-600">
+                  Помочь каждому ребёнку раскрыть свой потенциал и преодолеть трудности в обучении с помощью инновационных методов
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icon name="Heart" size={32} className="text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-3">Наши ценности</h3>
+                <p className="text-gray-600">
+                  Индивидуальный подход, научная обоснованность методов и создание поддерживающей среды для развития
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icon name="Lightbulb" size={32} className="text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-3">Инновации</h3>
+                <p className="text-gray-600">
+                  Современные нейропсихологические методики в сочетании с проверенными логопедическими практиками
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section id="services" className="py-20 bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши услуги</h2>
+            <p className="text-lg text-gray-600">
+              Комплексный подход к коррекции дислексии и дисграфии с использованием современных методик
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {services.map((service, index) => (
+              <Card key={index} className="bg-white border-green-100 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Icon name={service.icon as any} size={24} className="text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">{service.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{service.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Specialists Section */}
+      <section id="specialists" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши специалисты</h2>
+            <p className="text-lg text-gray-600">
+              Команда профессионалов с многолетним опытом в области коррекции речевых нарушений
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {specialists.map((specialist, index) => (
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center">
+                <CardContent className="p-6">
+                  <div className="text-4xl mb-4">{specialist.avatar}</div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
+                  <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{specialist.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Часто задаваемые вопросы</h2>
+            <p className="text-lg text-gray-600">
+              Ответы на самые популярные вопросы о наших методах и программах
+            </p>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={index} value={`item-${index}`} className="border-green-100">
+                <AccordionTrigger className="text-left hover:text-green-600 text-lg">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-600 leading-relaxed">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Отзывы родителей</h2>
+            <p className="text-lg text-gray-600">
+              Истории успеха наших учеников и благодарности от их семей
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Icon key={i} name="Star" size={20} className="text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 leading-relaxed mb-4">"{testimonial.text}"</p>
+                  <div className="font-semibold text-gray-800">{testimonial.name}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-green-500 to-emerald-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+            Начните путь к успешному обучению уже сегодня
+          </h2>
+          <p className="text-xl text-green-100 mb-8 leading-relaxed">
+            Запишитесь на бесплатную консультацию и узнайте, как мы можем помочь вашему ребёнку
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 text-lg px-8">
+              <Icon name="Phone" className="mr-2" size={20} />
+              Записаться на консультацию
+            </Button>
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-green-600 text-lg px-8">
+              <Icon name="Mail" className="mr-2" size={20} />
+              Написать нам
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-gray-300 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                  <Icon name="BookOpen" size={20} className="text-white" />
+                </div>
+                <span className="text-xl font-bold text-white">LineaSchool</span>
+              </div>
+              <p className="text-sm leading-relaxed">
+                Инновационная онлайн-школа для коррекции дислексии и дисграфии у школьников
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-4">Услуги</h3>
+              <ul className="space-y-2 text-sm">
+                <li>Диагностика</li>
+                <li>Индивидуальные программы</li>
+                <li>Онлайн занятия</li>
+                <li>Консультации родителей</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-4">О нас</h3>
+              <ul className="space-y-2 text-sm">
+                <li>Наша команда</li>
+                <li>Методики</li>
+                <li>Результаты</li>
+                <li>Отзывы</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-4">Контакты</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center">
+                  <Icon name="Mail" size={16} className="mr-2" />
+                  info@lineaschool.ru
+                </div>
+                <div className="flex items-center">
+                  <Icon name="Phone" size={16} className="mr-2" />
+                  +7 (999) 123-45-67
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
+            <p>&copy; 2024 LineaSchool. Все права защищены.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
-
-export default Index;
+}
