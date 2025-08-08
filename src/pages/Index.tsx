@@ -227,7 +227,7 @@ export default function Index() {
             {specialists.map((specialist, index) => (
               <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center">
                 <CardContent className="p-6">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden">
+                  <div className="w-40 h-40 mx-auto mb-4 rounded-full overflow-hidden">
                     <img 
                       src={specialist.avatar} 
                       alt={specialist.name}
