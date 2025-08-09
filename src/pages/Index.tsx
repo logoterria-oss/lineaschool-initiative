@@ -153,11 +153,11 @@ export default function Index() {
                 </Button>
               </div>
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center lg:justify-end">
               <img 
                 src="/img/ac0380e4-9b4e-461f-a385-da1cdf9a3260.jpg" 
                 alt="Счастливые дети учатся читать и писать"
-                className="rounded-2xl shadow-xl max-w-full h-auto"
+                className="rounded-2xl shadow-xl max-w-sm lg:max-w-md h-auto"
               />
             </div>
           </div>
