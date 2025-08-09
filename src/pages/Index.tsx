@@ -135,7 +135,7 @@ export default function Index() {
           <span className="font-semibold">7-18 лет</span>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto">
+          <div className="text-center">
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
               <span className="block text-green-500">Онлайн-коррекция</span>
               дислексии и дисграфии
@@ -175,7 +175,7 @@ export default function Index() {
       {/* About Section */}
       <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center mb-16">
+          <div className="max-w-4xl mx-auto text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">О LineaSchool</h2>
             <p className="text-lg text-gray-600 leading-relaxed">
               LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией. Наш уникальный подход сочетает традиционные логопедические методики с нейропсихологическими методами, обеспечивая комплексную коррекцию.
@@ -208,7 +208,7 @@ export default function Index() {
       {/* Services Section */}
       <section id="services" className="py-20 bg-gradient-to-r from-green-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши услуги</h2>
             <p className="text-lg text-gray-600">
               Комплексный подход к коррекции дислексии и дисграфии с использованием современных методик
@@ -235,7 +235,7 @@ export default function Index() {
 
       {/* FAQ Section */}
       <section id="faq" className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Часто задаваемые вопросы</h2>
             <p className="text-lg text-gray-600">
@@ -261,7 +261,7 @@ export default function Index() {
       {/* Testimonials Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Отзывы родителей</h2>
             <p className="text-lg text-gray-600">
               Истории успеха наших учеников и благодарности от их семей
