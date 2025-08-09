@@ -135,14 +135,13 @@ export default function Index() {
           <span className="font-semibold">7-18 лет</span>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
+          <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
               <span className="block text-green-500">Онлайн-коррекция 🚀</span>
               дислексии и дисграфии
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg px-8 shadow-lg">
                   <span className="mr-2">📅</span>
                   Записаться на БЕСПЛАТНУЮ диагностику
@@ -402,7 +401,6 @@ export default function Index() {
                   +7 (999) 123-45-67
                 </div>
               </div>
-            </div>
           </div>
           
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
