@@ -128,28 +128,37 @@ export default function Index() {
       </section>
 
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32">
+      <section className="relative py-20 lg:py-32 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
         {/* Age Badge */}
-        <div className="absolute top-6 right-6 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10">
-          <Icon name="Users" size={18} />
+        <div className="absolute top-6 right-6 bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10 animate-pulse">
+          <span className="text-lg">🎓</span>
           <span className="font-semibold">7-18 лет</span>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
-              <span className="block text-green-500">Онлайн-коррекция</span>
+              <span className="block text-green-500">Онлайн-коррекция 🚀</span>
               дислексии и дисграфии
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8">
-                <Icon name="Calendar" className="mr-2" size={20} />
-                Записаться на БЕСПЛАТНУЮ диагностику
-              </Button>
-              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8">
-                <Icon name="Play" className="mr-2" size={20} />
-                Смотреть презентацию
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg px-8 shadow-lg">
+                  <span className="mr-2">📅</span>
+                  Записаться на БЕСПЛАТНУЮ диагностику
+                </Button>
+                <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8">
+                  <span className="mr-2">▶️</span>
+                  Смотреть презентацию
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <img 
+                src="/img/ac0380e4-9b4e-461f-a385-da1cdf9a3260.jpg" 
+                alt="Счастливые дети учатся читать и писать"
+                className="rounded-2xl shadow-xl max-w-full h-auto"
+              />
             </div>
           </div>
         </div>
@@ -206,8 +215,22 @@ export default function Index() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-20 bg-gradient-to-r from-green-50 to-emerald-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="services" className="py-20 bg-gradient-to-r from-green-50 to-emerald-50 relative overflow-hidden">
+        <div className="absolute top-10 right-10 opacity-20">
+          <img 
+            src="/img/658b7106-4088-416f-9c5a-ecd062a37550.jpg" 
+            alt="Декоративные образовательные элементы"
+            className="rounded-full w-32 h-32 object-cover"
+          />
+        </div>
+        <div className="absolute bottom-10 left-10 opacity-20">
+          <img 
+            src="/img/48ed9be4-ed79-49f7-95dc-4372a01060cf.jpg" 
+            alt="Дети играют с буквами"
+            className="rounded-full w-24 h-24 object-cover"
+          />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши услуги</h2>
             <p className="text-lg text-gray-600">
