@@ -145,6 +145,6 @@
       #10b981 100%
     );
     background-size: 200% 100%;
-    animation: gradient-shimmer 3s ease-in-out infinite;
+    animation: gradient-shimmer 8s ease-in-out infinite;
   }
 }
