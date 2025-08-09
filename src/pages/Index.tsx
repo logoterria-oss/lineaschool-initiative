@@ -140,7 +140,7 @@ export default function Index() {
               <span className="block text-green-500">Онлайн-коррекция</span>
               дислексии и дисграфии
             </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальное сочетание традиционных логопедических методик с нейропсихологическим подходом для комплексной помощи школьникам</p>
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">Комплексный логопедический и нейропсихологический подход</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8">
                 <Icon name="Calendar" className="mr-2" size={20} />
