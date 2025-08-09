@@ -155,6 +155,79 @@ export default function Index() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">
+              Как <span className="text-pink-500">проходит</span> <span className="text-blue-500">работа</span>
+            </h2>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <img 
+                src="https://cdn.poehali.dev/files/be576470-d792-48f6-a053-b14484787717.png" 
+                alt="Как проходит работа"
+                className="rounded-2xl shadow-xl max-w-full h-auto"
+              />
+            </div>
+
+            <div className="space-y-8">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  1
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Экспресс-диагностика</h3>
+                  <p className="text-gray-600">Выясняем, есть ли у ребенка дислексия/дисграфия</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  2
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Углубленная диагностика</h3>
+                  <p className="text-gray-600">Исследуем устную и письменную речь, определяем форму и механизм нарушения</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  3
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Методическая работа</h3>
+                  <p className="text-gray-600">Пишем развернутое логопедическое заключение и составляем план коррекционной работы</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  4
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Коррекционная работа</h3>
+                  <p className="text-gray-600">Онлайн-занятия с обязательными домашними заданиями</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  5
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Беглое чтение и грамотное письмо!</h3>
+                  <p className="text-green-600 font-semibold">Вы великолепны!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* About Section */}
       <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
