@@ -182,42 +182,25 @@ export default function Index() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-green-100 hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Icon name="Target" size={32} className="text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-3">Наша миссия</h3>
-                <p className="text-gray-600">
-                  Помочь каждому ребёнку раскрыть свой потенциал и преодолеть трудности в обучении с помощью инновационных методов
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-100 hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Icon name="Heart" size={32} className="text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-3">Наши ценности</h3>
-                <p className="text-gray-600">
-                  Индивидуальный подход, научная обоснованность методов и создание поддерживающей среды для развития
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-100 hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Icon name="Lightbulb" size={32} className="text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-3">Инновации</h3>
-                <p className="text-gray-600">
-                  Современные нейропсихологические методики в сочетании с проверенными логопедическими практиками
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {specialists.map((specialist, index) => (
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center flex flex-col">
+                <CardContent className="p-6 flex flex-col flex-grow">
+                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
+                    <img 
+                      src={specialist.avatar} 
+                      alt={specialist.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col flex-grow">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
+                    <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
+                    <p className="text-gray-600 text-sm leading-relaxed flex-grow">{specialist.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -248,36 +231,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Specialists Section */}
-      <section id="specialists" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши специалисты</h2>
 
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {specialists.map((specialist, index) => (
-              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center flex flex-col">
-                <CardContent className="p-6 flex flex-col flex-grow">
-                  <div className="w-40 h-40 mx-auto mb-4 rounded-full overflow-hidden">
-                    <img 
-                      src={specialist.avatar} 
-                      alt={specialist.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex flex-col flex-grow">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2 h-14 flex items-center justify-center">{specialist.name}</h3>
-                    <p className="text-green-600 font-medium mb-3 h-12 flex items-center justify-center">{specialist.role}</p>
-                    <p className="text-gray-600 text-sm leading-relaxed flex-grow flex items-start justify-center">{specialist.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section */}
       <section id="faq" className="py-20 bg-gray-50">
