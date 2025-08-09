@@ -337,69 +337,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Как проходит работа</h2>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="space-y-8">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
-                  1
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Экспресс-диагностика</h3>
-                  <p className="text-gray-600">Выясняем, есть ли у ребенка дислексия/дисграфия</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
-                  2
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Углубленная диагностика</h3>
-                  <p className="text-gray-600">Исследуем устную и письменную речь, определяем форму и механизм нарушения</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
-                  3
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Методическая работа</h3>
-                  <p className="text-gray-600">Пишем развернутое логопедическое заключение и составляем план коррекционной работы</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
-                  4
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Коррекционная работа</h3>
-                  <p className="text-gray-600">Онлайн-занятия с обязательными домашними заданиями</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
-                  5
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Беглое чтение и грамотное письмо!</h3>
-                  <p className="text-green-600 font-semibold">Вы великолепны!</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="bg-gray-800 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
