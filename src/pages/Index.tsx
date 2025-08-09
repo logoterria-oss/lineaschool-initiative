@@ -130,7 +130,7 @@ export default function Index() {
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 overflow-hidden">
         {/* Age Badge */}
-        <div className="absolute top-6 right-6 bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10 animate-pulse hover:animate-bounce">
+        <div className="absolute top-6 right-6 bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10">
           <span className="text-lg">🎓</span>
           <span className="font-semibold">7-18 лет</span>
         </div>
@@ -159,7 +159,7 @@ export default function Index() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg px-8 shadow-lg hover:scale-105 transition-transform">
+              <Button size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg px-8 shadow-lg hover:scale-105 transition-transform animate-pulse hover:animate-bounce">
                 <span className="mr-2">📅</span>
                 Записаться на БЕСПЛАТНУЮ диагностику
               </Button>
