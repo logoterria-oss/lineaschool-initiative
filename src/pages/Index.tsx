@@ -130,30 +130,21 @@ export default function Index() {
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
-                Инновационная коррекция
-                <span className="block text-green-500">дислексии и дисграфии</span>
-              </h1>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальное сочетание традиционных логопедических методик с нейропсихологическим подходом для комплексной помощи школьникам</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8">
-                  <Icon name="Calendar" className="mr-2" size={20} />
-                  Записаться на диагностику
-                </Button>
-                <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8">
-                  <Icon name="Play" className="mr-2" size={20} />
-                  Смотреть презентацию
-                </Button>
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <img 
-                src="/img/5a07e52a-8d56-4b77-9e2e-7f51bf3c255d.jpg" 
-                alt="Команда специалистов обсуждает рабочие вопросы"
-                className="rounded-2xl shadow-xl max-w-full h-auto"
-              />
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
+              Инновационная коррекция
+              <span className="block text-green-500">дислексии и дисграфии</span>
+            </h1>
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальное сочетание традиционных логопедических методик с нейропсихологическим подходом для комплексной помощи школьникам</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8">
+                <Icon name="Calendar" className="mr-2" size={20} />
+                Записаться на диагностику
+              </Button>
+              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8">
+                <Icon name="Play" className="mr-2" size={20} />
+                Смотреть презентацию
+              </Button>
             </div>
           </div>
         </div>
