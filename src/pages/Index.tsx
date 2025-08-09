@@ -129,18 +129,13 @@ export default function Index() {
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
-        {/* Age Badge */}
-        <div className="absolute top-6 right-6 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10">
-          <Icon name="Users" size={18} />
-          <span className="font-semibold">7-18 лет</span>
-        </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
               <span className="block text-green-500">Онлайн-коррекция</span>
               дислексии и дисграфии
             </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">Комплексный логопедический и нейропсихологический подход</p>
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальное сочетание традиционных логопедических методик с нейропсихологическим подходом для комплексной помощи школьникам</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8">
                 <Icon name="Calendar" className="mr-2" size={20} />
