@@ -118,11 +118,13 @@ export default function Index() {
       {/* Navigation Menu Block */}
       <section className="bg-white py-4 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center w-full">
-            <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">О нас</a>
-            <a href="#services" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">Услуги</a>
-            <a href="#specialists" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">Специалисты</a>
-            <a href="#faq" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">FAQ</a>
+          <div className="flex justify-center">
+            <div className="flex items-center space-x-12">
+              <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors font-medium">О нас</a>
+              <a href="#services" className="text-gray-600 hover:text-green-600 transition-colors font-medium">Услуги</a>
+              <a href="#specialists" className="text-gray-600 hover:text-green-600 transition-colors font-medium">Специалисты</a>
+              <a href="#faq" className="text-gray-600 hover:text-green-600 transition-colors font-medium">FAQ</a>
+            </div>
           </div>
         </div>
       </section>
