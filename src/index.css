@@ -124,3 +124,27 @@
     font-weight: 600;
   }
 }
+
+@layer utilities {
+  @keyframes gradient-shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      #10b981 0%,
+      #059669 25%,
+      #10b981 50%,
+      #059669 75%,
+      #10b981 100%
+    );
+    background-size: 200% 100%;
+    animation: gradient-shimmer 3s ease-in-out infinite;
+  }
+}

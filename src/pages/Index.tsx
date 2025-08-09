@@ -159,7 +159,7 @@ export default function Index() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg px-8 shadow-lg hover:scale-105 transition-transform animate-pulse hover:animate-bounce">
+              <Button size="lg" className="animate-shimmer text-lg px-8 shadow-lg hover:scale-105 transition-all duration-300 hover:animate-bounce text-white">
                 <span className="mr-2">📅</span>
                 Записаться на БЕСПЛАТНУЮ диагностику
               </Button>
