@@ -140,7 +140,7 @@ export default function Index() {
               <span className="block text-green-500">Онлайн-коррекция</span>
               дислексии и дисграфии
             </h1>
-            <p className="text-xl text-gray-600 mb-4 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
+            <p className="text-2xl text-gray-600 mb-4 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
             
             {/* Stats */}
             <div className="flex justify-center space-x-8 mb-8">
