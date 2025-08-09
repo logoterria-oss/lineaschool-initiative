@@ -135,39 +135,61 @@ export default function Index() {
           <span className="font-semibold">7-18 лет</span>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-5xl lg:text-7xl font-bold text-gray-800 mb-8 leading-tight">
-              <span className="block text-green-500">Онлайн-коррекция</span>
-              дислексии и дисграфии
-            </h1>
-            <p className="text-xl text-gray-600 mb-6 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
-            
-            {/* Stats */}
-            <div className="flex justify-center space-x-8 mb-8">
-              <div className="text-center">
+          <div className="flex items-center justify-between">
+            {/* Stats Column - Left */}
+            <div className="hidden lg:flex flex-col space-y-6">
+              <div className="text-left">
                 <div className="text-3xl font-bold text-green-600">500+</div>
                 <div className="text-base text-gray-600">довольных семей</div>
               </div>
-              <div className="text-center">
+              <div className="text-left">
                 <div className="text-3xl font-bold text-blue-600">98%</div>
                 <div className="text-base text-gray-600">успешных кейсов</div>
               </div>
-              <div className="text-center">
+              <div className="text-left">
                 <div className="text-3xl font-bold text-purple-600">24/7</div>
                 <div className="text-base text-gray-600">поддержка</div>
               </div>
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="animate-shimmer text-xl px-10 py-4 shadow-lg hover:scale-105 transition-all duration-300 hover:animate-bounce text-white">
-                <span className="mr-2">📅</span>
-                Записаться на БЕСПЛАТНУЮ диагностику
-              </Button>
-              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-xl px-10 py-4 hover:scale-105 transition-transform">
-                <span className="mr-2">▶️</span>
-                Смотреть презентацию
-              </Button>
+
+            {/* Main Content - Center */}
+            <div className="text-center flex-1">
+              <h1 className="text-5xl lg:text-7xl font-bold text-gray-800 mb-8 leading-tight">
+                <span className="block text-green-500">Онлайн-коррекция</span>
+                дислексии и дисграфии
+              </h1>
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                <Button size="lg" className="animate-shimmer text-xl px-10 py-4 shadow-lg hover:scale-105 transition-all duration-300 hover:animate-bounce text-white">
+                  <span className="mr-2">📅</span>
+                  Записаться на БЕСПЛАТНУЮ диагностику
+                </Button>
+                <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-xl px-10 py-4 hover:scale-105 transition-transform">
+                  <span className="mr-2">▶️</span>
+                  Смотреть презентацию
+                </Button>
+              </div>
+              
+              {/* Stats for mobile/tablet */}
+              <div className="flex justify-center space-x-8 lg:hidden">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">500+</div>
+                  <div className="text-base text-gray-600">довольных семей</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">98%</div>
+                  <div className="text-base text-gray-600">успешных кейсов</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600">24/7</div>
+                  <div className="text-base text-gray-600">поддержка</div>
+                </div>
+              </div>
             </div>
+
+            {/* Right spacer for balance */}
+            <div className="hidden lg:block w-32"></div>
           </div>
         </div>
       </section>
