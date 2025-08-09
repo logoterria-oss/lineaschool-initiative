@@ -140,7 +140,7 @@ export default function Index() {
               <span className="block text-green-500">Онлайн-коррекция</span>
               дислексии и дисграфии
             </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальное сочетание традиционных логопедических методик с нейропсихологическим подходом для комплексной помощи школьникам</p>
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">Комплексный логопедический и нейропсихологический подход</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8">
                 <Icon name="Calendar" className="mr-2" size={20} />
@@ -160,7 +160,9 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">О LineaSchool</h2>
-
+            <p className="text-lg text-gray-600 leading-relaxed">
+              LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией. Наш уникальный подход сочетает традиционные логопедические методики с нейропсихологическими методами, обеспечивая комплексную коррекцию.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
