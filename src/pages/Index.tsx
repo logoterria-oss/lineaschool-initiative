@@ -103,18 +103,31 @@ export default function Index() {
               </div>
               <span className="text-xl font-bold text-gray-800">LineaSchool</span>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors">О нас</a>
-              <a href="#services" className="text-gray-600 hover:text-green-600 transition-colors">Услуги</a>
-              <a href="#specialists" className="text-gray-600 hover:text-green-600 transition-colors">Специалисты</a>
-              <a href="#faq" className="text-gray-600 hover:text-green-600 transition-colors">FAQ</a>
+            <div className="hidden md:flex items-center space-x-4">
               <Button className="bg-green-500 hover:bg-green-600">
-                Консультация
+                Записаться
+              </Button>
+              <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50">
+                Задать вопрос
               </Button>
             </div>
           </div>
         </div>
       </nav>
+
+      {/* Navigation Menu Block */}
+      <section className="bg-white py-4 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center">
+            <div className="flex items-center space-x-12">
+              <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors font-medium">О нас</a>
+              <a href="#services" className="text-gray-600 hover:text-green-600 transition-colors font-medium">Услуги</a>
+              <a href="#specialists" className="text-gray-600 hover:text-green-600 transition-colors font-medium">Специалисты</a>
+              <a href="#faq" className="text-gray-600 hover:text-green-600 transition-colors font-medium">FAQ</a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
