@@ -95,7 +95,7 @@ export default function Index() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-green-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
