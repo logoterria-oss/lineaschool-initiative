@@ -132,8 +132,8 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
-              Коррекция дислексии и дисграфии
-              <span className="block text-green-500">онлайн</span>
+              Инновационный подход к коррекции
+              <span className="block text-green-500">дислексии и дисграфии</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">Уникальное сочетание традиционных логопедических методик с нейропсихологическим подходом для комплексной помощи школьникам</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
