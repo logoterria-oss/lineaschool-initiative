@@ -151,8 +151,6 @@ export default function Index() {
                   Смотреть презентацию
                 </Button>
               </div>
-            </div>
-
           </div>
         </div>
       </section>
