@@ -1,24 +1,39 @@
 import { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
+import { Button } from '@/components/ui/button';
 
-interface BeforeAfterSliderProps {
+interface Example {
   beforeImage: string;
   afterImage: string;
   beforeAlt: string;
   afterAlt: string;
 }
 
-export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, afterAlt }: BeforeAfterSliderProps) {
+interface BeforeAfterSliderProps {
+  examples: Example[];
+}
+
+export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) {
+  const [currentExample, setCurrentExample] = useState(0);
   const [position, setPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [autoAnimation, setAutoAnimation] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number>();
+
+  const currentData = examples[currentExample];
 
   const handleMouseDown = () => {
     setIsDragging(true);
+    setAutoAnimation(false);
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setTimeout(() => setAutoAnimation(true), 2000);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -32,10 +47,15 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, 
 
   const handleTouchStart = () => {
     setIsDragging(true);
+    setAutoAnimation(false);
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+    setTimeout(() => setAutoAnimation(true), 2000);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -45,6 +65,16 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, 
     const x = e.touches[0].clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
     setPosition(percentage);
+  };
+
+  const nextExample = () => {
+    setCurrentExample((prev) => (prev + 1) % examples.length);
+    setPosition(50);
+  };
+
+  const prevExample = () => {
+    setCurrentExample((prev) => (prev - 1 + examples.length) % examples.length);
+    setPosition(50);
   };
 
   useEffect(() => {
@@ -69,13 +99,44 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, 
     };
   }, [isDragging]);
 
+  useEffect(() => {
+    let startTime: number;
+    
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      
+      if (autoAnimation && !isDragging) {
+        const progress = (elapsed / 3000) % 2;
+        const newPosition = progress <= 1 
+          ? 20 + (progress * 60)
+          : 80 - ((progress - 1) * 60);
+        
+        setPosition(newPosition);
+      }
+      
+      if (autoAnimation && !isDragging) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    if (autoAnimation && !isDragging) {
+      animationRef.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [autoAnimation, isDragging]);
+
+  useEffect(() => {
+    setAutoAnimation(true);
+  }, [currentExample]);
+
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-6">
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Результаты наших учеников</h3>
-        <p className="text-gray-600">Перетащите ползунок, чтобы увидеть прогресс</p>
-      </div>
-      
       <div 
         ref={containerRef}
         className="relative overflow-hidden rounded-lg cursor-ew-resize select-none"
@@ -84,8 +145,8 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, 
       >
         <div className="relative">
           <img 
-            src={beforeImage} 
-            alt={beforeAlt}
+            src={currentData.beforeImage} 
+            alt={currentData.beforeAlt}
             className="w-full h-auto block"
             draggable={false}
           />
@@ -94,8 +155,8 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, 
             style={{clipPath: `inset(0 ${100 - position}% 0 0)`}}
           >
             <img 
-              src={afterImage} 
-              alt={afterAlt}
+              src={currentData.afterImage} 
+              alt={currentData.afterAlt}
               className="w-full h-auto block"
               draggable={false}
             />
@@ -118,6 +179,26 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, 
               </div>
             </div>
           </div>
+
+          {/* Navigation arrows */}
+          <div className="absolute top-4 right-4 flex space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-10 h-10 p-0 bg-white/90 hover:bg-white border-green-500"
+              onClick={prevExample}
+            >
+              <Icon name="ChevronLeft" size={16} className="text-green-600" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-10 h-10 p-0 bg-white/90 hover:bg-white border-green-500"
+              onClick={nextExample}
+            >
+              <Icon name="ChevronRight" size={16} className="text-green-600" />
+            </Button>
+          </div>
         </div>
         
         {/* Labels */}
@@ -130,6 +211,22 @@ export default function BeforeAfterSlider({ beforeImage, afterImage, beforeAlt, 
             <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-1"></div>
             <span className="text-sm font-medium text-gray-700">После коррекции</span>
           </div>
+        </div>
+
+        {/* Example indicator */}
+        <div className="flex justify-center mt-4 space-x-2">
+          {examples.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setCurrentExample(index);
+                setPosition(50);
+              }}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                index === currentExample ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            />
+          ))}
         </div>
       </div>
     </div>

@@ -221,10 +221,32 @@ export default function Index() {
             
             <div className="relative">
               <BeforeAfterSlider
-                beforeImage="/img/aa5047e4-a1b1-4939-85fe-2b7faf02598e.jpg"
-                afterImage="/img/5569e4cc-89f2-4ecc-a1e5-dd664a26796f.jpg"
-                beforeAlt="Письменная работа до коррекции"
-                afterAlt="Письменная работа после коррекции"
+                examples={[
+                  {
+                    beforeImage: "/img/aa5047e4-a1b1-4939-85fe-2b7faf02598e.jpg",
+                    afterImage: "/img/5569e4cc-89f2-4ecc-a1e5-dd664a26796f.jpg",
+                    beforeAlt: "Письменная работа до коррекции",
+                    afterAlt: "Письменная работа после коррекции"
+                  },
+                  {
+                    beforeImage: "/img/917769e5-2165-4f97-9a90-fd900bd6a378.jpg",
+                    afterImage: "/img/ae24f599-1121-4e72-a712-76ffc59a0f18.jpg",
+                    beforeAlt: "Чтение до коррекции",
+                    afterAlt: "Чтение после коррекции"
+                  },
+                  {
+                    beforeImage: "/img/174418b3-b55e-498b-8007-271ab951e7eb.jpg",
+                    afterImage: "/img/6c81cc38-ecf7-43b0-af9d-5de785a0cca4.jpg",
+                    beforeAlt: "Математика до коррекции",
+                    afterAlt: "Математика после коррекции"
+                  },
+                  {
+                    beforeImage: "/img/48f49395-68a6-46e4-99d8-fc5d9338a979.jpg",
+                    afterImage: "/img/104206cb-4246-4e29-ab1b-5bdd8a92560e.jpg",
+                    beforeAlt: "Общее развитие до",
+                    afterAlt: "Общее развитие после"
+                  }
+                ]}
               />
             </div>
           </div>
