@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Icon from "@/components/ui/icon";
+import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 
 export default function Index() {
   const specialists = [
@@ -219,10 +220,11 @@ export default function Index() {
             </div>
             
             <div className="relative">
-              <img 
-                src="/img/104206cb-4246-4e29-ab1b-5bdd8a92560e.jpg" 
-                alt="Дети изучают онлайн"
-                className="w-full h-auto rounded-2xl shadow-2xl"
+              <BeforeAfterSlider
+                beforeImage="/img/aa5047e4-a1b1-4939-85fe-2b7faf02598e.jpg"
+                afterImage="/img/5569e4cc-89f2-4ecc-a1e5-dd664a26796f.jpg"
+                beforeAlt="Письменная работа до коррекции"
+                afterAlt="Письменная работа после коррекции"
               />
             </div>
           </div>
