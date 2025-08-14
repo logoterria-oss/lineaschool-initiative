@@ -34,7 +34,7 @@ export default function Index() {
   const services = [
     {
       title: "Углубленная диагностика",
-      description: "Комплексное обследование для выявления особенностей развития",
+      description: "Комплексное обследование для выявления механизма нарушения",
       icon: "Search"
     },
     {
