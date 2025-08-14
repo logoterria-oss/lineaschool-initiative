@@ -92,22 +92,22 @@ export default function Index() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
       {/* Navigation */}
-      <nav className="bg-white/90 backdrop-blur-md border-b border-orange-100 sticky top-0 z-50 shadow-sm">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-green-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-fun rounded-xl flex items-center justify-center animate-pulse-grow">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
                 <Icon name="BookOpen" size={28} className="text-white" />
               </div>
               <span className="text-3xl font-bold text-gray-800">LineaSchool</span>
             </div>
             <div className="hidden md:flex items-center space-x-6">
-              <Button size="lg" className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-lg px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300 animate-bounce-fun">
+              <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8 py-3">
                 Записаться
               </Button>
-              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 text-lg px-8 py-3 hover:scale-105 transition-all duration-300">
+              <Button size="lg" variant="outline" className="border-green-200 text-green-600 hover:bg-green-50 text-lg px-8 py-3">
                 Задать вопрос
               </Button>
             </div>
@@ -116,28 +116,28 @@ export default function Index() {
       </nav>
 
       {/* Navigation Menu Block */}
-      <section className="bg-white/50 py-4 border-b border-gray-100">
+      <section className="bg-white py-4 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center w-full">
-            <a href="#about" className="text-gray-600 hover:text-primary transition-colors font-medium flex-1 text-center hover:scale-110 transform duration-300">О нас</a>
-            <a href="#services" className="text-gray-600 hover:text-primary transition-colors font-medium flex-1 text-center hover:scale-110 transform duration-300">Услуги</a>
-            <a href="#specialists" className="text-gray-600 hover:text-primary transition-colors font-medium flex-1 text-center hover:scale-110 transform duration-300">Специалисты</a>
-            <a href="#faq" className="text-gray-600 hover:text-primary transition-colors font-medium flex-1 text-center hover:scale-110 transform duration-300">FAQ</a>
+            <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">О нас</a>
+            <a href="#services" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">Услуги</a>
+            <a href="#specialists" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">Специалисты</a>
+            <a href="#faq" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">FAQ</a>
           </div>
         </div>
       </section>
 
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50 overflow-hidden">
+      <section className="relative py-20 lg:py-32 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 overflow-hidden">
         {/* Age Badge */}
-        <div className="absolute top-6 right-6 bg-gradient-fun text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10 animate-bounce-fun">
+        <div className="absolute top-6 right-6 bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10">
           <span className="text-lg">🎓</span>
           <span className="font-semibold">7-18 лет</span>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-5xl lg:text-7xl font-bold text-gray-800 mb-8 leading-tight">
-              <span className="block text-transparent bg-gradient-to-r from-primary to-secondary bg-clip-text animate-shimmer">Онлайн-коррекция</span>
+              <span className="block text-green-500">Онлайн-коррекция</span>
               дислексии и дисграфии
             </h1>
             <p className="text-xl text-gray-600 mb-6 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
@@ -145,15 +145,15 @@ export default function Index() {
             {/* Stats */}
             <div className="flex justify-center space-x-8 mb-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary">500+</div>
+                <div className="text-3xl font-bold text-green-600">500+</div>
                 <div className="text-base text-gray-600">довольных семей</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-secondary">98%</div>
+                <div className="text-3xl font-bold text-blue-600">98%</div>
                 <div className="text-base text-gray-600">успешных кейсов</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-accent">24/7</div>
+                <div className="text-3xl font-bold text-purple-600">24/7</div>
                 <div className="text-base text-gray-600">поддержка</div>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function Index() {
                 <span className="mr-2">📅</span>
                 Записаться на БЕСПЛАТНУЮ диагностику
               </Button>
-              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 text-xl px-10 py-4 hover:scale-105 transition-transform hover:shadow-lg">
+              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-xl px-10 py-4 hover:scale-105 transition-transform">
                 <span className="mr-2">▶️</span>
                 Смотреть презентацию
               </Button>
@@ -173,18 +173,18 @@ export default function Index() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-20 bg-gradient-to-br from-white to-orange-50">
+      <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">О LineaSchool</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">О LineaSchool</h2>
             <p className="text-lg text-gray-600 leading-relaxed">LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией. Наш уникальный подход сочетает в себе традиционные логопедические и современные нейропсихологические методики, обеспечивая комплексную коррекцию нарушений процессов чтения и письма.</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {specialists.map((specialist, index) => (
-              <Card key={index} className="border-primary/20 hover:shadow-2xl transition-all duration-300 text-center flex flex-col hover:scale-105 hover:border-primary/40 bg-gradient-to-br from-white to-primary/5">
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center flex flex-col">
                 <CardContent className="p-6 flex flex-col flex-grow">
-                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden ring-4 ring-primary/20 hover:ring-primary/40 transition-all duration-300">
+                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
                     <img 
                       src={specialist.avatar} 
                       alt={specialist.name}
@@ -193,7 +193,7 @@ export default function Index() {
                   </div>
                   <div className="flex flex-col flex-grow">
                     <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
-                    <p className="text-secondary font-medium mb-3">{specialist.role}</p>
+                    <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
                     <p className="text-gray-600 text-sm leading-relaxed flex-grow">{specialist.description}</p>
                   </div>
                 </CardContent>
@@ -204,10 +204,10 @@ export default function Index() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-20 bg-gradient-to-br from-pink-50 via-purple-50 to-orange-50">
+      <section id="services" className="py-20 bg-gradient-to-r from-green-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent mb-6">Наши услуги</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши услуги</h2>
             <p className="text-lg text-gray-600">
               Комплексный подход к коррекции дислексии и дисграфии с использованием современных методик
             </p>
@@ -215,9 +215,9 @@ export default function Index() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((service, index) => (
-              <Card key={index} className="bg-white/80 backdrop-blur-sm border-secondary/20 hover:shadow-2xl transition-all duration-300 hover:scale-110 hover:border-secondary/40 animate-pulse-grow">
+              <Card key={index} className="bg-white border-green-100 hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardContent className="p-6 text-center">
-                  <div className="w-14 h-14 bg-gradient-fun rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-fun">
+                  <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Icon name={service.icon as any} size={24} className="text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">{service.title}</h3>
@@ -232,10 +232,10 @@ export default function Index() {
 
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 bg-gradient-to-br from-purple-50 to-pink-50">
+      <section id="faq" className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent mb-6">Часто задаваемые вопросы</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Часто задаваемые вопросы</h2>
             <p className="text-lg text-gray-600">
               Ответы на самые популярные вопросы о наших методах и программах
             </p>
@@ -243,8 +243,8 @@ export default function Index() {
 
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-primary/20 hover:border-primary/40 bg-white/50 rounded-lg mb-4 px-4">
-                <AccordionTrigger className="text-left hover:text-primary text-lg font-semibold">
+              <AccordionItem key={index} value={`item-${index}`} className="border-green-100">
+                <AccordionTrigger className="text-left hover:text-green-600 text-lg">
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 leading-relaxed">
@@ -257,10 +257,10 @@ export default function Index() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-gradient-to-br from-orange-50 to-pink-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent mb-6">Отзывы родителей</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Отзывы родителей</h2>
             <p className="text-lg text-gray-600">
               Истории успеха наших учеников и благодарности от их семей
             </p>
@@ -268,7 +268,7 @@ export default function Index() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="border-primary/20 hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-white/80 backdrop-blur-sm hover:border-primary/40">
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
@@ -285,20 +285,20 @@ export default function Index() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-fun">
+      <section className="py-20 bg-gradient-to-r from-green-500 to-emerald-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
             Начните путь к успешному обучению уже сегодня
           </h2>
-          <p className="text-xl text-white/90 mb-8 leading-relaxed">
+          <p className="text-xl text-green-100 mb-8 leading-relaxed">
             Запишитесь на бесплатную консультацию и узнайте, как мы можем помочь вашему ребёнку
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90 text-lg px-8 hover:scale-105 transition-all duration-300 shadow-lg">
+            <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 text-lg px-8">
               <Icon name="Phone" className="mr-2" size={20} />
               Записаться на консультацию
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary text-lg px-8 hover:scale-105 transition-all duration-300">
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-green-600 text-lg px-8">
               <Icon name="Mail" className="mr-2" size={20} />
               Написать нам
             </Button>
@@ -307,12 +307,12 @@ export default function Index() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-br from-gray-800 via-gray-900 to-purple-900 text-gray-300 py-12">
+      <footer className="bg-gray-800 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-fun rounded-lg flex items-center justify-center animate-pulse-grow">
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                   <Icon name="BookOpen" size={20} className="text-white" />
                 </div>
                 <span className="text-xl font-bold text-white">LineaSchool</span>

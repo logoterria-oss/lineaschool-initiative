@@ -61,20 +61,6 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				bright: {
-					orange: '#FF6B35',
-					pink: '#FF2D92', 
-					purple: '#8B5FBF',
-					blue: '#3B82F6',
-					green: '#22C55E',
-					yellow: '#F59E0B',
-					red: '#EF4444'
-				},
-				gradient: {
-					start: '#FF6B35',
-					middle: '#FF2D92', 
-					end: '#8B5FBF'
 				}
 			},
 			borderRadius: {
