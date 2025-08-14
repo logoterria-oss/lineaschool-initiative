@@ -107,10 +107,10 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
       const elapsed = timestamp - startTime;
       
       if (autoAnimation && !isDragging) {
-        const progress = (elapsed / 3000) % 2;
+        const progress = (elapsed / 5000) % 2;
         const newPosition = progress <= 1 
-          ? 20 + (progress * 60)
-          : 80 - ((progress - 1) * 60);
+          ? 40 + (progress * 20)
+          : 60 - ((progress - 1) * 20);
         
         setPosition(newPosition);
       }
