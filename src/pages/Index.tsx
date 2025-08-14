@@ -54,6 +54,28 @@ export default function Index() {
     }
   ];
 
+  const programs = [
+    {
+      title: "Базовая коррекция",
+      duration: "6-8 месяцев",
+      price: "от 8 000 ₽/мес",
+      features: ["Диагностика", "8 занятий в месяц", "Домашние задания", "Поддержка родителей"]
+    },
+    {
+      title: "Интенсивная программа",
+      duration: "4-6 месяцев", 
+      price: "от 15 000 ₽/мес",
+      features: ["Углубленная диагностика", "12 занятий в месяц", "Индивидуальный план", "24/7 поддержка"],
+      popular: true
+    },
+    {
+      title: "Премиум",
+      duration: "3-4 месяца",
+      price: "от 25 000 ₽/мес",
+      features: ["VIP диагностика", "16 занятий в месяц", "Персональный куратор", "Гарантия результата"]
+    }
+  ];
+
   const faqs = [
     {
       question: "Что такое дислексия и дисграфия?",
@@ -85,118 +107,193 @@ export default function Index() {
       rating: 5
     },
     {
-      name: "Елена Козлова",
-      text: "Очень благодарна за комплексный подход. Не только коррекция, но и понимание того, как поддержать ребёнка дома. Рекомендую всем родителям!",
+      name: "Елена Васильева",
+      text: "Очень довольны результатами! Ребёнок стал увереннее в себе, улучшилась успеваемость в школе. Спасибо за терпение и профессионализм!",
       rating: 5
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
+    <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-green-100 sticky top-0 z-50">
+      <nav className="bg-white shadow-sm border-b border-green-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <Icon name="BookOpen" size={28} className="text-white" />
+              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                <Icon name="BookOpen" size={24} className="text-white" />
               </div>
-              <span className="text-3xl font-bold text-gray-800">LineaSchool</span>
+              <span className="text-2xl font-bold text-green-600">LineaSchool</span>
             </div>
-            <div className="hidden md:flex items-center space-x-6">
-              <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8 py-3">
-                Записаться
-              </Button>
-              <Button size="lg" variant="outline" className="border-green-200 text-green-600 hover:bg-green-50 text-lg px-8 py-3">
-                Задать вопрос
-              </Button>
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#about" className="text-gray-600 hover:text-green-600 font-medium">О нас</a>
+              <a href="#services" className="text-gray-600 hover:text-green-600 font-medium">Услуги</a>
+              <a href="#programs" className="text-gray-600 hover:text-green-600 font-medium">Программы</a>
+              <a href="#specialists" className="text-gray-600 hover:text-green-600 font-medium">Специалисты</a>
+              <a href="#faq" className="text-gray-600 hover:text-green-600 font-medium">FAQ</a>
+              <Button className="bg-green-500 hover:bg-green-600">Записаться</Button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Navigation Menu Block */}
-      <section className="bg-white py-4 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center w-full">
-            <a href="#about" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">О нас</a>
-            <a href="#services" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">Услуги</a>
-            <a href="#specialists" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">Специалисты</a>
-            <a href="#faq" className="text-gray-600 hover:text-green-600 transition-colors font-medium flex-1 text-center">FAQ</a>
-          </div>
-        </div>
-      </section>
-
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 overflow-hidden">
-        {/* Age Badge */}
-        <div className="absolute top-6 right-6 bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 z-10">
-          <span className="text-lg">🎓</span>
-          <span className="font-semibold">7-18 лет</span>
-        </div>
+      <section className="relative py-20 lg:py-32 bg-gradient-to-br from-green-50 to-emerald-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-5xl lg:text-7xl font-bold text-gray-800 mb-8 leading-tight">
-              <span className="block text-green-500">Онлайн-коррекция</span>
-              дислексии и дисграфии
-            </h1>
-            <p className="text-xl text-gray-600 mb-6 leading-relaxed">Уникальный комплексный нейрологопедический подход</p>
-            
-            {/* Stats */}
-            <div className="flex justify-center space-x-8 mb-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">500+</div>
-                <div className="text-base text-gray-600">довольных семей</div>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+                🎓 Для детей 7-18 лет
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">98%</div>
-                <div className="text-base text-gray-600">успешных кейсов</div>
+              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                Онлайн-коррекция дислексии и дисграфии
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                Уникальный комплексный нейрологопедический подход для успешного обучения вашего ребёнка
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4">
+                  <Icon name="Calendar" className="mr-2" size={20} />
+                  Бесплатная диагностика
+                </Button>
+                <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4">
+                  <Icon name="Play" className="mr-2" size={20} />
+                  Смотреть видео
+                </Button>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">24/7</div>
-                <div className="text-base text-gray-600">поддержка</div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">500+</div>
+                  <div className="text-sm text-gray-600">довольных семей</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">98%</div>
+                  <div className="text-sm text-gray-600">успешных кейсов</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">24/7</div>
+                  <div className="text-sm text-gray-600">поддержка</div>
+                </div>
               </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="animate-shimmer text-xl px-10 py-4 shadow-lg hover:scale-105 transition-all duration-300 hover:animate-bounce text-white">
-                <span className="mr-2">📅</span>
-                Записаться на БЕСПЛАТНУЮ диагностику
-              </Button>
-              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-xl px-10 py-4 hover:scale-105 transition-transform">
-                <span className="mr-2">▶️</span>
-                Смотреть презентацию
-              </Button>
+            <div className="relative">
+              <img 
+                src="/img/104206cb-4246-4e29-ab1b-5bdd8a92560e.jpg" 
+                alt="Дети изучают онлайн"
+                className="w-full h-auto rounded-2xl shadow-2xl"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-20 bg-white">
+      {/* Features Section */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">О LineaSchool</h2>
-            <p className="text-lg text-gray-600 leading-relaxed">LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией. Наш уникальный подход сочетает в себе традиционные логопедические и современные нейропсихологические методики, обеспечивая комплексную коррекцию нарушений процессов чтения и письма.</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Почему выбирают нас?</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Мы используем передовые методики и индивидуальный подход к каждому ребёнку
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {specialists.map((specialist, index) => (
-              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center flex flex-col">
-                <CardContent className="p-6 flex flex-col flex-grow">
-                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
-                    <img 
-                      src={specialist.avatar} 
-                      alt={specialist.name}
-                      className="w-full h-full object-cover"
-                    />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300 p-6">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <Icon name="Target" size={24} className="text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Индивидуальный подход</h3>
+              <p className="text-gray-600">Персональная программа коррекции, учитывающая особенности каждого ребёнка</p>
+            </Card>
+
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300 p-6">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <Icon name="Users" size={24} className="text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Опытные специалисты</h3>
+              <p className="text-gray-600">Команда сертифицированных логопедов и нейропсихологов</p>
+            </Card>
+
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300 p-6">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <Icon name="Monitor" size={24} className="text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Онлайн-формат</h3>
+              <p className="text-gray-600">Удобные занятия из дома с интерактивными материалами</p>
+            </Card>
+
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300 p-6">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <Icon name="BarChart" size={24} className="text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Отслеживание прогресса</h3>
+              <p className="text-gray-600">Регулярные отчеты о достижениях вашего ребёнка</p>
+            </Card>
+
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300 p-6">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <Icon name="Heart" size={24} className="text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Поддержка семьи</h3>
+              <p className="text-gray-600">Консультации и рекомендации для родителей</p>
+            </Card>
+
+            <Card className="border-green-100 hover:shadow-lg transition-all duration-300 p-6">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <Icon name="Award" size={24} className="text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Гарантия результата</h3>
+              <p className="text-gray-600">Возврат средств, если не увидите улучшений</p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Programs Section */}
+      <section id="programs" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Программы обучения</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Выберите программу, которая подходит именно вашему ребёнку
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {programs.map((program, index) => (
+              <Card key={index} className={`relative p-8 ${program.popular ? 'border-2 border-green-500 bg-white shadow-xl' : 'border-green-100 bg-white'} hover:shadow-lg transition-all duration-300`}>
+                {program.popular && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                      Популярная
+                    </span>
                   </div>
-                  <div className="flex flex-col flex-grow">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
-                    <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
-                    <p className="text-gray-600 text-sm leading-relaxed flex-grow">{specialist.description}</p>
-                  </div>
-                </CardContent>
+                )}
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{program.title}</h3>
+                  <p className="text-gray-600 mb-4">{program.duration}</p>
+                  <div className="text-3xl font-bold text-green-600 mb-6">{program.price}</div>
+                  
+                  <ul className="space-y-3 mb-8 text-left">
+                    {program.features.map((feature, fIndex) => (
+                      <li key={fIndex} className="flex items-center">
+                        <Icon name="Check" size={16} className="text-green-500 mr-3" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Button 
+                    className={`w-full ${program.popular ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    size="lg"
+                  >
+                    Выбрать программу
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>
@@ -204,24 +301,92 @@ export default function Index() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-20 bg-gradient-to-r from-green-50 to-emerald-50">
+      <section id="services" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Наши услуги</h2>
-            <p className="text-lg text-gray-600">
-              Комплексный подход к коррекции дислексии и дисграфии с использованием современных методик
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Наши услуги</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Комплексный подход к коррекции дислексии и дисграфии
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((service, index) => (
-              <Card key={index} className="bg-white border-green-100 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6 text-center">
-                  <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Icon name={service.icon as any} size={24} className="text-white" />
+              <Card key={index} className="bg-white border-green-100 hover:shadow-lg transition-all duration-300 hover:scale-105 p-6 text-center">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icon name={service.icon as any} size={24} className="text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">{service.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{service.description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">О LineaSchool</h2>
+              <div className="space-y-4 text-lg text-gray-700">
+                <p>
+                  LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией.
+                </p>
+                <p>
+                  Наш уникальный подход сочетает в себе традиционные логопедические и современные нейропсихологические методики, обеспечивая комплексную коррекцию нарушений процессов чтения и письма.
+                </p>
+                <p>
+                  Мы понимаем, что каждый ребёнок уникален, поэтому разрабатываем персональные программы коррекции, учитывающие индивидуальные особенности и потребности.
+                </p>
+              </div>
+              
+              <div className="mt-8 flex space-x-4">
+                <Button size="lg" className="bg-green-500 hover:bg-green-600">
+                  Узнать больше
+                </Button>
+                <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
+                  Наши методы
+                </Button>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <img 
+                src="/img/48f49395-68a6-46e4-99d8-fc5d9338a979.jpg" 
+                alt="Преподаватель с детьми"
+                className="w-full h-auto rounded-2xl shadow-2xl"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Specialists Section */}
+      <section id="specialists" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Наши специалисты</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Команда профессионалов с многолетним опытом работы
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {specialists.map((specialist, index) => (
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center">
+                <CardContent className="p-6">
+                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
+                    <img 
+                      src={specialist.avatar} 
+                      alt={specialist.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">{service.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{service.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
+                  <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{specialist.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -229,22 +394,20 @@ export default function Index() {
         </div>
       </section>
 
-
-
       {/* FAQ Section */}
-      <section id="faq" className="py-20 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="faq" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Часто задаваемые вопросы</h2>
-            <p className="text-lg text-gray-600">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Часто задаваемые вопросы</h2>
+            <p className="text-xl text-gray-600">
               Ответы на самые популярные вопросы о наших методах и программах
             </p>
           </div>
 
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-green-100">
-                <AccordionTrigger className="text-left hover:text-green-600 text-lg">
+              <AccordionItem key={index} value={`item-${index}`} className="border-green-100 bg-white mb-4 rounded-lg px-6">
+                <AccordionTrigger className="text-left hover:text-green-600 text-lg font-semibold">
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 leading-relaxed">
@@ -260,8 +423,8 @@ export default function Index() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">Отзывы родителей</h2>
-            <p className="text-lg text-gray-600">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Отзывы родителей</h2>
+            <p className="text-xl text-gray-600">
               Истории успеха наших учеников и благодарности от их семей
             </p>
           </div>
@@ -287,7 +450,7 @@ export default function Index() {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-green-500 to-emerald-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+          <h2 className="text-4xl font-bold text-white mb-6">
             Начните путь к успешному обучению уже сегодня
           </h2>
           <p className="text-xl text-green-100 mb-8 leading-relaxed">
@@ -307,58 +470,61 @@ export default function Index() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-gray-300 py-12">
+      <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
                   <Icon name="BookOpen" size={20} className="text-white" />
                 </div>
                 <span className="text-xl font-bold text-white">LineaSchool</span>
               </div>
-              <p className="text-sm leading-relaxed">
-                Инновационная онлайн-школа для коррекции дислексии и дисграфии у школьников
+              <p className="text-gray-400 mb-4">
+                Профессиональная коррекция дислексии и дисграфии для детей 7-18 лет
               </p>
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-green-500">
+                  <Icon name="Mail" size={20} />
+                </a>
+                <a href="#" className="text-gray-400 hover:text-green-500">
+                  <Icon name="Phone" size={20} />
+                </a>
+              </div>
             </div>
             
             <div>
               <h3 className="text-white font-semibold mb-4">Услуги</h3>
-              <ul className="space-y-2 text-sm">
-                <li>Диагностика</li>
-                <li>Индивидуальные программы</li>
-                <li>Онлайн занятия</li>
-                <li>Консультации родителей</li>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Диагностика</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Индивидуальные занятия</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Групповые занятия</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Консультации</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-white font-semibold mb-4">О нас</h3>
-              <ul className="space-y-2 text-sm">
-                <li>Наша команда</li>
-                <li>Методики</li>
-                <li>Результаты</li>
-                <li>Отзывы</li>
+              <h3 className="text-white font-semibold mb-4">О школе</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Наши методы</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Специалисты</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Отзывы</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-green-500">Блог</a></li>
               </ul>
             </div>
             
             <div>
               <h3 className="text-white font-semibold mb-4">Контакты</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center">
-                  <Icon name="Mail" size={16} className="mr-2" />
-                  info@lineaschool.ru
-                </div>
-                <div className="flex items-center">
-                  <Icon name="Phone" size={16} className="mr-2" />
-                  +7 (999) 123-45-67
-                </div>
-              </div>
+              <ul className="space-y-2">
+                <li className="text-gray-400">info@linea-school.ru</li>
+                <li className="text-gray-400">+7 (495) 123-45-67</li>
+                <li className="text-gray-400">Онлайн-школа</li>
+              </ul>
             </div>
           </div>
           
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
-            <p>&copy; 2024 LineaSchool. Все права защищены.</p>
+          <div className="border-t border-gray-700 mt-8 pt-8 text-center">
+            <p className="text-gray-400">© 2024 LineaSchool. Все права защищены.</p>
           </div>
         </div>
       </footer>
