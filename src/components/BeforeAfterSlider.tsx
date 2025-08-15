@@ -136,7 +136,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
   }, [currentExample]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg mx-auto">
       <div 
         ref={containerRef}
         className="relative overflow-hidden rounded-lg cursor-ew-resize select-none"
@@ -147,7 +147,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
           <img 
             src={currentData.beforeImage} 
             alt={currentData.beforeAlt}
-            className="w-full aspect-[4/5] object-cover object-top block"
+            className="w-full aspect-square object-cover object-center block"
             draggable={false}
           />
           <div 
@@ -157,7 +157,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
             <img 
               src={currentData.afterImage} 
               alt={currentData.afterAlt}
-              className="w-full aspect-[4/5] object-cover object-top block"
+              className="w-full aspect-square object-cover object-center block"
               draggable={false}
             />
           </div>
