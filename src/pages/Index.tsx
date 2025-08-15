@@ -223,8 +223,8 @@ export default function Index() {
               <BeforeAfterSlider
                 examples={[
                   {
-                    beforeImage: "https://cdn.poehali.dev/files/8bf5c10e-ee9f-4b61-92b6-1a2b7054b20f.JPG",
-                    afterImage: "https://cdn.poehali.dev/files/6a320f29-9b13-40b9-8b19-49d6d8d10af6.JPG",
+                    beforeImage: "https://cdn.poehali.dev/files/01e04738-94b7-4b8f-b05c-efd09c13e969.jpg",
+                    afterImage: "https://cdn.poehali.dev/files/725de2f7-1ddd-4b52-b0a9-30cf01c3264b.jpg",
                     beforeAlt: "Письменная работа до коррекции",
                     afterAlt: "Письменная работа после коррекции"
                   },
