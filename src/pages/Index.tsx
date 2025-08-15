@@ -229,8 +229,8 @@ export default function Index() {
                     afterAlt: "Письменная работа после коррекции"
                   },
                   {
-                    beforeImage: "/img/917769e5-2165-4f97-9a90-fd900bd6a378.jpg",
-                    afterImage: "/img/ae24f599-1121-4e72-a712-76ffc59a0f18.jpg",
+                    beforeImage: "https://cdn.poehali.dev/files/32fa35dc-fd5c-408f-8566-f4d0bb8233a2.jpg",
+                    afterImage: "https://cdn.poehali.dev/files/a1f4f9c7-ebc3-45e9-8a7c-1aa2ee8e3e12.jpg",
                     beforeAlt: "Чтение до коррекции",
                     afterAlt: "Чтение после коррекции"
                   },
