@@ -104,22 +104,18 @@ export default function MethodologySection() {
 
         {/* Основные типы занятий */}
         <div className="grid lg:grid-cols-3 gap-8 mb-16">
-          {/* Групповые занятия */}
-          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          {/* Логопед */}
+          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
             <CardContent className="p-8">
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
-                <Icon name="Users" size={32} className="text-white" />
+                <Icon name="MessageCircle" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">Групповые занятия</h3>
-              <div className="text-blue-100 font-semibold mb-4">2 раза в неделю</div>
-              <p className="text-blue-50 leading-relaxed mb-6">
-                Отрабатываем новые умения на практике и превращаем их в навыки
-              </p>
-              <div className="h-32">
-                <BrainSVG activeAreas={['frontal', 'parietal']} />
-              </div>
-              <div className="mt-4 text-sm text-blue-100">
-                <strong>Активные области:</strong> лобная и теменная доли
+              <h3 className="text-2xl font-bold mb-2">Логопед (индивидуальные)</h3>
+              <div className="text-green-100 font-semibold mb-4">1 раз в неделю</div>
+              <div className="text-green-50 leading-relaxed space-y-2">
+                <div>• Фонематические процессы</div>
+                <div>• Слоговый анализ</div>
+                <div>• Языковой анализ</div>
               </div>
             </CardContent>
           </Card>
@@ -130,41 +126,27 @@ export default function MethodologySection() {
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
                 <Icon name="Brain" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">Нейропсихолог</h3>
+              <h3 className="text-2xl font-bold mb-2">Нейропсихолог (индивидуальные)</h3>
               <div className="text-purple-100 font-semibold mb-4">1 раз в неделю</div>
-              <div className="text-purple-50 leading-relaxed mb-6 space-y-2">
+              <div className="text-purple-50 leading-relaxed space-y-2">
                 <div>• Сукцессивное восприятие</div>
                 <div>• Симультанное восприятие</div>
                 <div>• Оптико-моторный компонент</div>
               </div>
-              <div className="h-32">
-                <BrainSVG activeAreas={['occipital', 'parietal', 'motor']} />
-              </div>
-              <div className="mt-4 text-sm text-purple-100">
-                <strong>Активные области:</strong> затылочная, теменная доли, моторная кора
-              </div>
             </CardContent>
           </Card>
 
-          {/* Логопед */}
-          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
+          {/* Групповые занятия */}
+          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <CardContent className="p-8">
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
-                <Icon name="MessageCircle" size={32} className="text-white" />
+                <Icon name="Users" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">Логопед</h3>
-              <div className="text-green-100 font-semibold mb-4">1 раз в неделю</div>
-              <div className="text-green-50 leading-relaxed mb-6 space-y-2">
-                <div>• Фонематические процессы</div>
-                <div>• Слоговый анализ</div>
-                <div>• Языковой анализ</div>
-              </div>
-              <div className="h-32">
-                <BrainSVG activeAreas={['temporal', 'frontal']} />
-              </div>
-              <div className="mt-4 text-sm text-green-100">
-                <strong>Активные области:</strong> височная и лобная доли
-              </div>
+              <h3 className="text-2xl font-bold mb-2">Групповые занятия</h3>
+              <div className="text-blue-100 font-semibold mb-4">2 раза в неделю</div>
+              <p className="text-blue-50 leading-relaxed">
+                Отрабатываем новые умения на практике и превращаем их в навыки
+              </p>
             </CardContent>
           </Card>
         </div>
