@@ -134,7 +134,7 @@ export default function MethodologySection() {
                 </p>
                 <div className="flex items-center text-sm text-green-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
-                  Лобная и височная доли
+                  Лобная и затылочная доли
                 </div>
               </div>
             </div>
