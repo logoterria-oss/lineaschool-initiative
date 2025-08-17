@@ -64,7 +64,7 @@ export default function MethodologySection() {
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
                 <Icon name="Users" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 h-16 flex items-center">Групповые занятия</h3>
+              <h3 className="text-2xl font-bold mb-2 h-16 flex items-center">Групповые занятия</h3>
               <div className="text-blue-100 font-semibold mb-6">2 раза в неделю</div>
               <p className="text-blue-50 leading-relaxed">
                 Отрабатываем новые умения на практике и превращаем их в навыки
