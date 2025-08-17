@@ -158,7 +158,7 @@ export default function MethodologySection() {
               {/* Легенда */}
               <div className="mt-6 grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
+                  <div className="w-3 h-3 bg-pink-300 rounded mr-2"></div>
                   Лобная доля
                 </div>
                 <div className="flex items-center">
