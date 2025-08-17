@@ -78,9 +78,7 @@ export default function MethodologySection() {
 
         {/* Детальная инфографика навыков */}
         <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-xl mb-16">
-          <h3 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-            Развиваемые навыки и области мозга
-          </h3>
+
           
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Левая колонка - навыки */}
