@@ -61,10 +61,10 @@ export default function HeroSection() {
                   afterAlt: "Чтение после коррекции"
                 },
                 {
-                  beforeImage: "/img/174418b3-b55e-498b-8007-271ab951e7eb.jpg",
-                  afterImage: "/img/6c81cc38-ecf7-43b0-af9d-5de785a0cca4.jpg",
-                  beforeAlt: "Математика до коррекции",
-                  afterAlt: "Математика после коррекции"
+                  beforeImage: "https://cdn.poehali.dev/files/c64fbf92-77f6-4b7b-a3df-209a755afc79.jpg",
+                  afterImage: "https://cdn.poehali.dev/files/929edf14-3ea9-4c2a-8228-a1d7807aa081.jpg",
+                  beforeAlt: "Почерк до коррекции дисграфии",
+                  afterAlt: "Почерк после коррекции дисграфии"
                 },
                 {
                   beforeImage: "/img/48f49395-68a6-46e4-99d8-fc5d9338a979.jpg",
