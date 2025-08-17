@@ -31,7 +31,7 @@ export default function HeroSection() {
 
             <div className="grid grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">500+</div>
+                <div className="text-3xl font-bold text-green-600">200+</div>
                 <div className="text-sm text-gray-600">довольных семей</div>
               </div>
               <div className="text-center">
