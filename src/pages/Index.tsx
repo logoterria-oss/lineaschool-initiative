@@ -315,8 +315,104 @@ export default function Index() {
         </div>
       </section>
 
+
+
+      {/* Services Section */}
+      <section id="services" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Наши услуги</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Комплексный подход к коррекции дислексии и дисграфии
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {services.map((service, index) => (
+              <Card key={index} className="bg-white border-green-100 hover:shadow-lg transition-all duration-300 hover:scale-105 p-6 text-center">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icon name={service.icon as any} size={24} className="text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">{service.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{service.description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">О LineaSchool</h2>
+              <div className="space-y-4 text-lg text-gray-700">
+                <p>
+                  LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией.
+                </p>
+                <p>
+                  Наш уникальный подход сочетает в себе традиционные логопедические и современные нейропсихологические методики, обеспечивая комплексную коррекцию нарушений процессов чтения и письма.
+                </p>
+                <p>
+                  Мы понимаем, что каждый ребёнок уникален, поэтому разрабатываем персональные программы коррекции, учитывающие индивидуальные особенности и потребности.
+                </p>
+              </div>
+              
+              <div className="mt-8 flex space-x-4">
+                <Button size="lg" className="bg-green-500 hover:bg-green-600">
+                  Узнать больше
+                </Button>
+                <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
+                  Наши методы
+                </Button>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <img 
+                src="https://cdn.poehali.dev/files/2e76ff38-759a-4d5c-8e01-21bdfd8bb70f.JPG" 
+                alt="Преподаватель с детьми"
+                className="w-full h-auto rounded-2xl shadow-2xl"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Specialists Section */}
+      <section id="specialists" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Наши специалисты</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Команда профессионалов с многолетним опытом работы
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {specialists.map((specialist, index) => (
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center">
+                <CardContent className="p-6">
+                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
+                    <img 
+                      src={specialist.avatar} 
+                      alt={specialist.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
+                  <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{specialist.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+      <section id="pricing" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Стоимость занятий</h2>
@@ -404,101 +500,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Наши услуги</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Комплексный подход к коррекции дислексии и дисграфии
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service, index) => (
-              <Card key={index} className="bg-white border-green-100 hover:shadow-lg transition-all duration-300 hover:scale-105 p-6 text-center">
-                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Icon name={service.icon as any} size={24} className="text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">{service.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{service.description}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">О LineaSchool</h2>
-              <div className="space-y-4 text-lg text-gray-700">
-                <p>
-                  LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией.
-                </p>
-                <p>
-                  Наш уникальный подход сочетает в себе традиционные логопедические и современные нейропсихологические методики, обеспечивая комплексную коррекцию нарушений процессов чтения и письма.
-                </p>
-                <p>
-                  Мы понимаем, что каждый ребёнок уникален, поэтому разрабатываем персональные программы коррекции, учитывающие индивидуальные особенности и потребности.
-                </p>
-              </div>
-              
-              <div className="mt-8 flex space-x-4">
-                <Button size="lg" className="bg-green-500 hover:bg-green-600">
-                  Узнать больше
-                </Button>
-                <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
-                  Наши методы
-                </Button>
-              </div>
-            </div>
-            
-            <div className="relative">
-              <img 
-                src="https://cdn.poehali.dev/files/2e76ff38-759a-4d5c-8e01-21bdfd8bb70f.JPG" 
-                alt="Преподаватель с детьми"
-                className="w-full h-auto rounded-2xl shadow-2xl"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Specialists Section */}
-      <section id="specialists" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Наши специалисты</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Команда профессионалов с многолетним опытом работы
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {specialists.map((specialist, index) => (
-              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center">
-                <CardContent className="p-6">
-                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
-                    <img 
-                      src={specialist.avatar} 
-                      alt={specialist.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
-                  <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{specialist.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
+      {/* FAQ Section */
       <section id="faq" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -524,7 +526,7 @@ export default function Index() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Отзывы родителей</h2>
