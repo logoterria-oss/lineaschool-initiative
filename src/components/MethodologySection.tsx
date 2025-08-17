@@ -123,7 +123,7 @@ export default function MethodologySection() {
                 </p>
                 <div className="flex items-center text-sm text-orange-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
-                  Височная доля
+                  Височные доли
                 </div>
               </div>
 
