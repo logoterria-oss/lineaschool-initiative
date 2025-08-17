@@ -142,7 +142,7 @@ export default function MethodologySection() {
             {/* Правая колонка - большая схема мозга */}
             <div className="bg-gray-50 rounded-2xl p-8">
               <h4 className="text-lg font-bold text-center mb-6">Карта активности мозга</h4>
-              <div className="h-80">
+              <div className="h-96">
                 <BrainSVG activeAreas={['frontal', 'parietal', 'temporal', 'occipital', 'motor']} />
               </div>
               
