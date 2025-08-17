@@ -88,33 +88,7 @@ export default function MethodologySection() {
     </div>
   );
 
-  const WeekSchedule = () => (
-    <div className="bg-white rounded-2xl p-8 shadow-lg">
-      <h3 className="text-xl font-bold text-center mb-6">Расписание на неделю</h3>
-      <div className="grid grid-cols-7 gap-2 mb-4">
-        {['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'].map((day, index) => (
-          <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
-            {day}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-2">
-        {[
-          { type: 'group', label: 'Группа', color: 'bg-blue-500' },
-          { type: 'individual-neuro', label: 'Нейро', color: 'bg-purple-500' },
-          { type: 'group', label: 'Группа', color: 'bg-blue-500' },
-          { type: 'individual-speech', label: 'Лого', color: 'bg-green-500' },
-          { type: 'rest', label: '', color: 'bg-gray-100' },
-          { type: 'rest', label: '', color: 'bg-gray-100' },
-          { type: 'rest', label: '', color: 'bg-gray-100' }
-        ].map((session, index) => (
-          <div key={index} className={`${session.color} rounded-lg p-3 text-center`}>
-            <div className="text-white text-xs font-medium">{session.label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+
 
   return (
     <section className="py-20 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
@@ -126,11 +100,6 @@ export default function MethodologySection() {
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Научно обоснованный подход к коррекции дислексии и дисграфии
           </p>
-        </div>
-
-        {/* Расписание */}
-        <div className="mb-16 max-w-2xl mx-auto">
-          <WeekSchedule />
         </div>
 
         {/* Основные типы занятий */}
