@@ -3,58 +3,85 @@ import Icon from "@/components/ui/icon";
 
 export default function MethodologySection() {
   const BrainSVG = ({ activeAreas, className = "" }: { activeAreas: string[], className?: string }) => (
-    <svg className={`w-full h-full ${className}`} viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Основа мозга */}
+    <svg className={`w-full h-full ${className}`} viewBox="0 0 280 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Контур головы */}
+      <ellipse cx="140" cy="100" rx="120" ry="85" fill="#F8F9FA" stroke="#E9ECEF" strokeWidth="2"/>
+      
+      {/* Контур мозга */}
       <path
-        d="M50 80C50 60 65 40 90 35C110 30 130 35 150 45C170 55 180 75 175 95C170 115 155 130 135 135C115 140 95 135 75 125C55 115 50 100 50 80Z"
-        fill={activeAreas.includes('base') ? '#3B82F6' : '#E5E7EB'}
+        d="M40 100C40 60 70 30 120 25C140 23 160 25 180 30C220 40 240 70 235 100C230 130 200 160 160 165C120 170 80 150 50 120C40 115 40 100 40 100Z"
+        fill="#F1F3F4"
+        stroke="#DEE2E6"
+        strokeWidth="2"
         className="transition-colors duration-300"
       />
       
       {/* Лобная доля */}
       <path
-        d="M55 70C55 55 70 45 85 45C100 45 110 55 110 70C110 85 95 95 80 95C65 95 55 85 55 70Z"
-        fill={activeAreas.includes('frontal') ? '#10B981' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M50 90C50 65 70 45 100 40C125 38 145 45 155 65C160 75 155 90 145 100C135 110 120 115 100 115C80 115 60 105 50 90Z"
+        fill={activeAreas.includes('frontal') ? '#10B981' : '#E8F5E8'}
+        stroke="#10B981"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
       {/* Теменная доля */}
       <path
-        d="M110 60C110 50 120 40 135 40C150 40 160 50 160 60C160 70 150 80 135 80C120 80 110 70 110 60Z"
-        fill={activeAreas.includes('parietal') ? '#8B5CF6' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M155 65C155 50 170 40 190 42C210 44 225 55 230 75C235 95 225 110 210 120C195 130 180 125 170 110C160 95 155 80 155 65Z"
+        fill={activeAreas.includes('parietal') ? '#8B5CF6' : '#F3E8FF'}
+        stroke="#8B5CF6"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
       {/* Височная доля */}
       <path
-        d="M80 100C80 90 90 85 105 85C120 85 130 90 130 100C130 110 120 115 105 115C90 115 80 110 80 100Z"
-        fill={activeAreas.includes('temporal') ? '#F59E0B' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M80 115C80 100 95 90 115 92C135 94 150 105 155 125C160 145 150 160 130 165C110 170 95 160 85 145C80 135 80 125 80 115Z"
+        fill={activeAreas.includes('temporal') ? '#F59E0B' : '#FEF3C7'}
+        stroke="#F59E0B"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
       {/* Затылочная доля */}
       <path
-        d="M140 90C140 80 150 75 165 75C180 75 185 80 185 90C185 100 180 105 165 105C150 105 140 100 140 90Z"
-        fill={activeAreas.includes('occipital') ? '#EF4444' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M170 110C170 95 185 85 205 87C225 89 240 100 235 120C230 140 215 150 195 152C175 154 165 140 165 125C165 118 170 110 170 110Z"
+        fill={activeAreas.includes('occipital') ? '#EF4444' : '#FEE2E2'}
+        stroke="#EF4444"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
-      {/* Моторная кора */}
+      {/* Моторная кора (полоска в теменной области) */}
       <path
-        d="M90 50C90 45 95 40 105 40C115 40 120 45 120 50C120 55 115 60 105 60C95 60 90 55 90 50Z"
-        fill={activeAreas.includes('motor') ? '#06B6D4' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M140 50C140 45 150 42 165 43C180 44 190 47 195 52C200 57 195 62 180 63C165 64 150 61 145 56C140 55 140 50 140 50Z"
+        fill={activeAreas.includes('motor') ? '#06B6D4' : '#E0F7FA'}
+        stroke="#06B6D4"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
+      
+      {/* Подписи к отделам */}
+      <text x="90" y="75" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">Лобная</text>
+      <text x="90" y="85" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">доля</text>
+      
+      <text x="195" y="80" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">Теменная</text>
+      <text x="195" y="90" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">доля</text>
+      
+      <text x="120" y="145" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">Височная</text>
+      <text x="120" y="155" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">доля</text>
+      
+      <text x="205" y="135" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">Затылочная</text>
+      <text x="205" y="145" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">доля</text>
+      
+      <text x="170" y="40" fontSize="10" fill="#374151" textAnchor="middle" fontWeight="500">Моторная кора</text>
+      
+      {/* Соединительные линии */}
+      <line x1="90" y1="90" x2="110" y2="80" stroke="#9CA3AF" strokeWidth="1" strokeDasharray="2,2"/>
+      <line x1="195" y1="95" x2="180" y2="85" stroke="#9CA3AF" strokeWidth="1" strokeDasharray="2,2"/>
+      <line x1="120" y1="140" x2="125" y2="125" stroke="#9CA3AF" strokeWidth="1" strokeDasharray="2,2"/>
+      <line x1="205" y1="130" x2="195" y2="125" stroke="#9CA3AF" strokeWidth="1" strokeDasharray="2,2"/>
+      <line x1="170" y1="45" x2="165" y2="55" stroke="#9CA3AF" strokeWidth="1" strokeDasharray="2,2"/>
     </svg>
   );
 
