@@ -112,7 +112,7 @@ export default function MethodologySection() {
                 </p>
                 <div className="flex items-center text-sm text-cyan-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
-                  Моторная кора, теменная доля
+                  Моторная область
                 </div>
               </div>
 
