@@ -61,8 +61,8 @@ export default function HeroSection() {
                   afterAlt: "Чтение после коррекции"
                 },
                 {
-                  beforeImage: "https://cdn.poehali.dev/files/c64fbf92-77f6-4b7b-a3df-209a755afc79.jpg",
-                  afterImage: "https://cdn.poehali.dev/files/929edf14-3ea9-4c2a-8228-a1d7807aa081.jpg",
+                  beforeImage: "https://cdn.poehali.dev/files/929edf14-3ea9-4c2a-8228-a1d7807aa081.jpg",
+                  afterImage: "https://cdn.poehali.dev/files/c64fbf92-77f6-4b7b-a3df-209a755afc79.jpg",
                   beforeAlt: "Почерк до коррекции дисграфии",
                   afterAlt: "Почерк после коррекции дисграфии"
                 },
