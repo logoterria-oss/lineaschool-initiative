@@ -162,7 +162,7 @@ export default function MethodologySection() {
                   Лобная доля
                 </div>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>
+                  <div className="w-3 h-3 bg-yellow-400 rounded mr-2"></div>
                   Теменная доля
                 </div>
                 <div className="flex items-center">
