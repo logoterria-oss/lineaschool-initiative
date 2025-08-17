@@ -177,7 +177,7 @@ export default function MethodologySection() {
         <div className="text-center">
           <div className="inline-flex items-center space-x-4 bg-gradient-to-r from-green-500 to-blue-500 px-8 py-4 rounded-2xl text-white shadow-lg">
             <Icon name="Target" size={24} />
-            <span className="text-lg font-bold">4 занятия в неделю = Комплексное развитие всех областей мозга</span>
+            <span className="text-lg font-bold">4 занятия в неделю = комплексное развитие всех областей мозга</span>
             <Icon name="Brain" size={24} />
           </div>
         </div>
