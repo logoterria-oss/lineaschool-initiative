@@ -112,7 +112,7 @@ export default function MethodologySection() {
                 </p>
                 <div className="flex items-center text-sm text-cyan-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
-                  Моторная кора, теменная доля
+                  Моторная область
                 </div>
               </div>
 
@@ -134,7 +134,7 @@ export default function MethodologySection() {
                 </p>
                 <div className="flex items-center text-sm text-green-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
-                  Лобная и затылочная доли
+                  Лобная и височная доли
                 </div>
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function MethodologySection() {
                 </div>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-cyan-500 rounded mr-2"></div>
-                  Первичная моторная кора
+                  Моторная кора
                 </div>
               </div>
             </div>
