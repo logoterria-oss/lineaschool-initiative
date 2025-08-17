@@ -90,7 +90,7 @@ export default function MethodologySection() {
                 </p>
                 <div className="flex items-center text-sm text-purple-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
-                  Теменная и затылочная доли
+                  Лобные доли
                 </div>
               </div>
 
