@@ -123,9 +123,7 @@ export default function MethodologySection() {
 
               <div className="border-l-4 border-green-500 pl-6">
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Слоговый и языковой анализ</h4>
-                <p className="text-gray-600 mb-3">
-                  Анализ последовательности букв, слогов, слов и предложений, видеть их границы
-                </p>
+                <p className="text-gray-600 mb-3">Анализ последовательности букв, слогов, слов и предложений; умение видеть их границы</p>
                 <div className="flex items-center text-sm text-green-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Лобные, височные, теменные доли
