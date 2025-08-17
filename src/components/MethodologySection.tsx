@@ -128,7 +128,8 @@ export default function MethodologySection() {
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
                 <Icon name="Brain" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">Нейропсихолог (индивидуальные)</h3>
+              <h3 className="text-2xl font-bold mb-2">Нейропсихолог: индивидуальные
+занятия</h3>
               <div className="text-purple-100 font-semibold mb-4">1 раз в неделю</div>
               <div className="text-purple-50 leading-relaxed space-y-2">
                 <div>• Сукцессивное восприятие</div>
