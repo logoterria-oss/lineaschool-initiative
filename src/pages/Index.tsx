@@ -458,7 +458,7 @@ export default function Index() {
             
             <div className="relative">
               <img 
-                src="/img/48f49395-68a6-46e4-99d8-fc5d9338a979.jpg" 
+                src="https://cdn.poehali.dev/files/2e76ff38-759a-4d5c-8e01-21bdfd8bb70f.JPG" 
                 alt="Преподаватель с детьми"
                 className="w-full h-auto rounded-2xl shadow-2xl"
               />
