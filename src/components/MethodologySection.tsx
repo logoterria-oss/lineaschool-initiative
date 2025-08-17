@@ -8,6 +8,11 @@ export default function MethodologySection() {
         src="https://cdn.poehali.dev/files/ad7329c2-cb17-47cb-937a-0c559565286f.jpg" 
         alt="Анатомическая схема мозга" 
         className="w-full h-full object-contain"
+        style={{
+          background: 'transparent',
+          mixBlendMode: 'multiply',
+          filter: 'brightness(1.1) contrast(1.2)'
+        }}
       />
     </div>
   );
