@@ -88,10 +88,7 @@ export default function MethodologySection() {
                 <p className="text-gray-600 mb-3">
                   Последовательное восприятие - навык, необходимый для того, чтобы буквы и слоги не "путались" при письме и чтении
                 </p>
-                <div className="flex items-center text-sm text-purple-600">
-                  <Icon name="MapPin" size={16} className="mr-2" />
-                  Теменная и затылочная доли
-                </div>
+                <div className="flex items-center text-sm text-purple-600">Теменная и лобная доли</div>
               </div>
 
               <div className="border-l-4 border-blue-500 pl-6">
