@@ -3,58 +3,105 @@ import Icon from "@/components/ui/icon";
 
 export default function MethodologySection() {
   const BrainSVG = ({ activeAreas, className = "" }: { activeAreas: string[], className?: string }) => (
-    <svg className={`w-full h-full ${className}`} viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Основа мозга */}
+    <svg className={`w-full h-full ${className}`} viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Контур мозга в профиль */}
       <path
-        d="M50 80C50 60 65 40 90 35C110 30 130 35 150 45C170 55 180 75 175 95C170 115 155 130 135 135C115 140 95 135 75 125C55 115 50 100 50 80Z"
-        fill={activeAreas.includes('base') ? '#3B82F6' : '#E5E7EB'}
+        d="M40 120C40 100 50 80 70 65C90 50 120 45 150 50C180 55 200 65 220 75C240 85 260 95 280 105C285 110 280 120 275 130C270 140 260 150 245 155C230 160 210 165 185 165C160 165 140 160 120 150C100 140 80 130 65 125C50 120 40 120 40 120Z"
+        fill="#F8F9FA"
+        stroke="#9CA3AF"
+        strokeWidth="1"
+      />
+      
+      {/* Лобная доля - передняя часть */}
+      <path
+        d="M40 120C40 100 55 85 75 75C95 65 115 65 135 70C150 75 160 85 165 100C170 115 165 130 155 140C145 150 130 155 115 155C100 155 85 150 70 140C55 130 45 125 40 120Z"
+        fill={activeAreas.includes('frontal') ? '#4C82F4' : '#E3F2FD'}
+        stroke="#4C82F4"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
-      {/* Лобная доля */}
+      {/* Теменная доля - верхняя центральная часть */}
       <path
-        d="M55 70C55 55 70 45 85 45C100 45 110 55 110 70C110 85 95 95 80 95C65 95 55 85 55 70Z"
-        fill={activeAreas.includes('frontal') ? '#10B981' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M165 100C165 85 175 75 190 70C205 65 220 65 235 70C250 75 260 85 265 95C270 105 265 115 255 125C245 135 230 140 215 140C200 140 185 135 175 125C170 115 165 105 165 100Z"
+        fill={activeAreas.includes('parietal') ? '#F59E0B' : '#FFF7ED'}
+        stroke="#F59E0B"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
-      {/* Теменная доля */}
+      {/* Височная доля - боковая нижняя часть */}
       <path
-        d="M110 60C110 50 120 40 135 40C150 40 160 50 160 60C160 70 150 80 135 80C120 80 110 70 110 60Z"
-        fill={activeAreas.includes('parietal') ? '#8B5CF6' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M115 155C115 140 130 135 145 135C160 135 175 140 185 150C195 160 190 170 180 175C170 180 155 180 140 175C125 170 115 165 115 155Z"
+        fill={activeAreas.includes('temporal') ? '#E91E63' : '#FCE4EC'}
+        stroke="#E91E63"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
-      {/* Височная доля */}
+      {/* Затылочная доля - задняя часть */}
       <path
-        d="M80 100C80 90 90 85 105 85C120 85 130 90 130 100C130 110 120 115 105 115C90 115 80 110 80 100Z"
-        fill={activeAreas.includes('temporal') ? '#F59E0B' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M255 125C255 110 265 100 275 95C285 90 290 95 290 105C290 115 285 125 275 135C265 145 255 150 245 150C240 150 245 140 250 135C255 130 255 125 255 125Z"
+        fill={activeAreas.includes('occipital') ? '#4CAF50' : '#E8F5E9'}
+        stroke="#4CAF50"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
-      {/* Затылочная доля */}
+      {/* Моторная кора - полоска между лобной и теменной */}
       <path
-        d="M140 90C140 80 150 75 165 75C180 75 185 80 185 90C185 100 180 105 165 105C150 105 140 100 140 90Z"
-        fill={activeAreas.includes('occipital') ? '#EF4444' : '#F3F4F6'}
-        stroke="#9CA3AF"
-        strokeWidth="1"
+        d="M155 85C155 80 165 75 175 75C185 75 195 80 195 85C195 90 185 95 175 95C165 95 155 90 155 85Z"
+        fill={activeAreas.includes('motor') ? '#9C27B0' : '#F3E5F5'}
+        stroke="#9C27B0"
+        strokeWidth="1.5"
         className="transition-colors duration-300"
       />
       
-      {/* Моторная кора */}
-      <path
-        d="M90 50C90 45 95 40 105 40C115 40 120 45 120 50C120 55 115 60 105 60C95 60 90 55 90 50Z"
-        fill={activeAreas.includes('motor') ? '#06B6D4' : '#F3F4F6'}
-        stroke="#9CA3AF"
+      {/* Мозжечок - внизу сзади */}
+      <ellipse
+        cx="240"
+        cy="170"
+        rx="25"
+        ry="15"
+        fill="#FFB74D"
+        stroke="#FF9800"
         strokeWidth="1"
-        className="transition-colors duration-300"
       />
+      
+      {/* Ствол мозга */}
+      <rect
+        x="210"
+        y="150"
+        width="15"
+        height="25"
+        fill="#8D6E63"
+        stroke="#5D4037"
+        strokeWidth="1"
+        rx="3"
+      />
+      
+      {/* Борозды для реалистичности */}
+      <path d="M70 90C90 95 110 100 130 105" stroke="#9CA3AF" strokeWidth="0.5" fill="none"/>
+      <path d="M80 110C100 115 120 120 140 125" stroke="#9CA3AF" strokeWidth="0.5" fill="none"/>
+      <path d="M170 85C190 90 210 95 230 100" stroke="#9CA3AF" strokeWidth="0.5" fill="none"/>
+      <path d="M175 105C195 110 215 115 235 120" stroke="#9CA3AF" strokeWidth="0.5" fill="none"/>
+      
+      {/* Подписи */}
+      <text x="100" y="110" fontSize="9" fill="#1976D2" textAnchor="middle" fontWeight="600">FRONTAL</text>
+      <text x="100" y="120" fontSize="9" fill="#1976D2" textAnchor="middle" fontWeight="600">LOBE</text>
+      
+      <text x="215" y="95" fontSize="9" fill="#F57C00" textAnchor="middle" fontWeight="600">PARIETAL</text>
+      <text x="215" y="105" fontSize="9" fill="#F57C00" textAnchor="middle" fontWeight="600">LOBE</text>
+      
+      <text x="150" y="165" fontSize="9" fill="#C2185B" textAnchor="middle" fontWeight="600">TEMPORAL</text>
+      <text x="150" y="175" fontSize="9" fill="#C2185B" textAnchor="middle" fontWeight="600">LOBE</text>
+      
+      <text x="270" y="115" fontSize="9" fill="#388E3C" textAnchor="middle" fontWeight="600">OCCIPITAL</text>
+      <text x="270" y="125" fontSize="9" fill="#388E3C" textAnchor="middle" fontWeight="600">LOBE</text>
+      
+      <text x="175" y="70" fontSize="8" fill="#7B1FA2" textAnchor="middle" fontWeight="600">Motor cortex</text>
+      
+      <text x="240" y="190" fontSize="8" fill="#FF9800" textAnchor="middle" fontWeight="500">Мозжечок</text>
     </svg>
   );
 
