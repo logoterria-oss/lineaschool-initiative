@@ -16,11 +16,11 @@ export default function Index() {
     <div className="min-h-screen bg-white">
       <Navigation />
       <HeroSection />
+      <MethodologySection />
       <FeaturesSection />
       <ServicesSection />
       <AboutSection />
       <SpecialistsSection />
-      <MethodologySection />
       <PricingSection />
       <FAQSection />
       <TestimonialsSection />
