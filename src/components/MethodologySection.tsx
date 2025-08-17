@@ -85,9 +85,7 @@ export default function MethodologySection() {
             <div className="space-y-8">
               <div className="border-l-4 border-purple-500 pl-6">
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Сукцессивное восприятие</h4>
-                <p className="text-gray-600 mb-3">
-                  Последовательное восприятие - навык, необходимый для того, чтобы буквы и слоги не "путались" при письме и чтении
-                </p>
+                <p className="text-gray-600 mb-3">Последовательное восприятие, котогое необходимо для того, чтобы буквы и слоги не "путались" при письме и чтении</p>
                 <div className="flex items-center text-sm text-purple-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Лобные доли
