@@ -32,8 +32,8 @@ export default function MethodologySection() {
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
                 <Icon name="MessageCircle" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-6 h-16 flex items-center">Логопед: индивидуальные занятия</h3>
-              <div className="text-green-100 font-semibold mb-8">1 раз в неделю</div>
+              <h3 className="text-2xl font-bold mb-2 h-16 flex items-center">Логопед: индивидуальные занятия</h3>
+              <div className="text-green-100 font-semibold mb-4">1 раз в неделю</div>
               <div className="text-green-50 leading-relaxed space-y-2">
                 <div>• Фонематические процессы</div>
                 <div>• Слоговый анализ</div>
@@ -48,8 +48,8 @@ export default function MethodologySection() {
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
                 <Icon name="Brain" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-6 h-16 flex items-center">Нейропсихолог: индивидуальные занятия</h3>
-              <div className="text-purple-100 font-semibold mb-8">1 раз в неделю</div>
+              <h3 className="text-2xl font-bold mb-2 h-16 flex items-center">Нейропсихолог: индивидуальные занятия</h3>
+              <div className="text-purple-100 font-semibold mb-4">1 раз в неделю</div>
               <div className="text-purple-50 leading-relaxed space-y-2">
                 <div>• Сукцессивное восприятие</div>
                 <div>• Симультанное восприятие</div>
@@ -64,8 +64,8 @@ export default function MethodologySection() {
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
                 <Icon name="Users" size={32} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-6 h-16 flex items-center">Групповые занятия</h3>
-              <div className="text-blue-100 font-semibold mb-8">2 раза в неделю</div>
+              <h3 className="text-2xl font-bold mb-2 h-16 flex items-center">Групповые занятия</h3>
+              <div className="text-blue-100 font-semibold mb-4">2 раза в неделю</div>
               <p className="text-blue-50 leading-relaxed">
                 Отрабатываем новые умения на практике и превращаем их в навыки
               </p>
