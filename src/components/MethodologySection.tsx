@@ -166,7 +166,7 @@ export default function MethodologySection() {
                 </div>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-cyan-500 rounded mr-2"></div>
-                  Моторная кора
+                  Первичная моторная кора
                 </div>
               </div>
             </div>
