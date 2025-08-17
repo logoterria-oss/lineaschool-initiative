@@ -5,7 +5,7 @@ export default function MethodologySection() {
   const BrainSVG = ({ activeAreas, className = "" }: { activeAreas: string[], className?: string }) => (
     <div className={`relative w-full h-full ${className}`}>
       <img 
-        src="./img/a11daa0a-5da7-43c0-a6f4-75b9dd90c31a.jpg" 
+        src="https://cdn.poehali.dev/files/ad7329c2-cb17-47cb-937a-0c559565286f.jpg" 
         alt="Анатомическая схема мозга" 
         className="w-full h-full object-contain"
       />
@@ -153,15 +153,15 @@ export default function MethodologySection() {
               {/* Легенда */}
               <div className="mt-6 grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-pink-300 rounded mr-2"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
                   Лобная доля
                 </div>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-yellow-400 rounded mr-2"></div>
+                  <div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>
                   Теменная доля
                 </div>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
+                  <div className="w-3 h-3 bg-orange-500 rounded mr-2"></div>
                   Височная доля
                 </div>
                 <div className="flex items-center">
