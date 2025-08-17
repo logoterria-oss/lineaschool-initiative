@@ -114,9 +114,7 @@ export default function MethodologySection() {
 
               <div className="border-l-4 border-orange-500 pl-6">
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Фонематические процессы</h4>
-                <p className="text-gray-600 mb-3">
-                  Умение слышать, различать и анализировать звуки речи
-                </p>
+                <p className="text-gray-600 mb-3">Умение слышать, различать и анализировать звуки речи для последующей кодировки/декодировки букв</p>
                 <div className="flex items-center text-sm text-orange-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Височные доли
