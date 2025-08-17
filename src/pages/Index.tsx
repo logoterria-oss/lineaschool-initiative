@@ -4,7 +4,6 @@ import FeaturesSection from "@/components/FeaturesSection";
 import ServicesSection from "@/components/ServicesSection";
 import AboutSection from "@/components/AboutSection";
 import SpecialistsSection from "@/components/SpecialistsSection";
-import MethodologySection from "@/components/MethodologySection";
 import PricingSection from "@/components/PricingSection";
 import FAQSection from "@/components/FAQSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
@@ -20,7 +19,6 @@ export default function Index() {
       <ServicesSection />
       <AboutSection />
       <SpecialistsSection />
-      <MethodologySection />
       <PricingSection />
       <FAQSection />
       <TestimonialsSection />
