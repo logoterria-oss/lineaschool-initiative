@@ -94,9 +94,7 @@ export default function MethodologySection() {
 
               <div className="border-l-4 border-blue-500 pl-6">
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Симультанное восприятие</h4>
-                <p className="text-gray-600 mb-3">
-                  Целостное восприятие - навык, необходимый для беглого чтения не по слогам, а целыми словами и фразами
-                </p>
+                <p className="text-gray-600 mb-3">Целостное восприятие, которое необходимо для беглого чтения не по слогам, а целыми словами и фразами</p>
                 <div className="flex items-center text-sm text-blue-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Теменные доли
