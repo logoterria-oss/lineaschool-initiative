@@ -4,7 +4,7 @@ import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 
 export default function HeroSection() {
   return (
-    <section className="relative py-8 lg:py-12 bg-gradient-to-br from-green-50 to-emerald-50 overflow-hidden">
+    <section className="relative py-8 lg:py-12 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
