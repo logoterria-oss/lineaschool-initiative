@@ -147,7 +147,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
           <img 
             src={currentData.beforeImage} 
             alt={currentData.beforeAlt}
-            className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : currentExample === 1 ? 'object-[center_20%]' : 'object-top'}`}
+            className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : 'object-top'}`}
             draggable={false}
           />
           <div 
@@ -157,7 +157,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
             <img 
               src={currentData.afterImage} 
               alt={currentData.afterAlt}
-              className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : currentExample === 1 ? 'object-[center_20%]' : 'object-top'}`}
+              className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : 'object-top'}`}
               draggable={false}
             />
           </div>
