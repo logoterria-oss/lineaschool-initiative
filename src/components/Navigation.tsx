@@ -13,7 +13,8 @@ export default function Navigation() {
             <span className="text-4xl font-bold text-green-600">LineaSchool</span>
           </div>
           <div className="hidden md:flex items-center space-x-6">
-            <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4">Задать вопрос</Button>
+            <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4">Задать вопрос</Button>
+            <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4">Записаться</Button>
           </div>
         </div>
       </div>
