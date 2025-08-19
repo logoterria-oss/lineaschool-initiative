@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
+import BookingModal from "@/components/BookingModal";
 
 export default function Navigation() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
   return (
+    <>
     <nav className="bg-white shadow-sm border-b border-green-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex justify-between items-center h-24">
@@ -14,10 +19,22 @@ export default function Navigation() {
           </div>
           <div className="hidden md:flex items-center space-x-6">
             <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4">Задать вопрос</Button>
-            <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4">Записаться</Button>
+            <Button 
+              size="lg" 
+              className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4"
+              onClick={() => setIsBookingModalOpen(true)}
+            >
+              Записаться
+            </Button>
           </div>
         </div>
       </div>
+
+      <BookingModal 
+        isOpen={isBookingModalOpen} 
+        onClose={() => setIsBookingModalOpen(false)} 
+      />
     </nav>
+    </>
   );
 }
