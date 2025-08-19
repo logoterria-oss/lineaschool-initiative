@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Icon from "@/components/ui/icon";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -31,12 +32,14 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     date: "",
     time: "",
   });
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Здесь будет логика отправки формы
     console.log("Форма отправлена:", formData);
     onClose();
+    setIsConfirmationOpen(true);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -128,6 +131,11 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           </div>
         </form>
       </DialogContent>
+      
+      <ConfirmationModal 
+        isOpen={isConfirmationOpen} 
+        onClose={() => setIsConfirmationOpen(false)} 
+      />
     </Dialog>
   );
 }
