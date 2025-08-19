@@ -26,13 +26,10 @@ interface BookingModalProps {
 
 export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [formData, setFormData] = useState({
-    childName: "",
-    childAge: "",
-    parentName: "",
+    name: "",
     phone: "",
-    email: "",
-    serviceType: "",
-    message: "",
+    date: "",
+    time: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -61,52 +58,13 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <Label htmlFor="childName" className="text-sm font-medium text-gray-700">
-                Имя ребёнка *
+              <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                Как вас зовут? *
               </Label>
               <Input
-                id="childName"
-                value={formData.childName}
-                onChange={(e) => handleInputChange("childName", e.target.value)}
-                placeholder="Введите имя ребёнка"
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="childAge" className="text-sm font-medium text-gray-700">
-                Возраст ребёнка *
-              </Label>
-              <Select onValueChange={(value) => handleInputChange("childAge", value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Выберите возраст" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">7 лет</SelectItem>
-                  <SelectItem value="8">8 лет</SelectItem>
-                  <SelectItem value="9">9 лет</SelectItem>
-                  <SelectItem value="10">10 лет</SelectItem>
-                  <SelectItem value="11">11 лет</SelectItem>
-                  <SelectItem value="12">12 лет</SelectItem>
-                  <SelectItem value="13">13 лет</SelectItem>
-                  <SelectItem value="14">14 лет</SelectItem>
-                  <SelectItem value="15">15 лет</SelectItem>
-                  <SelectItem value="16">16 лет</SelectItem>
-                  <SelectItem value="17">17 лет</SelectItem>
-                  <SelectItem value="18">18 лет</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="parentName" className="text-sm font-medium text-gray-700">
-                Имя родителя *
-              </Label>
-              <Input
-                id="parentName"
-                value={formData.parentName}
-                onChange={(e) => handleInputChange("parentName", e.target.value)}
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Ваше имя"
                 required
                 className="mt-1"
@@ -114,8 +72,11 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
             </div>
 
             <div>
+              <div className="text-sm text-gray-600 mb-3 p-3 bg-green-50 rounded-lg">
+                Мы бережно относимся к вашей приватности: номер телефона нужен только для отправки ссылки на диагностику и важной информации о записи 🙏🏻
+              </div>
               <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
-                Телефон *
+                Номер телефона *
               </Label>
               <Input
                 id="phone"
@@ -129,47 +90,41 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email
+              <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                Желаемая дата *
               </Label>
               <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="your@email.com"
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange("date", e.target.value)}
+                required
                 className="mt-1"
               />
             </div>
 
             <div>
-              <Label htmlFor="serviceType" className="text-sm font-medium text-gray-700">
-                Интересующая услуга
+              <Label htmlFor="time" className="text-sm font-medium text-gray-700">
+                Желаемое время *
               </Label>
-              <Select onValueChange={(value) => handleInputChange("serviceType", value)}>
+              <Select onValueChange={(value) => handleInputChange("time", value)}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Выберите услугу" />
+                  <SelectValue placeholder="Выберите время" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="diagnosis">Диагностика</SelectItem>
-                  <SelectItem value="individual">Индивидуальные занятия</SelectItem>
-                  <SelectItem value="group">Групповые занятия</SelectItem>
-                  <SelectItem value="consultation">Консультация</SelectItem>
+                  <SelectItem value="09:00">09:00</SelectItem>
+                  <SelectItem value="10:00">10:00</SelectItem>
+                  <SelectItem value="11:00">11:00</SelectItem>
+                  <SelectItem value="12:00">12:00</SelectItem>
+                  <SelectItem value="13:00">13:00</SelectItem>
+                  <SelectItem value="14:00">14:00</SelectItem>
+                  <SelectItem value="15:00">15:00</SelectItem>
+                  <SelectItem value="16:00">16:00</SelectItem>
+                  <SelectItem value="17:00">17:00</SelectItem>
+                  <SelectItem value="18:00">18:00</SelectItem>
+                  <SelectItem value="19:00">19:00</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="message" className="text-sm font-medium text-gray-700">
-                Дополнительная информация
-              </Label>
-              <Textarea
-                id="message"
-                value={formData.message}
-                onChange={(e) => handleInputChange("message", e.target.value)}
-                placeholder="Расскажите о трудностях ребёнка или задайте вопрос"
-                className="mt-1 min-h-[80px]"
-              />
             </div>
           </div>
 
@@ -179,7 +134,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3"
             >
               <Icon name="Calendar" size={20} className="mr-2" />
-              Записаться на диагностику
+              Записаться
             </Button>
             
             <div className="text-xs text-gray-500 text-center">
