@@ -143,11 +143,11 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
         onMouseMove={handleMouseMove}
         onTouchMove={handleTouchMove}
       >
-        <div className="relative">
+        <div className="relative aspect-[5/4]">
           <img 
             src={currentData.beforeImage} 
             alt={currentData.beforeAlt}
-            className="w-full h-auto block"
+            className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : 'object-top'}`}
             draggable={false}
           />
           <div 
@@ -157,7 +157,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
             <img 
               src={currentData.afterImage} 
               alt={currentData.afterAlt}
-              className="w-full h-auto block"
+              className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : 'object-top'}`}
               draggable={false}
             />
           </div>
