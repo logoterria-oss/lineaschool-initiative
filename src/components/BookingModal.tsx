@@ -91,40 +91,25 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
             <div>
               <Label htmlFor="date" className="text-sm font-medium text-gray-700">
-                Желаемая дата *
+                Желаемые дата и время *
               </Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleInputChange("date", e.target.value)}
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="time" className="text-sm font-medium text-gray-700">
-                Желаемое время *
-              </Label>
-              <Select onValueChange={(value) => handleInputChange("time", value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Выберите время" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="09:00">09:00</SelectItem>
-                  <SelectItem value="10:00">10:00</SelectItem>
-                  <SelectItem value="11:00">11:00</SelectItem>
-                  <SelectItem value="12:00">12:00</SelectItem>
-                  <SelectItem value="13:00">13:00</SelectItem>
-                  <SelectItem value="14:00">14:00</SelectItem>
-                  <SelectItem value="15:00">15:00</SelectItem>
-                  <SelectItem value="16:00">16:00</SelectItem>
-                  <SelectItem value="17:00">17:00</SelectItem>
-                  <SelectItem value="18:00">18:00</SelectItem>
-                  <SelectItem value="19:00">19:00</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <Input
+                  id="date"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange("date", e.target.value)}
+                  required
+                />
+                <Input
+                  id="time"
+                  type="time"
+                  value={formData.time}
+                  onChange={(e) => handleInputChange("time", e.target.value)}
+                  placeholder="__:__"
+                  required
+                />
+              </div>
             </div>
           </div>
 
