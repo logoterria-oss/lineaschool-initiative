@@ -157,7 +157,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
             <img 
               src={currentData.afterImage} 
               alt={currentData.afterAlt}
-              className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-bottom' : 'object-top'}`}
+              className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : 'object-top'}`}
               draggable={false}
             />
           </div>
