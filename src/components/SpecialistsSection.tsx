@@ -105,25 +105,27 @@ export default function SpecialistsSection() {
           <div
             ref={scrollContainerRef}
             onScroll={checkScrollPosition}
-            className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
+            className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-2"
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
             }}
           >
             {specialists.map((specialist, index) => (
-              <Card key={index} className="border-green-100 min-w-[280px] snap-start flex-shrink-0 text-center">
+              <Card key={index} className="border-green-100 w-[calc(100vw-3rem)] max-w-[320px] snap-start flex-shrink-0 text-center">
                 <CardContent className="p-6">
-                  <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
+                  <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
                     <img 
                       src={specialist.avatar} 
                       alt={specialist.name}
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-800 mb-2">{specialist.name}</h3>
-                  <p className="text-green-600 font-medium mb-3 text-sm">{specialist.role}</p>
-                  <p className="text-gray-600 text-xs leading-relaxed">{specialist.description}</p>
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-800">{specialist.name}</h3>
+                    <p className="text-green-600 font-medium text-base">{specialist.role}</p>
+                    <p className="text-gray-600 text-sm leading-relaxed px-2">{specialist.description}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}
