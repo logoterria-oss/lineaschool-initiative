@@ -42,7 +42,8 @@ export default function WhyNotTeacherSection() {
           </p>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/50 overflow-hidden">
+        {/* Desktop Table */}
+        <div className="hidden md:block bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/50 overflow-hidden">
           {/* Header */}
           <div className="grid grid-cols-12 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
             <div className="col-span-4 p-6">
@@ -54,9 +55,7 @@ export default function WhyNotTeacherSection() {
                   <Icon name="GraduationCap" size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-red-700">Учитель русского
-языка</h3>
-
+                  <h3 className="text-xl font-bold text-red-700">Учитель русского языка</h3>
                 </div>
               </div>
             </div>
@@ -66,9 +65,7 @@ export default function WhyNotTeacherSection() {
                   <Icon name="Brain" size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-green-700">Логопед-
-нейропсихолог</h3>
-
+                  <h3 className="text-xl font-bold text-green-700">Логопед-нейропсихолог</h3>
                 </div>
               </div>
             </div>
@@ -102,6 +99,56 @@ export default function WhyNotTeacherSection() {
                     <Icon name="Check" size={14} className="text-green-500" />
                   </div>
                   <p className="text-gray-700 leading-relaxed">{comparison.specialist}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-6">
+          {comparisons.map((comparison, index) => (
+            <div key={index} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b">
+                <h3 className="text-lg font-bold text-gray-800 text-center">{comparison.category}</h3>
+              </div>
+              
+              {/* Teacher Card */}
+              <div className="p-5 bg-red-50/50 border-b">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Icon name="GraduationCap" size={20} className="text-white" />
+                  </div>
+                  <h4 className="text-base font-bold text-red-700">Учитель русского языка</h4>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon name="X" size={12} className="text-red-500" />
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{comparison.teacher}</p>
+                </div>
+              </div>
+              
+              {/* VS Divider */}
+              <div className="flex justify-center py-3 bg-gray-100">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Icon name="ArrowDown" size={16} className="text-white" />
+                </div>
+              </div>
+              
+              {/* Specialist Card */}
+              <div className="p-5 bg-green-50/50">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Icon name="Brain" size={20} className="text-white" />
+                  </div>
+                  <h4 className="text-base font-bold text-green-700">Логопед-нейропсихолог</h4>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon name="Check" size={12} className="text-green-500" />
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{comparison.specialist}</p>
                 </div>
               </div>
             </div>
