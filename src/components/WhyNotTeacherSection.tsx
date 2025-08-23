@@ -67,7 +67,7 @@ export default function WhyNotTeacherSection() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-green-700">Наш специалист</h3>
-                  <p className="text-sm text-green-600">Нейропсихологический подход</p>
+
                 </div>
               </div>
             </div>
