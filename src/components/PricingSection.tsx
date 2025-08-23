@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Icon from "@/components/ui/icon";
+import BookingModal from "@/components/BookingModal";
 
 const pricingPlans = [
   {
@@ -63,7 +65,10 @@ const pricingPlans = [
 ];
 
 export default function PricingSection() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
   return (
+    <>
     <section id="pricing" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
@@ -125,6 +130,7 @@ export default function PricingSection() {
                 <Button 
                   className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
                   size="lg"
+                  onClick={() => setIsBookingModalOpen(true)}
                 >
                   Выбрать тариф
                 </Button>
@@ -218,12 +224,22 @@ export default function PricingSection() {
           <p className="text-gray-600 mb-4">
             Не знаете, какой тариф выбрать? Запишитесь на бесплатную консультацию
           </p>
-          <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
+          <Button 
+            variant="outline" 
+            className="border-green-500 text-green-600 hover:bg-green-50"
+            onClick={() => setIsBookingModalOpen(true)}
+          >
             <Icon name="MessageCircle" className="mr-2" size={20} />
             Получить консультацию
           </Button>
         </div>
       </div>
     </section>
+
+    <BookingModal 
+      isOpen={isBookingModalOpen} 
+      onClose={() => setIsBookingModalOpen(false)} 
+    />
+    </>
   );
 }
