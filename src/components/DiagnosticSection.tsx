@@ -36,9 +36,7 @@ export default function DiagnosticSection() {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Что будет на бесплатной диагностике?
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            60-минутная онлайн-консультация для точного выявления особенностей развития вашего ребёнка
-          </p>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">40-минутная онлайн-консультация для точного выявления особенностей развития вашего ребёнка</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
