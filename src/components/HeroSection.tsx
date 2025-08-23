@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+import BookingModal from "@/components/BookingModal";
 
 export default function HeroSection() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   return (
     <section className="relative py-8 lg:py-12 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,7 +22,11 @@ export default function HeroSection() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Button size="lg" className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4">
+              <Button 
+                size="lg" 
+                className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4"
+                onClick={() => setIsBookingModalOpen(true)}
+              >
                 <Icon name="Calendar" className="mr-2" size={20} />
                 Бесплатная диагностика
               </Button>
@@ -77,6 +84,11 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
+      
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+      />
     </section>
   );
 }
