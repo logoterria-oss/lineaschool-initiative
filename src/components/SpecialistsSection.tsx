@@ -121,9 +121,11 @@ export default function SpecialistsSection() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-800 mb-2">{specialist.name}</h3>
-                  <p className="text-green-600 font-medium mb-3 text-sm">{specialist.role}</p>
-                  <p className="text-gray-600 text-xs leading-relaxed">{specialist.description}</p>
+                  <div className="space-y-2">
+                    <h3 className="text-base font-semibold text-gray-800">{specialist.name}</h3>
+                    <p className="text-green-600 font-medium text-sm">{specialist.role}</p>
+                    <p className="text-gray-600 text-xs leading-tight">{specialist.description}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}
