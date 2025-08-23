@@ -140,6 +140,87 @@ export default function PricingSection() {
           ))}
         </div>
         
+        {/* Payment Options */}
+        <div className="mt-16 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Удобные способы оплаты</h3>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Оплачивайте обучение удобным способом — полностью или частями без переплат
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white rounded-xl p-6 shadow-md">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                  <Icon name="CreditCard" size={24} className="text-blue-600" />
+                </div>
+                <h4 className="text-xl font-semibold text-gray-800">Рассрочка от банков-партнеров</h4>
+              </div>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center text-gray-700">
+                  <Icon name="Check" size={16} className="text-green-500 mr-3 flex-shrink-0" />
+                  <span>До 12 месяцев без процентов</span>
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <Icon name="Check" size={16} className="text-green-500 mr-3 flex-shrink-0" />
+                  <span>Одобрение за 1 минуту</span>
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <Icon name="Check" size={16} className="text-green-500 mr-3 flex-shrink-0" />
+                  <span>Минимум документов</span>
+                </li>
+              </ul>
+              <div className="flex items-center justify-center space-x-4">
+                <div className="text-sm text-gray-500">Партнеры:</div>
+                <div className="flex space-x-2">
+                  <div className="px-3 py-1 bg-gray-100 rounded text-xs font-medium text-gray-600">Тинькофф</div>
+                  <div className="px-3 py-1 bg-gray-100 rounded text-xs font-medium text-gray-600">Сбербанк</div>
+                  <div className="px-3 py-1 bg-gray-100 rounded text-xs font-medium text-gray-600">ВТБ</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-md">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mr-4">
+                  <Icon name="Wallet" size={24} className="text-purple-600" />
+                </div>
+                <h4 className="text-xl font-semibold text-gray-800">Оплата Долями</h4>
+              </div>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center text-gray-700">
+                  <Icon name="Check" size={16} className="text-green-500 mr-3 flex-shrink-0" />
+                  <span>Разделите платеж на 4 части</span>
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <Icon name="Check" size={16} className="text-green-500 mr-3 flex-shrink-0" />
+                  <span>Никаких процентов и переплат</span>
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <Icon name="Check" size={16} className="text-green-500 mr-3 flex-shrink-0" />
+                  <span>Моментальное одобрение</span>
+                </li>
+              </ul>
+              <div className="text-center">
+                <div className="inline-flex items-center bg-purple-50 px-4 py-2 rounded-lg">
+                  <span className="text-sm font-medium text-purple-700">Оплачивайте частями без лишних трат</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-white/60 backdrop-blur-sm rounded-xl p-6 text-center">
+            <div className="flex items-center justify-center space-x-4 mb-4">
+              <Icon name="Shield" size={24} className="text-green-500" />
+              <span className="text-lg font-semibold text-gray-800">Безопасные платежи</span>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Все платежи защищены банковским шифрованием. Мы не храним данные ваших карт.
+            </p>
+          </div>
+        </div>
+        
         <div className="text-center mt-12">
           <p className="text-gray-600 mb-4">
             Не знаете, какой тариф выбрать? Запишитесь на бесплатную консультацию
