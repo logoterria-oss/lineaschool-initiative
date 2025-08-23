@@ -54,7 +54,8 @@ export default function WhyNotTeacherSection() {
                   <Icon name="GraduationCap" size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-red-700">Обычный учитель</h3>
+                  <h3 className="text-xl font-bold text-red-700">Учитель русского
+языка</h3>
 
                 </div>
               </div>
