@@ -1,30 +1,30 @@
-import { Card } from "@/components/ui/card";
 import Icon from "@/components/ui/icon";
 
-const reasons = [
+const comparisons = [
   {
-    title: "Разные причины трудностей",
-    description: "Дислексия и дисграфия имеют нейробиологические основы, а не связаны с недостатком знаний правил русского языка",
-    icon: "Brain",
-    color: "bg-red-500"
+    category: "Понимание проблемы",
+    teacher: "Считает, что ребенок ленивый или невнимательный",
+    specialist: "Понимает нейробиологическую природу дислексии и дисграфии"
   },
   {
-    title: "Специализированные методы",
-    description: "Необходимы нейропсихологические и логопедические техники, а не традиционное объяснение правил",
-    icon: "Settings",
-    color: "bg-blue-500"
+    category: "Методы работы",
+    teacher: "Объясняет правила орфографии и заставляет их заучивать",
+    specialist: "Развивает базовые психические функции через нейропсихологические упражнения"
   },
   {
-    title: "Понимание механизмов",
-    description: "Нужно работать с базовыми процессами: зрительным восприятием, фонематическим слухом, моторикой",
-    icon: "Eye",
-    color: "bg-green-500"
+    category: "Подход к ошибкам",
+    teacher: "Указывает на ошибки и требует их исправления",
+    specialist: "Анализирует причины ошибок и работает с механизмами их возникновения"
   },
   {
-    title: "Индивидуальный подход",
-    description: "Каждый случай уникален и требует персональной диагностики и коррекционной программы",
-    icon: "User",
-    color: "bg-purple-500"
+    category: "Диагностика",
+    teacher: "Оценивает только знание правил и грамотность",
+    specialist: "Проводит комплексную нейропсихологическую диагностику"
+  },
+  {
+    category: "Результат",
+    teacher: "Часто усугубляет проблему и снижает самооценку ребенка",
+    specialist: "Системно улучшает навыки чтения и письма, повышает уверенность"
   }
 ];
 
@@ -42,70 +42,85 @@ export default function WhyNotTeacherSection() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-          {reasons.map((reason, index) => (
-            <Card key={index} className="bg-white/90 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 p-6 text-center h-full">
-              <div className={`w-16 h-16 ${reason.color} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
-                <Icon name={reason.icon as any} size={28} className="text-white" />
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/50 overflow-hidden">
+          {/* Header */}
+          <div className="grid grid-cols-12 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+            <div className="col-span-4 p-6">
+              <h3 className="text-xl font-bold text-gray-800">Аспект работы</h3>
+            </div>
+            <div className="col-span-4 p-6 bg-red-50 border-l border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
+                  <Icon name="GraduationCap" size={24} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-red-700">Обычный учитель</h3>
+                  <p className="text-sm text-red-600">Традиционный подход</p>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{reason.title}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{reason.description}</p>
-            </Card>
+            </div>
+            <div className="col-span-4 p-6 bg-green-50 border-l border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                  <Icon name="Brain" size={24} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-green-700">Наш специалист</h3>
+                  <p className="text-sm text-green-600">Нейропсихологический подход</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Comparison rows */}
+          {comparisons.map((comparison, index) => (
+            <div key={index} className={`grid grid-cols-12 ${index % 2 === 0 ? 'bg-white/50' : 'bg-gray-50/50'} border-b border-gray-200 last:border-b-0`}>
+              <div className="col-span-4 p-6">
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">{comparison.category}</h4>
+              </div>
+              
+              <div className="col-span-4 p-6 border-l border-gray-200 relative">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Icon name="X" size={14} className="text-red-500" />
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">{comparison.teacher}</p>
+                </div>
+              </div>
+              
+              {/* Arrow */}
+              <div className="col-span-4 p-6 border-l border-gray-200 relative">
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2 z-10">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                    <Icon name="ArrowRight" size={16} className="text-white" />
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 ml-4">
+                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Icon name="Check" size={14} className="text-green-500" />
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">{comparison.specialist}</p>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/50">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Что делает обычный учитель?
-              </h3>
-              <ul className="space-y-3">
-                <li className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="X" size={14} className="text-red-500" />
-                  </div>
-                  <span className="text-gray-700">Объясняет правила орфографии и пунктуации</span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="X" size={14} className="text-red-500" />
-                  </div>
-                  <span className="text-gray-700">Заставляет больше читать и писать</span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="X" size={14} className="text-red-500" />
-                  </div>
-                  <span className="text-gray-700">Указывает на ошибки, не объясняя их причины</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Что делаем мы?
-              </h3>
-              <ul className="space-y-3">
-                <li className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="Check" size={14} className="text-green-500" />
-                  </div>
-                  <span className="text-gray-700">Развиваем базовые психические функции</span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="Check" size={14} className="text-green-500" />
-                  </div>
-                  <span className="text-gray-700">Используем нейропсихологические методики</span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="Check" size={14} className="text-green-500" />
-                  </div>
-                  <span className="text-gray-700">Работаем с причинами, а не следствиями</span>
-                </li>
-              </ul>
+        {/* Bottom CTA */}
+        <div className="mt-12 text-center">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/50 max-w-4xl mx-auto">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Важно понимать разницу!
+            </h3>
+            <p className="text-lg text-gray-600 mb-6">
+              Работа с дислексией и дисграфией требует глубоких знаний в области нейропсихологии 
+              и специализированных методик коррекции
+            </p>
+            <div className="flex items-center justify-center space-x-4">
+              <Icon name="Lightbulb" size={24} className="text-yellow-500" />
+              <span className="text-gray-700 font-medium">
+                Поэтому так важно обратиться к профильному специалисту
+              </span>
             </div>
           </div>
         </div>
