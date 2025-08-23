@@ -1,7 +1,7 @@
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
 import FeaturesSection from "@/components/FeaturesSection";
-import ServicesSection from "@/components/ServicesSection";
+import DiagnosticSection from "@/components/DiagnosticSection";
 import AboutSection from "@/components/AboutSection";
 import SpecialistsSection from "@/components/SpecialistsSection";
 import MethodologySection from "@/components/MethodologySection";
@@ -18,7 +18,7 @@ export default function Index() {
       <HeroSection />
       <MethodologySection />
       <FeaturesSection />
-      <ServicesSection />
+      <DiagnosticSection />
       <AboutSection />
       <SpecialistsSection />
       <PricingSection />
