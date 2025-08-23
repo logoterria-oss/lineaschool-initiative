@@ -66,7 +66,8 @@ export default function WhyNotTeacherSection() {
                   <Icon name="Brain" size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-green-700">Наш специалист</h3>
+                  <h3 className="text-xl font-bold text-green-700">Логопед-
+нейропсихолог</h3>
 
                 </div>
               </div>
