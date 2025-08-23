@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+
 
 export default function AboutSection() {
   return (
@@ -19,14 +19,7 @@ export default function AboutSection() {
               </p>
             </div>
             
-            <div className="mt-8 flex space-x-4">
-              <Button size="lg" className="bg-green-500 hover:bg-green-600">
-                Узнать больше
-              </Button>
-              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
-                Наши методы
-              </Button>
-            </div>
+
           </div>
           
           <div className="relative">
