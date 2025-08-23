@@ -10,10 +10,7 @@ export default function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-[#1a3b5c]">
-            Согласие на обработку персональных данных
-          </h2>
+        <div className="flex justify-end mb-4">
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
