@@ -1,4 +1,5 @@
 import Icon from "@/components/ui/icon";
+import { useRef, useEffect, useState } from "react";
 
 const comparisons = [
   {
@@ -105,54 +106,68 @@ export default function WhyNotTeacherSection() {
           ))}
         </div>
 
-        {/* Mobile Cards */}
-        <div className="md:hidden space-y-6">
-          {comparisons.map((comparison, index) => (
-            <div key={index} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b">
-                <h3 className="text-lg font-bold text-gray-800 text-center">{comparison.category}</h3>
-              </div>
-              
-              {/* Teacher Card */}
-              <div className="p-5 bg-red-50/50 border-b">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Icon name="GraduationCap" size={20} className="text-white" />
+        {/* Mobile Swipeable Cards */}
+        <div className="md:hidden relative">
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-2"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+          >
+            {comparisons.map((comparison, index) => (
+              <div key={index} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden w-[calc(100vw-3rem)] max-w-[350px] snap-start flex-shrink-0">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b">
+                  <h3 className="text-lg font-bold text-gray-800 text-center">{comparison.category}</h3>
+                </div>
+                
+                {/* Teacher Card */}
+                <div className="p-5 bg-red-50/50 border-b">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Icon name="GraduationCap" size={24} className="text-white" />
+                    </div>
+                    <h4 className="text-lg font-bold text-red-700">Учитель русского языка</h4>
                   </div>
-                  <h4 className="text-base font-bold text-red-700">Учитель русского языка</h4>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="X" size={12} className="text-red-500" />
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <Icon name="X" size={14} className="text-red-500" />
+                    </div>
+                    <p className="text-base text-gray-700 leading-relaxed">{comparison.teacher}</p>
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{comparison.teacher}</p>
+                </div>
+                
+                {/* VS Divider */}
+                <div className="flex justify-center py-4 bg-gray-100">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                    <Icon name="ArrowDown" size={18} className="text-white" />
+                  </div>
+                </div>
+                
+                {/* Specialist Card */}
+                <div className="p-5 bg-green-50/50">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Icon name="Brain" size={24} className="text-white" />
+                    </div>
+                    <h4 className="text-lg font-bold text-green-700">Логопед-нейропсихолог</h4>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <Icon name="Check" size={14} className="text-green-500" />
+                    </div>
+                    <p className="text-base text-gray-700 leading-relaxed">{comparison.specialist}</p>
+                  </div>
                 </div>
               </div>
-              
-              {/* VS Divider */}
-              <div className="flex justify-center py-3 bg-gray-100">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Icon name="ArrowDown" size={16} className="text-white" />
-                </div>
-              </div>
-              
-              {/* Specialist Card */}
-              <div className="p-5 bg-green-50/50">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Icon name="Brain" size={20} className="text-white" />
-                  </div>
-                  <h4 className="text-base font-bold text-green-700">Логопед-нейропсихолог</h4>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon name="Check" size={12} className="text-green-500" />
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{comparison.specialist}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          
+          {/* Dots indicator */}
+          <div className="flex justify-center space-x-2 mt-4">
+            {comparisons.map((_, index) => (
+              <div key={index} className="w-2 h-2 rounded-full bg-gray-300"></div>
+            ))}
+          </div>
         </div>
 
         {/* Bottom CTA */}
