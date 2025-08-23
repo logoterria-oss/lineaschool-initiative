@@ -115,8 +115,7 @@ export default function WhyNotTeacherSection() {
               Важно понимать разницу!
             </h3>
             <p className="text-lg text-gray-600 mb-6">
-              Работа с дислексией и дисграфией требует глубоких знаний в области нейропсихологии 
-              и специализированных методик коррекции
+              Работа с дислексией и дисграфией требует глубоких знаний в области логопедии и нейропсихологии, а также специализированных методик коррекции
             </p>
             <div className="flex items-center justify-center space-x-4">
               <Icon name="Lightbulb" size={24} className="text-yellow-500" />
