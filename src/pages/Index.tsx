@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import DiagnosticSection from "@/components/DiagnosticSection";
+import WhyNotTeacherSection from "@/components/WhyNotTeacherSection";
 import AboutSection from "@/components/AboutSection";
 import SpecialistsSection from "@/components/SpecialistsSection";
 import MethodologySection from "@/components/MethodologySection";
@@ -19,6 +20,7 @@ export default function Index() {
       <MethodologySection />
       <FeaturesSection />
       <DiagnosticSection />
+      <WhyNotTeacherSection />
       <AboutSection />
       <SpecialistsSection />
       <PricingSection />
