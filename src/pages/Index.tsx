@@ -11,6 +11,7 @@ import FAQSection from "@/components/FAQSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
+import MobileFloatingButtons from "@/components/MobileFloatingButtons";
 
 export default function Index() {
   return (
@@ -28,6 +29,7 @@ export default function Index() {
       <TestimonialsSection />
       <CTASection />
       <Footer />
+      <MobileFloatingButtons />
     </div>
   );
 }
