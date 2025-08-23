@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import Icon from "@/components/ui/icon";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import PrivacyModal from "@/components/PrivacyModal";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     time: "",
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +128,14 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
             </Button>
             
             <div className="text-xs text-gray-500 text-center">
-              Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности
+              Нажимая на кнопку, вы даёте согласие на{" "}
+              <button 
+                type="button"
+                onClick={() => setIsPrivacyOpen(true)}
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                обработку персональных данных
+              </button>
             </div>
           </div>
         </form>
@@ -135,6 +144,16 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       <ConfirmationModal 
         isOpen={isConfirmationOpen} 
         onClose={() => setIsConfirmationOpen(false)} 
+      />
+      
+      <PrivacyModal 
+        isOpen={isPrivacyOpen} 
+        onClose={() => setIsPrivacyOpen(false)} 
+      />
+      
+      <PrivacyModal 
+        isOpen={isPrivacyOpen} 
+        onClose={() => setIsPrivacyOpen(false)} 
       />
     </Dialog>
   );
