@@ -55,7 +55,7 @@ export default function WhyNotTeacherSection() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-red-700">Обычный учитель</h3>
-                  <p className="text-sm text-red-600">Традиционный подход</p>
+
                 </div>
               </div>
             </div>
