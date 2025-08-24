@@ -20,17 +20,17 @@ export default function Index() {
       <AnimatedBackground />
       <div className="relative z-10">
         <Navigation />
-      <HeroSection />
-      <MethodologySection />
-      <FeaturesSection />
-      <DiagnosticSection />
-      <WhyNotTeacherSection />
-      <AboutSection />
-      <SpecialistsSection />
-      <PricingSection />
-      <FAQSection />
-      <TestimonialsSection />
-      <CTASection />
+        <HeroSection />
+        <MethodologySection />
+        <FeaturesSection />
+        <DiagnosticSection />
+        <WhyNotTeacherSection />
+        <AboutSection />
+        <SpecialistsSection />
+        <PricingSection />
+        <FAQSection />
+        <TestimonialsSection />
+        <CTASection />
         <Footer />
       </div>
       <MobileFloatingButtons />
