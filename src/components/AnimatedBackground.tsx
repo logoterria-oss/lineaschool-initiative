@@ -38,10 +38,10 @@ export default function AnimatedBackground() {
   ];
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
       {/* Тестовый элемент */}
-      <div className="absolute top-10 left-10 text-green-500 text-4xl opacity-20">
-        ✨
+      <div className="absolute top-10 left-10 text-green-500 text-4xl">
+        ✨ ТЕСТ
       </div>
       {swirls.map((swirl, index) => (
         <div
