@@ -39,6 +39,10 @@ export default function AnimatedBackground() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      {/* Тестовый элемент */}
+      <div className="absolute top-10 left-10 text-green-500 text-4xl opacity-20">
+        ✨
+      </div>
       {swirls.map((swirl, index) => (
         <div
           key={index}
@@ -47,7 +51,7 @@ export default function AnimatedBackground() {
             left: `${swirl.x}%`,
             top: `${swirl.y}%`,
             fontSize: `${swirl.size}px`,
-            opacity: swirl.opacity,
+            opacity: 0.15,
             transform: `rotate(${swirl.rotation + scrollY * swirl.speed}deg) scale(${1 + Math.sin(scrollY * 0.002 + index) * 0.2})`,
           }}
         >
@@ -73,7 +77,7 @@ export default function AnimatedBackground() {
             left: `${(swirl.x + 40) % 100}%`,
             top: `${(swirl.y + 30) % 100}%`,
             fontSize: `${swirl.size * 0.8}px`,
-            opacity: swirl.opacity * 0.7,
+            opacity: 0.1,
             transform: `rotate(${-swirl.rotation - scrollY * swirl.speed * 0.8}deg) scale(${0.9 + Math.cos(scrollY * 0.0015 + index) * 0.25})`,
           }}
         >
