@@ -4,6 +4,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Анимированный фон с завитушками */
+body::before {
+  content: "✨";
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-size: 24px;
+  color: #10b981;
+  z-index: 1000;
+  animation: float 3s ease-in-out infinite;
+}
+
+body::after {
+  content: "🌿 💫 ✨ 🌸 🍃 ⭐ 🌼 💚 🌺 ✨";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  font-size: 20px;
+  color: #10b981;
+  opacity: 0.1;
+  z-index: 1;
+  pointer-events: none;
+  animation: swirl 20s linear infinite;
+  white-space: pre;
+  letter-spacing: 100px;
+  line-height: 200px;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes swirl {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
