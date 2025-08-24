@@ -12,12 +12,13 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import MobileFloatingButtons from "@/components/MobileFloatingButtons";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 
 export default function Index() {
   return (
     <div className="min-h-screen bg-white relative">
-
+      <AnimatedBackground />
       <div className="relative z-10">
         <Navigation />
         <HeroSection />
