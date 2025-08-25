@@ -8,8 +8,8 @@ import SpecialistsSection from "@/components/SpecialistsSection";
 import MethodologySection from "@/components/MethodologySection";
 import PricingSection from "@/components/PricingSection";
 import FAQSection from "@/components/FAQSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
 
-import VideoTestimonialsSection from "@/components/VideoTestimonialsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import MobileFloatingButtons from "@/components/MobileFloatingButtons";
@@ -27,8 +27,9 @@ export default function Index() {
       <SpecialistsSection />
       <PricingSection />
       <FAQSection />
+      <TestimonialsSection />
 
-      <VideoTestimonialsSection />
+
       <CTASection />
       <Footer />
       <MobileFloatingButtons />
