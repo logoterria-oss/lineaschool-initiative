@@ -12,28 +12,23 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import MobileFloatingButtons from "@/components/MobileFloatingButtons";
-import AnimatedBackground from "@/components/AnimatedBackground";
-
 
 export default function Index() {
   return (
-    <div className="min-h-screen bg-white relative">
-      <AnimatedBackground />
-      <div className="relative z-20">
-        <Navigation />
-        <HeroSection />
-        <MethodologySection />
-        <FeaturesSection />
-        <DiagnosticSection />
-        <WhyNotTeacherSection />
-        <AboutSection />
-        <SpecialistsSection />
-        <PricingSection />
-        <FAQSection />
-        <TestimonialsSection />
-        <CTASection />
-        <Footer />
-      </div>
+    <div className="min-h-screen bg-white">
+      <Navigation />
+      <HeroSection />
+      <MethodologySection />
+      <FeaturesSection />
+      <DiagnosticSection />
+      <WhyNotTeacherSection />
+      <AboutSection />
+      <SpecialistsSection />
+      <PricingSection />
+      <FAQSection />
+      <TestimonialsSection />
+      <CTASection />
+      <Footer />
       <MobileFloatingButtons />
     </div>
   );

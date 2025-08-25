@@ -4,28 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Тестовый элемент */
-body::before {
-  content: "✨";
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  font-size: 24px;
-  color: #10b981;
-  z-index: 1000;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
 @layer base {
   :root {
     --background: 0 0% 100%;
