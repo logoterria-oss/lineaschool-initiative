@@ -16,24 +16,23 @@ import MobileFloatingButtons from "@/components/MobileFloatingButtons";
 
 export default function Index() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50 relative">
+    <div className="min-h-screen bg-white">
+      <Navigation />
+      <HeroSection />
+      <MethodologySection />
+      <FeaturesSection />
+      <DiagnosticSection />
+      <WhyNotTeacherSection />
+      <AboutSection />
+      <SpecialistsSection />
+      <PricingSection />
+      <TestimonialsSection />
+      <FAQSection />
 
-      <div className="relative z-10">
-        <Navigation />
-        <HeroSection />
-        <MethodologySection />
-        <FeaturesSection />
-        <DiagnosticSection />
-        <WhyNotTeacherSection />
-        <AboutSection />
-        <SpecialistsSection />
-        <PricingSection />
-        <TestimonialsSection />
-        <FAQSection />
-        <CTASection />
-        <Footer />
-        <MobileFloatingButtons />
-      </div>
+
+      <CTASection />
+      <Footer />
+      <MobileFloatingButtons />
     </div>
   );
 }
