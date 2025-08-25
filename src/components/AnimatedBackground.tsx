@@ -36,8 +36,8 @@ export default function AnimatedBackground() {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       {/* Тестовый элемент для проверки */}
-      <div className="absolute top-4 left-4 text-green-500 text-2xl opacity-80">
-        ✨ ФОН РАБОТАЕТ
+      <div className="absolute top-4 left-4 text-red-500 text-4xl z-50 bg-white p-2">
+        🔴 ТЕСТ: {swirls.length} завитушек
       </div>
       
       {swirls.map((swirl, index) => (
@@ -47,8 +47,8 @@ export default function AnimatedBackground() {
           style={{
             left: `${swirl.x}%`,
             top: `${swirl.y}%`,
-            fontSize: `${swirl.size}px`,
-            opacity: 0.12,
+            fontSize: `${swirl.size * 2}px`,
+            opacity: 0.9,
             transform: `
               rotate(${swirl.rotation + scrollY * swirl.speed}deg) 
               scale(${1 + Math.sin(scrollY * 0.001 + index) * 0.15})
