@@ -26,8 +26,8 @@ export default function Index() {
       <AboutSection />
       <SpecialistsSection />
       <PricingSection />
-      <FAQSection />
       <TestimonialsSection />
+      <FAQSection />
 
 
       <CTASection />
