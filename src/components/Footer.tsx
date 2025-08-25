@@ -55,7 +55,7 @@ export default function Footer() {
                 <img 
                   src="https://cdn.poehali.dev/files/a39d3277-8496-4355-aec7-ffea99108d47.jpeg" 
                   alt="Яндекс Сплит" 
-                  className="w-8 h-8 object-cover rounded-full"
+                  className="w-9 h-9 object-cover rounded-full"
                 />
               </div>
               {/* Долами */}
