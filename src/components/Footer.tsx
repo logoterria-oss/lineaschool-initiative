@@ -41,18 +41,18 @@ export default function Footer() {
           {/* Способы оплаты */}
           <div className="md:col-span-1">
             <h3 className="font-semibold text-gray-900 mb-4">Способы оплаты</h3>
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
-                <Icon name="CreditCard" size={16} className="text-gray-500" />
-                <span className="text-sm text-gray-600">Т-Банк</span>
+            <div className="flex gap-2">
+              {/* Т-Банк */}
+              <div className="w-12 h-8 bg-yellow-400 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">Т</span>
               </div>
-              <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
-                <Icon name="Wallet" size={16} className="text-gray-500" />
-                <span className="text-sm text-gray-600">СберСплит</span>
+              {/* ЯндексСплит */}
+              <div className="w-12 h-8 bg-red-500 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-xs">Я</span>
               </div>
-              <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
-                <Icon name="Clock" size={16} className="text-gray-500" />
-                <span className="text-sm text-gray-600">Долами</span>
+              {/* Долями */}
+              <div className="w-12 h-8 bg-blue-500 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-xs">Д</span>
               </div>
             </div>
           </div>
