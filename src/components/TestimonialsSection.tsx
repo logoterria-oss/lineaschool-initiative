@@ -89,11 +89,8 @@ export default function TestimonialsSection() {
         {/* Заголовок */}
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-6">
-            Отзывы наших клиентов
+            Посмотрите, что говорят дети и родители, которые уже выбрали <span className="text-green-600">LineaSchool</span> для онлайн-занятий
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Посмотрите, что говорят дети и родители, которые уже выбрали <span className="font-bold text-green-600">LineaSchool</span> для онлайн-занятий
-          </p>
         </div>
 
         {/* Видео-отзывы - все видны сразу, вертикальные */}
