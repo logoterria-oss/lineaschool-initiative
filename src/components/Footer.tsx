@@ -48,8 +48,7 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-4">Контакты</h3>
             <ul className="space-y-2">
-              <li className="text-gray-400">info@linea-school.ru</li>
-              <li className="text-gray-400">+7 (495) 123-45-67</li>
+              <li className="text-gray-400">lineaschool@mail.ru</li>
               <li className="text-gray-400">Онлайн-школа</li>
             </ul>
           </div>
