@@ -77,7 +77,7 @@ export default function Footer() {
               <p>ИП Абраменко В. А.</p>
               <p>ИНН 422306309900</p>
             </div>
-            <p className="text-sm text-gray-500">© 2024 LineaSchool. Все права защищены.</p>
+            <p className="text-sm text-gray-500">© 2025 LineaSchool. Все права защищены.</p>
           </div>
         </div>
       </div>
