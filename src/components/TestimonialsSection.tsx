@@ -92,7 +92,7 @@ export default function TestimonialsSection() {
             Отзывы наших клиентов
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Реальные истории родителей о том, как наши логопеды помогли их детям заговорить четко и красиво
+            Посмотрите, что говорят дети и родители, которые уже выбрали <span className="font-bold text-green-600">LineaSchool</span> для онлайн-занятий
           </p>
         </div>
 
