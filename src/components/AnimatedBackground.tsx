@@ -36,6 +36,10 @@ export default function AnimatedBackground() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+      {/* ТЕСТ: видимый элемент */}
+      <div className="absolute top-4 right-4 bg-red-500 text-white p-2 text-sm z-50">
+        ФОНОВЫЙ КОМПОНЕНТ РАБОТАЕТ
+      </div>
       {swirls.map((swirl, index) => (
         <div
           key={index}
@@ -45,7 +49,7 @@ export default function AnimatedBackground() {
             top: `${swirl.y}vh`,
             fontSize: `${swirl.size}px`,
             color: '#10b981', // emerald-500
-            opacity: 0.15,
+            opacity: 0.8,
             transform: `
               rotate(${swirl.rotation + scrollY * swirl.speed}deg) 
               scale(${1 + Math.sin(scrollY * 0.001 + index) * 0.1})
