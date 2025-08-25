@@ -22,7 +22,7 @@ export default function Footer() {
               </a>
               <a href="https://wa.me/79236251611" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
                 <Icon name="MessageCircle" size={16} />
-                <span>WhatsApp: +7 (923) 625-16-11</span>
+                <span>WhatsApp: +79236251611</span>
               </a>
             </div>
           </div>
