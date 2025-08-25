@@ -16,9 +16,9 @@ export default function CTASection() {
             <Icon name="Calendar" className="mr-2" size={20} />
             Записаться на диагностику
           </Button>
-          <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-green-600 text-lg px-8">
-            <Icon name="Mail" className="mr-2 text-white" size={20} />
-            <span className="text-white">Написать нам</span>
+          <Button size="lg" variant="outline" className="border-white bg-transparent text-white hover:bg-white hover:text-green-600 text-lg px-8">
+            <Icon name="Mail" className="mr-2" size={20} />
+            Написать нам
           </Button>
         </div>
       </div>
