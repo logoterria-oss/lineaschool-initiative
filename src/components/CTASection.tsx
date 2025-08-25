@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
+import BookingModal from "@/components/BookingModal";
 
 export default function CTASection() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
   return (
     <section className="py-20 bg-gradient-to-r from-green-500 to-emerald-600">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -12,7 +16,7 @@ export default function CTASection() {
           Запишитесь на бесплатную консультацию и узнайте, как мы можем помочь вашему ребёнку
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 text-lg px-8">
+          <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 text-lg px-8" onClick={() => setIsBookingModalOpen(true)}>
             <Icon name="Calendar" className="mr-2" size={20} />
             Записаться на диагностику
           </Button>
@@ -22,6 +26,11 @@ export default function CTASection() {
           </Button>
         </div>
       </div>
+
+      <BookingModal 
+        isOpen={isBookingModalOpen} 
+        onClose={() => setIsBookingModalOpen(false)} 
+      />
     </section>
   );
 }
