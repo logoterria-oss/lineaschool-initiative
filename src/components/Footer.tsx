@@ -47,7 +47,7 @@ export default function Footer() {
                 <img 
                   src="https://cdn.poehali.dev/files/1c188f27-74e4-4cb4-a191-2b35d105c651.png" 
                   alt="Т-Банк" 
-                  className="w-8 h-8 object-cover"
+                  className="w-9 h-9 object-cover"
                 />
               </div>
               {/* Яндекс Сплит */}
@@ -63,7 +63,7 @@ export default function Footer() {
                 <img 
                   src="https://cdn.poehali.dev/files/31e03f54-85da-43e1-b499-62ae304d510a.png" 
                   alt="Долами" 
-                  className="w-8 h-8 object-cover rounded"
+                  className="w-9 h-9 object-cover rounded"
                 />
               </div>
             </div>
