@@ -41,18 +41,30 @@ export default function Footer() {
           {/* Способы оплаты */}
           <div className="md:col-span-1">
             <h3 className="font-semibold text-gray-900 mb-4">Способы оплаты</h3>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {/* Т-Банк */}
-              <div className="w-12 h-8 bg-yellow-400 rounded flex items-center justify-center">
-                <span className="text-black font-bold text-xs">Т</span>
+              <div className="w-10 h-10">
+                <img 
+                  src="https://cdn.poehali.dev/files/1c188f27-74e4-4cb4-a191-2b35d105c651.png" 
+                  alt="Т-Банк" 
+                  className="w-full h-full object-contain"
+                />
               </div>
-              {/* ЯндексСплит */}
-              <div className="w-12 h-8 bg-red-500 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">Я</span>
+              {/* Яндекс Сплит */}
+              <div className="w-10 h-10">
+                <img 
+                  src="https://cdn.poehali.dev/files/a39d3277-8496-4355-aec7-ffea99108d47.jpeg" 
+                  alt="Яндекс Сплит" 
+                  className="w-full h-full object-contain rounded-full"
+                />
               </div>
-              {/* Долями */}
-              <div className="w-12 h-8 bg-blue-500 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">Д</span>
+              {/* Долами */}
+              <div className="w-10 h-10">
+                <img 
+                  src="https://cdn.poehali.dev/files/31e03f54-85da-43e1-b499-62ae304d510a.png" 
+                  alt="Долами" 
+                  className="w-full h-full object-contain"
+                />
               </div>
             </div>
           </div>
