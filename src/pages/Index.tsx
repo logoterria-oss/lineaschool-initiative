@@ -16,21 +16,55 @@ import MobileFloatingButtons from "@/components/MobileFloatingButtons";
 
 export default function Index() {
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Декоративные фоновые элементы */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Большие круги */}
-        <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-green-50 to-green-100 rounded-full opacity-40"></div>
-        <div className="absolute top-1/4 -left-16 w-48 h-48 bg-gradient-to-tr from-blue-50 to-blue-100 rounded-full opacity-30"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-56 h-56 bg-gradient-to-bl from-purple-50 to-purple-100 rounded-full opacity-25"></div>
-        
-        {/* Средние элементы */}
-        <div className="absolute top-2/3 -right-8 w-32 h-32 bg-gradient-to-tl from-green-100 to-emerald-100 rounded-full opacity-20"></div>
-        <div className="absolute bottom-16 left-1/3 w-40 h-40 bg-gradient-to-br from-sky-50 to-sky-100 rounded-full opacity-30"></div>
-        
-        {/* Маленькие акценты */}
-        <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-gradient-to-r from-teal-100 to-cyan-100 rounded-full opacity-15"></div>
-        <div className="absolute top-3/4 left-1/4 w-20 h-20 bg-gradient-to-b from-indigo-50 to-indigo-100 rounded-full opacity-20"></div>
+    <div className="min-h-screen bg-white relative">
+      {/* SVG фоновые элементы */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          {/* Большие круги */}
+          <circle cx="90%" cy="10%" r="120" fill="url(#gradient1)" opacity="0.3"/>
+          <circle cx="5%" cy="25%" r="90" fill="url(#gradient2)" opacity="0.25"/>
+          <circle cx="75%" cy="70%" r="100" fill="url(#gradient3)" opacity="0.2"/>
+          
+          {/* Средние элементы */}
+          <circle cx="95%" cy="65%" r="60" fill="url(#gradient4)" opacity="0.15"/>
+          <circle cx="35%" cy="85%" r="70" fill="url(#gradient5)" opacity="0.25"/>
+          
+          {/* Маленькие акценты */}
+          <circle cx="50%" cy="50%" r="40" fill="url(#gradient6)" opacity="0.1"/>
+          <circle cx="25%" cy="75%" r="35" fill="url(#gradient7)" opacity="0.15"/>
+          
+          {/* Определение градиентов */}
+          <defs>
+            <radialGradient id="gradient1" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#d1fae5"/>
+              <stop offset="100%" stopColor="#a7f3d0"/>
+            </radialGradient>
+            <radialGradient id="gradient2" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#dbeafe"/>
+              <stop offset="100%" stopColor="#bfdbfe"/>
+            </radialGradient>
+            <radialGradient id="gradient3" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#e9d5ff"/>
+              <stop offset="100%" stopColor="#d8b4fe"/>
+            </radialGradient>
+            <radialGradient id="gradient4" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#dcfce7"/>
+              <stop offset="100%" stopColor="#bbf7d0"/>
+            </radialGradient>
+            <radialGradient id="gradient5" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#f0f9ff"/>
+              <stop offset="100%" stopColor="#e0f2fe"/>
+            </radialGradient>
+            <radialGradient id="gradient6" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#f0fdfa"/>
+              <stop offset="100%" stopColor="#ccfbf1"/>
+            </radialGradient>
+            <radialGradient id="gradient7" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#eef2ff"/>
+              <stop offset="100%" stopColor="#e0e7ff"/>
+            </radialGradient>
+          </defs>
+        </svg>
       </div>
 
       <div className="relative z-10">
