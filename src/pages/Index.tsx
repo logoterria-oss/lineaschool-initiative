@@ -19,7 +19,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-white relative">
       <AnimatedBackground />
-      <div className="relative z-10">
+      <div className="relative z-20">
         <Navigation />
         <HeroSection />
         <MethodologySection />
