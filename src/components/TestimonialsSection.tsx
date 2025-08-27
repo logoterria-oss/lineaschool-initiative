@@ -12,39 +12,39 @@ export default function TestimonialsSection() {
   const videoTestimonials = [
     {
       id: 1,
-      name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
-      description: "За 3 месяца сын заговорил четко",
-      videoUrl: "/IMG_1141 (1) (1).mov",
-    },
-    {
-      id: 2,
-      name: "Полина, мама Насти (10 лет)",
-      description: "Проблемы с Р полностью решены",
-      videoUrl: "/IMG_1143 (1).mov",
-    },
-    {
-      id: 3,
-      name: "Риана (12 лет)",
-      description: "Подготовились к школе за 2 месяца",
-      videoUrl: "/IMG_1144 (1).mov",
-    },
-    {
-      id: 4,
-      name: "Вероника (9 лет)",
-      description: "Дочка стала говорить увереннее",
-      videoUrl: "/IMG_1145 (1).mov",
-    },
-    {
-      id: 5,
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
     },
     {
-      id: 6,
+      id: 2,
+      name: "Вероника (9 лет)",
+      description: "Дочка стала говорить увереннее",
+      videoUrl: "/IMG_1145 (1).mov",
+    },
+    {
+      id: 3,
       name: "Ирина, мама Данила (6 лет)",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
+    },
+    {
+      id: 4,
+      name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
+      description: "За 3 месяца сын заговорил четко",
+      videoUrl: "/IMG_1141 (1) (1).mov",
+    },
+    {
+      id: 5,
+      name: "Полина, мама Насти (10 лет)",
+      description: "Проблемы с Р полностью решены",
+      videoUrl: "/IMG_1143 (1).mov",
+    },
+    {
+      id: 6,
+      name: "Риана (12 лет)",
+      description: "Подготовились к школе за 2 месяца",
+      videoUrl: "/IMG_1144 (1).mov",
     }
   ];
 
