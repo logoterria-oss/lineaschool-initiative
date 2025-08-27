@@ -211,7 +211,7 @@ export default function TestimonialsSection() {
                     >
                       {/* Видео с адаптивным форматом */}
                       <div className={`bg-gray-900 relative group ${
-                        isLastVideo ? 'aspect-video' : 'aspect-[9/16]'
+                        isLastVideo ? 'h-[568px]' : 'aspect-[9/16]'
                       }`}>
                         <video
                           ref={(el) => {
