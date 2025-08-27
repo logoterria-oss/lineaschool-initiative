@@ -161,7 +161,7 @@ export default function TestimonialsSection() {
               <div 
                 className="flex gap-6 overflow-x-hidden transition-transform duration-500 ease-in-out px-12"
                 style={{
-                  transform: `translateX(-${activeVideoIndex * (100 / Math.min(3, videoTestimonials.length))}%)`
+                  transform: `translateX(-${activeVideoIndex * 320}px)`
                 }}
               >
                 {videoTestimonials.map((video, index) => (
@@ -220,7 +220,7 @@ export default function TestimonialsSection() {
                   key={index}
                   onClick={() => setActiveVideoIndex(index)}
                   className={`w-2 h-2 rounded-full transition-colors ${
-                    Math.floor(activeVideoIndex / 3) === Math.floor(index / 3) 
+                    activeVideoIndex === index 
                       ? 'bg-green-600' 
                       : 'bg-gray-300 hover:bg-gray-400'
                   }`}
