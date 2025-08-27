@@ -30,7 +30,7 @@ export default function TestimonialsSection() {
     },
     {
       id: 4,
-      name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
+      name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
     },
