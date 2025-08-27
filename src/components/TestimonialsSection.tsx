@@ -24,7 +24,7 @@ export default function TestimonialsSection() {
     },
     {
       id: 3,
-      name: "Михаил, папа Артема (6 лет)",
+      name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
     },
