@@ -30,7 +30,7 @@ export default function TestimonialsSection() {
     },
     {
       id: 4,
-      name: "Вероника (8 лет)",
+      name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
     },
