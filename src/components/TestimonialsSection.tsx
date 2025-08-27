@@ -18,7 +18,7 @@ export default function TestimonialsSection() {
     },
     {
       id: 2,
-      name: "Елена, мама Софии (4 года)",
+      name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
     },
