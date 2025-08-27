@@ -99,7 +99,7 @@ export default function TestimonialsSection() {
     let scrollAmount = 0;
     for (let i = 0; i < index; i++) {
       const isLastVideo = i === videoTestimonials.length - 1;
-      const videoWidth = isLastVideo ? 427 : 320;
+      const videoWidth = isLastVideo ? 1010 : 320;
       scrollAmount += videoWidth + 24; // ширина + gap
     }
     return scrollAmount;
@@ -206,7 +206,7 @@ export default function TestimonialsSection() {
                     <div 
                       key={video.id} 
                       className={`flex-shrink-0 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 ${
-                        isLastVideo ? 'w-[427px]' : 'w-80'
+                        isLastVideo ? 'w-[1010px]' : 'w-80'
                       }`}
                     >
                       {/* Видео с адаптивным форматом */}
