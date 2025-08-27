@@ -24,7 +24,7 @@ export default function TestimonialsSection() {
     },
     {
       id: 3,
-      name: "Ирина, мама Данила (6 лет)",
+      name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
     },
