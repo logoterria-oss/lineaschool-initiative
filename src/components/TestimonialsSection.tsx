@@ -36,7 +36,7 @@ export default function TestimonialsSection() {
     },
     {
       id: 5,
-      name: "Максим, папа Алисы (4 года)",
+      name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
     },
