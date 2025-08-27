@@ -42,7 +42,7 @@ export default function TestimonialsSection() {
     },
     {
       id: 6,
-      name: "Ирина, мама Данила (6 лет)",
+      name: "Рома (11 лет)",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
     }
