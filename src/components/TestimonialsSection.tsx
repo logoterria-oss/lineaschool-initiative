@@ -12,7 +12,7 @@ export default function TestimonialsSection() {
   const videoTestimonials = [
     {
       id: 1,
-      name: "Рома (11 лет)",
+      name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
     },
