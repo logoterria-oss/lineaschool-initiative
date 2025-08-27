@@ -95,6 +95,16 @@ export default function TestimonialsSection() {
     setActiveTestimonialIndex((prev) => (prev - 1 + textTestimonials.length) % textTestimonials.length);
   };
 
+  const getScrollAmount = (index: number) => {
+    let scrollAmount = 0;
+    for (let i = 0; i < index; i++) {
+      const isLastVideo = i === videoTestimonials.length - 1;
+      const videoWidth = isLastVideo ? 427 : 320;
+      scrollAmount += videoWidth + 24; // ширина + gap
+    }
+    return scrollAmount;
+  };
+
   const nextVideo = () => {
     setActiveVideoIndex((prev) => {
       const next = prev + 1;
@@ -102,7 +112,7 @@ export default function TestimonialsSection() {
       
       // Прокручиваем к нужному видео
       if (scrollContainerRef.current) {
-        const scrollAmount = newIndex * 344; // 320px ширина + 24px gap
+        const scrollAmount = getScrollAmount(newIndex);
         scrollContainerRef.current.scrollTo({
           left: scrollAmount,
           behavior: 'smooth'
@@ -120,7 +130,7 @@ export default function TestimonialsSection() {
       
       // Прокручиваем к нужному видео
       if (scrollContainerRef.current) {
-        const scrollAmount = newIndex * 344; // 320px ширина + 24px gap
+        const scrollAmount = getScrollAmount(newIndex);
         scrollContainerRef.current.scrollTo({
           left: scrollAmount,
           behavior: 'smooth'
@@ -189,27 +199,34 @@ export default function TestimonialsSection() {
                   msOverflowStyle: 'none',
                 }}
               >
-                {videoTestimonials.map((video, index) => (
-                  <div 
-                    key={video.id} 
-                    className="flex-shrink-0 w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-                  >
-                    {/* Вертикальное видео в оригинальном формате */}
-                    <div className="aspect-[9/16] bg-gray-900 relative group">
-                      <video
-                        ref={(el) => {
-                          if (el) videoRefs.current[video.id] = el;
-                        }}
-                        className="w-full h-full object-contain bg-black"
-                        onEnded={handleVideoEnded}
-                        controls={playingVideoId === video.id}
-                        playsInline
-                        preload="metadata"
-                      >
-                        <source src={video.videoUrl} type="video/quicktime" />
-                        <source src={video.videoUrl} type="video/mp4" />
-                        Ваш браузер не поддерживает видео.
-                      </video>
+                {videoTestimonials.map((video, index) => {
+                  const isLastVideo = index === videoTestimonials.length - 1;
+                  
+                  return (
+                    <div 
+                      key={video.id} 
+                      className={`flex-shrink-0 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 ${
+                        isLastVideo ? 'w-[427px]' : 'w-80'
+                      }`}
+                    >
+                      {/* Видео с адаптивным форматом */}
+                      <div className={`bg-gray-900 relative group ${
+                        isLastVideo ? 'aspect-video' : 'aspect-[9/16]'
+                      }`}>
+                        <video
+                          ref={(el) => {
+                            if (el) videoRefs.current[video.id] = el;
+                          }}
+                          className="w-full h-full object-contain bg-black"
+                          onEnded={handleVideoEnded}
+                          controls={playingVideoId === video.id}
+                          playsInline
+                          preload="metadata"
+                        >
+                          <source src={video.videoUrl} type="video/quicktime" />
+                          <source src={video.videoUrl} type="video/mp4" />
+                          Ваш браузер не поддерживает видео.
+                        </video>
                       
                       {/* Кнопка воспроизведения */}
                       {playingVideoId !== video.id && (
@@ -234,7 +251,8 @@ export default function TestimonialsSection() {
                       </p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             
@@ -246,7 +264,7 @@ export default function TestimonialsSection() {
                   onClick={() => {
                     setActiveVideoIndex(index);
                     if (scrollContainerRef.current) {
-                      const scrollAmount = index * 344; // 320px ширина + 24px gap
+                      const scrollAmount = getScrollAmount(index);
                       scrollContainerRef.current.scrollTo({
                         left: scrollAmount,
                         behavior: 'smooth'
