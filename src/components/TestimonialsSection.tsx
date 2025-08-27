@@ -44,7 +44,7 @@ export default function TestimonialsSection() {
       id: 6,
       name: "Ирина, мама Данила (6 лет)",
       description: "Готовы к школе на 100%",
-      videoUrl: "/IMG_1147 (1).mov",
+      videoUrl: "/IMG_1149.MOV",
     }
   ];
 
@@ -96,13 +96,7 @@ export default function TestimonialsSection() {
   };
 
   const getScrollAmount = (index: number) => {
-    let scrollAmount = 0;
-    for (let i = 0; i < index; i++) {
-      const isLastVideo = i === videoTestimonials.length - 1;
-      const videoWidth = isLastVideo ? 1010 : 320;
-      scrollAmount += videoWidth + 24; // ширина + gap
-    }
-    return scrollAmount;
+    return index * (320 + 24); // 320px ширина + 24px gap
   };
 
   const nextVideo = () => {
@@ -199,20 +193,13 @@ export default function TestimonialsSection() {
                   msOverflowStyle: 'none',
                 }}
               >
-                {videoTestimonials.map((video, index) => {
-                  const isLastVideo = index === videoTestimonials.length - 1;
-                  
-                  return (
+                {videoTestimonials.map((video, index) => (
                     <div 
                       key={video.id} 
-                      className={`flex-shrink-0 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 ${
-                        isLastVideo ? 'w-[1010px]' : 'w-80'
-                      }`}
+                      className="flex-shrink-0 w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
                     >
                       {/* Видео с адаптивным форматом */}
-                      <div className={`bg-gray-900 relative group ${
-                        isLastVideo ? 'h-[568px]' : 'aspect-[9/16]'
-                      }`}>
+                      <div className="aspect-[9/16] bg-gray-900 relative group">
                         <video
                           ref={(el) => {
                             if (el) videoRefs.current[video.id] = el;
@@ -251,8 +238,7 @@ export default function TestimonialsSection() {
                       </p>
                     </div>
                   </div>
-                  );
-                })}
+                ))}
               </div>
             </div>
             
