@@ -230,12 +230,9 @@ export default function TestimonialsSection() {
                     
                     {/* Информация под видео */}
                     <div className="p-4">
-                      <h4 className="font-semibold text-gray-800 text-sm mb-2">
+                      <h4 className="font-semibold text-gray-800 text-sm">
                         {video.name}
                       </h4>
-                      <p className="text-gray-600 text-xs leading-relaxed">
-                        {video.description}
-                      </p>
                     </div>
                   </div>
                 ))}
