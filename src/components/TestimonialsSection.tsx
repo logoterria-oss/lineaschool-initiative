@@ -6,6 +6,7 @@ export default function TestimonialsSection() {
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement }>({});
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Вертикальные видео-отзывы из папки public
   const videoTestimonials = [
@@ -97,14 +98,36 @@ export default function TestimonialsSection() {
   const nextVideo = () => {
     setActiveVideoIndex((prev) => {
       const next = prev + 1;
-      return next >= videoTestimonials.length ? 0 : next;
+      const newIndex = next >= videoTestimonials.length ? 0 : next;
+      
+      // Прокручиваем к нужному видео
+      if (scrollContainerRef.current) {
+        const scrollAmount = newIndex * 344; // 320px ширина + 24px gap
+        scrollContainerRef.current.scrollTo({
+          left: scrollAmount,
+          behavior: 'smooth'
+        });
+      }
+      
+      return newIndex;
     });
   };
 
   const prevVideo = () => {
     setActiveVideoIndex((prev) => {
       const previous = prev - 1;
-      return previous < 0 ? videoTestimonials.length - 1 : previous;
+      const newIndex = previous < 0 ? videoTestimonials.length - 1 : previous;
+      
+      // Прокручиваем к нужному видео
+      if (scrollContainerRef.current) {
+        const scrollAmount = newIndex * 344; // 320px ширина + 24px gap
+        scrollContainerRef.current.scrollTo({
+          left: scrollAmount,
+          behavior: 'smooth'
+        });
+      }
+      
+      return newIndex;
     });
   };
 
@@ -159,9 +182,11 @@ export default function TestimonialsSection() {
 
               {/* Видео сетка */}
               <div 
-                className="flex gap-6 overflow-x-hidden transition-transform duration-500 ease-in-out px-12"
+                ref={scrollContainerRef}
+                className="flex gap-6 overflow-x-auto scrollbar-hide px-12"
                 style={{
-                  transform: `translateX(-${activeVideoIndex * 320}px)`
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
                 }}
               >
                 {videoTestimonials.map((video, index) => (
@@ -218,7 +243,16 @@ export default function TestimonialsSection() {
               {videoTestimonials.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => setActiveVideoIndex(index)}
+                  onClick={() => {
+                    setActiveVideoIndex(index);
+                    if (scrollContainerRef.current) {
+                      const scrollAmount = index * 344; // 320px ширина + 24px gap
+                      scrollContainerRef.current.scrollTo({
+                        left: scrollAmount,
+                        behavior: 'smooth'
+                      });
+                    }
+                  }}
                   className={`w-2 h-2 rounded-full transition-colors ${
                     activeVideoIndex === index 
                       ? 'bg-green-600' 
