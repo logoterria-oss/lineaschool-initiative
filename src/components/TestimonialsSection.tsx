@@ -95,11 +95,17 @@ export default function TestimonialsSection() {
   };
 
   const nextVideo = () => {
-    setActiveVideoIndex((prev) => (prev + 1) % videoTestimonials.length);
+    setActiveVideoIndex((prev) => {
+      const next = prev + 1;
+      return next >= videoTestimonials.length ? 0 : next;
+    });
   };
 
   const prevVideo = () => {
-    setActiveVideoIndex((prev) => (prev - 1 + videoTestimonials.length) % videoTestimonials.length);
+    setActiveVideoIndex((prev) => {
+      const previous = prev - 1;
+      return previous < 0 ? videoTestimonials.length - 1 : previous;
+    });
   };
 
   const toggleVideoPlay = (videoId: number) => {
@@ -131,102 +137,92 @@ export default function TestimonialsSection() {
           </h2>
         </div>
 
-        {/* Видео-отзывы - карусель */}
+        {/* Видео-отзывы - горизонтальная карусель */}
         <div className="mb-20 relative">
-          <div className="max-w-4xl mx-auto">
-            {/* Главное видео */}
-            <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
-              <div className="aspect-[9/16] md:aspect-video bg-gray-900 relative">
-                <video
-                  ref={(el) => {
-                    if (el) videoRefs.current[videoTestimonials[activeVideoIndex].id] = el;
-                  }}
-                  className="w-full h-full object-cover"
-                  onEnded={handleVideoEnded}
-                  controls={playingVideoId === videoTestimonials[activeVideoIndex].id}
-                  poster=""
-                >
-                  <source src={videoTestimonials[activeVideoIndex].videoUrl} type="video/quicktime" />
-                  <source src={videoTestimonials[activeVideoIndex].videoUrl} type="video/mp4" />
-                  Ваш браузер не поддерживает видео.
-                </video>
-                
-                {/* Кнопка воспроизведения */}
-                {playingVideoId !== videoTestimonials[activeVideoIndex].id && (
-                  <button
-                    onClick={() => toggleVideoPlay(videoTestimonials[activeVideoIndex].id)}
-                    className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center hover:bg-opacity-50 transition-all duration-300"
+          <div className="max-w-6xl mx-auto">
+            {/* Контейнер с прокруткой */}
+            <div className="relative">
+              {/* Кнопки навигации */}
+              <button
+                onClick={prevVideo}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-3 hover:bg-gray-50 transition-colors"
+              >
+                <Icon name="ChevronLeft" size={20} className="text-gray-600" />
+              </button>
+              
+              <button
+                onClick={nextVideo}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-3 hover:bg-gray-50 transition-colors"
+              >
+                <Icon name="ChevronRight" size={20} className="text-gray-600" />
+              </button>
+
+              {/* Видео сетка */}
+              <div 
+                className="flex gap-6 overflow-x-hidden transition-transform duration-500 ease-in-out px-12"
+                style={{
+                  transform: `translateX(-${activeVideoIndex * (100 / Math.min(3, videoTestimonials.length))}%)`
+                }}
+              >
+                {videoTestimonials.map((video, index) => (
+                  <div 
+                    key={video.id} 
+                    className="flex-shrink-0 w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
                   >
-                    <div className="bg-white bg-opacity-95 rounded-full p-6 hover:scale-110 transition-transform duration-200">
-                      <Icon name="Play" size={48} className="text-green-600 ml-2" />
+                    {/* Вертикальное видео в оригинальном формате */}
+                    <div className="aspect-[9/16] bg-gray-900 relative group">
+                      <video
+                        ref={(el) => {
+                          if (el) videoRefs.current[video.id] = el;
+                        }}
+                        className="w-full h-full object-contain bg-black"
+                        onEnded={handleVideoEnded}
+                        controls={playingVideoId === video.id}
+                        playsInline
+                        preload="metadata"
+                      >
+                        <source src={video.videoUrl} type="video/quicktime" />
+                        <source src={video.videoUrl} type="video/mp4" />
+                        Ваш браузер не поддерживает видео.
+                      </video>
+                      
+                      {/* Кнопка воспроизведения */}
+                      {playingVideoId !== video.id && (
+                        <button
+                          onClick={() => toggleVideoPlay(video.id)}
+                          className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-40 transition-all duration-300"
+                        >
+                          <div className="bg-white bg-opacity-95 rounded-full p-4 hover:scale-110 transition-transform duration-200">
+                            <Icon name="Play" size={32} className="text-green-600 ml-1" />
+                          </div>
+                        </button>
+                      )}
                     </div>
-                  </button>
-                )}
-                
-                {/* Информация о видео */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                  <h4 className="text-white font-semibold text-lg mb-1">
-                    {videoTestimonials[activeVideoIndex].name}
-                  </h4>
-                  <p className="text-white/90 text-sm">
-                    {videoTestimonials[activeVideoIndex].description}
-                  </p>
-                </div>
+                    
+                    {/* Информация под видео */}
+                    <div className="p-4">
+                      <h4 className="font-semibold text-gray-800 text-sm mb-2">
+                        {video.name}
+                      </h4>
+                      <p className="text-gray-600 text-xs leading-relaxed">
+                        {video.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             
-            {/* Навигация */}
-            <button
-              onClick={prevVideo}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 transition-colors z-10"
-            >
-              <Icon name="ChevronLeft" size={24} className="text-gray-600" />
-            </button>
-            
-            <button
-              onClick={nextVideo}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 transition-colors z-10"
-            >
-              <Icon name="ChevronRight" size={24} className="text-gray-600" />
-            </button>
-            
-            {/* Миниатюры видео */}
-            <div className="flex justify-center space-x-4 overflow-x-auto pb-4">
-              {videoTestimonials.map((video, index) => (
-                <button
-                  key={video.id}
-                  onClick={() => setActiveVideoIndex(index)}
-                  className={`flex-shrink-0 w-20 h-28 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-                    activeVideoIndex === index 
-                      ? 'border-green-600 scale-105' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <video
-                    className="w-full h-full object-cover pointer-events-none"
-                    muted
-                  >
-                    <source src={video.videoUrl} type="video/quicktime" />
-                    <source src={video.videoUrl} type="video/mp4" />
-                  </video>
-                  {/* Индикатор активного видео */}
-                  {activeVideoIndex === index && (
-                    <div className="absolute inset-0 bg-green-600/20 flex items-center justify-center">
-                      <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-            
             {/* Индикаторы точками */}
-            <div className="flex justify-center space-x-3 mt-6">
+            <div className="flex justify-center space-x-2 mt-8">
               {videoTestimonials.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setActiveVideoIndex(index)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    activeVideoIndex === index ? 'bg-green-600' : 'bg-gray-300 hover:bg-gray-400'
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    Math.floor(activeVideoIndex / 3) === Math.floor(index / 3) 
+                      ? 'bg-green-600' 
+                      : 'bg-gray-300 hover:bg-gray-400'
                   }`}
                 />
               ))}
