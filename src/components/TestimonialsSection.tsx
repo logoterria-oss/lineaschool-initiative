@@ -45,6 +45,12 @@ export default function TestimonialsSection() {
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
+    },
+    {
+      id: 7,
+      name: "Мария, мама Ромы (11 лет)",
+      description: "",
+      videoUrl: "/IMG_1156.MOV",
     }
   ];
 
