@@ -314,13 +314,11 @@ export default function TestimonialsSection() {
               >
                 {photoReviews.map((photo, index) => (
                   <div key={index} className="w-full flex-shrink-0 flex justify-center">
-                    <div className="relative bg-white rounded-lg shadow-lg p-4 inline-block">
-                      <img 
-                        src={photo} 
-                        alt="Отзыв" 
-                        className="max-h-[60vh] max-w-full rounded-md object-contain" 
-                      />
-                    </div>
+                    <img 
+                      src={photo} 
+                      alt="Отзыв" 
+                      className="max-h-[70vh] max-w-[67%] rounded-lg shadow-lg object-contain" 
+                    />
                   </div>
                 ))}
               </div>
