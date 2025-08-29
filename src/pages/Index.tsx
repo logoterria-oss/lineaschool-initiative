@@ -6,7 +6,6 @@ import WhyNotTeacherSection from "@/components/WhyNotTeacherSection";
 import AboutSection from "@/components/AboutSection";
 import SpecialistsSection from "@/components/SpecialistsSection";
 import MethodologySection from "@/components/MethodologySection";
-import PricingSection from "@/components/PricingSection";
 import FAQSection from "@/components/FAQSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 
@@ -25,7 +24,6 @@ export default function Index() {
       <WhyNotTeacherSection />
       <AboutSection />
       <SpecialistsSection />
-      <PricingSection />
       <TestimonialsSection />
       <FAQSection />
 
