@@ -44,8 +44,8 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     
     try {
       // Замените YOUR_BOT_TOKEN и YOUR_CHAT_ID на ваши данные
-      const telegramBotToken = 'YOUR_BOT_TOKEN';
-      const chatId = 'YOUR_CHAT_ID';
+      const telegramBotToken = '8320634391:AAGxRCQdt_K-L5QliSLX9vDJmqhLlubfpB8';
+      const chatId = '1112267464';
       
       await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
         method: 'POST',
