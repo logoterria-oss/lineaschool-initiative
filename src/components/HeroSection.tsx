@@ -72,10 +72,10 @@ export default function HeroSection() {
                   afterAlt: "Почерк после коррекции дисграфии"
                 },
                 {
-                  beforeImage: "/img/48f49395-68a6-46e4-99d8-fc5d9338a979.jpg",
-                  afterImage: "/img/104206cb-4246-4e29-ab1b-5bdd8a92560e.jpg",
-                  beforeAlt: "Общее развитие до",
-                  afterAlt: "Общее развитие после"
+                  beforeImage: "https://cdn.poehali.dev/files/c3f18720-39f5-4fa4-859f-44e47527bfad.jpg",
+                  afterImage: "https://cdn.poehali.dev/files/522beb76-4da9-4342-b52b-b6b504d954b0.jpg",
+                  beforeAlt: "Диктант до коррекции",
+                  afterAlt: "Диктант после коррекции"
                 }
               ]}
             />
