@@ -7,7 +7,7 @@ export default function MobileFloatingButtons() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const handleQuestionClick = () => {
-    window.open('https://wa.me/79000000000?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank');
+    window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank');
   };
 
   return (

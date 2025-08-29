@@ -22,7 +22,7 @@ export default function Navigation() {
               size="lg" 
               variant="outline" 
               className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4"
-              onClick={() => window.open('https://wa.me/79000000000?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
+              onClick={() => window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
             >
               Задать вопрос
             </Button>
