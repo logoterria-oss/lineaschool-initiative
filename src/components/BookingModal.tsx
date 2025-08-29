@@ -36,10 +36,32 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Здесь будет логика отправки формы
-    console.log("Форма отправлена:", formData);
+    
+    // Отправка данных в Telegram
+    const message = `🎓 Новая запись на диагностику:\n\n👤 Имя: ${formData.name}\n📱 Телефон: ${formData.phone}\n📅 Дата: ${formData.date}\n🕐 Время: ${formData.time}`;
+    
+    try {
+      // Замените YOUR_BOT_TOKEN и YOUR_CHAT_ID на ваши данные
+      const telegramBotToken = 'YOUR_BOT_TOKEN';
+      const chatId = 'YOUR_CHAT_ID';
+      
+      await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML'
+        }),
+      });
+    } catch (error) {
+      console.error('Ошибка отправки в Telegram:', error);
+    }
+    
     onClose();
     setIsConfirmationOpen(true);
   };
