@@ -82,6 +82,12 @@ export default function HeroSection() {
                   afterImage: "https://cdn.poehali.dev/files/a81bb81f-ab4c-4668-8a90-83d89679b37f.jpg",
                   beforeAlt: "Сочинение до коррекции",
                   afterAlt: "Сочинение после коррекции"
+                },
+                {
+                  beforeImage: "https://cdn.poehali.dev/files/0f6ef2ec-0208-4a60-8099-161fc7cd436b.jpg",
+                  afterImage: "https://cdn.poehali.dev/files/eb1d9de3-ef3a-4a67-b5ff-9cb32fefb4ab.jpg",
+                  beforeAlt: "Рассказ до коррекции",
+                  afterAlt: "Рассказ после коррекции"
                 }
               ]}
             />
