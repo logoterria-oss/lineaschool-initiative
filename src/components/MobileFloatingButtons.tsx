@@ -7,12 +7,7 @@ export default function MobileFloatingButtons() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const handleQuestionClick = () => {
-    // Можно добавить логику для открытия чата или формы вопроса
-    // Пока что просто скроллим к контактам в футере
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.scrollIntoView({ behavior: 'smooth' });
-    }
+    window.open('https://wa.me/79000000000?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank');
   };
 
   return (
