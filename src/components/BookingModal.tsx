@@ -172,11 +172,6 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
         isOpen={isPrivacyOpen} 
         onClose={() => setIsPrivacyOpen(false)} 
       />
-      
-      <PrivacyModal 
-        isOpen={isPrivacyOpen} 
-        onClose={() => setIsPrivacyOpen(false)} 
-      />
     </Dialog>
   );
 }
