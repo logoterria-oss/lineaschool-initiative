@@ -12,10 +12,12 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import MobileFloatingButtons from "@/components/MobileFloatingButtons";
+import AnimatedSpirals from "@/components/AnimatedSpirals";
 
 export default function Index() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      <AnimatedSpirals />
       <Navigation />
       <HeroSection />
       <MethodologySection />
