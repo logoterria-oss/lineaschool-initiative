@@ -20,7 +20,12 @@ export default function CTASection() {
             <Icon name="Calendar" className="mr-2" size={20} />
             Записаться на диагностику
           </Button>
-          <Button size="lg" variant="outline" className="border-white bg-transparent text-white hover:bg-white hover:text-green-600 text-lg px-8">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="border-white bg-transparent text-white hover:bg-white hover:text-green-600 text-lg px-8"
+            onClick={() => window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
+          >
             <Icon name="Mail" className="mr-2" size={20} />
             Написать нам
           </Button>
