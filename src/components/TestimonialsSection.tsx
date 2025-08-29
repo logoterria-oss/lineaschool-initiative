@@ -271,75 +271,28 @@ export default function TestimonialsSection() {
           </div>
         </div>
 
-        {/* Текстовые отзывы с фото */}
+        {/* Фото-отзывы */}
         <div>
           <h3 className="text-2xl font-bold text-center text-gray-800 mb-12">
             Еще больше реальных отзывов
           </h3>
           
-          <div className="relative max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="md:flex">
-                {/* Фотография */}
-                <div className="md:w-2/5">
-                  <img
-                    src={textTestimonials[activeTestimonialIndex].photo}
-                    alt={textTestimonials[activeTestimonialIndex].name}
-                    className="w-full h-80 md:h-full object-cover"
-                  />
-                </div>
-                
-                {/* Контент отзыва */}
-                <div className="md:w-3/5 p-8 md:p-12 flex flex-col justify-center">
-                  {/* Звездочки */}
-                  <div className="flex mb-6">
-                    {[...Array(textTestimonials[activeTestimonialIndex].rating)].map((_, i) => (
-                      <Icon key={i} name="Star" size={24} className="text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  
-                  {/* Текст отзыва */}
-                  <blockquote className="text-gray-700 text-lg md:text-xl leading-relaxed mb-8">
-                    "{textTestimonials[activeTestimonialIndex].text}"
-                  </blockquote>
-                  
-                  {/* Автор */}
-                  <div>
-                    <p className="font-bold text-gray-800 text-lg">
-                      {textTestimonials[activeTestimonialIndex].name}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Навигация */}
-            <button
-              onClick={prevTestimonial}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors z-10"
-            >
-              <Icon name="ChevronLeft" size={24} className="text-gray-600" />
-            </button>
-            
-            <button
-              onClick={nextTestimonial}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors z-10"
-            >
-              <Icon name="ChevronRight" size={24} className="text-gray-600" />
-            </button>
-
-            {/* Индикаторы точками */}
-            <div className="flex justify-center space-x-3 mt-8">
-              {textTestimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveTestimonialIndex(index)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    activeTestimonialIndex === index ? 'bg-green-600' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <img src="/5298690179890020331.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020340.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020341.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020342.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020343.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020344.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020345.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020346.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020347.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020349.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/5298690179890020350.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/Снимок экрана 2025-08-29 110658.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/Снимок экрана 2025-08-29 113848.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/Снимок экрана 2025-08-29 114544.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+            <img src="/Снимок экрана 2025-08-29 114652.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
           </div>
         </div>
       </div>
