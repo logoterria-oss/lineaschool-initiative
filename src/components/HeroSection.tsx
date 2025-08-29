@@ -13,7 +13,7 @@ export default function HeroSection() {
           <div>
             <div className="inline-flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">🎓 Для детей 8-16 лет</div>
             <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              Онлайн-коррекция дислексии и дисграфии
+              LineaSchool: Онлайн-коррекция дислексии и дисграфии
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
               Уникальный комплексный нейрологопедический подход для успешного обучения вашего ребёнка
