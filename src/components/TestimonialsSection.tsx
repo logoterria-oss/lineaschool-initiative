@@ -5,6 +5,7 @@ export default function TestimonialsSection() {
   const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
+  const [photoReviewIndex, setPhotoReviewIndex] = useState(0);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement }>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -92,6 +93,45 @@ export default function TestimonialsSection() {
       rating: 5
     }
   ];
+
+  // Данные для фото-отзывов (разбиваем на группы по 6 фото)
+  const photoReviews = [
+    {
+      images: [
+        "/5298690179890020331.jpg",
+        "/5298690179890020340.jpg", 
+        "/5298690179890020341.jpg",
+        "/5298690179890020342.jpg",
+        "/5298690179890020343.jpg",
+        "/5298690179890020344.jpg"
+      ]
+    },
+    {
+      images: [
+        "/5298690179890020345.jpg",
+        "/5298690179890020346.jpg",
+        "/5298690179890020347.jpg", 
+        "/5298690179890020349.jpg",
+        "/5298690179890020350.jpg",
+        "/Снимок экрана 2025-08-29 110658.png"
+      ]
+    },
+    {
+      images: [
+        "/Снимок экрана 2025-08-29 113848.png",
+        "/Снимок экрана 2025-08-29 114544.png",
+        "/Снимок экрана 2025-08-29 114652.png"
+      ]
+    }
+  ];
+
+  const nextPhotoReview = () => {
+    setPhotoReviewIndex((prev) => (prev + 1) % photoReviews.length);
+  };
+
+  const prevPhotoReview = () => {
+    setPhotoReviewIndex((prev) => (prev - 1 + photoReviews.length) % photoReviews.length);
+  };
 
   const nextTestimonial = () => {
     setActiveTestimonialIndex((prev) => (prev + 1) % textTestimonials.length);
@@ -277,22 +317,57 @@ export default function TestimonialsSection() {
             Еще больше реальных отзывов
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            <img src="/5298690179890020331.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020340.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020341.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020342.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020343.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020344.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020345.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020346.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020347.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020349.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/5298690179890020350.jpg" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/Снимок экрана 2025-08-29 110658.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/Снимок экрана 2025-08-29 113848.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/Снимок экрана 2025-08-29 114544.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
-            <img src="/Снимок экрана 2025-08-29 114652.png" alt="Отзыв" className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" />
+          <div className="relative max-w-6xl mx-auto">
+            {/* Карусель */}
+            <div className="overflow-hidden">
+              <div 
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${photoReviewIndex * 100}%)` }}
+              >
+                {photoReviews.map((photo, index) => (
+                  <div key={index} className="w-full flex-shrink-0 px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {photo.images.map((img, imgIndex) => (
+                        <img 
+                          key={imgIndex}
+                          src={img} 
+                          alt="Отзыв" 
+                          className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Навигация */}
+            <button
+              onClick={prevPhotoReview}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors z-10"
+            >
+              <Icon name="ChevronLeft" size={24} className="text-gray-600" />
+            </button>
+            
+            <button
+              onClick={nextPhotoReview}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors z-10"
+            >
+              <Icon name="ChevronRight" size={24} className="text-gray-600" />
+            </button>
+
+            {/* Индикаторы точками */}
+            <div className="flex justify-center space-x-3 mt-8">
+              {photoReviews.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setPhotoReviewIndex(index)}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    photoReviewIndex === index ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
