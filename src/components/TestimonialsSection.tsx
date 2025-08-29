@@ -317,7 +317,7 @@ export default function TestimonialsSection() {
                     <img 
                       src={photo} 
                       alt="Отзыв" 
-                      className="max-h-screen w-auto rounded-lg shadow-lg" 
+                      className="max-h-[70vh] max-w-[67%] w-auto h-auto rounded-lg shadow-lg" 
                     />
                   </div>
                 ))}
