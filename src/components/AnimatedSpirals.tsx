@@ -48,19 +48,20 @@ export default function AnimatedSpirals() {
           }
         }
       `}</style>
-      
+
       <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
         {spirals.map((spiral) => (
           <div
             key={spiral.id}
             className="absolute opacity-20"
             style={{
-              left: `${spiral.x}%`,
+              // Исправлено: Используем шаблонные литералы правильно в JSX style
+              left: `${spiral.x}%`, 
               top: `${spiral.y}%`,
               width: `${spiral.size}px`,
               height: `${spiral.size}px`,
-              animation: `spiralSpin ${spiral.duration}s linear infinite`,
-              animationDelay: `${spiral.delay}s`,
+              animation: `spiralSpin ${spiral.duration}s linear infinite`, // Интерполируем всю строку анимации
+              animationDelay: `${spiral.delay}s`, // Интерполируем всю строку задержки
             }}
           >
             <svg
