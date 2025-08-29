@@ -94,35 +94,23 @@ export default function TestimonialsSection() {
     }
   ];
 
-  // Данные для фото-отзывов (разбиваем на группы по 6 фото)
+  // Данные для фото-отзывов (по одному изображению)
   const photoReviews = [
-    {
-      images: [
-        "/5298690179890020331.jpg",
-        "/5298690179890020340.jpg", 
-        "/5298690179890020341.jpg",
-        "/5298690179890020342.jpg",
-        "/5298690179890020343.jpg",
-        "/5298690179890020344.jpg"
-      ]
-    },
-    {
-      images: [
-        "/5298690179890020345.jpg",
-        "/5298690179890020346.jpg",
-        "/5298690179890020347.jpg", 
-        "/5298690179890020349.jpg",
-        "/5298690179890020350.jpg",
-        "/Снимок экрана 2025-08-29 110658.png"
-      ]
-    },
-    {
-      images: [
-        "/Снимок экрана 2025-08-29 113848.png",
-        "/Снимок экрана 2025-08-29 114544.png",
-        "/Снимок экрана 2025-08-29 114652.png"
-      ]
-    }
+    "/5298690179890020331.jpg",
+    "/5298690179890020340.jpg", 
+    "/5298690179890020341.jpg",
+    "/5298690179890020342.jpg",
+    "/5298690179890020343.jpg",
+    "/5298690179890020344.jpg",
+    "/5298690179890020345.jpg",
+    "/5298690179890020346.jpg",
+    "/5298690179890020347.jpg", 
+    "/5298690179890020349.jpg",
+    "/5298690179890020350.jpg",
+    "/Снимок экрана 2025-08-29 110658.png",
+    "/Снимок экрана 2025-08-29 113848.png",
+    "/Снимок экрана 2025-08-29 114544.png",
+    "/Снимок экрана 2025-08-29 114652.png"
   ];
 
   const nextPhotoReview = () => {
@@ -325,17 +313,12 @@ export default function TestimonialsSection() {
                 style={{ transform: `translateX(-${photoReviewIndex * 100}%)` }}
               >
                 {photoReviews.map((photo, index) => (
-                  <div key={index} className="w-full flex-shrink-0 px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {photo.images.map((img, imgIndex) => (
-                        <img 
-                          key={imgIndex}
-                          src={img} 
-                          alt="Отзыв" 
-                          className="w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow" 
-                        />
-                      ))}
-                    </div>
+                  <div key={index} className="w-full flex-shrink-0 flex justify-center">
+                    <img 
+                      src={photo} 
+                      alt="Отзыв" 
+                      className="max-w-md w-full h-auto rounded-lg shadow-lg" 
+                    />
                   </div>
                 ))}
               </div>
