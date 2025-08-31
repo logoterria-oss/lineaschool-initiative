@@ -22,7 +22,7 @@ export default function AnimatedSpirals() {
           id: i,
           x: Math.random() * 100,
           y: Math.random() * 100,
-          size: Math.random() * 30 + 20, // 20-50px
+          size: Math.random() * 100 + 60, // 60-160px для мобильных
           duration: Math.random() * 20 + 15, // 15-35 секунд
           delay: Math.random() * 10, // 0-10 секунд задержка
         });
@@ -53,7 +53,7 @@ export default function AnimatedSpirals() {
         {spirals.map((spiral) => (
           <div
             key={spiral.id}
-            className="absolute opacity-20"
+            className="absolute opacity-40 md:opacity-20"
             style={{
               // Исправлено: Используем шаблонные литералы правильно в JSX style
               left: `${spiral.x}%`, 
@@ -74,7 +74,7 @@ export default function AnimatedSpirals() {
                 fill="none"
                 stroke="rgb(34, 197, 94)"
                 strokeWidth="2"
-                opacity="0.6"
+                opacity="0.8"
               />
             </svg>
           </div>
