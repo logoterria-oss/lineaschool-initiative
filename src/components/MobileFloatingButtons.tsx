@@ -25,7 +25,7 @@ export default function MobileFloatingButtons() {
         
         <Button 
           onClick={() => setIsBookingModalOpen(true)}
-          className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-lg h-12 text-base font-semibold"
+          className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-lg h-12 text-base font-semibold animate-pulse"
         >
           <Icon name="Calendar" className="mr-2" size={20} />
           Записаться
