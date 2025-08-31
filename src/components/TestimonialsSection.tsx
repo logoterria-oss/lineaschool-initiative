@@ -16,49 +16,42 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
-      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 2,
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
-      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 3,
       name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
-      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 4,
       name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
-      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 5,
       name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
-      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 6,
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
-      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 7,
       name: "Мария, мама Ромы (11 лет)",
       description: "",
       videoUrl: "/IMG_1156.MOV",
-      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     }
   ];
 
@@ -253,7 +246,6 @@ export default function TestimonialsSection() {
                           controls={playingVideoId === video.id}
                           playsInline
                           preload="metadata"
-                          poster={video.poster}
                         >
                           <source src={video.videoUrl} type="video/quicktime" />
                           <source src={video.videoUrl} type="video/mp4" />
