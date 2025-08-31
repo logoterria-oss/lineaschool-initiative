@@ -49,7 +49,7 @@ export default function AnimatedSpirals() {
         }
       `}</style>
 
-      <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {spirals.map((spiral) => (
           <div
             key={spiral.id}
