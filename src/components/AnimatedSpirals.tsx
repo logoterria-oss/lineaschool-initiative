@@ -18,10 +18,36 @@ export default function AnimatedSpirals() {
       const spiralCount = 8; // Редкие спирали
 
       for (let i = 0; i < spiralCount; i++) {
+        // Случайно выбираем сторону экрана
+        const side = Math.floor(Math.random() * 4); // 0=левая, 1=правая, 2=верхняя, 3=нижняя
+        let x, y;
+        
+        switch (side) {
+          case 0: // Левая сторона
+            x = Math.random() * 15; // 0-15%
+            y = Math.random() * 100;
+            break;
+          case 1: // Правая сторона
+            x = 85 + Math.random() * 15; // 85-100%
+            y = Math.random() * 100;
+            break;
+          case 2: // Верхняя сторона
+            x = 15 + Math.random() * 70; // 15-85%
+            y = Math.random() * 20; // 0-20%
+            break;
+          case 3: // Нижняя сторона
+            x = 15 + Math.random() * 70; // 15-85%
+            y = 80 + Math.random() * 20; // 80-100%
+            break;
+          default:
+            x = Math.random() * 15;
+            y = Math.random() * 100;
+        }
+
         newSpirals.push({
           id: i,
-          x: Math.random() * 100,
-          y: Math.random() * 100,
+          x,
+          y,
           size: Math.random() * 100 + 60, // 60-160px для мобильных
           duration: Math.random() * 20 + 15, // 15-35 секунд
           delay: Math.random() * 10, // 0-10 секунд задержка
