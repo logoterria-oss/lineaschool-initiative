@@ -16,42 +16,49 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
+      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 2,
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
+      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 3,
       name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
+      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 4,
       name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
+      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 5,
       name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
+      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 6,
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
+      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     },
     {
       id: 7,
       name: "Мария, мама Ромы (11 лет)",
       description: "",
       videoUrl: "/IMG_1156.MOV",
+      poster: "https://cdn.poehali.dev/files/517283aa-3664-4bdc-b8d6-9596050fe6be.png",
     }
   ];
 
@@ -130,7 +137,10 @@ export default function TestimonialsSection() {
   };
 
   const getScrollAmount = (index: number) => {
-    return index * (320 + 24); // 320px ширина + 24px gap
+    // 288px (w-72) на мобильных, 320px (w-80) на десктопе + gap
+    const cardWidth = window.innerWidth >= 640 ? 320 : 288;
+    const gap = window.innerWidth >= 640 ? 24 : 16;
+    return index * (cardWidth + gap);
   };
 
   const nextVideo = () => {
@@ -206,22 +216,22 @@ export default function TestimonialsSection() {
               {/* Кнопки навигации */}
               <button
                 onClick={prevVideo}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-3 hover:bg-gray-50 transition-colors"
+                className="absolute left-2 sm:left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors"
               >
-                <Icon name="ChevronLeft" size={20} className="text-gray-600" />
+                <Icon name="ChevronLeft" size={16} className="text-gray-600 sm:w-5 sm:h-5" />
               </button>
               
               <button
                 onClick={nextVideo}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-3 hover:bg-gray-50 transition-colors"
+                className="absolute right-2 sm:right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors"
               >
-                <Icon name="ChevronRight" size={20} className="text-gray-600" />
+                <Icon name="ChevronRight" size={16} className="text-gray-600 sm:w-5 sm:h-5" />
               </button>
 
               {/* Видео сетка */}
               <div 
                 ref={scrollContainerRef}
-                className="flex gap-6 overflow-x-auto scrollbar-hide px-12"
+                className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide px-8 sm:px-12"
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
@@ -230,7 +240,7 @@ export default function TestimonialsSection() {
                 {videoTestimonials.map((video, index) => (
                     <div 
                       key={video.id} 
-                      className="flex-shrink-0 w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                      className="flex-shrink-0 w-72 sm:w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
                     >
                       {/* Видео с адаптивным форматом */}
                       <div className="aspect-[9/16] bg-gray-900 relative group">
@@ -243,6 +253,7 @@ export default function TestimonialsSection() {
                           controls={playingVideoId === video.id}
                           playsInline
                           preload="metadata"
+                          poster={video.poster}
                         >
                           <source src={video.videoUrl} type="video/quicktime" />
                           <source src={video.videoUrl} type="video/mp4" />
@@ -255,8 +266,8 @@ export default function TestimonialsSection() {
                           onClick={() => toggleVideoPlay(video.id)}
                           className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-40 transition-all duration-300"
                         >
-                          <div className="bg-white bg-opacity-95 rounded-full p-4 hover:scale-110 transition-transform duration-200">
-                            <Icon name="Play" size={32} className="text-green-600 ml-1" />
+                          <div className="bg-white bg-opacity-95 rounded-full p-3 sm:p-4 hover:scale-110 transition-transform duration-200">
+                            <Icon name="Play" size={24} className="text-green-600" style={{ marginLeft: '2px' }} />
                           </div>
                         </button>
                       )}
