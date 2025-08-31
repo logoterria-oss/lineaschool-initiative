@@ -106,6 +106,7 @@
       "Segoe UI",
       Roboto,
       sans-serif;
+    overflow-x: hidden;
   }
 
   h1,
@@ -146,5 +147,23 @@
     );
     background-size: 200% 100%;
     animation: gradient-shimmer 8s ease-in-out infinite;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Предотвращение горизонтальной прокрутки на мобильных */
+  html {
+    overflow-x: hidden;
+  }
+
+  #root {
+    overflow-x: hidden;
   }
 }

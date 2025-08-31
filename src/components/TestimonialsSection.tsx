@@ -228,6 +228,9 @@ export default function TestimonialsSection() {
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
+                  touchAction: 'pan-x',
+                  overscrollBehavior: 'contain',
+                  WebkitOverflowScrolling: 'touch'
                 }}
               >
                 {videoTestimonials.map((video, index) => (
