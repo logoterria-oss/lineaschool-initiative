@@ -26,9 +26,9 @@ const pricingPlans = [
   {
     title: "3 месяца",
     subtitle: "Оптимальный выбор",
-    totalLessons: 54,
+    totalLessons: 48,
     pricePerLesson: "1 170 ₽",
-    totalPrice: "63 180 ₽",
+    totalPrice: "56 160 ₽",
     lessons: [
       "12 индивидуальных занятий с логопедом",
       "12 индивидуальных занятий с нейропсихологом",
