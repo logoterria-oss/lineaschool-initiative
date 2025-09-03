@@ -232,11 +232,19 @@ export default function TestimonialsSection() {
               <div 
                 ref={scrollContainerRef}
                 className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide px-8 sm:px-12"
+                onTouchStart={(e) => {
+                  // Allow horizontal scroll only when touching within the scroll container
+                  e.currentTarget.style.touchAction = 'pan-x';
+                }}
+                onTouchEnd={(e) => {
+                  // Reset touch action to allow vertical scrolling
+                  e.currentTarget.style.touchAction = 'pan-y pan-x';
+                }}
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
-                  touchAction: 'pan-x',
-                  overscrollBehavior: 'contain',
+                  touchAction: 'pan-y pan-x',
+                  overscrollBehavior: 'contain auto',
                   WebkitOverflowScrolling: 'touch'
                 }}
               >
