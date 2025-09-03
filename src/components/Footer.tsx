@@ -47,7 +47,7 @@ export default function Footer() {
                 <img 
                   src="https://cdn.poehali.dev/files/a2ba0f82-7397-45a8-bb0a-2eb5f60003f3.png" 
                   alt="МИР" 
-                  className="w-8 h-8 object-contain"
+                  className="h-9 w-auto object-contain"
                 />
               </div>
 
