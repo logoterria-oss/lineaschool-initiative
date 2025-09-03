@@ -29,6 +29,7 @@ interface BookingModalProps {
 export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     phone: "",
     date: "",
     time: "",
@@ -40,7 +41,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     e.preventDefault();
     
     // Отправка данных в Telegram
-    const message = `🎓 Новая запись на диагностику:\n\n👤 Имя: ${formData.name}\n📱 Телефон: ${formData.phone}\n📅 Дата: ${formData.date}\n🕐 Время: ${formData.time}`;
+    const message = `🎓 Новая запись на диагностику:\n\n👤 Имя: ${formData.name}\n📧 E-mail: ${formData.email}\n📱 Телефон: ${formData.phone}\n📅 Дата: ${formData.date}\n🕐 Время: ${formData.time}`;
     
     try {
       // Замените YOUR_BOT_TOKEN и YOUR_CHAT_ID на ваши данные
@@ -93,6 +94,21 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Ваше имя"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                E-mail *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="example@mail.com"
                 required
                 className="mt-1"
               />
