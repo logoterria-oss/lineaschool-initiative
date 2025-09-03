@@ -55,7 +55,7 @@ export default function Footer() {
                 <img 
                   src="https://cdn.poehali.dev/files/22ad93d0-a4be-48dc-88e7-5d6cbd152bf5.png" 
                   alt="СБП" 
-                  className="h-14 w-auto object-contain"
+                  className="h-18 w-auto object-contain"
                 />
               </div>
               {/* Долами */}
