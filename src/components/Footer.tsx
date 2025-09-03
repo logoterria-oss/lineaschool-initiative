@@ -42,22 +42,15 @@ export default function Footer() {
           <div className="md:col-span-1">
             <h3 className="font-semibold text-gray-900 mb-4">Способы оплаты</h3>
             <div className="flex gap-3">
-              {/* Т-Банк */}
+              {/* МИР */}
               <div className="w-8 h-8 flex items-center justify-center">
                 <img 
-                  src="https://cdn.poehali.dev/files/1c188f27-74e4-4cb4-a191-2b35d105c651.png" 
-                  alt="Т-Банк" 
-                  className="w-9 h-9 object-cover"
+                  src="https://cdn.poehali.dev/files/a2ba0f82-7397-45a8-bb0a-2eb5f60003f3.png" 
+                  alt="МИР" 
+                  className="w-8 h-8 object-contain"
                 />
               </div>
-              {/* Яндекс Сплит */}
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img 
-                  src="https://cdn.poehali.dev/files/a39d3277-8496-4355-aec7-ffea99108d47.jpeg" 
-                  alt="Яндекс Сплит" 
-                  className="w-8 h-8 object-cover rounded-full"
-                />
-              </div>
+
               {/* Долами */}
               <div className="w-8 h-8 flex items-center justify-center">
                 <img 
