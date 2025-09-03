@@ -263,7 +263,7 @@ export default function TestimonialsSection() {
                           onEnded={handleVideoEnded}
                           controls={playingVideoId === video.id}
                           playsInline
-                          preload="none"
+                          preload="metadata"
                           loading="lazy"
                         >
                           <source src={video.videoUrl} type="video/quicktime" />
