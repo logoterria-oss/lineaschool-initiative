@@ -132,33 +132,35 @@ export default function MethodologySection() {
             </div>
 
             {/* Правая колонка - большая схема мозга */}
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h4 className="text-lg font-bold text-center mb-6">Карта активности мозга</h4>
-              <div className="h-96">
-                <BrainSVG activeAreas={['frontal', 'parietal', 'temporal', 'occipital', 'motor']} />
+            <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 lg:p-8">
+              <h4 className="text-base sm:text-lg font-bold text-center mb-4">Карта активности мозга</h4>
+              <div className="h-48 sm:h-64 lg:h-96 flex items-center justify-center">
+                <div className="w-full max-w-xs sm:max-w-sm lg:max-w-none">
+                  <BrainSVG activeAreas={['frontal', 'parietal', 'temporal', 'occipital', 'motor']} />
+                </div>
               </div>
               
               {/* Легенда */}
-              <div className="mt-6 grid grid-cols-2 gap-2 text-xs">
+              <div className="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-pink-300 rounded mr-2"></div>
-                  Лобная доля
+                  <div className="w-4 h-4 bg-pink-300 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Лобная доля</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-yellow-400 rounded mr-2"></div>
-                  Теменная доля
+                  <div className="w-4 h-4 bg-yellow-400 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Теменная доля</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-                  Височная доля
+                  <div className="w-4 h-4 bg-green-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Височная доля</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                  Затылочная доля
+                  <div className="w-4 h-4 bg-red-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Затылочная доля</span>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-cyan-500 rounded mr-2"></div>
-                  Первичная моторная кора
+                <div className="flex items-center sm:col-span-2 sm:justify-center">
+                  <div className="w-4 h-4 bg-cyan-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Первичная моторная кора</span>
                 </div>
               </div>
             </div>
