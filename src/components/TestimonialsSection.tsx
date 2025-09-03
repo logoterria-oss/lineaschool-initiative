@@ -17,48 +17,41 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
-      posterUrl: "/img/0255c39f-c98e-4d5f-a075-b54b2904d41e.jpg"
     },
     {
       id: 2,
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
-      posterUrl: "/img/178966e4-ef01-473b-b8ed-66da56fda535.jpg"
     },
     {
       id: 3,
       name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
-      posterUrl: "/img/3e0f9031-77a6-489a-8c85-af886c41ac84.jpg"
     },
     {
       id: 4,
       name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
-      posterUrl: "/img/f340c15a-4282-4066-bf8b-6612035706fa.jpg"
     },
     {
       id: 5,
       name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
-      posterUrl: "/img/dbe27660-0e48-43c1-b264-1f5442fa8796.jpg"
     },
     {
       id: 6,
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
-      posterUrl: "/img/b7ed6b08-f084-4c6f-a91e-b4222b673c22.jpg"
     },
     {
       id: 7,
       name: "Мария, мама Ромы (11 лет)",
-      description: "Сын стал говорить правильно",
-      posterUrl: "/img/d677efc0-22d4-4ede-b872-770d29dda3dc.jpg",
+      description: "",
       videoUrl: "/IMG_1156.MOV",
     }
   ];
@@ -261,17 +254,16 @@ export default function TestimonialsSection() {
                       className="flex-shrink-0 w-72 sm:w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
                     >
                       {/* Видео с адаптивным форматом */}
-                      <div className="aspect-[9/16] bg-gray-100 relative group">
+                      <div className="aspect-[9/16] bg-gray-900 relative group">
                         <video
                           ref={(el) => {
                             if (el) videoRefs.current[video.id] = el;
                           }}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain bg-black"
                           onEnded={handleVideoEnded}
                           controls={playingVideoId === video.id}
                           playsInline
-                          preload="metadata"
-                          poster={video.posterUrl}
+                          preload="none"
                           loading="lazy"
                         >
                           <source src={video.videoUrl} type="video/quicktime" />
