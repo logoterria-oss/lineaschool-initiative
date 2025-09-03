@@ -1,10 +1,10 @@
-import Header from '@/components/Header';
+import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
+      <Navigation />
       
       <main className="flex-grow">
         <div className="max-w-4xl mx-auto px-4 py-12">
