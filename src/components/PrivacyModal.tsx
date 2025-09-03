@@ -20,9 +20,10 @@ export default function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
         </div>
         
         <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
-          <h3 className="text-lg font-semibold text-[#1a3b5c] mb-4">
+          <h3 className="text-lg font-semibold text-[#1a3b5c] mb-2">
             СОГЛАСИЕ НА ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ КЛИЕНТОВ-ФИЗИЧЕСКИХ ЛИЦ
           </h3>
+          <p className="text-sm text-gray-600 mb-4">г.Новосибирск, 03.09.2025</p>
           
           <p>
             Присоединяясь к настоящему Согласию и оставляя свои данные на интернет сайте 
