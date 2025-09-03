@@ -77,33 +77,33 @@ export default function MethodologySection() {
         </div>
 
         {/* Детальная инфографика навыков */}
-        <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-xl mb-16">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-12 shadow-xl mb-16">
 
           
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start lg:items-center">
             {/* Левая колонка - навыки */}
-            <div className="space-y-8">
-              <div className="border-l-4 border-purple-500 pl-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Сукцессивное восприятие</h4>
-                <p className="text-gray-600 mb-3">Последовательное восприятие, которое необходимо для того, чтобы буквы и слоги не "путались" при письме и чтении</p>
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+              <div className="border-l-4 border-purple-500 pl-3 sm:pl-4 lg:pl-6">
+                <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Сукцессивное восприятие</h4>
+                <p className="text-sm sm:text-base text-gray-600 mb-3">Последовательное восприятие, которое необходимо для того, чтобы буквы и слоги не "путались" при письме и чтении</p>
                 <div className="flex items-center text-sm text-purple-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Лобные доли
                 </div>
               </div>
 
-              <div className="border-l-4 border-blue-500 pl-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Симультанное восприятие</h4>
-                <p className="text-gray-600 mb-3">Целостное восприятие, которое необходимо для беглого чтения не по слогам, а целыми словами и фразами</p>
+              <div className="border-l-4 border-blue-500 pl-3 sm:pl-4 lg:pl-6">
+                <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Симультанное восприятие</h4>
+                <p className="text-sm sm:text-base text-gray-600 mb-3">Целостное восприятие, которое необходимо для беглого чтения не по слогам, а целыми словами и фразами</p>
                 <div className="flex items-center text-sm text-blue-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Теменные доли
                 </div>
               </div>
 
-              <div className="border-l-4 border-cyan-500 pl-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Оптико-моторный компонент</h4>
-                <p className="text-gray-600 mb-3">
+              <div className="border-l-4 border-cyan-500 pl-3 sm:pl-4 lg:pl-6">
+                <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Оптико-моторный компонент</h4>
+                <p className="text-sm sm:text-base text-gray-600 mb-3">
                   Необходим для правильного написания букв и разборчивого почерка
                 </p>
                 <div className="flex items-center text-sm text-cyan-600">
@@ -112,18 +112,18 @@ export default function MethodologySection() {
                 </div>
               </div>
 
-              <div className="border-l-4 border-orange-500 pl-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Фонематические процессы</h4>
-                <p className="text-gray-600 mb-3">Умение слышать, различать и анализировать звуки речи для последующей кодировки/декодировки букв</p>
+              <div className="border-l-4 border-orange-500 pl-3 sm:pl-4 lg:pl-6">
+                <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Фонематические процессы</h4>
+                <p className="text-sm sm:text-base text-gray-600 mb-3">Умение слышать, различать и анализировать звуки речи для последующей кодировки/декодировки букв</p>
                 <div className="flex items-center text-sm text-orange-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Височные доли
                 </div>
               </div>
 
-              <div className="border-l-4 border-green-500 pl-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Слоговый и языковой анализ</h4>
-                <p className="text-gray-600 mb-3">Анализ последовательности букв, слогов, слов и предложений; умение видеть их границы</p>
+              <div className="border-l-4 border-green-500 pl-3 sm:pl-4 lg:pl-6">
+                <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Слоговый и языковой анализ</h4>
+                <p className="text-sm sm:text-base text-gray-600 mb-3">Анализ последовательности букв, слогов, слов и предложений; умение видеть их границы</p>
                 <div className="flex items-center text-sm text-green-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Лобные, височные, теменные доли
