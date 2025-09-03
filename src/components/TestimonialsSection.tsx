@@ -254,20 +254,26 @@ export default function TestimonialsSection() {
                       className="flex-shrink-0 w-72 sm:w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
                     >
                       {/* Видео с адаптивным форматом */}
-                      <div className="aspect-[9/16] bg-gray-900 relative group">
+                      <div className="aspect-[9/16] bg-gray-100 relative group">
                         <video
                           ref={(el) => {
-                            if (el) videoRefs.current[video.id] = el;
+                            if (el) {
+                              videoRefs.current[video.id] = el;
+                              // Принудительно загружаем метаданные для получения обложки
+                              el.load();
+                            }
                           }}
-                          className="w-full h-full object-contain bg-black"
+                          className="w-full h-full object-cover"
                           onEnded={handleVideoEnded}
                           controls={playingVideoId === video.id}
                           playsInline
-                          preload="metadata"
-                          loading="lazy"
+                          preload="auto"
+                          muted
+                          webkit-playsinline
+                          x5-playsinline
                         >
-                          <source src={video.videoUrl} type="video/quicktime" />
                           <source src={video.videoUrl} type="video/mp4" />
+                          <source src={video.videoUrl} type="video/quicktime" />
                           Ваш браузер не поддерживает видео.
                         </video>
                       
