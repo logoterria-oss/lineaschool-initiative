@@ -111,9 +111,7 @@ export default function Privacy() {
                 силу с момента ее размещения, если иное не предусмотрено новой редакцией Соглашения.
               </p>
 
-              <p>
-                Действующая редакция всегда находится на странице по адресу: https://lineaschool.ru/personal-data
-              </p>
+              <p>Действующая редакция всегда находится на странице по адресу: https://lineaschool.ru/privacy</p>
 
               <p className="text-sm text-gray-600">
                 *WhatsApp — продукт компании Meta Platforms Inc., деятельность которой признана экстремистской 
