@@ -1,10 +1,10 @@
-import Header from "@/components/Header";
+import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
 export default function OfferPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Navigation />
       
       <main className="py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
