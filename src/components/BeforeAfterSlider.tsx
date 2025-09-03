@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 
@@ -22,6 +22,29 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
   const animationRef = useRef<number>();
 
   const currentData = examples[currentExample];
+  
+  // Preload only current and next images for better mobile performance
+  const imagesToPreload = useMemo(() => {
+    const current = examples[currentExample];
+    const next = examples[(currentExample + 1) % examples.length];
+    return [current?.beforeImage, current?.afterImage, next?.beforeImage, next?.afterImage].filter(Boolean);
+  }, [examples, currentExample]);
+  
+  useEffect(() => {
+    // Preload only essential images on mobile
+    if (window.innerWidth <= 768) {
+      imagesToPreload.slice(0, 2).forEach(src => {
+        const img = new Image();
+        img.loading = 'lazy';
+        img.src = src;
+      });
+    } else {
+      imagesToPreload.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [imagesToPreload]);
 
   const handleMouseDown = () => {
     setIsDragging(true);
@@ -149,6 +172,8 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
             alt={currentData.beforeAlt}
             className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : 'object-top'}`}
             draggable={false}
+            loading="lazy"
+            decoding="async"
           />
           <div 
             className="absolute inset-0 overflow-hidden"
@@ -159,6 +184,8 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
               alt={currentData.afterAlt}
               className={`w-full h-full object-cover block ${currentExample === 2 ? 'object-center' : 'object-top'}`}
               draggable={false}
+              loading="lazy"
+              decoding="async"
             />
           </div>
           

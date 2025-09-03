@@ -11,11 +11,32 @@ interface Spiral {
 
 export default function AnimatedSpirals() {
   const [spirals, setSpirals] = useState<Spiral[]>([]);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Check for reduced motion preference and mobile device
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    setIsMobile(window.innerWidth <= 768);
+    
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleMotionChange = () => setPrefersReducedMotion(mediaQuery.matches);
+    
+    window.addEventListener('resize', handleResize);
+    mediaQuery.addEventListener('change', handleMotionChange);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      mediaQuery.removeEventListener('change', handleMotionChange);
+    };
+  }, []);
 
   useEffect(() => {
     const generateSpirals = () => {
       const newSpirals: Spiral[] = [];
-      const spiralCount = 8; // Редкие спирали
+      // Reduce spiral count on mobile for better performance
+      const spiralCount = isMobile ? 4 : 8;
 
       for (let i = 0; i < spiralCount; i++) {
         // Случайно выбираем сторону экрана
@@ -48,16 +69,16 @@ export default function AnimatedSpirals() {
           id: i,
           x,
           y,
-          size: Math.random() * 100 + 60, // 60-160px для мобильных
-          duration: Math.random() * 20 + 15, // 15-35 секунд
-          delay: Math.random() * 10, // 0-10 секунд задержка
+          size: isMobile ? Math.random() * 40 + 30 : Math.random() * 100 + 60, // Smaller on mobile
+          duration: isMobile ? Math.random() * 30 + 20 : Math.random() * 20 + 15, // Slower on mobile
+          delay: Math.random() * 10,
         });
       }
       setSpirals(newSpirals);
     };
 
     generateSpirals();
-  }, []);
+  }, [isMobile]);
 
   return (
     <>
@@ -75,8 +96,9 @@ export default function AnimatedSpirals() {
         }
       `}</style>
 
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {spirals.map((spiral) => (
+      {!prefersReducedMotion && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          {spirals.map((spiral) => (
           <div
             key={spiral.id}
             className="absolute opacity-40 md:opacity-20"
@@ -104,8 +126,9 @@ export default function AnimatedSpirals() {
               />
             </svg>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

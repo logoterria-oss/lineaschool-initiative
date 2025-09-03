@@ -74,6 +74,8 @@ export default function SpecialistsSection() {
                     src={specialist.avatar} 
                     alt={specialist.name}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
@@ -119,6 +121,8 @@ export default function SpecialistsSection() {
                       src={specialist.avatar} 
                       alt={specialist.name}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                   <div className="space-y-3">

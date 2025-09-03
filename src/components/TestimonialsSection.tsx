@@ -5,6 +5,7 @@ export default function TestimonialsSection() {
   const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
+  const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set());
   const [photoReviewIndex, setPhotoReviewIndex] = useState(0);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement }>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -180,6 +181,12 @@ export default function TestimonialsSection() {
       video.pause();
       setPlayingVideoId(null);
     } else {
+      // Load video only when user clicks to play
+      if (!loadedVideos.has(videoId)) {
+        video.load();
+        setLoadedVideos(prev => new Set([...prev, videoId]));
+      }
+      
       // Остановить все остальные видео
       Object.values(videoRefs.current).forEach(v => v.pause());
       video.play();
@@ -248,7 +255,8 @@ export default function TestimonialsSection() {
                           onEnded={handleVideoEnded}
                           controls={playingVideoId === video.id}
                           playsInline
-                          preload="metadata"
+                          preload="none"
+                          loading="lazy"
                         >
                           <source src={video.videoUrl} type="video/quicktime" />
                           <source src={video.videoUrl} type="video/mp4" />
