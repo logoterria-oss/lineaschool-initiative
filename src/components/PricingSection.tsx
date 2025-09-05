@@ -33,7 +33,7 @@ const pricingData = [
           {
             type: "dolami",
             icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "Оплата Долями"
+            text: "оплата Долями"
           }
         ]
       },
@@ -50,11 +50,11 @@ const pricingData = [
           {
             type: "dolami",
             icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "Оплата Долями"
+            text: "оплата Долями"
           },
           {
             type: "installment",
-            text: "рассрочка от банков-партнеров"
+            text: "рассрочка от банков"
           }
         ]
       }
@@ -87,7 +87,7 @@ const pricingData = [
           {
             type: "dolami",
             icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "Оплата Долями"
+            text: "оплата Долями"
           }
         ]
       },
@@ -130,7 +130,7 @@ const pricingData = [
           {
             type: "dolami",
             icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "Оплата Долями"
+            text: "оплата Долями"
           }
         ]
       },
@@ -147,11 +147,11 @@ const pricingData = [
           {
             type: "dolami",
             icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "Оплата Долями"
+            text: "оплата Долями"
           },
           {
             type: "installment",
-            text: "рассрочка от банков-партнеров"
+            text: "рассрочка от банков"
           }
         ]
       }
@@ -265,7 +265,7 @@ export default function PricingSection() {
                                       />
                                     </div>
                                   ) : (
-                                    <div className="flex mr-2 flex-shrink-0 relative">
+                                    <div className="flex mr-2 flex-shrink-0 gap-1">
                                       <div className="w-4 h-4 overflow-hidden rounded-sm">
                                         <img 
                                           src="https://cdn.poehali.dev/files/c70fd8e5-616d-43e1-ae1f-94f4c0208549.jpg" 
@@ -273,7 +273,7 @@ export default function PricingSection() {
                                           className="w-full h-full object-cover"
                                         />
                                       </div>
-                                      <div className="w-4 h-4 overflow-hidden rounded-sm -ml-2">
+                                      <div className="w-4 h-4 overflow-hidden rounded-sm">
                                         <img 
                                           src="https://cdn.poehali.dev/files/4f1976b5-f535-425b-a9b0-78c4b35b9e62.png" 
                                           alt="МТС Банк"
