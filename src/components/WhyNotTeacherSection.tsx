@@ -108,6 +108,16 @@ export default function WhyNotTeacherSection() {
 
         {/* Mobile Swipeable Cards */}
         <div className="md:hidden relative">
+          {/* Left Arrow */}
+          <div className="absolute left-2 top-1/2 transform -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full shadow-lg p-2">
+            <Icon name="ChevronLeft" size={20} className="text-gray-600" />
+          </div>
+          
+          {/* Right Arrow */}
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full shadow-lg p-2">
+            <Icon name="ChevronRight" size={20} className="text-gray-600" />
+          </div>
+          
           <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-2"
             style={{
               scrollbarWidth: 'none',
