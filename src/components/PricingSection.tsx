@@ -8,7 +8,7 @@ import BookingModal from "@/components/BookingModal";
 const pricingData = [
   {
     title: "2 урока в неделю",
-    description: "Легкая степень выраженности нарушений",
+    description: "Легкая степень выраженности дислексии/дисграфии",
     plans: [
       {
         title: "1 месяц",
@@ -62,7 +62,7 @@ const pricingData = [
   },
   {
     title: "3 урока в неделю",
-    description: "Средняя степень выраженности нарушений",
+    description: "Средняя степень выраженности дислексии/дисграфии",
     plans: [
       {
         title: "1 месяц",
@@ -105,7 +105,7 @@ const pricingData = [
   },
   {
     title: "4 урока в неделю",
-    description: "Тяжелая степень выраженности нарушений",
+    description: "Тяжелая степень выраженности дислексии/дисграфии",
     plans: [
       {
         title: "1 месяц",
