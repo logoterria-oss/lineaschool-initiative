@@ -99,7 +99,13 @@ const pricingData = [
         pricePerLesson: "1 030 ₽",
         totalPrice: "74 160 ₽",
         features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 14%"
+        discount: "Экономия 14%",
+        paymentOptions: [
+          {
+            type: "installment",
+            text: "рассрочка от банков"
+          }
+        ]
       }
     ]
   },
