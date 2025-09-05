@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer id="footer" className="bg-white border-t border-gray-200 py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-8">
           {/* Логотип и контакты */}
           <div className="md:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
