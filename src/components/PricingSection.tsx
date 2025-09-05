@@ -8,7 +8,7 @@ import BookingModal from "@/components/BookingModal";
 const pricingData = [
   {
     title: "2 урока в неделю",
-    description: "Размеренный темп обучения",
+    description: "Легкая степень выраженности нарушений",
     plans: [
       {
         title: "1 месяц",
@@ -62,7 +62,7 @@ const pricingData = [
   },
   {
     title: "3 урока в неделю",
-    description: "Оптимальный темп развития",
+    description: "Средняя степень выраженности нарушений",
     plans: [
       {
         title: "1 месяц",
@@ -105,7 +105,7 @@ const pricingData = [
   },
   {
     title: "4 урока в неделю",
-    description: "Интенсивное развитие",
+    description: "Тяжелая степень выраженности нарушений",
     plans: [
       {
         title: "1 месяц",
