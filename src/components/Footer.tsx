@@ -20,7 +20,7 @@ export default function Footer() {
                 <Icon name="Mail" size={16} />
                 <span>lineaschool@mail.ru</span>
               </a>
-              <a href="https://wa.me/79236251611" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
+              <a href="https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
                 <Icon name="MessageCircle" size={16} />
                 <span>WhatsApp: +79236251611</span>
               </a>
