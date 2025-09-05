@@ -172,7 +172,7 @@ const pricingData = [
 
 export default function PricingSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<number[]>([0]);
+  const [openSections, setOpenSections] = useState<number[]>([]);
 
   const toggleSection = (index: number) => {
     setOpenSections(prev => 
