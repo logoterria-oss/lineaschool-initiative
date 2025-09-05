@@ -28,7 +28,14 @@ const pricingData = [
         totalPrice: "30 000 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 9%"
+        discount: "Экономия 9%",
+        paymentOptions: [
+          {
+            type: "dolami",
+            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
+            text: "Оплата Долями"
+          }
+        ]
       },
       {
         title: "6 месяцев",
@@ -38,7 +45,24 @@ const pricingData = [
         pricePerLesson: "1 150 ₽",
         totalPrice: "55 200 ₽",
         features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 16%"
+        discount: "Экономия 16%",
+        paymentOptions: [
+          {
+            type: "dolami",
+            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
+            text: "Оплата Долями"
+          },
+          {
+            type: "installment",
+            icon: "https://cdn.poehali.dev/files/c70fd8e5-616d-43e1-ae1f-94f4c0208549.jpg",
+            text: "ТБанк"
+          },
+          {
+            type: "installment",
+            icon: "https://cdn.poehali.dev/files/4f1976b5-f535-425b-a9b0-78c4b35b9e62.png",
+            text: "МТС Банк"
+          }
+        ]
       }
     ]
   },
@@ -64,7 +88,14 @@ const pricingData = [
         totalPrice: "39 600 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 8%"
+        discount: "Экономия 8%",
+        paymentOptions: [
+          {
+            type: "dolami",
+            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
+            text: "Оплата Долями"
+          }
+        ]
       },
       {
         title: "6 месяцев",
@@ -100,7 +131,14 @@ const pricingData = [
         totalPrice: "50 400 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 11%"
+        discount: "Экономия 11%",
+        paymentOptions: [
+          {
+            type: "dolami",
+            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
+            text: "Оплата Долями"
+          }
+        ]
       },
       {
         title: "6 месяцев",
@@ -110,7 +148,24 @@ const pricingData = [
         pricePerLesson: "970 ₽",
         totalPrice: "93 120 ₽",
         features: ["Комплексная диагностика", "Максимальная поддержка"],
-        discount: "Экономия 18%"
+        discount: "Экономия 18%",
+        paymentOptions: [
+          {
+            type: "dolami",
+            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
+            text: "Оплата Долями"
+          },
+          {
+            type: "installment",
+            icon: "https://cdn.poehali.dev/files/c70fd8e5-616d-43e1-ae1f-94f4c0208549.jpg",
+            text: "ТБанк"
+          },
+          {
+            type: "installment",
+            icon: "https://cdn.poehali.dev/files/4f1976b5-f535-425b-a9b0-78c4b35b9e62.png",
+            text: "МТС Банк"
+          }
+        ]
       }
     ]
   }
@@ -209,6 +264,25 @@ export default function PricingSection() {
                             </div>
                           </div>
                           
+                          {plan.paymentOptions && (
+                            <div className="mb-4">
+                              <h5 className="font-semibold text-gray-800 mb-2 text-xs">Способы оплаты:</h5>
+                              <div className="space-y-2">
+                                {plan.paymentOptions.map((option, optIndex) => (
+                                  <div key={optIndex} className="flex items-center text-left">
+                                    <div className="w-4 h-4 mr-2 flex-shrink-0 overflow-hidden rounded-sm">
+                                      <img 
+                                        src={option.icon} 
+                                        alt={option.text}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <span className="text-xs text-gray-600">{option.text}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           
                           <Button 
