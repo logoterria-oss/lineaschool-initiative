@@ -54,13 +54,7 @@ const pricingData = [
           },
           {
             type: "installment",
-            icon: "https://cdn.poehali.dev/files/c70fd8e5-616d-43e1-ae1f-94f4c0208549.jpg",
-            text: "ТБанк"
-          },
-          {
-            type: "installment",
-            icon: "https://cdn.poehali.dev/files/4f1976b5-f535-425b-a9b0-78c4b35b9e62.png",
-            text: "МТС Банк"
+            text: "рассрочка от банков-партнеров"
           }
         ]
       }
@@ -157,13 +151,7 @@ const pricingData = [
           },
           {
             type: "installment",
-            icon: "https://cdn.poehali.dev/files/c70fd8e5-616d-43e1-ae1f-94f4c0208549.jpg",
-            text: "ТБанк"
-          },
-          {
-            type: "installment",
-            icon: "https://cdn.poehali.dev/files/4f1976b5-f535-425b-a9b0-78c4b35b9e62.png",
-            text: "МТС Банк"
+            text: "рассрочка от банков-партнеров"
           }
         ]
       }
@@ -265,27 +253,23 @@ export default function PricingSection() {
                           </div>
                           
                           {plan.paymentOptions && (
-                            <div className="mb-4">
-                              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
-                                <div className="flex items-center mb-2">
-                                  <Icon name="Sparkles" size={14} className="text-blue-500 mr-1" />
-                                  <h5 className="font-semibold text-blue-800 text-xs">Удобная оплата</h5>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {plan.paymentOptions.map((option, optIndex) => (
-                                    <div key={optIndex} className="bg-white rounded-md px-2 py-1 flex items-center shadow-sm border border-gray-100">
-                                      <div className="w-4 h-4 mr-1.5 flex-shrink-0 overflow-hidden rounded-sm">
-                                        <img 
-                                          src={option.icon} 
-                                          alt={option.text}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                      <span className="text-xs font-medium text-gray-700">{option.text}</span>
+                            <div className="mb-4 space-y-1">
+                              {plan.paymentOptions.map((option, optIndex) => (
+                                <div key={optIndex} className="flex items-center text-left">
+                                  {option.icon ? (
+                                    <div className="w-4 h-4 mr-2 flex-shrink-0 overflow-hidden rounded-sm">
+                                      <img 
+                                        src={option.icon} 
+                                        alt={option.text}
+                                        className="w-full h-full object-cover"
+                                      />
                                     </div>
-                                  ))}
+                                  ) : (
+                                    <Icon name="CreditCard" size={12} className="text-blue-500 mr-2 flex-shrink-0" />
+                                  )}
+                                  <span className="text-xs text-gray-600">{option.text}</span>
                                 </div>
-                              </div>
+                              ))}
                             </div>
                           )}
 
