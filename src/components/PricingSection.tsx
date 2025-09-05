@@ -102,6 +102,11 @@ const pricingData = [
         discount: "Экономия 14%",
         paymentOptions: [
           {
+            type: "dolami",
+            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
+            text: "оплата Долями"
+          },
+          {
             type: "installment",
             text: "рассрочка от банков"
           }
