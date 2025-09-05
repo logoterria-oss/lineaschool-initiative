@@ -13,7 +13,7 @@ export default function MobileFloatingButtons() {
   return (
     <>
       {/* Mobile floating buttons - only visible on mobile */}
-      <div className="md:hidden fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div className="md:hidden fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end">
         <Button 
           onClick={handleQuestionClick}
           variant="outline" 
