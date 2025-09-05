@@ -38,36 +38,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Способы оплаты */}
-          <div className="md:col-span-1">
-            <h3 className="font-semibold text-gray-900 mb-4">Способы оплаты</h3>
-            <div className="flex gap-3">
-              {/* МИР */}
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img 
-                  src="https://cdn.poehali.dev/files/a2ba0f82-7397-45a8-bb0a-2eb5f60003f3.png" 
-                  alt="МИР" 
-                  className="h-9 w-auto object-contain"
-                />
-              </div>
-              {/* СБП */}
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img 
-                  src="https://cdn.poehali.dev/files/22ad93d0-a4be-48dc-88e7-5d6cbd152bf5.png" 
-                  alt="СБП" 
-                  className="h-18 w-auto object-contain"
-                />
-              </div>
-              {/* Долами */}
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img 
-                  src="https://cdn.poehali.dev/files/31e03f54-85da-43e1-b499-62ae304d510a.png" 
-                  alt="Долами" 
-                  className="w-9 h-9 object-cover rounded"
-                />
-              </div>
-            </div>
-          </div>
+
         </div>
         
         {/* Разделительная линия */}
