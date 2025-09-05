@@ -5,8 +5,8 @@ interface Spiral {
   x: number;
   y: number;
   size: number;
-  visible: boolean;
   opacity: number;
+  scale: number;
 }
 
 export default function AnimatedSpirals() {
@@ -14,16 +14,16 @@ export default function AnimatedSpirals() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
-  // Фиксированные позиции завитушек в безопасных местах
+  // Фиксированные позиции завитушек в пикселях от краев
   const fixedPositions = [
-    { x: 5, y: 15 },   // Левый верх
-    { x: 92, y: 25 },  // Правый верх  
-    { x: 3, y: 45 },   // Левый центр
-    { x: 88, y: 55 },  // Правый центр
-    { x: 8, y: 75 },   // Левый низ
-    { x: 90, y: 85 },  // Правый низ
-    { x: 2, y: 92 },   // Левый самый низ
-    { x: 85, y: 8 },   // Правый самый верх
+    { x: 50, y: 150, side: 'left' },    // Левый верх
+    { x: 80, y: 300, side: 'right' },   // Правый верх
+    { x: 30, y: 500, side: 'left' },    // Левый центр
+    { x: 100, y: 700, side: 'right' },  // Правый центр
+    { x: 70, y: 900, side: 'left' },    // Левый низ
+    { x: 60, y: 1100, side: 'right' },  // Правый низ
+    { x: 40, y: 1300, side: 'left' },   // Левый далеко
+    { x: 120, y: 450, side: 'right' },  // Правый дополнительный
   ];
 
   useEffect(() => {
@@ -44,9 +44,9 @@ export default function AnimatedSpirals() {
       id: index,
       x: pos.x,
       y: pos.y,
-      size: 60 + Math.random() * 40,
-      visible: false,
+      size: 60 + Math.random() * 30,
       opacity: 0,
+      scale: 0,
     }));
     setSpirals(newSpirals);
   }, []);
@@ -61,65 +61,61 @@ export default function AnimatedSpirals() {
   }, []);
 
   useEffect(() => {
-    // Обновляем видимость завитушек на основе скролла
-    const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const scrollProgress = Math.min(scrollY / (documentHeight || 1), 1);
+    const updateSpirals = () => {
+      const windowHeight = window.innerHeight;
+      
+      setSpirals(prev => prev.map((spiral, index) => {
+        // Рассчитываем позицию завитушки относительно скролла
+        const spiralScreenY = spiral.y - scrollY;
+        
+        // Завитушка видна если находится в области от -200px до высоты экрана + 200px
+        const isInViewport = spiralScreenY > -200 && spiralScreenY < windowHeight + 200;
+        
+        let opacity = 0;
+        let scale = 0;
+        
+        if (isInViewport) {
+          // Рассчитываем прогресс появления
+          const centerY = windowHeight / 2;
+          const distance = Math.abs(spiralScreenY - centerY);
+          const maxDistance = windowHeight / 2 + 200;
+          const progress = Math.max(0, 1 - (distance / maxDistance));
+          
+          opacity = progress * 0.4; // Максимум 40%
+          scale = 0.5 + (progress * 0.7); // От 0.5 до 1.2
+        }
+        
+        return {
+          ...spiral,
+          opacity,
+          scale,
+        };
+      }));
+    };
     
-    setSpirals(prev => prev.map((spiral, index) => {
-      // Каждая завитушка появляется на разной стадии скролла
-      const triggerPoint = (index / prev.length) * 0.8; // 0 до 80% скролла
-      const fadeRange = 0.1; // 10% от общего скролла для плавного появления
-      
-      let opacity = 0;
-      let visible = false;
-      
-      if (scrollProgress >= triggerPoint) {
-        visible = true;
-        const fadeProgress = Math.min((scrollProgress - triggerPoint) / fadeRange, 1);
-        opacity = fadeProgress * 0.3; // Максимальная прозрачность 30%
-      }
-      
-      // Исчезание к концу страницы
-      if (scrollProgress > 0.9) {
-        const fadeOutProgress = (scrollProgress - 0.9) / 0.1;
-        opacity *= (1 - fadeOutProgress);
-      }
-      
-      return {
-        ...spiral,
-        visible,
-        opacity,
-      };
-    }));
+    updateSpirals();
   }, [scrollY]);
 
   return (
     <>
       <style>{`
-        @keyframes spiralAppear {
-          0% {
-            transform: rotate(0deg) scale(0);
-            opacity: 0;
-          }
-          50% {
-            transform: rotate(180deg) scale(1.2);
-          }
-          100% {
-            transform: rotate(360deg) scale(1);
-          }
-        }
-        
         @keyframes spiralFloat {
           0%, 100% {
-            transform: rotate(0deg) scale(1);
+            transform: rotate(0deg);
+          }
+          25% {
+            transform: rotate(90deg);
           }
           50% {
-            transform: rotate(180deg) scale(1.05);
+            transform: rotate(180deg);
+          }
+          75% {
+            transform: rotate(270deg);
           }
         }
         
         .spiral-element {
-          transition: opacity 0.8s ease-out;
+          transition: opacity 0.6s ease-out, transform 0.6s ease-out;
         }
       `}</style>
 
@@ -130,15 +126,14 @@ export default function AnimatedSpirals() {
               key={spiral.id}
               className="absolute spiral-element"
               style={{
-                left: `${spiral.x}%`,
-                top: `${spiral.y}%`,
+                left: fixedPositions[spiral.id].side === 'left' ? `${spiral.x}px` : 'auto',
+                right: fixedPositions[spiral.id].side === 'right' ? `${spiral.x}px` : 'auto',
+                top: `${spiral.y}px`,
                 width: `${spiral.size}px`,
                 height: `${spiral.size}px`,
                 opacity: spiral.opacity,
-                animation: spiral.visible 
-                  ? 'spiralAppear 1.5s ease-out, spiralFloat 20s linear infinite 1.5s'
-                  : 'none',
-                transform: 'translate(-50%, -50%)',
+                transform: `scale(${spiral.scale})`,
+                animation: spiral.opacity > 0 ? 'spiralFloat 15s linear infinite' : 'none',
               }}
             >
               <svg
