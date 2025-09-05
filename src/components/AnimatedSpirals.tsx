@@ -7,6 +7,7 @@ interface Spiral {
   size: number;
   opacity: number;
   scale: number;
+  side: 'left' | 'right';
 }
 
 export default function AnimatedSpirals() {
@@ -44,9 +45,10 @@ export default function AnimatedSpirals() {
       id: index,
       x: pos.x,
       y: pos.y,
-      size: 60 + Math.random() * 30,
-      opacity: 0,
-      scale: 0,
+      size: 80,
+      opacity: 0.3, // Временно делаем видимыми для проверки
+      scale: 1,
+      side: pos.side,
     }));
     setSpirals(newSpirals);
   }, []);
@@ -126,8 +128,8 @@ export default function AnimatedSpirals() {
               key={spiral.id}
               className="absolute spiral-element"
               style={{
-                left: fixedPositions[spiral.id].side === 'left' ? `${spiral.x}px` : 'auto',
-                right: fixedPositions[spiral.id].side === 'right' ? `${spiral.x}px` : 'auto',
+                left: spiral.side === 'left' ? `${spiral.x}px` : 'auto',
+                right: spiral.side === 'right' ? `${spiral.x}px` : 'auto',
                 top: `${spiral.y}px`,
                 width: `${spiral.size}px`,
                 height: `${spiral.size}px`,
