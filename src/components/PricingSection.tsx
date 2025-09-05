@@ -6,15 +6,15 @@ import BookingModal from "@/components/BookingModal";
 
 const pricingPlans = [
   {
-    title: "2 урока в неделю",
-    subtitle: "Базовый темп",
-    totalLessons: 8,
-    pricePerLesson: "1 500 ₽",
-    totalPrice: "12 000 ₽",
-    period: "в месяц",
+    title: "1 месяц",
+    subtitle: "Базовый тариф",
+    totalLessons: 16,
+    pricePerLesson: "1 380 ₽",
+    totalPrice: "22 080 ₽",
     lessons: [
       "4 индивидуальных занятия с логопедом",
-      "4 индивидуальных занятия с нейропсихологом"
+      "4 индивидуальных занятия с нейропсихологом", 
+      "8 групповых занятий"
     ],
     features: [
       "Первичная диагностика",
@@ -24,15 +24,15 @@ const pricingPlans = [
     ]
   },
   {
-    title: "3 урока в неделю",
-    subtitle: "Оптимальный темп",
-    totalLessons: 12,
-    pricePerLesson: "1 350 ₽",
-    totalPrice: "16 200 ₽",
-    period: "в месяц",
+    title: "3 месяца",
+    subtitle: "Оптимальный выбор",
+    totalLessons: 48,
+    pricePerLesson: "1 170 ₽",
+    totalPrice: "56 160 ₽",
     lessons: [
-      "6 индивидуальных занятий с логопедом",
-      "6 индивидуальных занятий с нейропсихологом"
+      "12 индивидуальных занятий с логопедом",
+      "12 индивидуальных занятий с нейропсихологом",
+      "24 групповых занятия"
     ],
     features: [
       "Углубленная диагностика",
@@ -41,26 +41,26 @@ const pricingPlans = [
       "Консультации для родителей"
     ],
     popular: true,
-    discount: "Экономия 10%"
+    discount: "Экономия 15%"
   },
   {
-    title: "Интенсивный курс",
-    subtitle: "4 урока в неделю",
-    totalLessons: 16,
-    pricePerLesson: "1 200 ₽",
-    totalPrice: "19 200 ₽",
-    period: "в месяц",
+    title: "6 месяцев",
+    subtitle: "Максимальный результат",
+    totalLessons: 96,
+    pricePerLesson: "970 ₽",
+    totalPrice: "93 120 ₽",
     lessons: [
-      "8 индивидуальных занятий с логопедом",
-      "8 индивидуальных занятий с нейропсихологом"
+      "24 индивидуальных занятия с логопедом",
+      "24 индивидуальных занятия с нейропсихологом",
+      "48 групповых занятий"
     ],
     features: [
       "Комплексная диагностика",
       "Персональный куратор",
-      "Еженедельные отчеты",
+      "Ежемесячные отчеты",
       "Гарантия результата"
     ],
-    discount: "Экономия 20%"
+    discount: "Экономия 30%"
   }
 ];
 
@@ -109,7 +109,7 @@ export default function PricingSection() {
                     Всего: <span className="font-semibold">{plan.totalPrice}</span>
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    {plan.totalLessons} занятий {plan.period}
+                    {plan.totalLessons} занятий
                   </div>
                 </div>
                 
