@@ -13,22 +13,24 @@ export default function MobileFloatingButtons() {
   return (
     <>
       {/* Mobile floating buttons - only visible on mobile */}
-      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 flex gap-3">
+      <div className="md:hidden fixed bottom-4 left-2 right-2 z-50 flex gap-2 max-w-sm mx-auto">
         <Button 
           onClick={handleQuestionClick}
           variant="outline" 
-          className="flex-1 bg-white/95 backdrop-blur-sm border-green-500 text-green-600 hover:bg-green-50 shadow-lg h-12 text-base font-semibold"
+          size="sm"
+          className="flex-1 bg-white/95 backdrop-blur-sm border-green-500 text-green-600 hover:bg-green-50 shadow-lg h-11 text-sm font-medium min-w-0"
         >
-          <Icon name="MessageCircle" className="mr-2" size={20} />
-          Задать вопрос
+          <Icon name="MessageCircle" className="mr-1" size={16} />
+          <span className="truncate">Вопрос</span>
         </Button>
         
         <Button 
           onClick={() => setIsBookingModalOpen(true)}
-          className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-lg h-12 text-base font-semibold animate-button-pulse"
+          size="sm"
+          className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-lg h-11 text-sm font-medium animate-button-pulse min-w-0"
         >
-          <Icon name="Calendar" className="mr-2" size={20} />
-          Записаться
+          <Icon name="Calendar" className="mr-1" size={16} />
+          <span className="truncate">Записаться</span>
         </Button>
       </div>
 
