@@ -38,8 +38,8 @@ export default function HeroSection() {
                 <div className="text-sm text-gray-600">успешных кейсов</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">24/7</div>
-                <div className="text-sm text-gray-600">поддержка</div>
+                <div className="text-3xl font-bold text-green-600">от 970₽</div>
+                <div className="text-sm text-gray-600">за урок</div>
               </div>
             </div>
           </div>
