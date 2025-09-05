@@ -10,23 +10,23 @@ export default function HeroSection() {
     <section className="relative py-8 lg:py-12 bg-white overflow-hidden" translate="no">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">🎓 Для детей 8-18 лет</div>
-            <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <div className="px-2 sm:px-0">
+            <div className="inline-flex items-center bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">🎓 Для детей 8-18 лет</div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
               LineaSchool: Онлайн-коррекция дислексии и дисграфии
             </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6 sm:mb-8 leading-relaxed">
               Уникальный комплексный нейрологопедический подход для успешного обучения вашего ребёнка
             </p>
             
-            <div className="mb-12">
+            <div className="mb-8 sm:mb-12">
               <Button 
                 size="lg" 
-                className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4 w-full sm:w-auto"
+                className="bg-green-500 hover:bg-green-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full sm:w-auto"
                 onClick={() => setIsBookingModalOpen(true)}
               >
-                <Icon name="Calendar" className="mr-2" size={20} />
-                Получить БЕСПЛАТНУЮ диагностику
+                <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
+                <span className="whitespace-nowrap">Получить БЕСПЛАТНУЮ диагностику</span>
               </Button>
             </div>
 
