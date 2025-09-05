@@ -198,11 +198,11 @@ export default function PricingSection() {
                           <div className="bg-green-50 rounded-lg p-4 mb-4">
                             <h5 className="font-semibold text-gray-800 mb-2 text-sm">Состав курса:</h5>
                             <div className="space-y-1 text-xs text-gray-700">
-                              <div className="flex items-center">
+                              <div className="flex items-center text-left">
                                 <Icon name="Users" size={12} className="text-blue-500 mr-2 flex-shrink-0" />
                                 <span>{plan.groupLessons} групповых занятий</span>
                               </div>
-                              <div className="flex items-center">
+                              <div className="flex items-center text-left">
                                 <Icon name="User" size={12} className="text-green-500 mr-2 flex-shrink-0" />
                                 <span>{plan.individualLessons} индивидуальных занятий</span>
                               </div>
@@ -212,7 +212,7 @@ export default function PricingSection() {
                           <div className="mb-4">
                             <ul className="space-y-1 text-xs text-gray-600">
                               {plan.features.map((feature, fIndex) => (
-                                <li key={fIndex} className="flex items-center">
+                                <li key={fIndex} className="flex items-center text-left">
                                   <Icon name="Check" size={12} className="text-green-500 mr-2 flex-shrink-0" />
                                   <span>{feature}</span>
                                 </li>
