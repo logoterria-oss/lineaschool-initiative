@@ -16,7 +16,7 @@ export default function Footer() {
             
             <div className="space-y-3">
               <h3 className="font-semibold text-gray-900 mb-3">С нами можно связаться</h3>
-              <a href="mailto:lineaschool@mail.ru" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
+              <a href="https://e.mail.ru/compose/?to=lineaschool@mail.ru&subject=Вопрос%20по%20коррекции%20дислексии%20и%20дисграфии" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
                 <Icon name="Mail" size={16} />
                 <span>lineaschool@mail.ru</span>
               </a>
