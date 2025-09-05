@@ -1,132 +1,71 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Icon from "@/components/ui/icon";
 import BookingModal from "@/components/BookingModal";
 
-const pricingData = [
+const pricingPlans = [
   {
     title: "2 урока в неделю",
-    description: "Размеренный темп обучения",
-    plans: [
-      {
-        title: "1 месяц",
-        totalLessons: 8,
-        groupLessons: 4,
-        individualLessons: 4,
-        pricePerLesson: "1 370 ₽",
-        totalPrice: "10 960 ₽",
-        features: ["Первичная диагностика", "Базовый план занятий"]
-      },
-      {
-        title: "3 месяца",
-        totalLessons: 24,
-        groupLessons: 12,
-        individualLessons: 12,
-        pricePerLesson: "1 250 ₽",
-        totalPrice: "30 000 ₽",
-        features: ["Углубленная диагностика", "Персональный куратор"],
-        popular: true,
-        discount: "Экономия 9%"
-      },
-      {
-        title: "6 месяцев",
-        totalLessons: 48,
-        groupLessons: 24,
-        individualLessons: 24,
-        pricePerLesson: "1 150 ₽",
-        totalPrice: "55 200 ₽",
-        features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 16%"
-      }
+    subtitle: "Базовый темп",
+    totalLessons: 8,
+    pricePerLesson: "1 500 ₽",
+    totalPrice: "12 000 ₽",
+    period: "в месяц",
+    lessons: [
+      "4 индивидуальных занятия с логопедом",
+      "4 индивидуальных занятия с нейропсихологом"
+    ],
+    features: [
+      "Первичная диагностика",
+      "Индивидуальный план занятий",
+      "Методические материалы",
+      "Поддержка в чате"
     ]
   },
   {
     title: "3 урока в неделю",
-    description: "Оптимальный темп развития",
-    plans: [
-      {
-        title: "1 месяц",
-        totalLessons: 12,
-        groupLessons: 8,
-        individualLessons: 4,
-        pricePerLesson: "1 200 ₽",
-        totalPrice: "14 400 ₽",
-        features: ["Первичная диагностика", "Базовый план занятий"]
-      },
-      {
-        title: "3 месяца",
-        totalLessons: 36,
-        groupLessons: 24,
-        individualLessons: 12,
-        pricePerLesson: "1 100 ₽",
-        totalPrice: "39 600 ₽",
-        features: ["Углубленная диагностика", "Персональный куратор"],
-        popular: true,
-        discount: "Экономия 8%"
-      },
-      {
-        title: "6 месяцев",
-        totalLessons: 72,
-        groupLessons: 48,
-        individualLessons: 24,
-        pricePerLesson: "1 030 ₽",
-        totalPrice: "74 160 ₽",
-        features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 14%"
-      }
-    ]
+    subtitle: "Оптимальный темп",
+    totalLessons: 12,
+    pricePerLesson: "1 350 ₽",
+    totalPrice: "16 200 ₽",
+    period: "в месяц",
+    lessons: [
+      "6 индивидуальных занятий с логопедом",
+      "6 индивидуальных занятий с нейропсихологом"
+    ],
+    features: [
+      "Углубленная диагностика",
+      "Персональный куратор",
+      "Промежуточные отчеты",
+      "Консультации для родителей"
+    ],
+    popular: true,
+    discount: "Экономия 10%"
   },
   {
-    title: "4 урока в неделю",
-    description: "Интенсивное развитие",
-    plans: [
-      {
-        title: "1 месяц",
-        totalLessons: 16,
-        groupLessons: 8,
-        individualLessons: 8,
-        pricePerLesson: "1 180 ₽",
-        totalPrice: "18 880 ₽",
-        features: ["Первичная диагностика", "Интенсивный план"]
-      },
-      {
-        title: "3 месяца",
-        totalLessons: 48,
-        groupLessons: 24,
-        individualLessons: 24,
-        pricePerLesson: "1 050 ₽",
-        totalPrice: "50 400 ₽",
-        features: ["Углубленная диагностика", "Персональный куратор"],
-        popular: true,
-        discount: "Экономия 11%"
-      },
-      {
-        title: "6 месяцев",
-        totalLessons: 96,
-        groupLessons: 48,
-        individualLessons: 48,
-        pricePerLesson: "970 ₽",
-        totalPrice: "93 120 ₽",
-        features: ["Комплексная диагностика", "Максимальная поддержка"],
-        discount: "Экономия 18%"
-      }
-    ]
+    title: "Интенсивный курс",
+    subtitle: "4 урока в неделю",
+    totalLessons: 16,
+    pricePerLesson: "1 200 ₽",
+    totalPrice: "19 200 ₽",
+    period: "в месяц",
+    lessons: [
+      "8 индивидуальных занятий с логопедом",
+      "8 индивидуальных занятий с нейропсихологом"
+    ],
+    features: [
+      "Комплексная диагностика",
+      "Персональный куратор",
+      "Еженедельные отчеты",
+      "Гарантия результата"
+    ],
+    discount: "Экономия 20%"
   }
 ];
 
 export default function PricingSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<number[]>([0]);
-
-  const toggleSection = (index: number) => {
-    setOpenSections(prev => 
-      prev.includes(index) 
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
 
   return (
     <>
@@ -135,105 +74,68 @@ export default function PricingSection() {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Стоимость занятий</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Выберите удобный темп обучения для вашего ребёнка
+            Выберите удобный тариф для вашего ребёнка
           </p>
         </div>
 
-        <div className="space-y-8">
-          {pricingData.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="border border-gray-200 rounded-xl overflow-hidden">
-              <Collapsible open={openSections.includes(sectionIndex)}>
-                <CollapsibleTrigger 
-                  className="w-full p-6 text-left hover:bg-gray-50 transition-colors"
-                  onClick={() => toggleSection(sectionIndex)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-1">{section.title}</h3>
-                      <p className="text-gray-600">{section.description}</p>
-                    </div>
-                    <Icon 
-                      name={openSections.includes(sectionIndex) ? "ChevronUp" : "ChevronDown"} 
-                      size={24} 
-                      className="text-gray-500"
-                    />
-                  </div>
-                </CollapsibleTrigger>
+        <div className="grid md:grid-cols-3 gap-8">
+          {pricingPlans.map((plan, index) => (
+            <Card key={index} className={`relative p-8 ${plan.popular ? 'border-2 border-green-500 bg-white shadow-xl scale-105' : 'border-green-100 bg-white'} hover:shadow-lg transition-all duration-300`}>
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                    Популярный
+                  </span>
+                </div>
+              )}
+              {plan.discount && (
+                <div className="absolute top-4 right-4">
+                  <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-semibold">
+                    {plan.discount}
+                  </span>
+                </div>
+              )}
+              
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">{plan.title}</h3>
+                <p className="text-green-600 font-medium mb-6">{plan.subtitle}</p>
                 
-                <CollapsibleContent className="p-6 pt-0 bg-gray-50">
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {section.plans.map((plan, planIndex) => (
-                      <Card key={planIndex} className={`relative p-6 ${plan.popular ? 'border-2 border-green-500 bg-white shadow-lg scale-105' : 'border-gray-200 bg-white'} hover:shadow-lg transition-all duration-300`}>
-                        {plan.popular && (
-                          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                            <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                              Популярный
-                            </span>
-                          </div>
-                        )}
-                        {plan.discount && (
-                          <div className="absolute top-4 right-4">
-                            <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-semibold">
-                              {plan.discount}
-                            </span>
-                          </div>
-                        )}
-                        
-                        <div className="text-center">
-                          <h4 className="text-xl font-bold text-gray-900 mb-1">{plan.title}</h4>
-                          
-                          <div className="mb-4">
-                            <div className="text-3xl font-bold text-gray-900 mb-2">
-                              {plan.pricePerLesson}
-                              <span className="text-sm font-normal text-gray-600">/урок</span>
-                            </div>
-                            <div className="text-gray-600">
-                              Всего: <span className="font-semibold">{plan.totalPrice}</span>
-                            </div>
-                            <div className="text-sm text-gray-500 mt-1">
-                              {plan.totalLessons} занятий
-                            </div>
-                          </div>
-                          
-                          <div className="bg-green-50 rounded-lg p-4 mb-4">
-                            <h5 className="font-semibold text-gray-800 mb-2 text-sm">Состав курса:</h5>
-                            <div className="space-y-1 text-xs text-gray-700">
-                              <div className="flex items-center">
-                                <Icon name="Users" size={12} className="text-blue-500 mr-2 flex-shrink-0" />
-                                <span>{plan.groupLessons} групповых занятий</span>
-                              </div>
-                              <div className="flex items-center">
-                                <Icon name="User" size={12} className="text-green-500 mr-2 flex-shrink-0" />
-                                <span>{plan.individualLessons} индивидуальных занятий</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="mb-4">
-                            <ul className="space-y-1 text-xs text-gray-600">
-                              {plan.features.map((feature, fIndex) => (
-                                <li key={fIndex} className="flex items-center">
-                                  <Icon name="Check" size={12} className="text-green-500 mr-2 flex-shrink-0" />
-                                  <span>{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          
-                          <Button 
-                            className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
-                            size="sm"
-                            onClick={() => setIsBookingModalOpen(true)}
-                          >
-                            Выбрать тариф
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
+                <div className="mb-6">
+                  <div className="text-4xl font-bold text-gray-900 mb-2">
+                    {plan.pricePerLesson}
+                    <span className="text-lg font-normal text-gray-600">/урок</span>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
+                  <div className="text-gray-600">
+                    Всего: <span className="font-semibold">{plan.totalPrice}</span>
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    {plan.totalLessons} занятий {plan.period}
+                  </div>
+                </div>
+                
+                <div className="bg-green-50 rounded-lg p-4 mb-6">
+                  <h4 className="font-semibold text-gray-800 mb-3">Состав курса:</h4>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {plan.lessons.map((lesson, lIndex) => (
+                      <li key={lIndex} className="flex items-center text-left">
+                        <Icon name="Clock" size={14} className="text-green-500 mr-2 flex-shrink-0" />
+                        <span>{lesson}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+
+                
+                <Button 
+                  className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
+                  size="lg"
+                  onClick={() => setIsBookingModalOpen(true)}
+                >
+                  Выбрать тариф
+                </Button>
+              </div>
+            </Card>
           ))}
         </div>
         
