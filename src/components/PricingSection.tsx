@@ -265,7 +265,22 @@ export default function PricingSection() {
                                       />
                                     </div>
                                   ) : (
-                                    <Icon name="CreditCard" size={12} className="text-blue-500 mr-2 flex-shrink-0" />
+                                    <div className="flex mr-2 flex-shrink-0 relative">
+                                      <div className="w-4 h-4 overflow-hidden rounded-sm">
+                                        <img 
+                                          src="https://cdn.poehali.dev/files/c70fd8e5-616d-43e1-ae1f-94f4c0208549.jpg" 
+                                          alt="ТБанк"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <div className="w-4 h-4 overflow-hidden rounded-sm -ml-2">
+                                        <img 
+                                          src="https://cdn.poehali.dev/files/4f1976b5-f535-425b-a9b0-78c4b35b9e62.png" 
+                                          alt="МТС Банк"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    </div>
                                   )}
                                   <span className="text-xs text-gray-600">{option.text}</span>
                                 </div>
