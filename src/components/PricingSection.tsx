@@ -222,7 +222,7 @@ export default function PricingSection() {
                           </div>
                         )}
                         
-                        <div className="text-center">
+                        <div className="text-center flex flex-col h-full">
                           <h4 className="text-xl font-bold text-gray-900 mb-1">{plan.title}</h4>
                           
                           <div className="mb-4">
@@ -288,6 +288,7 @@ export default function PricingSection() {
                             </div>
                           )}
 
+                          <div className="flex-grow"></div>
                           
                           <Button 
                             className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
