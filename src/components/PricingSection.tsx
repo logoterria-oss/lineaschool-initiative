@@ -266,20 +266,25 @@ export default function PricingSection() {
                           
                           {plan.paymentOptions && (
                             <div className="mb-4">
-                              <h5 className="font-semibold text-gray-800 mb-2 text-xs">Способы оплаты:</h5>
-                              <div className="space-y-2">
-                                {plan.paymentOptions.map((option, optIndex) => (
-                                  <div key={optIndex} className="flex items-center text-left">
-                                    <div className="w-4 h-4 mr-2 flex-shrink-0 overflow-hidden rounded-sm">
-                                      <img 
-                                        src={option.icon} 
-                                        alt={option.text}
-                                        className="w-full h-full object-cover"
-                                      />
+                              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
+                                <div className="flex items-center mb-2">
+                                  <Icon name="Sparkles" size={14} className="text-blue-500 mr-1" />
+                                  <h5 className="font-semibold text-blue-800 text-xs">Удобная оплата</h5>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {plan.paymentOptions.map((option, optIndex) => (
+                                    <div key={optIndex} className="bg-white rounded-md px-2 py-1 flex items-center shadow-sm border border-gray-100">
+                                      <div className="w-4 h-4 mr-1.5 flex-shrink-0 overflow-hidden rounded-sm">
+                                        <img 
+                                          src={option.icon} 
+                                          alt={option.text}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <span className="text-xs font-medium text-gray-700">{option.text}</span>
                                     </div>
-                                    <span className="text-xs text-gray-600">{option.text}</span>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           )}
