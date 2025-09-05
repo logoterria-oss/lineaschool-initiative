@@ -209,16 +209,7 @@ export default function PricingSection() {
                             </div>
                           </div>
                           
-                          <div className="mb-4">
-                            <ul className="space-y-1 text-xs text-gray-600">
-                              {plan.features.map((feature, fIndex) => (
-                                <li key={fIndex} className="flex items-center text-left">
-                                  <Icon name="Check" size={12} className="text-green-500 mr-2 flex-shrink-0" />
-                                  <span>{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+
                           
                           <Button 
                             className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
