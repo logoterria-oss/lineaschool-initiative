@@ -84,7 +84,7 @@ export default function MethodologySection() {
             <div className="space-y-4 sm:space-y-6 lg:space-y-8">
               <div className="border-l-4 border-purple-500 pl-3 sm:pl-4 lg:pl-6">
                 <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Сукцессивное восприятие</h4>
-                <p className="text-sm sm:text-base text-gray-600 mb-3">Последовательное восприятие, которое необходимо для того, чтобы буквы и слоги не "путались" при письме и чтении</p>
+                <p className="text-sm sm:text-base text-gray-600 mb-3">Последовательное восприятие, которое необходимо для того, чтобы буквы и слоги не "путались" при письме и чтении, - регуляторная функция</p>
                 <div className="flex items-center text-sm text-purple-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Лобные доли
