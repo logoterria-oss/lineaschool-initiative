@@ -30,6 +30,22 @@ const comparisons = [
 ];
 
 export default function WhyNotTeacherSection() {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      const cardWidth = scrollContainerRef.current.children[0]?.clientWidth || 0;
+      scrollContainerRef.current.scrollBy({ left: -cardWidth - 16, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      const cardWidth = scrollContainerRef.current.children[0]?.clientWidth || 0;
+      scrollContainerRef.current.scrollBy({ left: cardWidth + 16, behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -109,16 +125,24 @@ export default function WhyNotTeacherSection() {
         {/* Mobile Swipeable Cards */}
         <div className="md:hidden relative">
           {/* Left Arrow */}
-          <div className="absolute left-2 top-1/2 transform -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full shadow-lg p-2">
+          <button 
+            onClick={scrollLeft}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full shadow-lg p-2 hover:bg-white transition-colors"
+          >
             <Icon name="ChevronLeft" size={20} className="text-gray-600" />
-          </div>
+          </button>
           
           {/* Right Arrow */}
-          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full shadow-lg p-2">
+          <button 
+            onClick={scrollRight}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full shadow-lg p-2 hover:bg-white transition-colors"
+          >
             <Icon name="ChevronRight" size={20} className="text-gray-600" />
-          </div>
+          </button>
           
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-2"
+          <div 
+            ref={scrollContainerRef}
+            className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-2"
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
