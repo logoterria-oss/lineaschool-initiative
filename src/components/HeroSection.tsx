@@ -19,18 +19,14 @@ export default function HeroSection() {
               Уникальный комплексный нейрологопедический подход для успешного обучения вашего ребёнка
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
+            <div className="mb-12">
               <Button 
                 size="lg" 
-                className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4"
+                className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4 w-full sm:w-auto"
                 onClick={() => setIsBookingModalOpen(true)}
               >
                 <Icon name="Calendar" className="mr-2" size={20} />
-                Бесплатная диагностика
-              </Button>
-              <Button size="lg" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4">
-                <Icon name="Play" className="mr-2" size={20} />
-                Смотреть видео
+                Получить БЕСПЛАТНУЮ диагностику
               </Button>
             </div>
 
