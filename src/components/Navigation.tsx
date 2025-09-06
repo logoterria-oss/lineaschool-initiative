@@ -12,8 +12,12 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex justify-between items-center h-24">
           <a href="/" className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-green-500 rounded-lg flex items-center justify-center">
-              <Icon name="BookOpen" size={32} className="text-white" />
+            <div className="w-16 h-16 bg-orange-400 rounded-xl flex items-center justify-center overflow-hidden">
+              <img 
+                src="https://cdn.poehali.dev/files/7c4bf8a3-9991-47ee-ba95-f7da6de6b666.png" 
+                alt="LineaSchool" 
+                className="w-full h-full object-cover rounded-xl"
+              />
             </div>
             <span className="text-4xl font-bold text-green-600">LineaSchool</span>
           </a>
