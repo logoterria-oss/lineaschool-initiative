@@ -91,7 +91,7 @@ export default function DiagForm() {
     localStorage.setItem('diagData', JSON.stringify(formData));
     
     // Переходим на страницу заключения
-    navigate(`/diag_${serialNumber}`);
+    navigate(`/diag/${serialNumber}`);
   };
 
   return (

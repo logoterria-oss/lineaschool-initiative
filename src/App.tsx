@@ -26,7 +26,7 @@ const App = () => (
           <Route path="/oferta_2025" element={<OfferPage />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/diag_form" element={<DiagForm />} />
-          <Route path="/diag_:serialNumber" element={<DiagConclusion />} />
+          <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
