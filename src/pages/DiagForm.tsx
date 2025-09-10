@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
 import PersonalDataSection from "@/components/diag/PersonalDataSection";
 import AnamnesticsSection from "@/components/diag/AnamnesticsSection";
+import ExpressiveSpeechSection from "@/components/diag/ExpressiveSpeechSection";
 
 export default function DiagForm() {
   const [formData, setFormData] = useState({
@@ -34,7 +35,13 @@ export default function DiagForm() {
     defectologistConclusion: "",
     neuropsychologistConclusion: "",
     dominantHand: "",
-    additionalInfo: ""
+    additionalInfo: "",
+    // Экспрессивная речь
+    motorRealization: [] as string[],
+    wordFormation: [] as string[],
+    grammaticalStructure: "",
+    connectedSpeech: [] as string[],
+    nominativeFunction: [] as string[]
   });
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -86,6 +93,17 @@ export default function DiagForm() {
                 neuropsychologistConclusion: formData.neuropsychologistConclusion,
                 dominantHand: formData.dominantHand,
                 additionalInfo: formData.additionalInfo
+              }}
+              onInputChange={handleInputChange}
+            />
+
+            <ExpressiveSpeechSection 
+              formData={{
+                motorRealization: formData.motorRealization,
+                wordFormation: formData.wordFormation,
+                grammaticalStructure: formData.grammaticalStructure,
+                connectedSpeech: formData.connectedSpeech,
+                nominativeFunction: formData.nominativeFunction
               }}
               onInputChange={handleInputChange}
             />
