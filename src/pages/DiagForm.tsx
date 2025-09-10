@@ -88,7 +88,7 @@ export default function DiagForm() {
                       <SelectValue placeholder="Выберите возраст" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({length: 12}, (_, i) => i + 5).map(age => (
+                      {Array.from({length: 12}, (_, i) => i + 7).map(age => (
                         <SelectItem key={age} value={age.toString()}>{age} лет</SelectItem>
                       ))}
                     </SelectContent>
