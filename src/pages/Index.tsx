@@ -1,18 +1,26 @@
+import { lazy, Suspense } from "react";
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
-import FeaturesSection from "@/components/FeaturesSection";
-import DiagnosticSection from "@/components/DiagnosticSection";
-import WhyNotTeacherSection from "@/components/WhyNotTeacherSection";
-import AboutSection from "@/components/AboutSection";
-import SpecialistsSection from "@/components/SpecialistsSection";
-import MethodologySection from "@/components/MethodologySection";
-import FAQSection from "@/components/FAQSection";
-import TestimonialsSection from "@/components/TestimonialsSection";
-
-import CTASection from "@/components/CTASection";
-import Footer from "@/components/Footer";
 import MobileFloatingButtons from "@/components/MobileFloatingButtons";
 import AnimatedSpirals from "@/components/AnimatedSpirals";
+
+// Ленивая загрузка тяжелых секций
+const FeaturesSection = lazy(() => import("@/components/FeaturesSection"));
+const DiagnosticSection = lazy(() => import("@/components/DiagnosticSection"));
+const WhyNotTeacherSection = lazy(() => import("@/components/WhyNotTeacherSection"));
+const AboutSection = lazy(() => import("@/components/AboutSection"));
+const SpecialistsSection = lazy(() => import("@/components/SpecialistsSection"));
+const MethodologySection = lazy(() => import("@/components/MethodologySection"));
+const FAQSection = lazy(() => import("@/components/FAQSection"));
+const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection"));
+const CTASection = lazy(() => import("@/components/CTASection"));
+const Footer = lazy(() => import("@/components/Footer"));
+
+const SectionLoader = () => (
+  <div className="min-h-[200px] flex items-center justify-center">
+    <div className="text-gray-500">Загрузка...</div>
+  </div>
+);
 
 export default function Index() {
   return (
@@ -20,18 +28,47 @@ export default function Index() {
       <AnimatedSpirals />
       <Navigation />
       <HeroSection />
-      <MethodologySection />
-      <FeaturesSection />
-      <DiagnosticSection />
-      <WhyNotTeacherSection />
-      <AboutSection />
-      <SpecialistsSection />
-      <TestimonialsSection />
-      <FAQSection />
-
-
-      <CTASection />
-      <Footer />
+      
+      <Suspense fallback={<SectionLoader />}>
+        <MethodologySection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <FeaturesSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <DiagnosticSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <WhyNotTeacherSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <AboutSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <SpecialistsSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <TestimonialsSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <FAQSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <CTASection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionLoader />}>
+        <Footer />
+      </Suspense>
+      
       <MobileFloatingButtons />
     </div>
   );
