@@ -212,9 +212,13 @@ export default function DiagConclusion() {
                       {diagData.writingSamples.map((sample, index) => (
                         <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
                           <img 
-                            src={sample}
+                            src={sample.startsWith('data:') ? sample : `data:image/jpeg;base64,${sample}`}
                             alt={`Письменная работа ${index + 1}`}
                             className="w-full h-auto max-h-80 object-contain rounded"
+                            onError={(e) => {
+                              console.error('Ошибка загрузки изображения:', sample.substring(0, 50));
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NzNkNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkl6b2JyYXplbmllIG5lIHphZ3J1emVubz88L3RleHQ+PC9zdmc+';
+                            }}
                           />
                           <div className="text-center text-xs text-gray-500 mt-2">
                             Образец письменной работы {index + 1}
