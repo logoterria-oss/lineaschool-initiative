@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
-import PersonalDataSection from "@/components/diag/PersonalDataSection";
-import AnamnesticsSection from "@/components/diag/AnamnesticsSection";
-import ExpressiveSpeechSection from "@/components/diag/ExpressiveSpeechSection";
-import ImpressiveSpeechSection from "@/components/diag/ImpressiveSpeechSection";
-import WrittenSpeechSection from "@/components/diag/WrittenSpeechSection";
-import ConclusionSection from "@/components/diag/ConclusionSection";
-import FinalSection from "@/components/diag/FinalSection";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import SectionLoader from "@/components/SectionLoader";
 import { Button } from "@/components/ui/button";
+
+// Ленивая загрузка секций для улучшения производительности
+const PersonalDataSection = lazy(() => import("@/components/diag/PersonalDataSection"));
+const AnamnesticsSection = lazy(() => import("@/components/diag/AnamnesticsSection"));
+const ExpressiveSpeechSection = lazy(() => import("@/components/diag/ExpressiveSpeechSection"));
+const ImpressiveSpeechSection = lazy(() => import("@/components/diag/ImpressiveSpeechSection"));
+const WrittenSpeechSection = lazy(() => import("@/components/diag/WrittenSpeechSection"));
+const ConclusionSection = lazy(() => import("@/components/diag/ConclusionSection"));
+const FinalSection = lazy(() => import("@/components/diag/FinalSection"));
 
 export default function DiagForm() {
   const navigate = useNavigate();
@@ -123,104 +127,132 @@ export default function DiagForm() {
               handleCreateConclusion();
             }}
           >
-            <PersonalDataSection 
-              formData={{
-                childName: formData.childName,
-                birthDate: formData.birthDate,
-                age: formData.age,
-                grade: formData.grade,
-                parentName: formData.parentName,
-                phone: formData.phone,
-                email: formData.email,
-                complaints: formData.complaints,
-                educationType: formData.educationType,
-                aoop: formData.aoop,
-                schoolStartAge: formData.schoolStartAge,
-                kindergarten: formData.kindergarten
-              }}
-              onInputChange={handleInputChange}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                <PersonalDataSection 
+                  formData={{
+                    childName: formData.childName,
+                    birthDate: formData.birthDate,
+                    age: formData.age,
+                    grade: formData.grade,
+                    parentName: formData.parentName,
+                    phone: formData.phone,
+                    email: formData.email,
+                    complaints: formData.complaints,
+                    educationType: formData.educationType,
+                    aoop: formData.aoop,
+                    schoolStartAge: formData.schoolStartAge,
+                    kindergarten: formData.kindergarten
+                  }}
+                  onInputChange={handleInputChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
 
-            <AnamnesticsSection 
-              formData={{
-                prenatalDevelopment: formData.prenatalDevelopment,
-                prenatalDevelopmentCustom: formData.prenatalDevelopmentCustom,
-                neurologicalDisorders: formData.neurologicalDisorders,
-                neurologicalDisordersCustom: formData.neurologicalDisordersCustom,
-                hearingVisionDisorders: formData.hearingVisionDisorders,
-                hearingVisionDisordersCustom: formData.hearingVisionDisordersCustom,
-                chronicDiseases: formData.chronicDiseases,
-                chronicDiseasesCustom: formData.chronicDiseasesCustom,
-                speechEnvironment: formData.speechEnvironment,
-                speechEnvironmentCustom: formData.speechEnvironmentCustom,
-                previousSpecialists: formData.previousSpecialists,
-                speechTherapistConclusion: formData.speechTherapistConclusion,
-                defectologistConclusion: formData.defectologistConclusion,
-                neuropsychologistConclusion: formData.neuropsychologistConclusion,
-                dominantHand: formData.dominantHand,
-                additionalInfo: formData.additionalInfo
-              }}
-              onInputChange={handleInputChange}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                <AnamnesticsSection 
+                  formData={{
+                    prenatalDevelopment: formData.prenatalDevelopment,
+                    prenatalDevelopmentCustom: formData.prenatalDevelopmentCustom,
+                    neurologicalDisorders: formData.neurologicalDisorders,
+                    neurologicalDisordersCustom: formData.neurologicalDisordersCustom,
+                    hearingVisionDisorders: formData.hearingVisionDisorders,
+                    hearingVisionDisordersCustom: formData.hearingVisionDisordersCustom,
+                    chronicDiseases: formData.chronicDiseases,
+                    chronicDiseasesCustom: formData.chronicDiseasesCustom,
+                    speechEnvironment: formData.speechEnvironment,
+                    speechEnvironmentCustom: formData.speechEnvironmentCustom,
+                    previousSpecialists: formData.previousSpecialists,
+                    speechTherapistConclusion: formData.speechTherapistConclusion,
+                    defectologistConclusion: formData.defectologistConclusion,
+                    neuropsychologistConclusion: formData.neuropsychologistConclusion,
+                    dominantHand: formData.dominantHand,
+                    additionalInfo: formData.additionalInfo
+                  }}
+                  onInputChange={handleInputChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
 
-            <ExpressiveSpeechSection 
-              formData={{
-                motorRealization: formData.motorRealization,
-                wordFormation: formData.wordFormation,
-                grammaticalStructure: formData.grammaticalStructure,
-                connectedSpeech: formData.connectedSpeech,
-                nominativeFunction: formData.nominativeFunction
-              }}
-              onInputChange={handleInputChange}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                <ExpressiveSpeechSection 
+                  formData={{
+                    motorRealization: formData.motorRealization,
+                    wordFormation: formData.wordFormation,
+                    grammaticalStructure: formData.grammaticalStructure,
+                    connectedSpeech: formData.connectedSpeech,
+                    nominativeFunction: formData.nominativeFunction
+                  }}
+                  onInputChange={handleInputChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
 
-            <ImpressiveSpeechSection 
-              formData={{
-                wordUnderstanding: formData.wordUnderstanding,
-                complexConstructions: formData.complexConstructions,
-                phonematicPerception: formData.phonematicPerception
-              }}
-              onInputChange={handleInputChange}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                <ImpressiveSpeechSection 
+                  formData={{
+                    wordUnderstanding: formData.wordUnderstanding,
+                    complexConstructions: formData.complexConstructions,
+                    phonematicPerception: formData.phonematicPerception
+                  }}
+                  onInputChange={handleInputChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
 
-            <WrittenSpeechSection 
-              formData={{
-                languageAnalysis: formData.languageAnalysis,
-                readingSkill: formData.readingSkill,
-                readingSpeed: formData.readingSpeed,
-                readingComprehension: formData.readingComprehension,
-                writingSamples: formData.writingSamples,
-                dysgraphicErrors: formData.dysgraphicErrors,
-                analysisErrors: formData.analysisErrors,
-                acousticErrors: formData.acousticErrors,
-                motorErrors: formData.motorErrors,
-                visualMotorErrors: formData.visualMotorErrors,
-                visualSpatialErrors: formData.visualSpatialErrors,
-                additionalCharacteristics: formData.additionalCharacteristics,
-                regulationViolations: formData.regulationViolations
-              }}
-              onInputChange={handleInputChange}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                <WrittenSpeechSection 
+                  formData={{
+                    languageAnalysis: formData.languageAnalysis,
+                    readingSkill: formData.readingSkill,
+                    readingSpeed: formData.readingSpeed,
+                    readingComprehension: formData.readingComprehension,
+                    writingSamples: formData.writingSamples,
+                    dysgraphicErrors: formData.dysgraphicErrors,
+                    analysisErrors: formData.analysisErrors,
+                    acousticErrors: formData.acousticErrors,
+                    motorErrors: formData.motorErrors,
+                    visualMotorErrors: formData.visualMotorErrors,
+                    visualSpatialErrors: formData.visualSpatialErrors,
+                    additionalCharacteristics: formData.additionalCharacteristics,
+                    regulationViolations: formData.regulationViolations
+                  }}
+                  onInputChange={handleInputChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
 
-            <ConclusionSection 
-              formData={{
-                speechDisorders: formData.speechDisorders,
-                dyslexiaTypes: formData.dyslexiaTypes,
-                dysgraphiaTypes: formData.dysgraphiaTypes,
-                brainSyndromes: formData.brainSyndromes
-              }}
-              onInputChange={handleInputChange}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                <ConclusionSection 
+                  formData={{
+                    speechDisorders: formData.speechDisorders,
+                    dyslexiaTypes: formData.dyslexiaTypes,
+                    dysgraphiaTypes: formData.dysgraphiaTypes,
+                    brainSyndromes: formData.brainSyndromes
+                  }}
+                  onInputChange={handleInputChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
 
-            <FinalSection 
-              formData={{
-                recommendations: formData.recommendations,
-                workDirections: formData.workDirections,
-                diagnosisDate: formData.diagnosisDate,
-                logopedist: formData.logopedist
-              }}
-              onInputChange={handleInputChange}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                <FinalSection 
+                  formData={{
+                    recommendations: formData.recommendations,
+                    workDirections: formData.workDirections,
+                    diagnosisDate: formData.diagnosisDate,
+                    logopedist: formData.logopedist
+                  }}
+                  onInputChange={handleInputChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
 
             <div className="flex justify-center mt-8 pb-8">
               <Button 
