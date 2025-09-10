@@ -83,15 +83,29 @@ export default function DiagForm() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCreateConclusion = () => {
-    // Генерируем порядковый номер (в реальном приложении это должно быть из базы данных)
-    const serialNumber = Math.floor(Math.random() * 10000) + 1;
+  const handleCreateConclusion = (event?: React.MouseEvent<HTMLButtonElement>) => {
+    // Предотвращаем отправку формы
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     
-    // Сохраняем данные формы в localStorage для передачи на страницу заключения
-    localStorage.setItem('diagData', JSON.stringify(formData));
+    console.log('Creating conclusion with data:', formData);
     
-    // Переходим на страницу заключения
-    navigate(`/diag/${serialNumber}`);
+    try {
+      // Генерируем порядковый номер (в реальном приложении это должно быть из базы данных)
+      const serialNumber = Math.floor(Math.random() * 10000) + 1;
+      
+      // Сохраняем данные формы в localStorage для передачи на страницу заключения
+      localStorage.setItem('diagData', JSON.stringify(formData));
+      console.log('Data saved to localStorage');
+      
+      // Переходим на страницу заключения
+      navigate(`/diag/${serialNumber}`);
+    } catch (error) {
+      console.error('Error creating conclusion:', error);
+      alert('Произошла ошибка при создании заключения. Попробуйте еще раз.');
+    }
   };
 
   return (
@@ -102,7 +116,13 @@ export default function DiagForm() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Диагностическая форма</h1>
           
-          <form className="space-y-8">
+          <form 
+            className="space-y-8" 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateConclusion();
+            }}
+          >
             <PersonalDataSection 
               formData={{
                 childName: formData.childName,
@@ -202,11 +222,11 @@ export default function DiagForm() {
               onInputChange={handleInputChange}
             />
 
-            <div className="flex justify-center mt-8">
+            <div className="flex justify-center mt-8 pb-8">
               <Button 
-                type="button"
-                onClick={handleCreateConclusion}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold rounded-lg"
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-colors duration-200 min-h-[48px] touch-manipulation select-none"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 Создать
               </Button>
