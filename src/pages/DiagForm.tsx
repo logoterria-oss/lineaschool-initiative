@@ -7,6 +7,7 @@ import ExpressiveSpeechSection from "@/components/diag/ExpressiveSpeechSection";
 import ImpressiveSpeechSection from "@/components/diag/ImpressiveSpeechSection";
 import WrittenSpeechSection from "@/components/diag/WrittenSpeechSection";
 import ConclusionSection from "@/components/diag/ConclusionSection";
+import FinalSection from "@/components/diag/FinalSection";
 
 export default function DiagForm() {
   const [formData, setFormData] = useState({
@@ -67,7 +68,12 @@ export default function DiagForm() {
     speechDisorders: [] as string[],
     dyslexiaTypes: [] as string[],
     dysgraphiaTypes: [] as string[],
-    brainSyndromes: [] as string[]
+    brainSyndromes: [] as string[],
+    // Финальные поля
+    recommendations: [] as string[],
+    workDirections: [] as string[],
+    diagnosisDate: "",
+    logopedist: ""
   });
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -168,6 +174,16 @@ export default function DiagForm() {
                 dyslexiaTypes: formData.dyslexiaTypes,
                 dysgraphiaTypes: formData.dysgraphiaTypes,
                 brainSyndromes: formData.brainSyndromes
+              }}
+              onInputChange={handleInputChange}
+            />
+
+            <FinalSection 
+              formData={{
+                recommendations: formData.recommendations,
+                workDirections: formData.workDirections,
+                diagnosisDate: formData.diagnosisDate,
+                logopedist: formData.logopedist
               }}
               onInputChange={handleInputChange}
             />
