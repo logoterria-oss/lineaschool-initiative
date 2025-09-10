@@ -106,7 +106,10 @@ export default function DiagConclusion() {
       // Другие возможные значения
       'yes': 'Да',
       'no': 'Нет',
-      'unknown': 'Неизвестно'
+      'unknown': 'Неизвестно',
+      
+      // Для речевой среды
+      'нет': 'Без особенностей'
     };
     
     return translations[value] || value;
