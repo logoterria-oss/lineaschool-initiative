@@ -6,6 +6,7 @@ import AnamnesticsSection from "@/components/diag/AnamnesticsSection";
 import ExpressiveSpeechSection from "@/components/diag/ExpressiveSpeechSection";
 import ImpressiveSpeechSection from "@/components/diag/ImpressiveSpeechSection";
 import WrittenSpeechSection from "@/components/diag/WrittenSpeechSection";
+import ConclusionSection from "@/components/diag/ConclusionSection";
 
 export default function DiagForm() {
   const [formData, setFormData] = useState({
@@ -61,7 +62,12 @@ export default function DiagForm() {
     visualMotorErrors: [] as string[],
     visualSpatialErrors: [] as string[],
     additionalCharacteristics: [] as string[],
-    regulationViolations: [] as string[]
+    regulationViolations: [] as string[],
+    // Заключение
+    speechDisorders: [] as string[],
+    dyslexiaTypes: [] as string[],
+    dysgraphiaTypes: [] as string[],
+    brainSyndromes: [] as string[]
   });
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -152,6 +158,16 @@ export default function DiagForm() {
                 visualSpatialErrors: formData.visualSpatialErrors,
                 additionalCharacteristics: formData.additionalCharacteristics,
                 regulationViolations: formData.regulationViolations
+              }}
+              onInputChange={handleInputChange}
+            />
+
+            <ConclusionSection 
+              formData={{
+                speechDisorders: formData.speechDisorders,
+                dyslexiaTypes: formData.dyslexiaTypes,
+                dysgraphiaTypes: formData.dysgraphiaTypes,
+                brainSyndromes: formData.brainSyndromes
               }}
               onInputChange={handleInputChange}
             />
