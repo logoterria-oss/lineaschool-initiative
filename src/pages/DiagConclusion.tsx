@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Footer from "@/components/Footer";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
+import Icon from "@/components/ui/icon";
 
 interface DiagData {
   childName: string;
@@ -66,6 +67,7 @@ interface DiagData {
 export default function DiagConclusion() {
   const { serialNumber } = useParams();
   const [diagData, setDiagData] = useState<DiagData | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const savedData = localStorage.getItem('diagData');
@@ -214,7 +216,8 @@ export default function DiagConclusion() {
                           <img 
                             src={sample.startsWith('data:') ? sample : `data:image/jpeg;base64,${sample}`}
                             alt={`Письменная работа ${index + 1}`}
-                            className="w-full h-auto max-h-80 object-contain rounded"
+                            className="w-full h-auto max-h-80 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setSelectedImage(sample.startsWith('data:') ? sample : `data:image/jpeg;base64,${sample}`)}
                             onError={(e) => {
                               console.error('Ошибка загрузки изображения:', sample.substring(0, 50));
                               e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NzNkNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkl6b2JyYXplbmllIG5lIHphZ3J1emVubz88L3RleHQ+PC9zdmc+';
@@ -320,6 +323,29 @@ export default function DiagConclusion() {
       </main>
 
       <Footer />
+
+      {/* Модальное окно для просмотра изображения */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <img 
+              src={selectedImage}
+              alt="Увеличенное изображение"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
+            >
+              <Icon name="X" size={24} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
