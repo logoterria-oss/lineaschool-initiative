@@ -37,10 +37,19 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
 
   const handleFileUpload = (field: string, files: FileList | null) => {
     if (files && files.length > 0) {
-      const fileNames = Array.from(files).slice(0, 3).map(file => file.name);
       const currentFiles = formData[field as keyof WrittenSpeechData] as string[];
-      const newFiles = [...currentFiles, ...fileNames].slice(0, 3);
-      onInputChange(field, newFiles);
+      const newFilePromises = Array.from(files).slice(0, 3 - currentFiles.length).map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+      });
+      
+      Promise.all(newFilePromises).then(base64Files => {
+        const newFiles = [...currentFiles, ...base64Files].slice(0, 3);
+        onInputChange(field, newFiles);
+      });
     }
   };
 
@@ -198,8 +207,31 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
               className="mb-2"
             />
             {formData.writingSamples.length > 0 && (
-              <div className="text-sm text-gray-600">
-                Прикрепленные файлы: {formData.writingSamples.join(", ")}
+              <div>
+                <div className="text-sm text-gray-600 mb-2">
+                  Прикреплено изображений: {formData.writingSamples.length}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {formData.writingSamples.map((sample, index) => (
+                    <div key={index} className="relative">
+                      <img 
+                        src={sample}
+                        alt={`Письменная работа ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSamples = formData.writingSamples.filter((_, i) => i !== index);
+                          onInputChange("writingSamples", newSamples);
+                        }}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

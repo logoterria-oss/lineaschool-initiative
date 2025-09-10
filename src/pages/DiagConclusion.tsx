@@ -203,6 +203,28 @@ export default function DiagConclusion() {
                 <div><strong>Навык чтения:</strong> {formatList(diagData.readingSkill)}</div>
                 <div><strong>Скорость чтения:</strong> {diagData.readingSpeed ? `${diagData.readingSpeed} слов/мин` : 'Не указано'}</div>
                 <div><strong>Понимание прочитанного:</strong> {diagData.readingComprehension ? `${diagData.readingComprehension}%` : 'Не указано'}</div>
+                
+                {/* Примеры письменных работ */}
+                {diagData.writingSamples && diagData.writingSamples.length > 0 && (
+                  <div>
+                    <strong>Примеры письменных работ:</strong>
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {diagData.writingSamples.map((sample, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
+                          <img 
+                            src={sample}
+                            alt={`Письменная работа ${index + 1}`}
+                            className="w-full h-auto max-h-80 object-contain rounded"
+                          />
+                          <div className="text-center text-xs text-gray-500 mt-2">
+                            Образец письменной работы {index + 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div><strong>Дисграфические ошибки:</strong> {diagData.dysgraphicErrors || 'Не указано'}</div>
                 <div><strong>Ошибки анализа:</strong> {formatList(diagData.analysisErrors)}</div>
                 <div><strong>Акустические ошибки:</strong> {formatList(diagData.acousticErrors)}</div>
