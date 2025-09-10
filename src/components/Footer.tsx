@@ -34,6 +34,7 @@ export default function Footer() {
               <a href="/oferta_2025" className="block text-gray-600 hover:text-green-500 text-sm">Договор оферты</a>
               <a href="/privacy" className="block text-gray-600 hover:text-green-500 text-sm">Политика конфиденциальности</a>
               <a href="/price" className="block text-gray-600 hover:text-green-500 text-sm">Стоимость услуг</a>
+              <a href="/diag_form" className="block text-gray-600 hover:text-green-500 text-sm">Диагностическая форма (для специалистов)</a>
 
             </div>
           </div>
