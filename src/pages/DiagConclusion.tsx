@@ -72,24 +72,56 @@ export default function DiagConclusion() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const savedData = localStorage.getItem('diagData');
-      console.log('Saved data from localStorage:', savedData ? 'Found' : 'Not found');
-      
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        console.log('Parsed data:', parsedData);
-        setDiagData(parsedData);
-      } else {
-        setError('Данные диагностики не найдены. Пожалуйста, заполните форму заново.');
+    const loadData = () => {
+      try {
+        console.log('DiagConclusion: Starting data load...');
+        console.log('Serial Number:', serialNumber);
+        console.log('User Agent:', navigator.userAgent);
+        console.log('localStorage available:', typeof Storage !== "undefined");
+        
+        // Проверяем доступность localStorage
+        if (typeof Storage === "undefined") {
+          throw new Error('localStorage not supported');
+        }
+        
+        const savedData = localStorage.getItem('diagData');
+        console.log('Raw localStorage data:', savedData);
+        console.log('Data length:', savedData?.length || 0);
+        
+        if (savedData && savedData.trim().length > 0) {
+          try {
+            const parsedData = JSON.parse(savedData);
+            console.log('Successfully parsed data:', Object.keys(parsedData));
+            console.log('Child name from data:', parsedData.childName);
+            
+            // Проверяем, что данные валидны
+            if (typeof parsedData === 'object' && parsedData !== null) {
+              setDiagData(parsedData);
+              setError(null);
+            } else {
+              throw new Error('Неверный формат данных');
+            }
+          } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            setError('Данные повреждены. Пожалуйста, заполните форму заново.');
+          }
+        } else {
+          console.warn('No data found in localStorage');
+          // Добавим кнопку для теста localStorage
+          setError('Данные диагностики не найдены. Возможно, браузер находится в приватном режиме или заблокировано хранилище.');
+        }
+      } catch (err) {
+        console.error('Data loading error:', err);
+        setError(`Ошибка при загрузке данных: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError('Ошибка при загрузке данных. Попробуйте заполнить форму заново.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    };
+
+    // Добавляем небольшую задержку для мобильных устройств
+    const timer = setTimeout(loadData, 100);
+    return () => clearTimeout(timer);
+  }, [serialNumber]);
 
   if (loading) {
     return (
@@ -102,18 +134,47 @@ export default function DiagConclusion() {
     );
   }
 
+  const testLocalStorage = () => {
+    try {
+      const testKey = 'test_storage';
+      const testValue = 'test_value';
+      localStorage.setItem(testKey, testValue);
+      const retrieved = localStorage.getItem(testKey);
+      localStorage.removeItem(testKey);
+      
+      if (retrieved === testValue) {
+        alert('localStorage работает корректно. Попробуйте заполнить форму заново.');
+      } else {
+        alert('localStorage не работает. Проверьте настройки приватности браузера.');
+      }
+    } catch (e) {
+      alert(`localStorage заблокирован: ${e instanceof Error ? e.message : 'Неизвестная ошибка'}`);
+    }
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">Данные не найдены</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <button 
-            onClick={() => window.location.href = '/diag'}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
-          >
-            Заполнить форму заново
-          </button>
+          <div className="space-y-3">
+            <button 
+              onClick={() => window.location.href = '/diag_form'}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold w-full"
+            >
+              Заполнить форму заново
+            </button>
+            <button 
+              onClick={testLocalStorage}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg text-sm w-full"
+            >
+              Проверить хранилище браузера
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-4">
+            Серийный номер: {serialNumber}
+          </p>
         </div>
       </div>
     );

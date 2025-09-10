@@ -94,21 +94,67 @@ export default function DiagForm() {
       event.stopPropagation();
     }
     
-    console.log('Creating conclusion with data:', formData);
+    console.log('DiagForm: Creating conclusion...');
+    console.log('Form data keys:', Object.keys(formData));
+    console.log('Child name:', formData.childName);
+    console.log('User Agent:', navigator.userAgent);
+    console.log('localStorage available:', typeof Storage !== "undefined");
     
     try {
-      // Генерируем порядковый номер (в реальном приложении это должно быть из базы данных)
-      const serialNumber = Math.floor(Math.random() * 10000) + 1;
+      // Проверяем доступность localStorage
+      if (typeof Storage === "undefined") {
+        throw new Error('localStorage не поддерживается в этом браузере');
+      }
+
+      // Тестируем localStorage перед использованием
+      try {
+        const testKey = 'test_key';
+        const testValue = 'test_value';
+        localStorage.setItem(testKey, testValue);
+        const retrieved = localStorage.getItem(testKey);
+        localStorage.removeItem(testKey);
+        
+        if (retrieved !== testValue) {
+          throw new Error('localStorage не работает корректно');
+        }
+      } catch (storageError) {
+        throw new Error('localStorage заблокирован (возможно, приватный режим браузера)');
+      }
+
+      // Проверяем, что у нас есть минимально необходимые данные
+      if (!formData.childName || formData.childName.trim() === '') {
+        alert('Пожалуйста, заполните имя ребенка');
+        return;
+      }
       
-      // Сохраняем данные формы в localStorage для передачи на страницу заключения
-      localStorage.setItem('diagData', JSON.stringify(formData));
-      console.log('Data saved to localStorage');
+      // Генерируем порядковый номер
+      const serialNumber = Math.floor(Math.random() * 10000) + 1;
+      console.log('Generated serial number:', serialNumber);
+      
+      // Создаем строку для сохранения
+      const dataToSave = JSON.stringify(formData);
+      console.log('Data to save length:', dataToSave.length);
+      console.log('First 100 chars:', dataToSave.substring(0, 100));
+      
+      // Пытаемся сохранить данные
+      localStorage.setItem('diagData', dataToSave);
+      
+      // Проверяем, что данные действительно сохранились
+      const savedData = localStorage.getItem('diagData');
+      if (!savedData) {
+        throw new Error('Данные не сохранились в localStorage');
+      }
+      
+      console.log('Data successfully saved to localStorage');
+      console.log('Saved data length:', savedData.length);
       
       // Переходим на страницу заключения
+      console.log('Navigating to:', `/diag/${serialNumber}`);
       navigate(`/diag/${serialNumber}`);
+      
     } catch (error) {
       console.error('Error creating conclusion:', error);
-      alert('Произошла ошибка при создании заключения. Попробуйте еще раз.');
+      alert(`Произошла ошибка при создании заключения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     }
   };
 
