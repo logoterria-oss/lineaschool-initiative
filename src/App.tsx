@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
 import OfferPage from "./pages/OfferPage";
 import Privacy from "./pages/Privacy";
+import DiagForm from "./pages/DiagForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/price" element={<Pricing />} />
           <Route path="/oferta_2025" element={<OfferPage />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/diag_form" element={<DiagForm />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
