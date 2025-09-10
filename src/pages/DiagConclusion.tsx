@@ -87,15 +87,40 @@ export default function DiagConclusion() {
     );
   }
 
+  const translateValue = (value: string) => {
+    const translations: Record<string, string> = {
+      // Тип образования
+      'general': 'Общее',
+      'special': 'Специальное',
+      'inclusive': 'Инклюзивное',
+      
+      // Ведущая рука
+      'right': 'Правая',
+      'left': 'Левая',
+      'ambidextrous': 'Обе руки',
+      
+      // Класс обучения
+      'regular': 'Общеобразовательный',
+      'correctional': 'Коррекционный',
+      
+      // Другие возможные значения
+      'yes': 'Да',
+      'no': 'Нет',
+      'unknown': 'Неизвестно'
+    };
+    
+    return translations[value] || value;
+  };
+
   const formatList = (items: string[]) => {
-    return items.length > 0 ? items.join(', ') : 'Не указано';
+    return items.length > 0 ? items.map(translateValue).join(', ') : 'Не указано';
   };
 
   const formatValue = (value: string | string[]) => {
     if (Array.isArray(value)) {
       return formatList(value);
     }
-    return value || 'Не указано';
+    return translateValue(value) || 'Не указано';
   };
 
   return (
