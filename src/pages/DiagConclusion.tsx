@@ -87,7 +87,21 @@ export default function DiagConclusion() {
     );
   }
 
+  // Защита от некорректных данных
+  if (typeof diagData !== 'object') {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Ошибка загрузки данных</h2>
+          <p className="text-gray-600">Попробуйте перезагрузить страницу</p>
+        </div>
+      </div>
+    );
+  }
+
   const translateValue = (value: string) => {
+    if (!value) return 'Не указано';
+    
     const translations: Record<string, string> = {
       // Тип образования
       'general': 'Общее',
@@ -128,10 +142,12 @@ export default function DiagConclusion() {
   };
 
   const formatList = (items: string[]) => {
+    if (!items || !Array.isArray(items)) return 'Не указано';
     return items.length > 0 ? items.map(translateValue).join(', ') : 'Не указано';
   };
 
   const formatValue = (value: string | string[]) => {
+    if (!value) return 'Не указано';
     if (Array.isArray(value)) {
       return formatList(value);
     }
@@ -285,27 +301,32 @@ export default function DiagConclusion() {
               </h2>
               <div className="text-sm leading-relaxed">
                 {(() => {
-                  const conclusionParts = [];
-                  
-                  if (diagData.speechDisorders && diagData.speechDisorders.length > 0) {
-                    conclusionParts.push(diagData.speechDisorders.join(', '));
+                  try {
+                    const conclusionParts = [];
+                    
+                    if (diagData.speechDisorders && Array.isArray(diagData.speechDisorders) && diagData.speechDisorders.length > 0) {
+                      conclusionParts.push(diagData.speechDisorders.join(', '));
+                    }
+                    
+                    if (diagData.dyslexiaTypes && Array.isArray(diagData.dyslexiaTypes) && diagData.dyslexiaTypes.length > 0) {
+                      conclusionParts.push(diagData.dyslexiaTypes.join(', '));
+                    }
+                    
+                    if (diagData.dysgraphiaTypes && Array.isArray(diagData.dysgraphiaTypes) && diagData.dysgraphiaTypes.length > 0) {
+                      conclusionParts.push(diagData.dysgraphiaTypes.join(', '));
+                    }
+                    
+                    if (diagData.brainSyndromes && Array.isArray(diagData.brainSyndromes) && diagData.brainSyndromes.length > 0) {
+                      conclusionParts.push(diagData.brainSyndromes.join(', '));
+                    }
+                    
+                    return conclusionParts.length > 0 
+                      ? conclusionParts.join('. ') + '.'
+                      : 'Заключение не сформировано.';
+                  } catch (error) {
+                    console.error('Ошибка формирования заключения:', error);
+                    return 'Ошибка при формировании заключения.';
                   }
-                  
-                  if (diagData.dyslexiaTypes && diagData.dyslexiaTypes.length > 0) {
-                    conclusionParts.push(diagData.dyslexiaTypes.join(', '));
-                  }
-                  
-                  if (diagData.dysgraphiaTypes && diagData.dysgraphiaTypes.length > 0) {
-                    conclusionParts.push(diagData.dysgraphiaTypes.join(', '));
-                  }
-                  
-                  if (diagData.brainSyndromes && diagData.brainSyndromes.length > 0) {
-                    conclusionParts.push(diagData.brainSyndromes.join(', '));
-                  }
-                  
-                  return conclusionParts.length > 0 
-                    ? conclusionParts.join('. ') + '.'
-                    : 'Заключение не сформировано.';
                 })()}
               </div>
             </section>
