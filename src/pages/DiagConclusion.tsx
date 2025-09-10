@@ -68,15 +68,30 @@ export default function DiagConclusion() {
   const { serialNumber } = useParams();
   const [diagData, setDiagData] = useState<DiagData | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedData = localStorage.getItem('diagData');
-    if (savedData) {
-      setDiagData(JSON.parse(savedData));
+    try {
+      const savedData = localStorage.getItem('diagData');
+      console.log('Saved data from localStorage:', savedData ? 'Found' : 'Not found');
+      
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        console.log('Parsed data:', parsedData);
+        setDiagData(parsedData);
+      } else {
+        setError('Данные диагностики не найдены. Пожалуйста, заполните форму заново.');
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Ошибка при загрузке данных. Попробуйте заполнить форму заново.');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  if (!diagData) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -87,13 +102,35 @@ export default function DiagConclusion() {
     );
   }
 
-  // Защита от некорректных данных
-  if (typeof diagData !== 'object') {
+  if (error) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Ошибка загрузки данных</h2>
-          <p className="text-gray-600">Попробуйте перезагрузить страницу</p>
+        <div className="text-center max-w-md mx-auto px-4">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Данные не найдены</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.href = '/diag'}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+          >
+            Заполнить форму заново
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!diagData || typeof diagData !== 'object') {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Ошибка загрузки</h2>
+          <p className="text-gray-600 mb-6">Данные повреждены или отсутствуют</p>
+          <button 
+            onClick={() => window.location.href = '/diag'}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+          >
+            Заполнить форму заново
+          </button>
         </div>
       </div>
     );
