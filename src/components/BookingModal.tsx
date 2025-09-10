@@ -139,14 +139,15 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               <div className="grid grid-cols-2 gap-3 mt-1">
                 <Input
                   id="date"
-                  type="date"
+                  type="text"
                   value={formData.date}
                   onChange={(e) => handleInputChange("date", e.target.value)}
+                  placeholder="dd.mm.yyyy"
                   required
                 />
                 <Input
                   id="time"
-                  type="time"
+                  type="text"
                   value={formData.time}
                   onChange={(e) => handleInputChange("time", e.target.value)}
                   placeholder="__:__"
