@@ -103,10 +103,22 @@ export default function DiagConclusion() {
       'regular': 'Общеобразовательный',
       'correctional': 'Коррекционный',
       
-      // Другие возможные значения
+      // Детский сад
+      'attended': 'Посещал',
+      'not_attended': 'Не посещал',
+      
+      // АООП
+      'aoop_1': 'АООП НОО ОВЗ вариант 1',
+      'aoop_2': 'АООП НОО ОВЗ вариант 2',
+      'none': 'Не требуется',
+      
+      // Общие значения
       'yes': 'Да',
       'no': 'Нет',
       'unknown': 'Неизвестно',
+      'without_features': 'Без особенностей',
+      'present': 'Имеются',
+      'absent': 'Отсутствуют',
       
       // Для речевой среды
       'нет': 'Без особенностей'
@@ -154,10 +166,10 @@ export default function DiagConclusion() {
                 <div><strong>ФИО родителя:</strong> {diagData.parentName}</div>
                 <div><strong>Телефон:</strong> {diagData.phone}</div>
                 <div><strong>Email:</strong> {diagData.email}</div>
-                <div><strong>Тип образования:</strong> {diagData.educationType}</div>
-                <div><strong>АООП:</strong> {diagData.aoop}</div>
+                <div><strong>Тип образования:</strong> {formatValue(diagData.educationType)}</div>
+                <div><strong>АООП:</strong> {formatValue(diagData.aoop)}</div>
                 <div><strong>Возраст поступления в школу:</strong> {diagData.schoolStartAge}</div>
-                <div><strong>Детский сад:</strong> {diagData.kindergarten}</div>
+                <div><strong>Детский сад:</strong> {formatValue(diagData.kindergarten)}</div>
               </div>
               {diagData.complaints && (
                 <div className="mt-4">
