@@ -4,6 +4,7 @@ import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
 import PersonalDataSection from "@/components/diag/PersonalDataSection";
 import AnamnesticsSection from "@/components/diag/AnamnesticsSection";
 import ExpressiveSpeechSection from "@/components/diag/ExpressiveSpeechSection";
+import ImpressiveSpeechSection from "@/components/diag/ImpressiveSpeechSection";
 
 export default function DiagForm() {
   const [formData, setFormData] = useState({
@@ -41,7 +42,11 @@ export default function DiagForm() {
     wordFormation: [] as string[],
     grammaticalStructure: "",
     connectedSpeech: [] as string[],
-    nominativeFunction: [] as string[]
+    nominativeFunction: [] as string[],
+    // Импрессивная речь
+    wordUnderstanding: "",
+    complexConstructions: "",
+    phonematicPerception: ""
   });
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -104,6 +109,15 @@ export default function DiagForm() {
                 grammaticalStructure: formData.grammaticalStructure,
                 connectedSpeech: formData.connectedSpeech,
                 nominativeFunction: formData.nominativeFunction
+              }}
+              onInputChange={handleInputChange}
+            />
+
+            <ImpressiveSpeechSection 
+              formData={{
+                wordUnderstanding: formData.wordUnderstanding,
+                complexConstructions: formData.complexConstructions,
+                phonematicPerception: formData.phonematicPerception
               }}
               onInputChange={handleInputChange}
             />
