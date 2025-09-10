@@ -179,8 +179,8 @@ export default function DiagConclusion() {
                 
                 <div><strong>Речевая среда:</strong> {diagData.speechEnvironment === "custom" ? (diagData.speechEnvironmentCustom || "Не указано") : formatValue(diagData.speechEnvironment)}</div>
                 
-                <div><strong>Консультации специалистов:</strong> {formatList(diagData.previousSpecialists)}</div>
                 <div><strong>Ведущая рука:</strong> {formatValue(diagData.dominantHand)}</div>
+                <div><strong>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами?</strong> {formatList(diagData.previousSpecialists)}</div>
                 
                 {diagData.speechTherapistConclusion && <div><strong>Заключение логопеда:</strong> {diagData.speechTherapistConclusion}</div>}
                 {diagData.defectologistConclusion && <div><strong>Заключение дефектолога:</strong> {diagData.defectologistConclusion}</div>}
