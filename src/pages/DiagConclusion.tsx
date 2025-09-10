@@ -241,11 +241,30 @@ export default function DiagConclusion() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">
                 Заключение
               </h2>
-              <div className="space-y-3 text-sm">
-                <div><strong>Нарушения речи:</strong> {formatList(diagData.speechDisorders)}</div>
-                <div><strong>Виды дислексии:</strong> {formatList(diagData.dyslexiaTypes)}</div>
-                <div><strong>Виды дисграфии:</strong> {formatList(diagData.dysgraphiaTypes)}</div>
-                <div><strong>Синдромы слабости функций мозга:</strong> {formatList(diagData.brainSyndromes)}</div>
+              <div className="text-sm leading-relaxed">
+                {(() => {
+                  const conclusionParts = [];
+                  
+                  if (diagData.speechDisorders && diagData.speechDisorders.length > 0) {
+                    conclusionParts.push(diagData.speechDisorders.join(', '));
+                  }
+                  
+                  if (diagData.dyslexiaTypes && diagData.dyslexiaTypes.length > 0) {
+                    conclusionParts.push(diagData.dyslexiaTypes.join(', '));
+                  }
+                  
+                  if (diagData.dysgraphiaTypes && diagData.dysgraphiaTypes.length > 0) {
+                    conclusionParts.push(diagData.dysgraphiaTypes.join(', '));
+                  }
+                  
+                  if (diagData.brainSyndromes && diagData.brainSyndromes.length > 0) {
+                    conclusionParts.push(diagData.brainSyndromes.join(', '));
+                  }
+                  
+                  return conclusionParts.length > 0 
+                    ? conclusionParts.join('. ') + '.'
+                    : 'Заключение не сформировано.';
+                })()}
               </div>
             </section>
 
