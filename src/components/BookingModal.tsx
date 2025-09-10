@@ -142,7 +142,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                   type="text"
                   value={formData.date}
                   onChange={(e) => handleInputChange("date", e.target.value)}
-                  placeholder="dd.mm.yyyy"
+                  placeholder="__.__.2025"
                   required
                 />
                 <Input
