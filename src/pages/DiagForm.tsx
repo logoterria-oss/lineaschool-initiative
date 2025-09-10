@@ -5,6 +5,7 @@ import PersonalDataSection from "@/components/diag/PersonalDataSection";
 import AnamnesticsSection from "@/components/diag/AnamnesticsSection";
 import ExpressiveSpeechSection from "@/components/diag/ExpressiveSpeechSection";
 import ImpressiveSpeechSection from "@/components/diag/ImpressiveSpeechSection";
+import WrittenSpeechSection from "@/components/diag/WrittenSpeechSection";
 
 export default function DiagForm() {
   const [formData, setFormData] = useState({
@@ -46,7 +47,21 @@ export default function DiagForm() {
     // Импрессивная речь
     wordUnderstanding: "",
     complexConstructions: "",
-    phonematicPerception: ""
+    phonematicPerception: "",
+    // Письменная речь
+    languageAnalysis: [] as string[],
+    readingSkill: [] as string[],
+    readingSpeed: "",
+    readingComprehension: "",
+    writingSamples: [] as string[],
+    dysgraphicErrors: "",
+    analysisErrors: [] as string[],
+    acousticErrors: [] as string[],
+    motorErrors: [] as string[],
+    visualMotorErrors: [] as string[],
+    visualSpatialErrors: [] as string[],
+    additionalCharacteristics: [] as string[],
+    regulationViolations: [] as string[]
   });
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -118,6 +133,25 @@ export default function DiagForm() {
                 wordUnderstanding: formData.wordUnderstanding,
                 complexConstructions: formData.complexConstructions,
                 phonematicPerception: formData.phonematicPerception
+              }}
+              onInputChange={handleInputChange}
+            />
+
+            <WrittenSpeechSection 
+              formData={{
+                languageAnalysis: formData.languageAnalysis,
+                readingSkill: formData.readingSkill,
+                readingSpeed: formData.readingSpeed,
+                readingComprehension: formData.readingComprehension,
+                writingSamples: formData.writingSamples,
+                dysgraphicErrors: formData.dysgraphicErrors,
+                analysisErrors: formData.analysisErrors,
+                acousticErrors: formData.acousticErrors,
+                motorErrors: formData.motorErrors,
+                visualMotorErrors: formData.visualMotorErrors,
+                visualSpatialErrors: formData.visualSpatialErrors,
+                additionalCharacteristics: formData.additionalCharacteristics,
+                regulationViolations: formData.regulationViolations
               }}
               onInputChange={handleInputChange}
             />
