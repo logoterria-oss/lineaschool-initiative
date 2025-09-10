@@ -14,6 +14,7 @@ export default function AnimatedSpirals() {
   const [spirals, setSpirals] = useState<Spiral[]>([]);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   // Уменьшенные позиции для мобильных
   const fixedPositions = isMobile ? [
@@ -33,6 +34,8 @@ export default function AnimatedSpirals() {
   ];
 
   useEffect(() => {
+    setIsClient(true);
+    
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const mobileQuery = window.matchMedia('(max-width: 768px)');
     
@@ -119,6 +122,11 @@ export default function AnimatedSpirals() {
   }, [isMobile, prefersReducedMotion]);
 
 
+
+  // Не рендерим на сервере, только на клиенте
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <>
