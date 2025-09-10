@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
 import PersonalDataSection from "@/components/diag/PersonalDataSection";
@@ -8,8 +9,10 @@ import ImpressiveSpeechSection from "@/components/diag/ImpressiveSpeechSection";
 import WrittenSpeechSection from "@/components/diag/WrittenSpeechSection";
 import ConclusionSection from "@/components/diag/ConclusionSection";
 import FinalSection from "@/components/diag/FinalSection";
+import { Button } from "@/components/ui/button";
 
 export default function DiagForm() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     childName: "",
     birthDate: "",
@@ -78,6 +81,17 @@ export default function DiagForm() {
 
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateConclusion = () => {
+    // Генерируем порядковый номер (в реальном приложении это должно быть из базы данных)
+    const serialNumber = Math.floor(Math.random() * 10000) + 1;
+    
+    // Сохраняем данные формы в localStorage для передачи на страницу заключения
+    localStorage.setItem('diagData', JSON.stringify(formData));
+    
+    // Переходим на страницу заключения
+    navigate(`/diag_${serialNumber}`);
   };
 
   return (
@@ -187,6 +201,16 @@ export default function DiagForm() {
               }}
               onInputChange={handleInputChange}
             />
+
+            <div className="flex justify-center mt-8">
+              <Button 
+                type="button"
+                onClick={handleCreateConclusion}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold rounded-lg"
+              >
+                Создать
+              </Button>
+            </div>
           </form>
         </div>
       </main>
