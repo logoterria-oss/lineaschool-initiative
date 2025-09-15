@@ -1,3 +1,5 @@
+import SEOHead from "@/components/SEOHead";
+import { organizationSchema, serviceSchema, faqSchema, webPageSchema } from "@/utils/structuredData";
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
 import MethodologySection from "@/components/MethodologySection";
@@ -14,22 +16,42 @@ import MobileFloatingButtons from "@/components/MobileFloatingButtons";
 import MobileOptimizedSpirals from "@/components/MobileOptimizedSpirals";
 
 export default function Index() {
+  const combinedSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      organizationSchema,
+      serviceSchema,
+      faqSchema,
+      webPageSchema
+    ]
+  };
+
   return (
-    <div className="min-h-screen bg-white relative">
-      <MobileOptimizedSpirals />
-      <Navigation />
-      <HeroSection />
-      <MethodologySection />
-      <FeaturesSection />
-      <DiagnosticSection />
-      <WhyNotTeacherSection />
-      <AboutSection />
-      <SpecialistsSection />
-      <TestimonialsSection />
-      <FAQSection />
-      <CTASection />
-      <Footer />
-      <MobileFloatingButtons />
-    </div>
+    <>
+      <SEOHead
+        title="Онлайн коррекция дислексии и дисграфии для детей 8-18 лет | LineaSchool"
+        description="Эффективная онлайн-коррекция дислексии и дисграфии для детей 8-18 лет. Нейрологопедический подход, 200+ довольных семей, от 970₽ за урок. Бесплатная диагностика."
+        keywords="дислексия, дисграфия, коррекция, логопед онлайн, нейрологопед, дети, обучение, дефектолог, нарушения чтения, нарушения письма"
+        canonicalUrl="https://lineaschool.ru"
+        structuredData={combinedSchema}
+      />
+      
+      <div className="min-h-screen bg-white relative">
+        <MobileOptimizedSpirals />
+        <Navigation />
+        <HeroSection />
+        <MethodologySection />
+        <FeaturesSection />
+        <DiagnosticSection />
+        <WhyNotTeacherSection />
+        <AboutSection />
+        <SpecialistsSection />
+        <TestimonialsSection />
+        <FAQSection />
+        <CTASection />
+        <Footer />
+        <MobileFloatingButtons />
+      </div>
+    </>
   );
 }
