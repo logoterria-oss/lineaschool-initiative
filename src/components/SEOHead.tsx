@@ -31,6 +31,13 @@ export default function SEOHead({
       {/* Canonical URL */}
       <link rel="canonical" href={canonicalUrl} />
       
+      {/* Favicon и иконки */}
+      <link rel="icon" type="image/x-icon" href="/img/8b183cff-a78a-419e-9a70-f387836cf224.jpg" sizes="16x16" />
+      <link rel="icon" type="image/png" href="/img/b3f6060c-fd50-4bee-a902-c9014256f6c2.jpg" sizes="32x32" />
+      <link rel="icon" type="image/png" href="/img/fa2c674d-254c-4562-95f0-623e7733cfe0.jpg" sizes="512x512" />
+      <link rel="apple-touch-icon" href="/img/fa2c674d-254c-4562-95f0-623e7733cfe0.jpg" />
+      <link rel="shortcut icon" href="/img/8b183cff-a78a-419e-9a70-f387836cf224.jpg" />
+      
       {/* Open Graph для соцсетей */}
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
