@@ -53,9 +53,19 @@ export default function SEOHead({
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
       
+      {/* Специальные теги для Яндекса */}
+      <meta name="yandex-verification" content="" />
+      <meta name="format-detection" content="telephone=no" />
+      <meta property="ya:ovs:adult" content="false" />
+      <meta property="ya:ovs:upload_date" content="2024-01-01" />
+      <meta name="yandex-zen-verification" content="" />
+      
       {/* Дополнительные теги для поисковиков */}
       <meta name="theme-color" content="#10b981" />
       <meta name="msapplication-TileColor" content="#10b981" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      <meta name="apple-mobile-web-app-title" content="LineaSchool" />
       
       {/* Структурированные данные */}
       {structuredData && (

@@ -2,18 +2,30 @@
 
 export const organizationSchema = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": ["Organization", "EducationalOrganization"],
   "name": "LineaSchool",
-  "description": "Онлайн коррекция дислексии и дисграфии для детей",
+  "alternateName": ["Линия Скул", "ЛинияСкул", "LinaeSchool"],
+  "description": "Онлайн коррекция дислексии и дисграфии для детей 8-18 лет",
   "url": "https://lineaschool.ru",
-  "logo": "https://lineaschool.ru/logo.png",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://lineaschool.ru/img/fa2c674d-254c-4562-95f0-623e7733cfe0.jpg",
+    "width": 512,
+    "height": 512
+  },
+  "image": "https://lineaschool.ru/img/2978ed56-825a-462e-a5cf-49f38aa64faf.jpg",
   "contactPoint": {
     "@type": "ContactPoint",
     "telephone": "+7-923-625-16-11",
     "contactType": "customer service",
     "areaServed": "RU",
-    "availableLanguage": "Russian"
+    "availableLanguage": ["Russian", "ru"]
   },
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "RU"
+  },
+  "foundingDate": "2023",
   "sameAs": [
     "https://wa.me/79236251611"
   ]

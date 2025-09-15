@@ -1,4 +1,5 @@
 import SEOHead from "@/components/SEOHead";
+import YandexMetaTags from "@/components/YandexMetaTags";
 import { organizationSchema, serviceSchema, faqSchema, webPageSchema } from "@/utils/structuredData";
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
@@ -35,6 +36,7 @@ export default function Index() {
         canonicalUrl="https://lineaschool.ru"
         structuredData={combinedSchema}
       />
+      <YandexMetaTags />
       
       <div className="min-h-screen bg-white relative">
         <MobileOptimizedSpirals />
