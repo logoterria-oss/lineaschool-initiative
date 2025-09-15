@@ -32,11 +32,11 @@ export default function SEOHead({
       <link rel="canonical" href={canonicalUrl} />
       
       {/* Favicon и иконки */}
-      <link rel="icon" type="image/x-icon" href="/img/283c6cd7-0e68-401c-b245-f3fd7eaac18a.jpg" sizes="16x16" />
-      <link rel="icon" type="image/png" href="/img/283c6cd7-0e68-401c-b245-f3fd7eaac18a.jpg" sizes="32x32" />
-      <link rel="icon" type="image/png" href="/img/56991a34-f099-4470-b7c0-528cdd84c0c5.jpg" sizes="512x512" />
-      <link rel="apple-touch-icon" href="/img/56991a34-f099-4470-b7c0-528cdd84c0c5.jpg" />
-      <link rel="shortcut icon" href="/img/283c6cd7-0e68-401c-b245-f3fd7eaac18a.jpg" />
+      <link rel="icon" type="image/png" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" sizes="16x16" />
+      <link rel="icon" type="image/png" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" sizes="32x32" />
+      <link rel="icon" type="image/png" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" sizes="512x512" />
+      <link rel="apple-touch-icon" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" />
+      <link rel="shortcut icon" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" />
       
       {/* Open Graph для соцсетей */}
       <meta property="og:type" content="website" />
