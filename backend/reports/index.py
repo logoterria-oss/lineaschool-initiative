@@ -24,6 +24,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Password, X-User-Id',
                 'Access-Control-Max-Age': '86400'
             },
+            'isBase64Encoded': False,
             'body': ''
         }
     
@@ -157,6 +158,7 @@ def update_report(cursor, conn, report_id: str, data: Dict[str, Any]) -> Dict[st
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'ID заключения обязателен'})
         }
     
@@ -186,6 +188,7 @@ def update_report(cursor, conn, report_id: str, data: Dict[str, Any]) -> Dict[st
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'Заключение не найдено'})
         }
     
@@ -210,6 +213,7 @@ def delete_report(cursor, conn, report_id: str) -> Dict[str, Any]:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'ID заключения обязателен'})
         }
     
@@ -223,6 +227,7 @@ def delete_report(cursor, conn, report_id: str) -> Dict[str, Any]:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'Заключение не найдено'})
         }
     
