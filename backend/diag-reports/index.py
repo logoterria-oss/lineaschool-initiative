@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Сохранение заключений из диагностической формы в БД
+    Business: Сохранение готовых заключений из диагностической формы в БД
     Args: event - dict с httpMethod, body, headers; context - объект с request_id
     Returns: HTTP response dict
     """
@@ -70,18 +70,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-    except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'error': f'Ошибка подключения к БД: {str(e)}'}),
-            'isBase64Encoded': False
-        }
-    
-    try:
+        
         # Создание таблицы если не существует
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS speech_therapy_reports (
@@ -130,6 +119,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
+                'success': True,
                 'id': result['id'],
                 'access_token': result['access_token'],
                 'public_url': public_url,
@@ -139,7 +129,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     except psycopg2.IntegrityError:
-        conn.rollback()
+        if 'conn' in locals():
+            conn.rollback()
         return {
             'statusCode': 409,
             'headers': {
@@ -151,17 +142,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     except Exception as e:
-        conn.rollback()
+        if 'conn' in locals():
+            conn.rollback()
         return {
             'statusCode': 500,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps({'error': f'Ошибка сохранения: {str(e)}'}),
+            'body': json.dumps({'error': f'Ошибка сервера: {str(e)}'}),
             'isBase64Encoded': False
         }
     
     finally:
-        cursor.close()
-        conn.close()
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()

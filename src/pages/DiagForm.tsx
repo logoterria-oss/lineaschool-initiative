@@ -208,7 +208,7 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
       try {
         console.log('🔄 Отправляем данные в админскую базу:', reportData);
         
-        const adminResponse = await fetch('https://functions.poehali.dev/8858a355-f502-49ee-8e63-1282d4aecd56', {
+        const adminResponse = await fetch('https://functions.poehali.dev/ce9c6cdc-e597-4cbf-b466-bd8e2267bc47', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

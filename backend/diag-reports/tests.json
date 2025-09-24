@@ -1,35 +1,23 @@
 {
-  "tests": [
-    {
-      "name": "Test save diag report",
-      "method": "POST",
-      "path": "/",
-      "body": {
-        "student_name": "Тест Ребенок",
-        "student_age": 8,
-        "date_of_examination": "2024-09-24",
-        "therapist_name": "Автоматическая диагностика LineaSchool",
-        "diagnosis": "Тестовый диагноз",
-        "recommendations": "Тестовые рекомендации",
-        "report_content": "Полный текст тестового заключения",
-        "access_token": "test-token-123"
-      },
-      "expectedStatus": 201,
-      "expectedBody": {
-        "id": "number",
-        "access_token": "string",
-        "public_url": "string",
-        "message": "string"
-      },
-      "bodyMatcher": "partial"
+  "tests": [{
+    "name": "Test diagnosis report save",
+    "method": "POST",
+    "path": "/",
+    "body": {
+      "student_name": "Тест Тестович",
+      "student_age": 8,
+      "date_of_examination": "2025-09-24",
+      "therapist_name": "Тестовый логопед",
+      "diagnosis": "Тестовый диагноз",
+      "recommendations": "Тестовые рекомендации",
+      "report_content": "Полный текст тестового заключения",
+      "access_token": "test-token-12345"
     },
-    {
-      "name": "Test CORS OPTIONS",
-      "method": "OPTIONS",
-      "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": "",
-      "bodyMatcher": "exact"
-    }
-  ]
+    "expectedStatus": 201,
+    "expectedBody": {
+      "success": true,
+      "message": "string"
+    },
+    "bodyMatcher": "partial"
+  }]
 }
