@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Сохранение ссылки на заключение с основными данными
+    Business: Сохранение ссылки на заключение с основными данными студента
     Args: event - dict с httpMethod, body; context - объект с request_id
     Returns: HTTP response dict
     """
@@ -18,8 +18,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Source',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, X-Source',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
