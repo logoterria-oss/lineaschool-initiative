@@ -33,6 +33,13 @@ export default function Navigation() {
             >
               Записаться
             </Button>
+            <a
+              href="/admin/reports"
+              className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200 rounded-lg hover:bg-green-50"
+              title="Админ-панель"
+            >
+              <Icon name="Settings" size={20} />
+            </a>
           </div>
         </div>
       </div>
