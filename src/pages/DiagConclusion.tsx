@@ -54,10 +54,40 @@ export default function DiagConclusion() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Логопедическое заключение
             </h1>
-            <p className="text-lg text-gray-600">№ {serialNumber}</p>
+            <p className="text-lg text-gray-600 mb-4">№ {serialNumber}</p>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center no-print">
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Печать
+              </button>
+              
+              <button
+                onClick={async () => {
+                  try {
+                    const { generatePDF } = await import('@/utils/pdfGenerator');
+                    await generatePDF(diagData, serialNumber || 'Unknown');
+                  } catch (error) {
+                    console.error('Ошибка генерации PDF:', error);
+                    alert('Не удалось создать PDF файл');
+                  }
+                }}
+                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Скачать PDF
+              </button>
+            </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8">
+          <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8 print-page">
             <PersonalDataView diagData={diagData} />
             <AnamnesticsView diagData={diagData} />
             <SpeechView diagData={diagData} />

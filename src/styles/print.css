@@ -1,0 +1,196 @@
+@media print {
+  /* Скрыть элементы, которые не нужны при печати */
+  .no-print,
+  button,
+  nav,
+  .bg-gray-50,
+  .bg-gray-100,
+  .shadow,
+  .shadow-lg,
+  .shadow-md,
+  .shadow-sm {
+    display: none !important;
+  }
+
+  /* Основные стили для печати */
+  body {
+    font-family: "Times New Roman", serif;
+    font-size: 12pt;
+    line-height: 1.4;
+    color: black;
+    background: white;
+  }
+
+  .print-page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm;
+    margin: 0;
+    background: white;
+    box-shadow: none;
+    border: none;
+    page-break-after: auto;
+  }
+
+  /* Заголовки */
+  h1 {
+    font-size: 16pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20pt;
+    text-transform: uppercase;
+    border-bottom: 2pt solid black;
+    padding-bottom: 10pt;
+  }
+
+  h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 20pt;
+    margin-bottom: 10pt;
+    border-bottom: 1pt solid #333;
+    padding-bottom: 5pt;
+  }
+
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 15pt;
+    margin-bottom: 8pt;
+  }
+
+  /* Параграфы и текст */
+  p,
+  div {
+    margin-bottom: 8pt;
+    text-align: justify;
+  }
+
+  /* Таблицы */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15pt;
+  }
+
+  table td {
+    padding: 5pt 8pt;
+    border-bottom: 1pt solid #ddd;
+    vertical-align: top;
+  }
+
+  table td:first-child {
+    font-weight: bold;
+    width: 40%;
+  }
+
+  /* Списки */
+  ul,
+  ol {
+    margin-bottom: 10pt;
+    padding-left: 20pt;
+  }
+
+  li {
+    margin-bottom: 3pt;
+  }
+
+  /* Подписи и даты */
+  .signature-section {
+    margin-top: 30pt;
+    border-top: 2pt solid black;
+    padding-top: 15pt;
+  }
+
+  .signature-line {
+    border-bottom: 1pt solid black;
+    height: 20pt;
+    margin-bottom: 5pt;
+  }
+
+  /* Разрывы страниц */
+  .page-break {
+    page-break-before: always;
+  }
+
+  .no-page-break {
+    page-break-inside: avoid;
+  }
+
+  /* Изображения */
+  img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+  }
+
+  /* Скрыть фоновые цвета и тени */
+  * {
+    background: white !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Убрать отступы и поля для браузера */
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  /* Основной контейнер */
+  .max-w-4xl {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Убрать все цвета фона */
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-blue-50,
+  .bg-green-50 {
+    background: white !important;
+  }
+
+  /* Убрать все рамки */
+  .border,
+  .border-gray-200,
+  .border-gray-300 {
+    border: none !important;
+  }
+
+  /* Секции */
+  .print-section {
+    margin-bottom: 20pt;
+    page-break-inside: avoid;
+  }
+
+  /* Подзаголовки секций */
+  .section-title {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-bottom: 8pt;
+    text-transform: uppercase;
+  }
+
+  /* Поля данных */
+  .data-field {
+    margin-bottom: 8pt;
+  }
+
+  .field-label {
+    font-weight: bold;
+    display: inline-block;
+    width: 40%;
+    vertical-align: top;
+  }
+
+  .field-value {
+    display: inline-block;
+    width: 58%;
+    border-bottom: 1pt solid #ddd;
+    padding-bottom: 2pt;
+    vertical-align: top;
+  }
+}
