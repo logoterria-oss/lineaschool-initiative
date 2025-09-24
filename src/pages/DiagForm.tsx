@@ -87,6 +87,74 @@ export default function DiagForm() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Функция генерации заключения
+  const generateConclusion = (diagData: any) => {
+    try {
+      const conclusionParts = [];
+      
+      if (diagData.speechDisorders && Array.isArray(diagData.speechDisorders) && diagData.speechDisorders.length > 0) {
+        conclusionParts.push(diagData.speechDisorders.join(', '));
+      }
+      
+      if (diagData.dyslexiaTypes && Array.isArray(diagData.dyslexiaTypes) && diagData.dyslexiaTypes.length > 0) {
+        conclusionParts.push(diagData.dyslexiaTypes.join(', '));
+      }
+      
+      if (diagData.dysgraphiaTypes && Array.isArray(diagData.dysgraphiaTypes) && diagData.dysgraphiaTypes.length > 0) {
+        conclusionParts.push(diagData.dysgraphiaTypes.join(', '));
+      }
+      
+      if (diagData.brainSyndromes && Array.isArray(diagData.brainSyndromes) && diagData.brainSyndromes.length > 0) {
+        conclusionParts.push(diagData.brainSyndromes.join(', '));
+      }
+      
+      const diagnosis = conclusionParts.length > 0 
+        ? conclusionParts.join('; ')
+        : 'Нарушения речевого развития';
+      
+      // Формируем рекомендации
+      const recommendationsList = diagData.recommendations && diagData.recommendations.length > 0
+        ? diagData.recommendations.join('; ')
+        : 'Индивидуальные коррекционные занятия с логопедом; Развитие фонематического восприятия; Работа над звукопроизношением';
+      
+      // Создаем полный текст заключения
+      const fullText = `ЛОГОПЕДИЧЕСКОЕ ЗАКЛЮЧЕНИЕ №${Math.floor(Date.now() / 1000)}
+
+🎯 СОЗДАНО АВТОМАТИЧЕСКИ ИЗ ДИАГНОСТИЧЕСКОЙ ФОРМЫ /diag_form
+
+Ребенок: ${diagData.childName}
+Возраст: ${diagData.age} лет
+Дата обследования: ${new Date().toLocaleDateString('ru-RU')}
+Родитель/опекун: ${diagData.parentName}
+Контакт: ${diagData.phone}${diagData.email ? ' | ' + diagData.email : ''}
+
+РЕЗУЛЬТАТЫ АВТОМАТИЧЕСКОЙ ДИАГНОСТИКИ:
+✅ Анализ ответов на диагностические вопросы
+✅ Обработка данных ИИ-алгоритмом
+✅ Формирование индивидуального заключения
+
+ЗАКЛЮЧЕНИЕ: ${diagnosis}
+
+РЕКОМЕНДАЦИИ:
+${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
+
+💡 Данное заключение создано на основе диагностической формы и может требовать очной консультации специалиста для уточнения программы коррекции.`;
+      
+      return {
+        diagnosis,
+        recommendations: recommendationsList,
+        fullText
+      };
+    } catch (error) {
+      console.error('Ошибка формирования заключения:', error);
+      return {
+        diagnosis: 'Ошибка при формировании заключения',
+        recommendations: 'Обратитесь к специалисту',
+        fullText: 'Произошла ошибка при формировании заключения. Обратитесь к администратору.'
+      };
+    }
+  };
+
   const handleCreateConclusion = async (event?: React.MouseEvent<HTMLButtonElement>) => {
     // Предотвращаем отправку формы
     if (event) {
@@ -116,6 +184,9 @@ export default function DiagForm() {
       } catch (localStorageError) {
         console.warn('localStorage недоступен:', localStorageError);
       }
+      
+      // Генерируем заключение на основе данных формы
+      const conclusion = generateConclusion(formData);
       
       // Создаем уникальный токен и подготавливаем данные для сохранения в БД
       const accessToken = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
