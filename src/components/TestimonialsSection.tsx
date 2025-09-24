@@ -269,8 +269,8 @@ export default function TestimonialsSection() {
                           playsInline
                           preload="auto"
                           muted
-                          webkit-playsinline
-                          x5-playsinline
+                          webkitPlaysinline={true}
+                          x5PlaysInline={true}
                         >
                           <source src={video.videoUrl} type="video/mp4" />
                           <source src={video.videoUrl} type="video/quicktime" />
