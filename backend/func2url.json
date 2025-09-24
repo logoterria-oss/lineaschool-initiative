@@ -1,4 +1,5 @@
 {
+  "admin-reports": "https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa",
   "diag-get-by-id": "https://functions.poehali.dev/a5ea21c2-fada-4606-b21f-00cd65c05b8c",
   "diag-save-full": "https://functions.poehali.dev/07850aca-9e34-468b-872d-2ebd23e5f959",
   "save-diag": "https://functions.poehali.dev/4ca96950-03d4-45d2-96da-f90c6f652531",

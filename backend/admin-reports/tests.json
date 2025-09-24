@@ -1,0 +1,12 @@
+{
+  "tests": [{
+    "name": "Test admin auth required",
+    "method": "GET", 
+    "path": "/",
+    "expectedStatus": 401,
+    "expectedBody": {
+      "error": "Неверный пароль администратора"
+    },
+    "bodyMatcher": "partial"
+  }]
+}

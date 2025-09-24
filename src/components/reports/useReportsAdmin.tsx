@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { SpeechTherapyReport } from './ReportCard';
 import { ReportFormData } from './ReportForm';
 
-const REPORTS_API_URL = 'https://functions.poehali.dev/1bb8c10c-2cc3-418c-b375-6525f4fe5080';
+const REPORTS_API_URL = 'https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa';
 
 export function useReportsAdmin() {
   const [password, setPassword] = useState('');
@@ -47,19 +47,19 @@ export function useReportsAdmin() {
   const loadReportsFromDB = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://functions.poehali.dev/1bb8c10c-2cc3-418c-b375-6525f4fe5080', {
+      const response = await fetch('https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa', {
         method: 'GET',
         headers: {
-          'X-Auth-Password': password,
+          'X-Admin-Password': password,
           'Content-Type': 'application/json'
         }
       });
 
       if (response.ok) {
         const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setReports(data);
-          setSuccess(`Загружено заключений: ${data.length}`);
+        if (data.success && Array.isArray(data.reports) && data.reports.length > 0) {
+          setReports(data.reports);
+          setSuccess(`Загружено заключений: ${data.reports.length}`);
         } else {
           setReports([{
             id: 1,
@@ -97,14 +97,18 @@ export function useReportsAdmin() {
       const response = await fetch(REPORTS_API_URL, {
         method: 'GET',
         headers: {
-          'X-Auth-Password': password
+          'X-Admin-Password': password
         }
       });
 
       if (response.ok) {
         const data = await response.json();
-        setReports(data);
-        setSuccess('Данные обновлены');
+        if (data.success && Array.isArray(data.reports)) {
+          setReports(data.reports);
+          setSuccess(`Данные обновлены. Заключений: ${data.reports.length}`);
+        } else {
+          setError('Неверный формат данных от сервера');
+        }
       } else {
         const errorData = await response.json().catch(() => null);
         setError(errorData?.error || 'Ошибка при загрузке данных');
