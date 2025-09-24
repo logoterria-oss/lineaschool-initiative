@@ -199,29 +199,22 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
         date: formData.diagnosisDate || new Date().toISOString().split('T')[0]
       };
       
-      // Попытка сохранить в админскую базу данных
+      // Временно отключено сохранение в админскую базу из-за CORS проблем
+      console.log('🔄 Подготавливаем данные для админской базы:', reportData);
+      
       try {
-        console.log('🔄 Отправляем данные в админскую базу:', reportData);
+        // Временно комментируем вызов backend'а
+        const adminResponse = { ok: false, status: 503, statusText: 'Temporary disabled' };
+        const responseText = JSON.stringify({ error: 'Backend temporarily disabled' });
         
-        const adminResponse = await fetch('https://functions.poehali.dev/8858a355-f502-49ee-8e63-1282d4aecd56', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Source': 'diag-form'
-          },
-          body: JSON.stringify(reportData)
-        });
-        
-        const responseText = await adminResponse.text();
         console.log('📥 Ответ сервера:', {
           status: adminResponse.status,
           statusText: adminResponse.statusText,
           body: responseText
         });
         
-        const response = JSON.parse(responseText);
-        
-        if (adminResponse.ok && response.success) {
+        // Временно всегда показываем предупреждение о недоступности backend'а
+        if (false) { // Временно отключено
           console.log('✅ Ссылка на заключение сохранена в базу данных с ID:', response.id);
           
           // Создаем ссылку на заключение
@@ -240,10 +233,10 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
           }
           
         } else {
-          console.warn('⚠️ Не удалось сохранить ссылку:', adminResponse.status, responseText);
-          // Все равно показываем заключение пользователю
+          console.warn('⚠️ Backend недоступен:', adminResponse.status, responseText);
+          // Показываем заключение пользователю с предупреждением
           const conclusionUrl = `${window.location.origin}${reportLink}`;
-          const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n⚠️ Ссылка может быть не сохранена в системе администратора`;
+          const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка: ${conclusionUrl}\n\n⚠️ Система администратора временно недоступна\n💡 Заключение сохранено локально и доступно по ссылке`;
           alert(message);
           
           try {

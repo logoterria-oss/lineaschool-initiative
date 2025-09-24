@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "Test save diagnosis report link",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "report_link": "/diag/1234",
+        "student_name": "Тестовый ребенок",
+        "date": "2025-09-24"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "success": true,
+        "id": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": "",
+      "bodyMatcher": "exact"
+    }
+  ]
+}
