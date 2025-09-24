@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "Test save diag report",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "student_name": "Тест Ребенок",
+        "student_age": 8,
+        "date_of_examination": "2024-09-24",
+        "therapist_name": "Автоматическая диагностика LineaSchool",
+        "diagnosis": "Тестовый диагноз",
+        "recommendations": "Тестовые рекомендации",
+        "report_content": "Полный текст тестового заключения",
+        "access_token": "test-token-123"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "access_token": "string",
+        "public_url": "string",
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test CORS OPTIONS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": "",
+      "bodyMatcher": "exact"
+    }
+  ]
+}

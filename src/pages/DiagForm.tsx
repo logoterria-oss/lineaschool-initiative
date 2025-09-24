@@ -207,7 +207,7 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
       
       // Попытка сохранить в админскую базу данных
       try {
-        const adminResponse = await fetch('https://functions.poehali.dev/1bb8c10c-2cc3-418c-b375-6525f4fe5080', {
+        const adminResponse = await fetch('https://functions.poehali.dev/ce9c6cdc-e597-4cbf-b466-bd8e2267bc47', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
