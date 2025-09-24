@@ -22,7 +22,7 @@ interface ReportCardProps {
   report: SpeechTherapyReport;
   onEdit: (report: SpeechTherapyReport) => void;
   onDelete: (id: number) => void;
-  onCopyLink: (id: number) => void;
+  onCopyLink: (linkOrId: string | number) => void;
 }
 
 export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: ReportCardProps) {
@@ -42,7 +42,7 @@ export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: Rep
             <Button 
               size="sm" 
               variant="outline"
-              onClick={() => onCopyLink(report.id)}
+              onClick={() => onCopyLink((report as any).report_link || report.id)}
             >
               <Icon name="Link" size={14} className="mr-1" />
               Ссылка

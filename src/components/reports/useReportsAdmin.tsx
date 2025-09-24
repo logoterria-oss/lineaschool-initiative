@@ -177,7 +177,7 @@ export function useReportsAdmin() {
   const loadReportsFromDB = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://functions.poehali.dev/7e22b93a-2a76-423b-b24b-0b0b7e9c7e85', {
+      const response = await fetch('https://functions.poehali.dev/1bb8c10c-2cc3-418c-b375-6525f4fe5080', {
         method: 'GET',
         headers: {
           'X-Auth-Password': password,
@@ -187,24 +187,29 @@ export function useReportsAdmin() {
 
       if (response.ok) {
         const data = await response.json();
-        setReports(data);
-        setSuccess('Данные загружены из базы!');
+        if (Array.isArray(data) && data.length > 0) {
+          setReports(data);
+          setSuccess(`Загружено заключений: ${data.length}`);
+        } else {
+          setReports([{
+            id: 1,
+            student_name: "База данных пуста",
+            student_age: null,
+            date_of_examination: new Date().toISOString().split('T')[0],
+            therapist_name: "Система",
+            diagnosis: "Заключений пока нет",
+            recommendations: "Заполните диагностическую форму /diag_form для создания первого заключения",
+            report_content: "В базе данных пока нет заключений. Заполните форму /diag_form для создания первого заключения.",
+            access_token: "",
+            report_link: "/diag_form",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+          setSuccess('База данных пуста - создайте первое заключение');
+        }
       } else {
-        console.warn('Не удалось загрузить из БД, используются заглушки');
-        setReports([{
-          id: 1,
-          student_name: "Нет заключений",
-          student_age: null,
-          date_of_examination: new Date().toISOString().split('T')[0],
-          therapist_name: "Система",
-          diagnosis: "База данных пуста",
-          recommendations: "Заполните диагностическую форму для создания заключений",
-          report_content: "В базе данных пока нет заключений. Заполните форму /diag_form для создания первого заключения.",
-          access_token: "",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }]);
-        setSuccess('Подключение к базе данных установлено');
+        console.warn('Ошибка загрузки из БД:', response.status);
+        setError('Ошибка загрузки данных из базы');
       }
     } catch (err) {
       console.error('Ошибка загрузки из БД:', err);
@@ -315,8 +320,11 @@ export function useReportsAdmin() {
     });
   };
 
-  const copyPublicLink = (id: number) => {
-    const publicUrl = `${window.location.origin}/diag/${id}`;
+  const copyPublicLink = (reportLinkOrId: string | number) => {
+    // Если это строка, то это уже готовая ссылка (/diag/1234)
+    // Если число, то формируем ссылку по старому формату
+    const reportLink = typeof reportLinkOrId === 'string' ? reportLinkOrId : `/diag/${reportLinkOrId}`;
+    const publicUrl = `${window.location.origin}${reportLink}`;
     navigator.clipboard.writeText(publicUrl);
     setSuccess('Ссылка скопирована в буфер обмена!');
   };

@@ -6,8 +6,8 @@ from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Сохранение готовых заключений из диагностической формы в БД
-    Args: event - dict с httpMethod, body, headers; context - объект с request_id
+    Business: Сохранение ссылки на заключение с основными данными
+    Args: event - dict с httpMethod, body; context - объект с request_id
     Returns: HTTP response dict
     """
     method: str = event.get('httpMethod', 'POST')
@@ -53,7 +53,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     # Проверяем обязательные поля
-    required_fields = ['report_id', 'student_name', 'diagnosis', 'report_content', 'form_data']
+    required_fields = ['report_link', 'student_name', 'date']
     for field in required_fields:
         if not body_data.get(field):
             return {
@@ -71,40 +71,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Создание таблицы если не существует
+        # Вставка ссылки на заключение в БД
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS speech_therapy_reports (
-                id INTEGER PRIMARY KEY,
-                student_name VARCHAR(255) NOT NULL,
-                student_age INTEGER,
-                date_of_examination DATE,
-                therapist_name VARCHAR(255),
-                diagnosis TEXT,
-                recommendations TEXT,
-                report_content TEXT NOT NULL,
-                form_data TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        
-        # Вставка заключения в БД с заданным ID
-        cursor.execute("""
-            INSERT INTO speech_therapy_reports 
-            (id, student_name, student_age, date_of_examination, therapist_name, 
-             diagnosis, recommendations, report_content, form_data)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
+            INSERT INTO diagnosis_reports (report_link, student_name, date)
+            VALUES (%s, %s, %s)
+            RETURNING id, report_link, student_name, date, created_at
         """, (
-            body_data.get('report_id'),
+            body_data.get('report_link'),
             body_data.get('student_name'),
-            body_data.get('student_age'),
-            body_data.get('date_of_examination'),
-            body_data.get('therapist_name', 'Автоматическая диагностика LineaSchool'),
-            body_data.get('diagnosis'),
-            body_data.get('recommendations'),
-            body_data.get('report_content'),
-            body_data.get('form_data')
+            body_data.get('date')
         ))
         
         result = cursor.fetchone()
@@ -119,12 +94,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({
                 'success': True,
                 'id': result['id'],
-                'message': 'Заключение сохранено в базе данных'
+                'report_link': result['report_link'],
+                'student_name': result['student_name'],
+                'date': result['date'].isoformat() if result['date'] else None,
+                'created_at': result['created_at'].isoformat() if result['created_at'] else None,
+                'message': 'Ссылка на заключение сохранена'
             }),
             'isBase64Encoded': False
         }
     
-    except psycopg2.IntegrityError:
+    except psycopg2.IntegrityError as e:
         if 'conn' in locals():
             conn.rollback()
         return {
@@ -133,7 +112,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps({'error': 'Заключение с таким номером уже существует'}),
+            'body': json.dumps({'error': f'Ошибка целостности данных: {str(e)}'}),
             'isBase64Encoded': False
         }
     

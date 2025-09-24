@@ -190,18 +190,13 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
       
       // Создаем уникальный числовой ID для заключения
       const reportId = Math.floor(1000 + Math.random() * 9000); // Генерируем число от 1000 до 9999
+      const reportLink = `/diag/${reportId}`;
       
-      // Данные для сохранения в админ базе
+      // Данные для сохранения в админ базе (только ссылка + основная информация)
       const reportData = {
-        report_id: reportId,
+        report_link: reportLink,
         student_name: formData.childName,
-        student_age: formData.age,
-        date_of_examination: new Date().toISOString().split('T')[0],
-        therapist_name: "Автоматическая диагностика LineaSchool",
-        diagnosis: conclusion.diagnosis,
-        recommendations: conclusion.recommendations,
-        report_content: conclusion.fullText,
-        form_data: JSON.stringify(formData) // Сохраняем полные данные формы для отображения
+        date: formData.diagnosisDate || new Date().toISOString().split('T')[0]
       };
       
       // Попытка сохранить в админскую базу данных
@@ -227,13 +222,13 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
         const response = JSON.parse(responseText);
         
         if (adminResponse.ok && response.success) {
-          console.log('✅ Заключение сохранено в базу данных с ID:', response.id);
+          console.log('✅ Ссылка на заключение сохранена в базу данных с ID:', response.id);
           
           // Создаем ссылку на заключение
-          const conclusionUrl = `${window.location.origin}/diag/${response.id}`;
+          const conclusionUrl = `${window.location.origin}${reportLink}`;
           
           // Показываем пользователю информацию
-          const message = `✅ Заключение создано!\n\n📋 Заключение №${response.id}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n💡 Заключение сохранено в системе и доступно администратору`;
+          const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n💡 Ссылка сохранена в системе администратора`;
           alert(message);
           
           // Копируем ссылку в буфер обмена
@@ -245,8 +240,17 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
           }
           
         } else {
-          console.warn('⚠️ Не удалось сохранить заключение:', adminResponse.status, responseText);
-          alert('⚠️ Заключение создано, но возникла проблема с сохранением в базу данных');
+          console.warn('⚠️ Не удалось сохранить ссылку:', adminResponse.status, responseText);
+          // Все равно показываем заключение пользователю
+          const conclusionUrl = `${window.location.origin}${reportLink}`;
+          const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n⚠️ Ссылка может быть не сохранена в системе администратора`;
+          alert(message);
+          
+          try {
+            await navigator.clipboard.writeText(conclusionUrl);
+          } catch (clipboardError) {
+            console.warn('Не удалось скопировать в буфер обмена:', clipboardError);
+          }
         }
       } catch (adminError) {
         console.error('❌ Ошибка сохранения в базу данных:', adminError);

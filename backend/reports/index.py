@@ -1,16 +1,14 @@
 import json
 import os
-import secrets
-from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Управление логопедическими заключениями с парольной защитой
-    Args: event - dict с httpMethod, headers, body; context - объект с request_id
-    Returns: HTTP response dict
+    Business: Получение списка всех заключений для админской панели
+    Args: event - dict с httpMethod, headers; context - объект с request_id  
+    Returns: HTTP response dict со списком заключений
     """
     method: str = event.get('httpMethod', 'GET')
     
@@ -20,34 +18,83 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Password, X-User-Id',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Password',
                 'Access-Control-Max-Age': '86400'
             },
-            'isBase64Encoded': False,
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
-    # Получение пароля из заголовков
-    headers = event.get('headers', {})
-    password = headers.get('X-Auth-Password') or headers.get('x-auth-password')
+    # Принимаем только GET запросы
+    if method != 'GET':
+        return {
+            'statusCode': 405,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Метод не поддерживается'}),
+            'isBase64Encoded': False
+        }
     
-    # Парольная защита (пароль: 426874)
-    if password != '426874':
+    # Проверяем пароль администратора
+    headers = event.get('headers', {})
+    admin_password = headers.get('X-Auth-Password', '')
+    
+    if admin_password != '426874':
         return {
             'statusCode': 401,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Неверный пароль'})
+            'body': json.dumps({'error': 'Неверный пароль администратора'}),
+            'isBase64Encoded': False
         }
     
     # Подключение к базе данных
     try:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Получаем все заключения, отсортированные по дате создания (новые первые)
+        cursor.execute("""
+            SELECT id, report_link, student_name, date, created_at
+            FROM diagnosis_reports
+            ORDER BY created_at DESC
+        """)
+        
+        results = cursor.fetchall()
+        
+        # Формируем список заключений для админской панели
+        reports = []
+        for row in results:
+            reports.append({
+                'id': row['id'],
+                'student_name': row['student_name'],
+                'student_age': None,  # Для совместимости с админкой
+                'date_of_examination': row['date'].isoformat() if row['date'] else None,
+                'therapist_name': 'Автоматическая диагностика LineaSchool',  # Для совместимости
+                'diagnosis': 'Заключение создано',  # Для совместимости
+                'recommendations': f"Перейдите по ссылке: {row['report_link']}",
+                'report_content': f"Логопедическое заключение для {row['student_name']}",  
+                'access_token': '',  # Не используется в новой системе
+                'report_link': row['report_link'],  # Новое поле
+                'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                'updated_at': row['created_at'].isoformat() if row['created_at'] else None
+            })
+        
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps(reports),
+            'isBase64Encoded': False
+        }
+    
     except Exception as e:
         return {
             'statusCode': 500,
@@ -55,190 +102,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': f'Ошибка подключения к БД: {str(e)}'})
+            'body': json.dumps({'error': f'Ошибка сервера: {str(e)}'}),
+            'isBase64Encoded': False
         }
-    
-    try:
-        if method == 'GET':
-            return get_reports(cursor)
-        elif method == 'POST':
-            body_data = json.loads(event.get('body', '{}'))
-            return create_report(cursor, conn, body_data)
-        elif method == 'PUT':
-            body_data = json.loads(event.get('body', '{}'))
-            params = event.get('queryStringParameters', {})
-            report_id = params.get('id')
-            return update_report(cursor, conn, report_id, body_data)
-        elif method == 'DELETE':
-            params = event.get('queryStringParameters', {})
-            report_id = params.get('id')
-            return delete_report(cursor, conn, report_id)
-        else:
-            return {
-                'statusCode': 405,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'isBase64Encoded': False,
-                'body': json.dumps({'error': 'Метод не поддерживается'})
-            }
     
     finally:
-        cursor.close()
-        conn.close()
-
-def get_reports(cursor) -> Dict[str, Any]:
-    """Получить все заключения"""
-    cursor.execute("""
-        SELECT id, student_name, student_age, date_of_examination, 
-               therapist_name, diagnosis, recommendations, report_content,
-               access_token, created_at, updated_at
-        FROM speech_therapy_reports 
-        ORDER BY created_at DESC
-    """)
-    
-    reports = cursor.fetchall()
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'isBase64Encoded': False,
-        'body': json.dumps([dict(report) for report in reports], default=str)
-    }
-
-def create_report(cursor, conn, data: Dict[str, Any]) -> Dict[str, Any]:
-    """Создать новое заключение"""
-    # Генерация уникального токена для доступа
-    access_token = secrets.token_urlsafe(32)
-    
-    cursor.execute("""
-        INSERT INTO speech_therapy_reports 
-        (student_name, student_age, date_of_examination, therapist_name, 
-         diagnosis, recommendations, report_content, access_token)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id, access_token
-    """, (
-        data.get('student_name'),
-        data.get('student_age'),
-        data.get('date_of_examination'),
-        data.get('therapist_name'),
-        data.get('diagnosis'),
-        data.get('recommendations'),
-        data.get('report_content'),
-        access_token
-    ))
-    
-    result = cursor.fetchone()
-    conn.commit()
-    
-    return {
-        'statusCode': 201,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'isBase64Encoded': False,
-        'body': json.dumps({
-            'id': result['id'],
-            'access_token': result['access_token'],
-            'message': 'Заключение создано успешно'
-        })
-    }
-
-def update_report(cursor, conn, report_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
-    """Обновить заключение"""
-    if not report_id:
-        return {
-            'statusCode': 400,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'ID заключения обязателен'})
-        }
-    
-    cursor.execute("""
-        UPDATE speech_therapy_reports 
-        SET student_name = %s, student_age = %s, date_of_examination = %s,
-            therapist_name = %s, diagnosis = %s, recommendations = %s,
-            report_content = %s, updated_at = CURRENT_TIMESTAMP
-        WHERE id = %s
-        RETURNING id
-    """, (
-        data.get('student_name'),
-        data.get('student_age'),
-        data.get('date_of_examination'),
-        data.get('therapist_name'),
-        data.get('diagnosis'),
-        data.get('recommendations'),
-        data.get('report_content'),
-        report_id
-    ))
-    
-    result = cursor.fetchone()
-    if not result:
-        return {
-            'statusCode': 404,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Заключение не найдено'})
-        }
-    
-    conn.commit()
-    
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'isBase64Encoded': False,
-        'body': json.dumps({'message': 'Заключение обновлено успешно'})
-    }
-
-def delete_report(cursor, conn, report_id: str) -> Dict[str, Any]:
-    """Удалить заключение"""
-    if not report_id:
-        return {
-            'statusCode': 400,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'ID заключения обязателен'})
-        }
-    
-    cursor.execute("DELETE FROM speech_therapy_reports WHERE id = %s RETURNING id", (report_id,))
-    result = cursor.fetchone()
-    
-    if not result:
-        return {
-            'statusCode': 404,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Заключение не найдено'})
-        }
-    
-    conn.commit()
-    
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'isBase64Encoded': False,
-        'body': json.dumps({'message': 'Заключение удалено успешно'})
-    }
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
