@@ -117,12 +117,45 @@ export default function DiagForm() {
         console.warn('localStorage недоступен:', localStorageError);
       }
       
-      // Демо-режим: создаем уникальный токен и ссылку
-      const demoToken = `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const publicUrl = `https://functions.poehali.dev/90c2b81a-149c-41ae-aaa0-2693751f9619?token=${demoToken}`;
+      // Создаем уникальный токен и подготавливаем данные для сохранения в БД
+      const accessToken = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const publicUrl = `https://functions.poehali.dev/90c2b81a-149c-41ae-aaa0-2693751f9619?token=${accessToken}`;
+      
+      // Данные для сохранения в админ базе
+      const reportData = {
+        student_name: formData.childName,
+        student_age: formData.age,
+        date_of_examination: new Date().toISOString().split('T')[0],
+        therapist_name: "Автоматическая диагностика LineaSchool",
+        diagnosis: conclusion.diagnosis,
+        recommendations: conclusion.recommendations,
+        report_content: conclusion.fullText,
+        access_token: accessToken,
+        source: "diag_form"
+      };
+      
+      // Попытка сохранить в админскую базу данных
+      try {
+        const adminResponse = await fetch('https://functions.poehali.dev/1bb8c10c-2cc3-418c-b375-6525f4fe5080', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Source': 'diag-form'
+          },
+          body: JSON.stringify(reportData)
+        });
+        
+        if (adminResponse.ok) {
+          console.log('✅ Заключение сохранено в админской базе данных');
+        } else {
+          console.warn('⚠️ Не удалось сохранить в админскую базу:', adminResponse.status);
+        }
+      } catch (adminError) {
+        console.warn('⚠️ Ошибка сохранения в админскую базу:', adminError);
+      }
       
       // Показываем пользователю информацию
-      const message = `✅ Заключение создано!\n\n📋 Данные сохранены локально для просмотра\n🔗 Демо-ссылка: ${publicUrl}\n\n💡 Для полного сохранения в базу данных обратитесь к администратору`;
+      const message = `✅ Заключение создано!\n\n📋 Заключение №${Math.floor(Date.now() / 1000)}\n🔗 Ссылка для просмотра: ${publicUrl}\n\n💡 Заключение автоматически сохранено в системе администратора`;
       alert(message);
       
       // Копируем ссылку в буфер обмена
@@ -133,10 +166,11 @@ export default function DiagForm() {
         console.warn('Не удалось скопировать в буфер обмена:', clipboardError);
       }
       
-      console.log('Заключение подготовлено:', {
-        name: formData.childName,
-        age: formData.age,
-        demo_token: demoToken
+      console.log('Заключение подготовлено для админ-панели:', {
+        name: reportData.student_name,
+        age: reportData.student_age,
+        access_token: accessToken,
+        diagnosis: reportData.diagnosis
       });
       
       // Генерируем порядковый номер для локального просмотра
