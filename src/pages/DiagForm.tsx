@@ -201,13 +201,14 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
         diagnosis: conclusion.diagnosis,
         recommendations: conclusion.recommendations,
         report_content: conclusion.fullText,
-        access_token: accessToken,
-        source: "diag_form"
+        access_token: accessToken
       };
       
       // Попытка сохранить в админскую базу данных
       try {
-        const adminResponse = await fetch('https://functions.poehali.dev/ce9c6cdc-e597-4cbf-b466-bd8e2267bc47', {
+        console.log('🔄 Отправляем данные в админскую базу:', reportData);
+        
+        const adminResponse = await fetch('https://functions.poehali.dev/8858a355-f502-49ee-8e63-1282d4aecd56', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -216,13 +217,20 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
           body: JSON.stringify(reportData)
         });
         
+        const responseText = await adminResponse.text();
+        console.log('📥 Ответ сервера:', {
+          status: adminResponse.status,
+          statusText: adminResponse.statusText,
+          body: responseText
+        });
+        
         if (adminResponse.ok) {
           console.log('✅ Заключение сохранено в админской базе данных');
         } else {
-          console.warn('⚠️ Не удалось сохранить в админскую базу:', adminResponse.status);
+          console.warn('⚠️ Не удалось сохранить в админскую базу:', adminResponse.status, responseText);
         }
       } catch (adminError) {
-        console.warn('⚠️ Ошибка сохранения в админскую базу:', adminError);
+        console.error('❌ Ошибка сохранения в админскую базу:', adminError);
       }
       
       // Показываем пользователю информацию
