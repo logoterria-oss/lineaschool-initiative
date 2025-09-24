@@ -11,6 +11,7 @@ import OfferPage from "./pages/OfferPage";
 import Privacy from "./pages/Privacy";
 import DiagForm from "./pages/DiagForm";
 import DiagConclusion from "./pages/DiagConclusion";
+import ReportsAdmin from "./components/ReportsAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/diag_form" element={<DiagForm />} />
             <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
+            <Route path="/admin/reports" element={<ReportsAdmin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
