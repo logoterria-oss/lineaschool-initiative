@@ -259,9 +259,8 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
       
       console.log('Заключение подготовлено для админ-панели:', {
         name: reportData.student_name,
-        age: reportData.student_age,
-        access_token: accessToken,
-        diagnosis: reportData.diagnosis
+        date: reportData.date,
+        report_link: reportData.report_link
       });
       
       // Генерируем порядковый номер для локального просмотра
