@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "Test save diagnosis",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "childName": "Тестовый ребенок",
+        "birthDate": "2014-05-15",
+        "age": "10 лет",
+        "grade": "4 класс",
+        "parentName": "Тестовый родитель",
+        "complaints": "Трудности с чтением",
+        "speechDisorders": ["Дислексия"],
+        "recommendations": ["Регулярные занятия"],
+        "logopedist": "Тестовый логопед",
+        "diagnosisDate": "2024-09-24"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "success": true,
+        "access_token": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": "",
+      "bodyMatcher": "exact"
+    }
+  ]
+}
