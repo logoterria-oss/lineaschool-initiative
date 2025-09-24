@@ -7,14 +7,42 @@ export function useDiagData(serialNumber: string | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       try {
         console.log('DiagConclusion: Starting data load...');
         console.log('Serial Number:', serialNumber);
-        console.log('User Agent:', navigator.userAgent);
-        console.log('localStorage available:', typeof Storage !== "undefined");
+
+        if (!serialNumber) {
+          setError('ID заключения не указан');
+          setLoading(false);
+          return;
+        }
+
+        // Попытка загрузить данные из БД
+        try {
+          const response = await fetch(`https://functions.poehali.dev/2eea5e07-800c-462b-9b47-2ab68fe62a4d?id=${serialNumber}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.form_data) {
+              console.log('✅ Данные загружены из базы данных');
+              setDiagData(data.form_data);
+              setError(null);
+              setLoading(false);
+              return;
+            }
+          } else if (response.status === 404) {
+            console.warn('🔍 Заключение не найдено в БД, пробуем localStorage');
+          } else {
+            console.warn('⚠️ Ошибка загрузки из БД:', response.status);
+          }
+        } catch (fetchError) {
+          console.warn('⚠️ Сетевая ошибка при загрузке из БД:', fetchError);
+        }
+
+        // Фоллбек - пробуем загрузить из localStorage (для совместимости)
+        console.log('🔄 Пробуем загрузить из localStorage...');
         
-        // Проверяем доступность localStorage
         if (typeof Storage === "undefined") {
           throw new Error('localStorage not supported');
         }
@@ -26,7 +54,7 @@ export function useDiagData(serialNumber: string | undefined) {
         if (savedData && savedData.trim().length > 0) {
           try {
             const parsedData = JSON.parse(savedData);
-            console.log('Successfully parsed data:', Object.keys(parsedData));
+            console.log('✅ Данные загружены из localStorage');
             console.log('Child name from data:', parsedData.childName);
             
             // Проверяем, что данные валидны
@@ -41,8 +69,8 @@ export function useDiagData(serialNumber: string | undefined) {
             setError('Данные повреждены. Пожалуйста, заполните форму заново.');
           }
         } else {
-          console.warn('No data found in localStorage');
-          setError('Данные диагностики не найдены. Возможно, браузер находится в приватном режиме или заблокировано хранилище.');
+          console.warn('❌ Данные не найдены ни в БД, ни в localStorage');
+          setError('Заключение не найдено. Возможно, оно было удалено или ссылка неверна.');
         }
       } catch (err) {
         console.error('Data loading error:', err);
@@ -52,9 +80,7 @@ export function useDiagData(serialNumber: string | undefined) {
       }
     };
 
-    // Добавляем небольшую задержку для мобильных устройств
-    const timer = setTimeout(loadData, 100);
-    return () => clearTimeout(timer);
+    loadData();
   }, [serialNumber]);
 
   return { diagData, loading, error };

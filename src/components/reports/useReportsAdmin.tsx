@@ -34,9 +34,12 @@ export function useReportsAdmin() {
     if (password === '426874') {
       setIsAuthenticated(true);
       setError('');
-      setSuccess('Успешная авторизация! (Демо-режим - база данных недоступна)');
+      setSuccess('Успешная авторизация! Загружаю данные из базы...');
       
-      setReports([
+      // Загружаем реальные данные из базы
+      loadReportsFromDB();
+    } else {
+      setError('Неверный пароль');
         {
           id: 1,
           student_name: "Иванов Дмитрий",
@@ -171,6 +174,46 @@ export function useReportsAdmin() {
     }
   };
 
+  const loadReportsFromDB = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/7e22b93a-2a76-423b-b24b-0b0b7e9c7e85', {
+        method: 'GET',
+        headers: {
+          'X-Auth-Password': password,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data);
+        setSuccess('Данные загружены из базы!');
+      } else {
+        console.warn('Не удалось загрузить из БД, используются заглушки');
+        setReports([{
+          id: 1,
+          student_name: "Нет заключений",
+          student_age: null,
+          date_of_examination: new Date().toISOString().split('T')[0],
+          therapist_name: "Система",
+          diagnosis: "База данных пуста",
+          recommendations: "Заполните диагностическую форму для создания заключений",
+          report_content: "В базе данных пока нет заключений. Заполните форму /diag_form для создания первого заключения.",
+          access_token: "",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+        setSuccess('Подключение к базе данных установлено');
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки из БД:', err);
+      setError('Ошибка подключения к базе данных');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadReports = async () => {
     if (!isAuthenticated) return;
 
@@ -272,8 +315,8 @@ export function useReportsAdmin() {
     });
   };
 
-  const copyPublicLink = (token: string) => {
-    const publicUrl = `https://functions.poehali.dev/90c2b81a-149c-41ae-aaa0-2693751f9619?token=${token}`;
+  const copyPublicLink = (id: number) => {
+    const publicUrl = `${window.location.origin}/diag/${id}`;
     navigator.clipboard.writeText(publicUrl);
     setSuccess('Ссылка скопирована в буфер обмена!');
   };

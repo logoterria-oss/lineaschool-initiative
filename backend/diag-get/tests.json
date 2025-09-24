@@ -1,0 +1,12 @@
+{
+  "tests": [{
+    "name": "Test get diagnosis report by ID",
+    "method": "GET",
+    "path": "/?id=1234",
+    "expectedStatus": 404,
+    "expectedBody": {
+      "error": "string"
+    },
+    "bodyMatcher": "partial"
+  }]
+}

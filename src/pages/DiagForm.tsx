@@ -188,12 +188,12 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
       // Генерируем заключение на основе данных формы
       const conclusion = generateConclusion(formData);
       
-      // Создаем уникальный токен и подготавливаем данные для сохранения в БД
-      const accessToken = `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const publicUrl = `https://functions.poehali.dev/90c2b81a-149c-41ae-aaa0-2693751f9619?token=${accessToken}`;
+      // Создаем уникальный числовой ID для заключения
+      const reportId = Math.floor(1000 + Math.random() * 9000); // Генерируем число от 1000 до 9999
       
       // Данные для сохранения в админ базе
       const reportData = {
+        report_id: reportId,
         student_name: formData.childName,
         student_age: formData.age,
         date_of_examination: new Date().toISOString().split('T')[0],
@@ -201,7 +201,7 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
         diagnosis: conclusion.diagnosis,
         recommendations: conclusion.recommendations,
         report_content: conclusion.fullText,
-        access_token: accessToken
+        form_data: JSON.stringify(formData) // Сохраняем полные данные формы для отображения
       };
       
       // Попытка сохранить в админскую базу данных
@@ -224,25 +224,33 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
           body: responseText
         });
         
-        if (adminResponse.ok) {
-          console.log('✅ Заключение сохранено в админской базе данных');
+        const response = JSON.parse(responseText);
+        
+        if (adminResponse.ok && response.success) {
+          console.log('✅ Заключение сохранено в базу данных с ID:', response.id);
+          
+          // Создаем ссылку на заключение
+          const conclusionUrl = `${window.location.origin}/diag/${response.id}`;
+          
+          // Показываем пользователю информацию
+          const message = `✅ Заключение создано!\n\n📋 Заключение №${response.id}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n💡 Заключение сохранено в системе и доступно администратору`;
+          alert(message);
+          
+          // Копируем ссылку в буфер обмена
+          try {
+            await navigator.clipboard.writeText(conclusionUrl);
+            console.log('Ссылка скопирована в буфер обмена');
+          } catch (clipboardError) {
+            console.warn('Не удалось скопировать в буфер обмена:', clipboardError);
+          }
+          
         } else {
-          console.warn('⚠️ Не удалось сохранить в админскую базу:', adminResponse.status, responseText);
+          console.warn('⚠️ Не удалось сохранить заключение:', adminResponse.status, responseText);
+          alert('⚠️ Заключение создано, но возникла проблема с сохранением в базу данных');
         }
       } catch (adminError) {
-        console.error('❌ Ошибка сохранения в админскую базу:', adminError);
-      }
-      
-      // Показываем пользователю информацию
-      const message = `✅ Заключение создано!\n\n📋 Заключение №${Math.floor(Date.now() / 1000)}\n🔗 Ссылка для просмотра: ${publicUrl}\n\n💡 Заключение автоматически сохранено в системе администратора`;
-      alert(message);
-      
-      // Копируем ссылку в буфер обмена
-      try {
-        await navigator.clipboard.writeText(publicUrl);
-        console.log('Ссылка скопирована в буфер обмена');
-      } catch (clipboardError) {
-        console.warn('Не удалось скопировать в буфер обмена:', clipboardError);
+        console.error('❌ Ошибка сохранения в базу данных:', adminError);
+        alert('⚠️ Заключение создано, но возникла проблема с сохранением в базу данных');
       }
       
       console.log('Заключение подготовлено для админ-панели:', {
