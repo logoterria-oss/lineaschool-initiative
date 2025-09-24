@@ -40,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     # Проверяем пароль администратора
     headers = event.get('headers', {})
-    admin_password = headers.get('X-Auth-Password', '')
+    admin_password = headers.get('X-Auth-Password', headers.get('x-auth-password', ''))
     
     if admin_password != '426874':
         return {
@@ -58,10 +58,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Получаем все заключения, отсортированные по дате создания (новые первые)
+        # Получаем все заключения из новой таблицы
         cursor.execute("""
-            SELECT id, report_link, student_name, date, created_at
-            FROM diagnosis_reports
+            SELECT id, student_name, student_age, date_of_examination, therapist_name,
+                   diagnosis, recommendations, report_content, access_token, created_at, updated_at
+            FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
             ORDER BY created_at DESC
         """)
         
@@ -73,16 +74,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             reports.append({
                 'id': row['id'],
                 'student_name': row['student_name'],
-                'student_age': None,  # Для совместимости с админкой
-                'date_of_examination': row['date'].isoformat() if row['date'] else None,
-                'therapist_name': 'Автоматическая диагностика LineaSchool',  # Для совместимости
-                'diagnosis': 'Заключение создано',  # Для совместимости
-                'recommendations': f"Перейдите по ссылке: {row['report_link']}",
-                'report_content': f"Логопедическое заключение для {row['student_name']}",  
-                'access_token': '',  # Не используется в новой системе
-                'report_link': row['report_link'],  # Новое поле
+                'student_age': row['student_age'],
+                'date_of_examination': row['date_of_examination'].isoformat() if row['date_of_examination'] else None,
+                'therapist_name': row['therapist_name'] or 'Логопед',
+                'diagnosis': row['diagnosis'] or 'Логопедическое заключение',
+                'recommendations': row['recommendations'] or 'Рекомендации по результатам диагностики',
+                'report_content': row['report_content'] or f'Логопедическое заключение для {row["student_name"]}',
+                'access_token': row['access_token'] or '',
+                'report_link': f'/diag/{row["id"]}',  # Формируем ссылку по ID
                 'created_at': row['created_at'].isoformat() if row['created_at'] else None,
-                'updated_at': row['created_at'].isoformat() if row['created_at'] else None
+                'updated_at': row['updated_at'].isoformat() if row['updated_at'] else None
             })
         
         return {

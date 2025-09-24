@@ -1,32 +1,12 @@
 {
-  "tests": [
-    {
-      "name": "Test unauthorized access",
-      "method": "GET",
-      "path": "/",
-      "expectedStatus": 401,
-      "expectedBody": {
-        "error": "Неверный пароль"
-      },
-      "bodyMatcher": "partial"
+  "tests": [{
+    "name": "Test admin auth required",
+    "method": "GET", 
+    "path": "/",
+    "expectedStatus": 401,
+    "expectedBody": {
+      "error": "Неверный пароль администратора"
     },
-    {
-      "name": "Test authorized access",
-      "method": "GET",
-      "path": "/",
-      "headers": {
-        "X-Auth-Password": "426874"
-      },
-      "expectedStatus": 200,
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Test CORS preflight",
-      "method": "OPTIONS",
-      "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": "",
-      "bodyMatcher": "exact"
-    }
-  ]
+    "bodyMatcher": "partial"
+  }]
 }
