@@ -1,14 +1,15 @@
 import json
 import os
+import secrets
 from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Сохранение ссылки на заключение с основными данными студента
-    Args: event - dict с httpMethod, body; context - объект с request_id
-    Returns: HTTP response dict
+    Business: Сохранение полного заключения с данными формы
+    Args: event - dict с httpMethod, body; context - объект с request_id  
+    Returns: HTTP response dict с ID сохраненного заключения
     """
     method: str = event.get('httpMethod', 'POST')
     
@@ -19,7 +20,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token, X-Session-Id',
+                'Access-Control-Max-Age': '86400'
             },
             'body': '',
             'isBase64Encoded': False
@@ -52,7 +54,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     # Проверяем обязательные поля
-    required_fields = ['report_link', 'student_name', 'date']
+    required_fields = ['form_data', 'student_name', 'date_of_examination']
     for field in required_fields:
         if not body_data.get(field):
             return {
@@ -65,20 +67,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
     
+    # Генерируем токен доступа
+    access_token = secrets.token_urlsafe(32)
+    
     # Подключение к базе данных
     try:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Вставка ссылки на заключение в БД
+        # Вставка полного заключения в БД
         cursor.execute("""
-            INSERT INTO t_p93118852_lineaschool_initiati.diagnosis_reports (report_link, student_name, date)
-            VALUES (%s, %s, %s)
-            RETURNING id, report_link, student_name, date, created_at
+            INSERT INTO t_p93118852_lineaschool_initiati.speech_therapy_reports 
+            (student_name, student_age, date_of_examination, therapist_name, 
+             diagnosis, recommendations, report_content, access_token, form_data)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, access_token, created_at
         """, (
-            body_data.get('report_link'),
             body_data.get('student_name'),
-            body_data.get('date')
+            body_data.get('student_age'),
+            body_data.get('date_of_examination'),
+            body_data.get('therapist_name', 'Логопед'),
+            body_data.get('diagnosis', ''),
+            body_data.get('recommendations', ''),
+            body_data.get('report_content', ''),
+            access_token,
+            json.dumps(body_data.get('form_data'))
         ))
         
         result = cursor.fetchone()
@@ -92,7 +105,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             },
             'body': json.dumps({
                 'success': True,
-                'id': result['id']
+                'id': result['id'],
+                'access_token': result['access_token'],
+                'created_at': result['created_at'].isoformat() if result['created_at'] else None
             }),
             'isBase64Encoded': False
         }

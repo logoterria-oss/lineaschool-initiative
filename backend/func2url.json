@@ -1,4 +1,6 @@
 {
+  "diag-get-by-id": "https://functions.poehali.dev/a5ea21c2-fada-4606-b21f-00cd65c05b8c",
+  "diag-save-full": "https://functions.poehali.dev/07850aca-9e34-468b-872d-2ebd23e5f959",
   "save-diag": "https://functions.poehali.dev/4ca96950-03d4-45d2-96da-f90c6f652531",
   "diag-get": "https://functions.poehali.dev/2eea5e07-800c-462b-9b47-2ab68fe62a4d",
   "test-auth": "https://functions.poehali.dev/6eddd587-fb5d-4412-b136-842cbb57e198"

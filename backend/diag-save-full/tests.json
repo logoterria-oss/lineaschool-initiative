@@ -1,0 +1,24 @@
+{
+  "tests": [{
+    "name": "Test saving full diagnosis report",
+    "method": "POST",
+    "path": "/",
+    "body": {
+      "form_data": {
+        "childName": "Тест Тестович",
+        "birthDate": "01.01.2010",
+        "age": "14"
+      },
+      "student_name": "Тест Тестович",
+      "date_of_examination": "2025-09-24",
+      "therapist_name": "Логопед Тестовый"
+    },
+    "expectedStatus": 201,
+    "expectedBody": {
+      "success": true,
+      "id": "number",
+      "access_token": "string"
+    },
+    "bodyMatcher": "partial"
+  }]
+}

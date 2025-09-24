@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Получение заключения по ID из базы данных
+    Business: Получение полного заключения по ID из базы данных
     Args: event - dict с httpMethod, queryStringParameters; context - объект с request_id
     Returns: HTTP response dict с данными заключения
     """
@@ -19,7 +19,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token, X-Session-Id',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -74,7 +74,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Поиск заключения по ID
         cursor.execute("""
             SELECT id, student_name, student_age, date_of_examination, therapist_name,
-                   diagnosis, recommendations, report_content, form_data, created_at
+                   diagnosis, recommendations, report_content, form_data, access_token, created_at
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
             WHERE id = %s
         """, (report_id,))
@@ -95,7 +95,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Парсим данные формы
         try:
             form_data = json.loads(result['form_data']) if result['form_data'] else {}
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             form_data = {}
         
         # Формируем ответ
@@ -110,6 +110,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'diagnosis': result['diagnosis'],
                 'recommendations': result['recommendations'],
                 'report_content': result['report_content'],
+                'access_token': result['access_token'],
                 'created_at': result['created_at'].isoformat() if result['created_at'] else None
             },
             'form_data': form_data

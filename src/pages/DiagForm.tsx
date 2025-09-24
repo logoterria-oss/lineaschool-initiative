@@ -188,40 +188,43 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
       // Генерируем заключение на основе данных формы
       const conclusion = generateConclusion(formData);
       
-      // Создаем уникальный числовой ID для заключения
-      const reportId = Math.floor(1000 + Math.random() * 9000); // Генерируем число от 1000 до 9999
-      const reportLink = `/diag/${reportId}`;
-      
-      // Данные для сохранения в админ базе (только ссылка + основная информация)
-      const reportData = {
-        report_link: reportLink,
+      // Данные для сохранения полного заключения
+      const fullReportData = {
+        form_data: formData,
         student_name: formData.childName,
-        date: formData.diagnosisDate || new Date().toISOString().split('T')[0]
+        date_of_examination: formData.diagnosisDate || new Date().toISOString().split('T')[0],
+        student_age: parseInt(formData.age) || null,
+        therapist_name: 'Логопед',
+        diagnosis: '',
+        recommendations: '',
+        report_content: 'Логопедическое заключение'
       };
       
-      // Временно отключено сохранение в админскую базу из-за CORS проблем
-      console.log('🔄 Подготавливаем данные для админской базы:', reportData);
+      console.log('🔄 Сохраняем полное заключение в базу данных...');
       
       try {
-        // Временно комментируем вызов backend'а
-        const adminResponse = { ok: false, status: 503, statusText: 'Temporary disabled' };
-        const responseText = JSON.stringify({ error: 'Backend temporarily disabled' });
-        
-        console.log('📥 Ответ сервера:', {
-          status: adminResponse.status,
-          statusText: adminResponse.statusText,
-          body: responseText
+        // Сохраняем полное заключение в БД
+        const saveResponse = await fetch('https://functions.poehali.dev/07850aca-9e34-468b-872d-2ebd23e5f959', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(fullReportData)
         });
         
-        // Временно всегда показываем предупреждение о недоступности backend'а
-        if (false) { // Временно отключено
-          console.log('✅ Ссылка на заключение сохранена в базу данных с ID:', response.id);
+        const saveResult = await saveResponse.json();
+        console.log('📥 Ответ сервера:', saveResult);
+        
+        if (saveResponse.ok && saveResult.success) {
+          // Успешно сохранили в БД
+          const reportId = saveResult.id;
+          console.log('✅ Заключение сохранено в базу данных с ID:', reportId);
           
           // Создаем ссылку на заключение
-          const conclusionUrl = `${window.location.origin}${reportLink}`;
+          const conclusionUrl = `${window.location.origin}/diag/${reportId}`;
           
           // Показываем пользователю информацию
-          const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n💡 Ссылка сохранена в системе администратора`;
+          const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n💡 Заключение сохранено в системе`;
           alert(message);
           
           // Копируем ссылку в буфер обмена
@@ -232,37 +235,36 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
             console.warn('Не удалось скопировать в буфер обмена:', clipboardError);
           }
           
-        } else {
-          console.warn('⚠️ Backend недоступен:', adminResponse.status, responseText);
-          // Показываем заключение пользователю с предупреждением
-          const conclusionUrl = `${window.location.origin}${reportLink}`;
-          const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка: ${conclusionUrl}\n\n⚠️ Система администратора временно недоступна\n💡 Заключение сохранено локально и доступно по ссылке`;
-          alert(message);
+          // Переходим на страницу заключения
+          console.log('Переходим к заключению:', `/diag/${reportId}`);
+          navigate(`/diag/${reportId}`);
+          return;
           
-          try {
-            await navigator.clipboard.writeText(conclusionUrl);
-          } catch (clipboardError) {
-            console.warn('Не удалось скопировать в буфер обмена:', clipboardError);
-          }
+        } else {
+          console.warn('⚠️ Не удалось сохранить заключение в БД:', saveResponse.status, saveResult);
+          // Показываем предупреждение, но продолжаем работу локально
+          throw new Error('Не удалось сохранить в базу данных');
         }
-      } catch (adminError) {
-        console.error('❌ Ошибка сохранения в базу данных:', adminError);
-        alert('⚠️ Заключение создано, но возникла проблема с сохранением в базу данных');
+      } catch (saveError) {
+        console.error('❌ Ошибка сохранения в базу данных:', saveError);
+        
+        // Fallback: работаем локально
+        const localReportId = Math.floor(Math.random() * 10000) + 1;
+        const conclusionUrl = `${window.location.origin}/diag/${localReportId}`;
+        const message = `✅ Заключение создано!\n\n📋 Заключение №${localReportId}\n🔗 Ссылка: ${conclusionUrl}\n\n⚠️ Заключение сохранено только локально`;
+        alert(message);
+        
+        try {
+          await navigator.clipboard.writeText(conclusionUrl);
+        } catch (clipboardError) {
+          console.warn('Не удалось скопировать в буфер обмена:', clipboardError);
+        }
+        
+        // Переходим на страницу заключения (локальная версия)
+        console.log('Переходим к локальному заключению:', `/diag/${localReportId}`);
+        navigate(`/diag/${localReportId}`);
       }
-      
-      console.log('Заключение подготовлено для админ-панели:', {
-        name: reportData.student_name,
-        date: reportData.date,
-        report_link: reportData.report_link
-      });
-      
-      // Генерируем порядковый номер для локального просмотра
-      const serialNumber = Math.floor(Math.random() * 10000) + 1;
-      console.log('Generated serial number:', serialNumber);
-      
-      // Переходим на страницу заключения
-      console.log('Navigating to:', `/diag/${serialNumber}`);
-      navigate(`/diag/${serialNumber}`);
+
       
     } catch (error) {
       console.error('Error creating conclusion:', error);

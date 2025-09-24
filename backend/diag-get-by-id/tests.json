@@ -1,0 +1,12 @@
+{
+  "tests": [{
+    "name": "Test getting report by non-existing ID",
+    "method": "GET",
+    "path": "/?id=99999",
+    "expectedStatus": 404,
+    "expectedBody": {
+      "error": "Заключение не найдено"
+    },
+    "bodyMatcher": "partial"
+  }]
+}
