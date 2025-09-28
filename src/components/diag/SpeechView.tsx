@@ -56,6 +56,64 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
     return parts.join(", ");
   };
 
+  // Функция для форматирования связной речи
+  const formatConnectedSpeech = (data: any) => {
+    if (!data.connectedSpeech || data.connectedSpeech.length === 0) {
+      return "не оценивалась";
+    }
+
+    const connectedSpeech = data.connectedSpeech;
+    
+    // Проверяем основное состояние
+    if (connectedSpeech.includes("норма")) {
+      return "норма";
+    }
+    
+    if (connectedSpeech.includes("нарушена")) {
+      const details: string[] = [];
+      
+      // Объем активного словаря
+      if (connectedSpeech.includes("объем активного словаря не соответствует возрастной норме")) {
+        details.push("Объем активного словаря не соответствует возрастной норме");
+      }
+      
+      // Вербальные парафазии
+      if (connectedSpeech.includes("наблюдаются вербальные парафазии")) {
+        details.push("наблюдаются вербальные парафазии");
+      }
+      
+      // Нарушения при составлении рассказа
+      const storyProblems: string[] = [];
+      if (connectedSpeech.includes("нарушение логики передачи замысла")) {
+        storyProblems.push("нарушение логики передачи замысла");
+      }
+      if (connectedSpeech.includes("пропуск смысловых звеньев и связующих элементов")) {
+        storyProblems.push("пропуск смысловых звеньев и связующих элементов");
+      }
+      if (connectedSpeech.includes("неоднократные необоснованные повторы")) {
+        storyProblems.push("неоднократные необоснованные повторы");
+      }
+      if (connectedSpeech.includes("малая длина синтагм")) {
+        storyProblems.push("малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры");
+      }
+      
+      if (storyProblems.length > 0) {
+        details.push(`При составлении рассказа по серии сюжетных картинок наблюдается ${storyProblems.join(", ")}`);
+      }
+      
+      // Другие нарушения
+      const otherProblems = data.connectedSpeechOther;
+      if (otherProblems) {
+        details.push(otherProblems);
+      }
+      
+      return `нарушена. ${details.join(". ")}`;
+    }
+    
+    // Если есть другие варианты
+    return formatList(connectedSpeech);
+  };
+
   return (
     <>
       {/* Импрессивная речь */}
@@ -79,7 +137,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
           <div><strong>Моторная реализация высказывания:</strong> {formatMotorRealization(diagData)}</div>
           <div><strong>Словообразование:</strong> {formatList(diagData.wordFormation)}</div>
           <div><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</div>
-          <div><strong>Связная речь:</strong> {formatList(diagData.connectedSpeech)}</div>
+          <div><strong>Связная речь:</strong> {formatConnectedSpeech(diagData)}</div>
 
         </div>
       </section>
