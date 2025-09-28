@@ -198,7 +198,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 id="speech-normal"
                 name="speechEnvironment"
                 value="нет"
-                checked={formData.speechEnvironment === "нет"
+                checked={formData.speechEnvironment === "нет"}
                 onChange={(e) => onInputChange("speechEnvironment", e.target.value)}
                 className="rounded"
               />
