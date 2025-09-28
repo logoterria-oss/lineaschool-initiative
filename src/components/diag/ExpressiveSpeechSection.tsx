@@ -214,7 +214,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
         <div>
           <Label className="text-base font-semibold">Связная речь</Label>
           <RadioGroup 
-            value={formData.connectedSpeech.includes("норма") ? "норма" : "нарушена"} 
+            value={formData.connectedSpeech.includes("норма") ? "норма" : formData.connectedSpeech.includes("нарушена") ? "нарушена" : ""} 
             onValueChange={handleConnectedSpeechRadio}
             className="mt-2 space-y-2"
           >
