@@ -1,6 +1,8 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 
 interface ExpressiveSpeechData {
   motorRealization: string[];
@@ -8,6 +10,8 @@ interface ExpressiveSpeechData {
   grammaticalStructure: string;
   connectedSpeech: string[];
   nominativeFunction: string[];
+  motorRealizationOther?: string;
+  motorRealizationMultiple?: string;
 }
 
 interface ExpressiveSpeechProps {
@@ -16,6 +20,9 @@ interface ExpressiveSpeechProps {
 }
 
 export default function ExpressiveSpeechSection({ formData, onInputChange }: ExpressiveSpeechProps) {
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [showMultipleInput, setShowMultipleInput] = useState(false);
+
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof ExpressiveSpeechData] as string[];
     if (checked) {
@@ -23,6 +30,12 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
     } else {
       onInputChange(field, currentValues.filter(item => item !== value));
     }
+  };
+
+  const handleSoundGroupRadio = (value: string) => {
+    onInputChange("motorRealization", [value]);
+    setShowOtherInput(value === "другое");
+    setShowMultipleInput(value === "нарушены 2 и более группы звуков");
   };
 
   return (
@@ -33,130 +46,113 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
         {/* Моторная реализация высказывания */}
         <div>
           <Label className="text-base font-semibold">Моторная реализация высказывания</Label>
-          <div className="mt-4 space-y-6">
-            
-            {/* Группа 1: Звуки раннего и среднего онтогенеза */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Звуки раннего и среднего онтогенеза</Label>
-              <div className="mt-2 space-y-2">
-                {[
-                  "нормативное произношение звуков раннего и среднего онтогенеза",
-                  "замены звуков раннего и среднего онтогенеза", 
-                  "искаженное произношение звуков раннего и среднего онтогенеза"
-                ].map(option => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`motor-early-${option}`}
-                      checked={formData.motorRealization.includes(option)}
-                      onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                    />
-                    <Label htmlFor={`motor-early-${option}`} className="text-sm">{option}</Label>
-                  </div>
-                ))}
+          <div className="mt-4">
+            <Label className="text-sm font-medium text-gray-700">звукопроизношение</Label>
+            <RadioGroup 
+              value={formData.motorRealization[0] || ""} 
+              onValueChange={handleSoundGroupRadio}
+              className="mt-2 space-y-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="норма" id="sound-norm" />
+                <Label htmlFor="sound-norm" className="text-sm">норма</Label>
               </div>
-            </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="нарушена одна группа звуков" id="sound-one" />
+                  <Label htmlFor="sound-one" className="text-sm">нарушена одна группа звуков</Label>
+                </div>
+                {formData.motorRealization[0] === "нарушена одна группа звуков" && (
+                  <div className="ml-6 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {["свистящие", "шипящие", "аффрикаты", "Л-Ль", "Р-Рь"].map(option => (
+                        <div key={option} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`one-group-${option}`}
+                            checked={formData.motorRealization.includes(option)}
+                            onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
+                          />
+                          <Label htmlFor={`one-group-${option}`} className="text-sm">{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="one-group-other"
+                        checked={showOtherInput}
+                        onCheckedChange={(checked) => setShowOtherInput(!!checked)}
+                      />
+                      <Label htmlFor="one-group-other" className="text-sm">другое</Label>
+                    </div>
+                    {showOtherInput && (
+                      <Input
+                        placeholder="Укажите другую группу звуков"
+                        value={formData.motorRealizationOther || ""}
+                        onChange={(e) => onInputChange("motorRealizationOther", e.target.value)}
+                        className="ml-6 max-w-xs"
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="нарушены 2 и более группы звуков" id="sound-multiple" />
+                  <Label htmlFor="sound-multiple" className="text-sm">нарушены 2 и более группы звуков</Label>
+                </div>
+                {formData.motorRealization[0] === "нарушены 2 и более группы звуков" && (
+                  <Input
+                    placeholder="Укажите какие группы звуков нарушены"
+                    value={formData.motorRealizationMultiple || ""}
+                    onChange={(e) => onInputChange("motorRealizationMultiple", e.target.value)}
+                    className="ml-6 max-w-md"
+                  />
+                )}
+              </div>
+            </RadioGroup>
+          </div>
 
-            {/* Группа 2: Свистящие и шипящие звуки */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Свистящие и шипящие звуки</Label>
-              <div className="mt-2 space-y-2">
-                {[
-                  "нормативное произношение свистящих и шипящих звуков",
-                  "замены свистящих и шипящих звуков",
-                  "искаженное произношение свистящих и шипящих звуков"
-                ].map(option => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`motor-whistle-${option}`}
-                      checked={formData.motorRealization.includes(option)}
-                      onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                    />
-                    <Label htmlFor={`motor-whistle-${option}`} className="text-sm">{option}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+        </div>
 
-            {/* Группа 3: Сонорные звуки */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Сонорные звуки</Label>
-              <div className="mt-2 space-y-2">
-                {[
-                  "нормативное произношение сонорных звуков",
-                  "замены сонорных звуков",
-                  "искаженное произношение сонорных звуков"
-                ].map(option => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`motor-sonor-${option}`}
-                      checked={formData.motorRealization.includes(option)}
-                      onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                    />
-                    <Label htmlFor={`motor-sonor-${option}`} className="text-sm">{option}</Label>
-                  </div>
-                ))}
+        {/* Слоговая структура слова */}
+        <div>
+          <Label className="text-base font-semibold">Слоговая структура слова</Label>
+          <div className="mt-2 space-y-2">
+            {[
+              "слоговая структура слова не нарушена",
+              "слоговая структура слова нарушена"
+            ].map(option => (
+              <div key={option} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`syllable-${option}`}
+                  checked={formData.motorRealization.includes(option)}
+                  onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
+                />
+                <Label htmlFor={`syllable-${option}`} className="text-sm">{option}</Label>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* Группа 4: Слоговая структура */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Слоговая структура слова</Label>
-              <div className="mt-2 space-y-2">
-                {[
-                  "слоговая структура слова не нарушена",
-                  "слоговая структура слова нарушена"
-                ].map(option => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`motor-syllable-${option}`}
-                      checked={formData.motorRealization.includes(option)}
-                      onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                    />
-                    <Label htmlFor={`motor-syllable-${option}`} className="text-sm">{option}</Label>
-                  </div>
-                ))}
+        {/* Кинетический артикуляционный праксис */}
+        <div>
+          <Label className="text-base font-semibold">Кинетический артикуляционный праксис</Label>
+          <div className="mt-2 space-y-2">
+            {[
+              "кинетический артикуляционный праксис в норме",
+              "кинетический артикуляционный праксис нарушен"
+            ].map(option => (
+              <div key={option} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`kinetic-${option}`}
+                  checked={formData.motorRealization.includes(option)}
+                  onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
+                />
+                <Label htmlFor={`kinetic-${option}`} className="text-sm">{option}</Label>
               </div>
-            </div>
-
-            {/* Группа 5: Артикуляционные пробы */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Артикуляционные пробы</Label>
-              <div className="mt-2 space-y-2">
-                {[
-                  "артикуляционные пробы выполняет",
-                  "выполняет не все предложенные артикуляционные пробы"
-                ].map(option => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`motor-artic-${option}`}
-                      checked={formData.motorRealization.includes(option)}
-                      onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                    />
-                    <Label htmlFor={`motor-artic-${option}`} className="text-sm">{option}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Группа 6: Кинетический праксис */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Кинетический артикуляционный праксис</Label>
-              <div className="mt-2 space-y-2">
-                {[
-                  "кинетический артикуляционный праксис в норме",
-                  "кинетический артикуляционный праксис нарушен"
-                ].map(option => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`motor-kinetic-${option}`}
-                      checked={formData.motorRealization.includes(option)}
-                      onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                    />
-                    <Label htmlFor={`motor-kinetic-${option}`} className="text-sm">{option}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
