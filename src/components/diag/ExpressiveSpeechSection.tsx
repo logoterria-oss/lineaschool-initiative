@@ -38,17 +38,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
     setShowMultipleInput(value === "нарушены 2 и более группы звуков");
   };
 
-  const [showWordFormationDetails, setShowWordFormationDetails] = useState(false);
 
-  const handleWordFormationRadio = (value: string) => {
-    if (value === "норма") {
-      onInputChange("wordFormation", ["норма"]);
-      setShowWordFormationDetails(false);
-    } else if (value === "нарушены") {
-      onInputChange("wordFormation", ["нарушены"]);
-      setShowWordFormationDetails(true);
-    }
-  };
 
   return (
     <section className="bg-gray-50 p-6 rounded-lg">
@@ -167,45 +157,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
           </div>
         </div>
 
-        {/* Словообразовательные процессы */}
-        <div>
-          <Label className="text-base font-semibold">Словообразовательные процессы</Label>
-          <RadioGroup 
-            value={formData.wordFormation[0] || ""} 
-            onValueChange={handleWordFormationRadio}
-            className="mt-2 space-y-3"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="норма" id="word-norm" />
-              <Label htmlFor="word-norm" className="text-sm">норма</Label>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="нарушены" id="word-violated" />
-                <Label htmlFor="word-violated" className="text-sm">нарушены</Label>
-              </div>
-              {showWordFormationDetails && (
-                <div className="ml-6 space-y-2">
-                  {[
-                    "нарушено образование формы множественного числа",
-                    "нарушено образование уменьшительно-ласкательных форм", 
-                    "нарушено образование отыменных прилагательных"
-                  ].map(option => (
-                    <div key={option} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`word-detail-${option}`}
-                        checked={formData.wordFormation.includes(option)}
-                        onCheckedChange={(checked) => handleCheckboxChange("wordFormation", option, !!checked)}
-                      />
-                      <Label htmlFor={`word-detail-${option}`} className="text-sm">{option}</Label>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </RadioGroup>
-        </div>
+
 
         {/* Сформированность грамматического строя речи */}
         <div>
