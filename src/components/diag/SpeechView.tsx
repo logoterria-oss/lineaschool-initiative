@@ -37,7 +37,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
           <div><strong>Словообразование:</strong> {formatList(diagData.wordFormation)}</div>
           <div><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</div>
           <div><strong>Связная речь:</strong> {formatList(diagData.connectedSpeech)}</div>
-          <div><strong>Номинативная функция (словарь):</strong> {formatList(diagData.nominativeFunction)}</div>
+
         </div>
       </section>
     </>
