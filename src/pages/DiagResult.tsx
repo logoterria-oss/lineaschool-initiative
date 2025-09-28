@@ -177,6 +177,29 @@ const DiagResult = () => {
     return parts.join(", ");
   };
 
+  const formatWordFormation = (wordFormation: string[]) => {
+    if (wordFormation.includes("норма")) {
+      return "норма";
+    }
+    
+    // Если выбрано "нарушены", показываем только конкретные нарушения
+    const violations = wordFormation.filter(item => 
+      item !== "нарушены" && 
+      item !== "норма"
+    );
+    
+    if (violations.length === 0) {
+      return "нарушены";
+    }
+    
+    // Убираем слово "нарушено" из начала каждого пункта для более краткой записи
+    const shortViolations = violations.map(item => 
+      item.replace("нарушено образование ", "")
+    );
+    
+    return shortViolations.join(", ");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation hideBookButton={true} />
@@ -256,7 +279,7 @@ const DiagResult = () => {
                     <p><strong>Моторная реализация высказывания:</strong> {formatMotorRealization(diagData)}</p>
                   )}
                   {diagData.wordFormation.length > 0 && (
-                    <p><strong>Словообразовательные процессы:</strong> {diagData.wordFormation.join(', ')}</p>
+                    <p><strong>Словообразовательные процессы:</strong> {formatWordFormation(diagData.wordFormation)}</p>
                   )}
                   {diagData.grammaticalStructure && (
                     <p><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</p>
