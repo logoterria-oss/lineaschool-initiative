@@ -12,15 +12,15 @@ export default function AnamnesticsView({ diagData }: AnamnesticsViewProps) {
         Анамнестические данные
       </h2>
       <div className="space-y-3 text-sm">
-        <div><strong>Пренатальное развитие:</strong> {formatAnamnesticsValue(diagData.prenatalDevelopment, diagData.prenatalDevelopment === "custom", diagData.prenatalDevelopmentCustom)}</div>
+        <div><strong>Пренатальное развитие:</strong> {formatAnamnesticsValue(diagData.prenatalDevelopment, diagData.prenatalDevelopment === "custom", diagData.prenatalDevelopmentCustom, "prenatal")}</div>
         
-        <div><strong>Неврологические нарушения:</strong> {formatAnamnesticsValue(diagData.neurologicalDisorders, diagData.neurologicalDisorders === "custom", diagData.neurologicalDisordersCustom)}</div>
+        <div><strong>Неврологические нарушения:</strong> {formatAnamnesticsValue(diagData.neurologicalDisorders, diagData.neurologicalDisorders === "custom", diagData.neurologicalDisordersCustom, "neurological")}</div>
         
-        <div><strong>Нарушения слуха/зрения:</strong> {formatAnamnesticsValue(diagData.hearingVisionDisorders, diagData.hearingVisionDisorders === "custom", diagData.hearingVisionDisordersCustom)}</div>
+        <div><strong>Нарушения слуха/зрения:</strong> {formatAnamnesticsValue(diagData.hearingVisionDisorders, diagData.hearingVisionDisorders === "custom", diagData.hearingVisionDisordersCustom, "hearing")}</div>
         
-        <div><strong>Хронические заболевания:</strong> {formatAnamnesticsValue(diagData.chronicDiseases, diagData.chronicDiseases === "custom", diagData.chronicDiseasesCustom)}</div>
+        <div><strong>Хронические заболевания:</strong> {formatAnamnesticsValue(diagData.chronicDiseases, diagData.chronicDiseases === "custom", diagData.chronicDiseasesCustom, "chronic")}</div>
         
-        <div><strong>Речевая среда:</strong> {diagData.speechEnvironment === "custom" ? (diagData.speechEnvironmentCustom || "Не указано") : (diagData.speechEnvironment === "нет" ? "Без особенностей" : formatValue(diagData.speechEnvironment))}</div>
+        <div><strong>Речевая среда:</strong> {formatAnamnesticsValue(diagData.speechEnvironment, diagData.speechEnvironment === "custom", diagData.speechEnvironmentCustom, "speech")}</div>
         
         <div><strong>Ведущая рука:</strong> {formatValue(diagData.dominantHand)}</div>
         <div><strong>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами?</strong> {formatList(diagData.previousSpecialists)}</div>

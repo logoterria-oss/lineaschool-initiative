@@ -36,7 +36,6 @@ export const translateValue = (value: string) => {
     // Общие значения
     'yes': 'Да',
     'no': 'Нет',
-    'нет': 'без особенностей',
     'unknown': 'Неизвестно',
     'without_features': 'Без особенностей',
     'present': 'Имеются',
@@ -65,12 +64,22 @@ export const formatValue = (value: string | string[]) => {
 };
 
 // Специальная функция для анамнестических данных
-export const formatAnamnesticsValue = (value: string | string[], isCustom: boolean, customValue?: string) => {
+export const formatAnamnesticsValue = (value: string | string[], isCustom: boolean, customValue?: string, fieldType?: string) => {
   if (isCustom) {
     return customValue || 'Не указано';
   }
   
   if (!value) return 'Не указано';
+  
+  // Специальная логика для разных полей
+  if (value === 'нет') {
+    // Для пренатального развития и речевой среды "нет" = "без особенностей"
+    if (fieldType === 'prenatal' || fieldType === 'speech') {
+      return 'без особенностей';
+    }
+    // Для остальных полей "нет" = "нет /не диагностировано"
+    return 'нет /не диагностировано';
+  }
   
   // Для анамнестических данных сохраняем точный текст для определенных значений
   if (value === 'нет /не диагностировано' || value === 'не диагностировано') {
