@@ -22,6 +22,7 @@ interface ExpressiveSpeechProps {
 export default function ExpressiveSpeechSection({ formData, onInputChange }: ExpressiveSpeechProps) {
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [showMultipleInput, setShowMultipleInput] = useState(false);
+  const [showConnectedSpeechDetails, setShowConnectedSpeechDetails] = useState(false);
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof ExpressiveSpeechData] as string[];
@@ -36,6 +37,35 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
     onInputChange("motorRealization", [value]);
     setShowOtherInput(value === "другое");
     setShowMultipleInput(value === "нарушены 2 и более группы звуков");
+  };
+
+  const handleConnectedSpeechRadio = (value: string) => {
+    if (value === "норма") {
+      onInputChange("connectedSpeech", ["норма"]);
+      setShowConnectedSpeechDetails(false);
+    } else if (value === "нарушена") {
+      onInputChange("connectedSpeech", ["нарушена"]);
+      setShowConnectedSpeechDetails(true);
+    }
+  };
+
+  const handleVocabularyChange = (value: string, checked: boolean) => {
+    const currentVocab = formData.connectedSpeech.filter(item => 
+      ["номинативная функция сохранна", "вербальные парафазии", "латеральные парафазии", "вербальные и латеральные парафазии"].includes(item)
+    );
+    
+    let newVocab;
+    if (checked) {
+      newVocab = [...currentVocab, value];
+    } else {
+      newVocab = currentVocab.filter(item => item !== value);
+    }
+    
+    const otherItems = formData.connectedSpeech.filter(item => 
+      !["номинативная функция сохранна", "вербальные парафазии", "латеральные парафазии", "вербальные и латеральные парафазии"].includes(item)
+    );
+    
+    onInputChange("connectedSpeech", [...otherItems, ...newVocab]);
   };
 
 
@@ -183,49 +213,76 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
         {/* Связная речь */}
         <div>
           <Label className="text-base font-semibold">Связная речь</Label>
-          <div className="mt-2 space-y-2">
-            {[
-              "норма",
-              "тенденция к фрагментарности текста",
-              "смысловая неточность",
-              "бедность активного словаря",
-              "пропуск отдельных смысловых звеньев и/или связующих элементов",
-              "неоднократные необоснованные повторы слов и предложений",
-              "малая длина текста, которая свидетельствует о трудностях смыслового программирования и грамматического структурирования",
-              "малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры"
-            ].map(option => (
-              <div key={option} className="flex items-start space-x-2">
-                <Checkbox
-                  id={`connected-speech-${option}`}
-                  checked={formData.connectedSpeech.includes(option)}
-                  onCheckedChange={(checked) => handleCheckboxChange("connectedSpeech", option, !!checked)}
-                  className="mt-0.5"
-                />
-                <Label htmlFor={`connected-speech-${option}`} className="text-sm leading-5">{option}</Label>
+          <RadioGroup 
+            value={formData.connectedSpeech.includes("норма") ? "норма" : "нарушена"} 
+            onValueChange={handleConnectedSpeechRadio}
+            className="mt-2 space-y-3"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="норма" id="connected-norm" />
+              <Label htmlFor="connected-norm" className="text-sm">норма</Label>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="нарушена" id="connected-violated" />
+                <Label htmlFor="connected-violated" className="text-sm">нарушена</Label>
               </div>
-            ))}
-          </div>
-        </div>
+              {showConnectedSpeechDetails && (
+                <div className="ml-6 space-y-4">
+                  {/* Бедность активного словаря */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="vocabulary-poverty"
+                        checked={formData.connectedSpeech.includes("бедность активного словаря")}
+                        onCheckedChange={(checked) => handleCheckboxChange("connectedSpeech", "бедность активного словаря", !!checked)}
+                      />
+                      <Label htmlFor="vocabulary-poverty" className="text-sm font-medium">бедность активного словаря</Label>
+                    </div>
+                    {formData.connectedSpeech.includes("бедность активного словаря") && (
+                      <div className="ml-6 space-y-2">
+                        {[
+                          "номинативная функция сохранна",
+                          "вербальные парафазии", 
+                          "латеральные парафазии",
+                          "вербальные и латеральные парафазии"
+                        ].map(option => (
+                          <div key={option} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`vocabulary-${option}`}
+                              checked={formData.connectedSpeech.includes(option)}
+                              onCheckedChange={(checked) => handleVocabularyChange(option, !!checked)}
+                            />
+                            <Label htmlFor={`vocabulary-${option}`} className="text-sm">{option}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-        {/* Номинативная функция речи */}
-        <div>
-          <Label className="text-base font-semibold">Номинативная функция речи</Label>
-          <div className="mt-2 space-y-2">
-            {[
-              "норма",
-              "вербальные парафазии",
-              "латеральные парафазии"
-            ].map(option => (
-              <div key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`nominative-${option}`}
-                  checked={formData.nominativeFunction.includes(option)}
-                  onCheckedChange={(checked) => handleCheckboxChange("nominativeFunction", option, !!checked)}
-                />
-                <Label htmlFor={`nominative-${option}`} className="text-sm">{option}</Label>
-              </div>
-            ))}
-          </div>
+                  {/* Остальные опции */}
+                  {[
+                    "смысловая неадекватность",
+                    "смысловая неточность",
+                    "пропуск отдельных смысловых звеньев и/или связующих элементов",
+                    "неоднократные необоснованные повторы слов и предложений",
+                    "малая длина текста",
+                    "малая длина синтагм"
+                  ].map(option => (
+                    <div key={option} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`connected-detail-${option}`}
+                        checked={formData.connectedSpeech.includes(option)}
+                        onCheckedChange={(checked) => handleCheckboxChange("connectedSpeech", option, !!checked)}
+                      />
+                      <Label htmlFor={`connected-detail-${option}`} className="text-sm">{option}</Label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </RadioGroup>
         </div>
       </div>
     </section>
