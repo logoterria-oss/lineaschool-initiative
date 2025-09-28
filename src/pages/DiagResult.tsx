@@ -47,8 +47,8 @@ const DiagResult = () => {
           <div className="space-y-6">
             <PersonalDataSection diagData={diagData} />
             <AnamnesesDataSection diagData={diagData} />
-            <ExpressiveSpeechSection diagData={diagData} />
             <ImpressiveSpeechSection diagData={diagData} />
+            <ExpressiveSpeechSection diagData={diagData} />
             <WrittenSpeechSection diagData={diagData} />
             <ConclusionSections diagData={diagData} />
           </div>

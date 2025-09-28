@@ -70,13 +70,11 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
 
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
-          <ExpressiveSpeechSection 
+          <ImpressiveSpeechSection 
             formData={{
-              motorRealization: formData.motorRealization,
-              wordFormation: formData.wordFormation,
-              grammaticalStructure: formData.grammaticalStructure,
-              connectedSpeech: formData.connectedSpeech,
-              nominativeFunction: formData.nominativeFunction
+              wordUnderstanding: formData.wordUnderstanding,
+              complexConstructions: formData.complexConstructions,
+              phonematicPerception: formData.phonematicPerception
             }}
             onInputChange={onInputChange}
           />
@@ -85,11 +83,13 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
 
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
-          <ImpressiveSpeechSection 
+          <ExpressiveSpeechSection 
             formData={{
-              wordUnderstanding: formData.wordUnderstanding,
-              complexConstructions: formData.complexConstructions,
-              phonematicPerception: formData.phonematicPerception
+              motorRealization: formData.motorRealization,
+              wordFormation: formData.wordFormation,
+              grammaticalStructure: formData.grammaticalStructure,
+              connectedSpeech: formData.connectedSpeech,
+              nominativeFunction: formData.nominativeFunction
             }}
             onInputChange={onInputChange}
           />

@@ -62,19 +62,19 @@ export default function ImpressiveSpeechSection({ formData, onInputChange }: Imp
           <RadioGroup 
             value={formData.phonematicPerception} 
             onValueChange={(value) => onInputChange("phonematicPerception", value)}
-            className="mt-2"
+            className="mt-2 space-y-2"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="норма" id="phonematic-norm" />
               <Label htmlFor="phonematic-norm" className="text-sm">норма</Label>
             </div>
-            <div className="flex items-start space-x-2">
-              <RadioGroupItem value="уподобления и замены слогов, обусловленные дефектами звукопроизношения" id="phonematic-caused" className="mt-0.5" />
-              <Label htmlFor="phonematic-caused" className="text-sm leading-5">уподобления и замены слогов, обусловленные дефектами звукопроизношения</Label>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="не соответствует возрастной норме (1-2 ошибки в пробе)" id="phonematic-partial" />
+              <Label htmlFor="phonematic-partial" className="text-sm">не соответствует возрастной норме (1-2 ошибки в пробе)</Label>
             </div>
-            <div className="flex items-start space-x-2">
-              <RadioGroupItem value="уподобления и замены слогов, НЕ обусловленные дефектами звукопроизношения" id="phonematic-not-caused" className="mt-0.5" />
-              <Label htmlFor="phonematic-not-caused" className="text-sm leading-5">уподобления и замены слогов, НЕ обусловленные дефектами звукопроизношения</Label>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="не сформировано" id="phonematic-not-formed" />
+              <Label htmlFor="phonematic-not-formed" className="text-sm">не сформировано</Label>
             </div>
           </RadioGroup>
         </div>
