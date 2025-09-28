@@ -33,7 +33,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
           Экспрессивная речь (воспроизведение речи)
         </h2>
         <div className="space-y-3 text-sm">
-          <div><strong>Моторная реализация (звукопроизношение):</strong> {formatList(diagData.motorRealization)}</div>
+          <div><strong>Моторная реализация высказывания:</strong> {formatList(diagData.motorRealization)}</div>
           <div><strong>Словообразование:</strong> {formatList(diagData.wordFormation)}</div>
           <div><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</div>
           <div><strong>Связная речь:</strong> {formatList(diagData.connectedSpeech)}</div>
