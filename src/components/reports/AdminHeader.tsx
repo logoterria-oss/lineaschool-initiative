@@ -25,9 +25,9 @@ export default function AdminHeader({ showForm, onToggleForm, onRefresh }: Admin
           <Icon name="RefreshCw" size={16} className="mr-2" />
           Обновить
         </Button>
-        <Button onClick={onToggleForm}>
+        <Button onClick={() => window.location.href = '/diag_form'}>
           <Icon name="Plus" size={16} className="mr-2" />
-          {showForm ? 'Отменить' : 'Новое заключение'}
+          + новая диагностика
         </Button>
       </div>
     </div>
