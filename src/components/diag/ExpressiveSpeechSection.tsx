@@ -116,43 +116,44 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
 
         </div>
 
-        {/* Слоговая структура слова */}
-        <div>
-          <Label className="text-base font-semibold">Слоговая структура слова</Label>
-          <div className="mt-2 space-y-2">
-            {[
-              "слоговая структура слова не нарушена",
-              "слоговая структура слова нарушена"
-            ].map(option => (
-              <div key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`syllable-${option}`}
-                  checked={formData.motorRealization.includes(option)}
-                  onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                />
-                <Label htmlFor={`syllable-${option}`} className="text-sm">{option}</Label>
-              </div>
-            ))}
+          {/* Слоговая структура слова */}
+          <div className="mt-6">
+            <Label className="text-sm font-medium text-gray-700">Слоговая структура слова</Label>
+            <div className="mt-2 space-y-2">
+              {[
+                "слоговая структура слова не нарушена",
+                "слоговая структура слова нарушена"
+              ].map(option => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`syllable-${option}`}
+                    checked={formData.motorRealization.includes(option)}
+                    onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
+                  />
+                  <Label htmlFor={`syllable-${option}`} className="text-sm">{option}</Label>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Кинетический артикуляционный праксис */}
-        <div>
-          <Label className="text-base font-semibold">Кинетический артикуляционный праксис</Label>
-          <div className="mt-2 space-y-2">
-            {[
-              "кинетический артикуляционный праксис в норме",
-              "кинетический артикуляционный праксис нарушен"
-            ].map(option => (
-              <div key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`kinetic-${option}`}
-                  checked={formData.motorRealization.includes(option)}
-                  onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
-                />
-                <Label htmlFor={`kinetic-${option}`} className="text-sm">{option}</Label>
-              </div>
-            ))}
+          {/* Кинетический артикуляционный праксис */}
+          <div className="mt-6">
+            <Label className="text-sm font-medium text-gray-700">Кинетический артикуляционный праксис</Label>
+            <div className="mt-2 space-y-2">
+              {[
+                "кинетический артикуляционный праксис в норме",
+                "кинетический артикуляционный праксис нарушен"
+              ].map(option => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`kinetic-${option}`}
+                    checked={formData.motorRealization.includes(option)}
+                    onCheckedChange={(checked) => handleCheckboxChange("motorRealization", option, !!checked)}
+                  />
+                  <Label htmlFor={`kinetic-${option}`} className="text-sm">{option}</Label>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

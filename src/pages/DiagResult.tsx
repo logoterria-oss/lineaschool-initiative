@@ -127,6 +127,56 @@ const DiagResult = () => {
     return hands[value as keyof typeof hands] || value;
   };
 
+  const formatMotorRealization = (data: DiagData) => {
+    const parts: string[] = [];
+    
+    // Звукопроизношение
+    const soundFirst = data.motorRealization[0];
+    if (soundFirst === "норма") {
+      parts.push("звукопроизношение - норма");
+    } else if (soundFirst === "нарушена одна группа звуков") {
+      const soundGroups = data.motorRealization.slice(1).filter(item => 
+        ["свистящие", "шипящие", "аффрикаты", "Л-Ль", "Р-Рь"].includes(item)
+      );
+      const otherGroup = (data as any).motorRealizationOther;
+      
+      let groupText = "";
+      if (soundGroups.length > 0) {
+        groupText = soundGroups.join(", ");
+      }
+      if (otherGroup) {
+        groupText = groupText ? `${groupText}, ${otherGroup}` : otherGroup;
+      }
+      
+      parts.push(`звукопроизношение - нарушена одна группа звуков${groupText ? ` (${groupText})` : ""}`);
+    } else if (soundFirst === "нарушены 2 и более группы звуков") {
+      const multipleGroups = (data as any).motorRealizationMultiple;
+      parts.push(`звукопроизношение - нарушены 2 и более группы звуков${multipleGroups ? ` (${multipleGroups})` : ""}`);
+    }
+    
+    // Слоговая структура слова
+    const syllableItem = data.motorRealization.find(item => item.includes("слоговая структура слова"));
+    if (syllableItem) {
+      if (syllableItem === "слоговая структура слова не нарушена") {
+        parts.push("слоговая структура слова - норма");
+      } else if (syllableItem === "слоговая структура слова нарушена") {
+        parts.push("слоговая структура слова - нарушена");
+      }
+    }
+    
+    // Кинетический артикуляционный праксис
+    const kineticItem = data.motorRealization.find(item => item.includes("кинетический артикуляционный праксис"));
+    if (kineticItem) {
+      if (kineticItem === "кинетический артикуляционный праксис в норме") {
+        parts.push("кинетический артикуляционный праксис - норма");
+      } else if (kineticItem === "кинетический артикуляционный праксис нарушен") {
+        parts.push("кинетический артикуляционный праксис - нарушен");
+      }
+    }
+    
+    return parts.join(", ");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation hideBookButton={true} />
@@ -203,7 +253,7 @@ const DiagResult = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {diagData.motorRealization.length > 0 && (
-                    <p><strong>Моторная реализация высказывания:</strong> {diagData.motorRealization.join(', ')}</p>
+                    <p><strong>Моторная реализация высказывания:</strong> {formatMotorRealization(diagData)}</p>
                   )}
                   {diagData.wordFormation.length > 0 && (
                     <p><strong>Словообразовательные процессы:</strong> {diagData.wordFormation.join(', ')}</p>
