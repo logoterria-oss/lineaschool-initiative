@@ -3,14 +3,19 @@ export const translateValue = (value: string) => {
   
   const translations: Record<string, string> = {
     // Тип образования
-    'general': 'Общее',
-    'special': 'Специальное',
-    'inclusive': 'Инклюзивное',
+    'в образовательной организации (школа, лицей, гимназия)': 'в общеобразовательной школе',
+    'в образовательной организации (коррекционная школа)': 'в специальной (коррекционной) школе',
+    'семейное образование': 'семейное образование',
+    'general': 'в общеобразовательной школе',
+    'special': 'в специальной (коррекционной) школе',
+    'inclusive': 'в общеобразовательной школе',
     
     // Ведущая рука
     'right': 'Правая',
     'left': 'Левая',
     'ambidextrous': 'Обе руки',
+    'Правша (переученный левша)': 'Правша (переученный левша)',
+    'retrained_left': 'Правша (переученный левша)',
     
     // Класс обучения
     'regular': 'Общеобразовательный',
@@ -32,9 +37,11 @@ export const translateValue = (value: string) => {
     'without_features': 'Без особенностей',
     'present': 'Имеются',
     'absent': 'Отсутствуют',
+    'нет /не диагностировано': 'нет /не диагностировано',
+    'не диагностировано': 'нет /не диагностировано',
     
-    // Для речевой среды
-    'нет': 'Без особенностей'
+    // Для речевой среды (специальное правило)
+    'speechEnvironmentNo': 'Без особенностей'
   };
   
   return translations[value] || value;
@@ -50,6 +57,26 @@ export const formatValue = (value: string | string[]) => {
   if (Array.isArray(value)) {
     return formatList(value);
   }
+  return translateValue(value) || 'Не указано';
+};
+
+// Специальная функция для анамнестических данных
+export const formatAnamnesticsValue = (value: string | string[], isCustom: boolean, customValue?: string) => {
+  if (isCustom) {
+    return customValue || 'Не указано';
+  }
+  
+  if (!value) return 'Не указано';
+  
+  // Для анамнестических данных сохраняем точный текст для определенных значений
+  if (value === 'нет /не диагностировано' || value === 'не диагностировано') {
+    return 'нет /не диагностировано';
+  }
+  
+  if (Array.isArray(value)) {
+    return formatList(value);
+  }
+  
   return translateValue(value) || 'Не указано';
 };
 

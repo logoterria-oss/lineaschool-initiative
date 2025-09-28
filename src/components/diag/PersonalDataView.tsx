@@ -26,7 +26,7 @@ export default function PersonalDataView({ diagData }: PersonalDataViewProps) {
       </div>
       {diagData.complaints && (
         <div className="mt-4">
-          <strong>Жалобы:</strong> {diagData.complaints}
+          <strong>Жалобы:</strong> "{diagData.complaints}"
         </div>
       )}
     </section>

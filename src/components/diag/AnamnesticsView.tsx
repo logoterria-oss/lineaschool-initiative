@@ -1,5 +1,5 @@
 import { DiagData } from '@/types/DiagData';
-import { formatValue, formatList } from '@/utils/diagUtils';
+import { formatValue, formatList, formatAnamnesticsValue } from '@/utils/diagUtils';
 
 interface AnamnesticsViewProps {
   diagData: DiagData;
@@ -12,15 +12,15 @@ export default function AnamnesticsView({ diagData }: AnamnesticsViewProps) {
         Анамнестические данные
       </h2>
       <div className="space-y-3 text-sm">
-        <div><strong>Пренатальное развитие:</strong> {diagData.prenatalDevelopment === "custom" ? (diagData.prenatalDevelopmentCustom || "Не указано") : formatValue(diagData.prenatalDevelopment)}</div>
+        <div><strong>Пренатальное развитие:</strong> {formatAnamnesticsValue(diagData.prenatalDevelopment, diagData.prenatalDevelopment === "custom", diagData.prenatalDevelopmentCustom)}</div>
         
-        <div><strong>Неврологические нарушения:</strong> {diagData.neurologicalDisorders === "custom" ? (diagData.neurologicalDisordersCustom || "Не указано") : formatValue(diagData.neurologicalDisorders)}</div>
+        <div><strong>Неврологические нарушения:</strong> {formatAnamnesticsValue(diagData.neurologicalDisorders, diagData.neurologicalDisorders === "custom", diagData.neurologicalDisordersCustom)}</div>
         
-        <div><strong>Нарушения слуха/зрения:</strong> {diagData.hearingVisionDisorders === "custom" ? (diagData.hearingVisionDisordersCustom || "Не указано") : formatValue(diagData.hearingVisionDisorders)}</div>
+        <div><strong>Нарушения слуха/зрения:</strong> {formatAnamnesticsValue(diagData.hearingVisionDisorders, diagData.hearingVisionDisorders === "custom", diagData.hearingVisionDisordersCustom)}</div>
         
-        <div><strong>Хронические заболевания:</strong> {diagData.chronicDiseases === "custom" ? (diagData.chronicDiseasesCustom || "Не указано") : formatValue(diagData.chronicDiseases)}</div>
+        <div><strong>Хронические заболевания:</strong> {formatAnamnesticsValue(diagData.chronicDiseases, diagData.chronicDiseases === "custom", diagData.chronicDiseasesCustom)}</div>
         
-        <div><strong>Речевая среда:</strong> {diagData.speechEnvironment === "custom" ? (diagData.speechEnvironmentCustom || "Не указано") : formatValue(diagData.speechEnvironment)}</div>
+        <div><strong>Речевая среда:</strong> {diagData.speechEnvironment === "custom" ? (diagData.speechEnvironmentCustom || "Не указано") : (diagData.speechEnvironment === "нет" ? "Без особенностей" : formatValue(diagData.speechEnvironment))}</div>
         
         <div><strong>Ведущая рука:</strong> {formatValue(diagData.dominantHand)}</div>
         <div><strong>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами?</strong> {formatList(diagData.previousSpecialists)}</div>
