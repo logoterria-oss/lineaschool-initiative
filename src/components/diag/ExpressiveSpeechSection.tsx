@@ -83,7 +83,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
             <RadioGroup 
               value={formData.motorRealization[0] || ""} 
               onValueChange={handleSoundGroupRadio}
-              className="mt-2 space-y-3"
+              className="mt-2 space-y-2"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="норма" id="sound-norm" />
@@ -195,7 +195,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
           <RadioGroup 
             value={formData.grammaticalStructure} 
             onValueChange={(value) => onInputChange("grammaticalStructure", value)}
-            className="mt-2"
+            className="mt-2 space-y-2"
           >
             {[
               "норма",
@@ -216,7 +216,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
           <RadioGroup 
             value={formData.connectedSpeech.includes("норма") ? "норма" : "нарушена"} 
             onValueChange={handleConnectedSpeechRadio}
-            className="mt-2 space-y-3"
+            className="mt-2 space-y-2"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="норма" id="connected-norm" />
@@ -229,7 +229,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
                 <Label htmlFor="connected-violated" className="text-sm">нарушена</Label>
               </div>
               {showConnectedSpeechDetails && (
-                <div className="ml-6 space-y-4">
+                <div className="ml-6 space-y-2">
                   {/* Бедность активного словаря */}
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
