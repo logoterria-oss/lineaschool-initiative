@@ -161,12 +161,15 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
         <div className="md:col-span-2">
           <Label htmlFor="aoop">Реализуется ли АООП?</Label>
-          <Input
-            id="aoop"
-            value={formData.aoop}
-            onChange={(e) => onInputChange("aoop", e.target.value)}
-            className="mt-1"
-          />
+          <Select value={formData.aoop} onValueChange={(value) => onInputChange("aoop", value)}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Выберите ответ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Да">Да</SelectItem>
+              <SelectItem value="Нет">Нет</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </section>
