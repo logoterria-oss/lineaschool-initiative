@@ -72,7 +72,10 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
     if (connectedSpeech.some((item: string) => item === "нарушена")) {
       const details: string[] = [];
       
-      // Объем активного словаря
+      // Проблемы со словарем
+      if (connectedSpeech.some((item: string) => item === "бедность активного словаря")) {
+        details.push("Объем активного словаря не соответствует возрастной норме");
+      }
       if (connectedSpeech.some((item: string) => item === "объем активного словаря не соответствует возрастной норме")) {
         details.push("Объем активного словаря не соответствует возрастной норме");
       }
@@ -84,16 +87,22 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
       
       // Нарушения при составлении рассказа
       const storyProblems: string[] = [];
+      if (connectedSpeech.some((item: string) => item === "смысловая неадекватность")) {
+        storyProblems.push("нарушение логики передачи замысла");
+      }
       if (connectedSpeech.some((item: string) => item === "нарушение логики передачи замысла")) {
         storyProblems.push("нарушение логики передачи замысла");
       }
-      if (connectedSpeech.some((item: string) => item === "пропуск смысловых звеньев и связующих элементов")) {
+      if (connectedSpeech.some((item: string) => item.includes("пропуск"))) {
         storyProblems.push("пропуск смысловых звеньев и связующих элементов");
       }
       if (connectedSpeech.some((item: string) => item === "неоднократные необоснованные повторы")) {
         storyProblems.push("неоднократные необоснованные повторы");
       }
       if (connectedSpeech.some((item: string) => item === "малая длина синтагм")) {
+        storyProblems.push("малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры");
+      }
+      if (connectedSpeech.some((item: string) => item === "малая длина текста")) {
         storyProblems.push("малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры");
       }
       
