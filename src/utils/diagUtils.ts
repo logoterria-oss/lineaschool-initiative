@@ -36,6 +36,7 @@ export const translateValue = (value: string) => {
     // Общие значения
     'yes': 'Да',
     'no': 'Нет',
+    'нет': 'без особенностей',
     'unknown': 'Неизвестно',
     'without_features': 'Без особенностей',
     'present': 'Имеются',
