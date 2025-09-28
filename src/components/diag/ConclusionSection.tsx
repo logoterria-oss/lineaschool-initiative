@@ -33,9 +33,9 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
           <Label className="text-base font-semibold">Нарушения речи</Label>
           <div className="mt-2 space-y-2">
             {[
-              "Нарушения звукопроизношения",
-              "Нарушение фонематических процессов",
-              "Лексико-грамматическое недоразвитие речи"
+              "нарушения звукопроизношения",
+              "нарушение фонематических процессов",
+              "лексико-грамматическое недоразвитие речи"
             ].map(option => (
               <div key={option} className="flex items-start space-x-2">
                 <Checkbox
@@ -55,11 +55,11 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
           <Label className="text-base font-semibold">Виды дислексии</Label>
           <div className="mt-2 space-y-2">
             {[
-              "Фонематическая дислексия",
-              "Аграмматическая дислексия",
-              "Семантическая дислексия",
-              "Мнестическая дислексия",
-              "Оптическая дислексия"
+              "фонематическая дислексия",
+              "аграмматическая дислексия",
+              "семантическая дислексия",
+              "мнестическая дислексия",
+              "оптическая дислексия"
             ].map(option => (
               <div key={option} className="flex items-start space-x-2">
                 <Checkbox
@@ -79,11 +79,11 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
           <Label className="text-base font-semibold">Виды дисграфии</Label>
           <div className="mt-2 space-y-2">
             {[
-              "Артикуляторно-акустическая дисграфия",
-              "Акустическая дисграфия",
-              "Дисграфия на почве нарушений языкового анализа и синтеза",
-              "Оптико-моторная дисграфия",
-              "Дизорфография"
+              "артикуляторно-акустическая дисграфия",
+              "акустическая дисграфия",
+              "дисграфия на почве нарушений языкового анализа и синтеза",
+              "оптико-моторная дисграфия",
+              "дизорфография"
             ].map(option => (
               <div key={option} className="flex items-start space-x-2">
                 <Checkbox
@@ -103,9 +103,9 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
           <Label className="text-base font-semibold">Синдромы слабости функций мозга</Label>
           <div className="mt-2 space-y-2">
             {[
-              "Синдром слабости функций III (регуляторного) блока мозга",
-              "Синдром слабости левополушарных функций II блока мозга – отдела переработки слуховой и кинестетической информации",
-              "Синдром слабости правополушарных функций мозга (отставанием в развитии холистической стратегии переработки зрительно-пространственной, зрительной и слуховой информации)"
+              "синдром слабости функций III (регуляторного) блока мозга",
+              "синдром слабости левополушарных функций II блока мозга – отдела переработки слуховой и кинестетической информации",
+              "синдром слабости правополушарных функций мозга (отставанием в развитии холистической стратегии переработки зрительно-пространственной, зрительной и слуховой информации)"
             ].map(option => (
               <div key={option} className="flex items-start space-x-2">
                 <Checkbox

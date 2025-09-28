@@ -41,12 +41,12 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 type="radio"
                 id="prenatal-normal"
                 name="prenatalDevelopment"
-                value="Без особенностей"
-                checked={formData.prenatalDevelopment === "Без особенностей"}
+                value="нет"
+                checked={formData.prenatalDevelopment === "нет"
                 onChange={(e) => onInputChange("prenatalDevelopment", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="prenatal-normal">Без особенностей</Label>
+              <Label htmlFor="prenatal-normal">нет</Label>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -58,7 +58,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 onChange={(e) => onInputChange("prenatalDevelopment", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="prenatal-custom">Другое:</Label>
+              <Label htmlFor="prenatal-custom">другое:</Label>
             </div>
             {formData.prenatalDevelopment === "custom" && (
               <Textarea
@@ -80,12 +80,12 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 type="radio"
                 id="neuro-normal"
                 name="neurologicalDisorders"
-                value="Нет / не диагностировано"
-                checked={formData.neurologicalDisorders === "Нет / не диагностировано"}
+                value="нет"
+                checked={formData.neurologicalDisorders === "нет"
                 onChange={(e) => onInputChange("neurologicalDisorders", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="neuro-normal">Нет / не диагностировано</Label>
+              <Label htmlFor="neuro-normal">нет</Label>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -97,7 +97,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 onChange={(e) => onInputChange("neurologicalDisorders", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="neuro-custom">Есть:</Label>
+              <Label htmlFor="neuro-custom">есть:</Label>
             </div>
             {formData.neurologicalDisorders === "custom" && (
               <Textarea
@@ -119,12 +119,12 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 type="radio"
                 id="hearing-normal"
                 name="hearingVisionDisorders"
-                value="Нет / не диагностировано"
-                checked={formData.hearingVisionDisorders === "Нет / не диагностировано"}
+                value="нет"
+                checked={formData.hearingVisionDisorders === "нет"
                 onChange={(e) => onInputChange("hearingVisionDisorders", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="hearing-normal">Нет / не диагностировано</Label>
+              <Label htmlFor="hearing-normal">нет</Label>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -136,7 +136,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 onChange={(e) => onInputChange("hearingVisionDisorders", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="hearing-custom">Есть:</Label>
+              <Label htmlFor="hearing-custom">есть:</Label>
             </div>
             {formData.hearingVisionDisorders === "custom" && (
               <Textarea
@@ -158,12 +158,12 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 type="radio"
                 id="chronic-normal"
                 name="chronicDiseases"
-                value="Нет / не диагностировано"
-                checked={formData.chronicDiseases === "Нет / не диагностировано"}
+                value="нет"
+                checked={formData.chronicDiseases === "нет"
                 onChange={(e) => onInputChange("chronicDiseases", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="chronic-normal">Нет / не диагностировано</Label>
+              <Label htmlFor="chronic-normal">нет</Label>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -175,7 +175,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 onChange={(e) => onInputChange("chronicDiseases", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="chronic-custom">Есть:</Label>
+              <Label htmlFor="chronic-custom">есть:</Label>
             </div>
             {formData.chronicDiseases === "custom" && (
               <Textarea
@@ -197,12 +197,12 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 type="radio"
                 id="speech-normal"
                 name="speechEnvironment"
-                value="Нет"
-                checked={formData.speechEnvironment === "Нет"}
+                value="нет"
+                checked={formData.speechEnvironment === "нет"
                 onChange={(e) => onInputChange("speechEnvironment", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="speech-normal">Нет</Label>
+              <Label htmlFor="speech-normal">нет</Label>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -214,7 +214,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 onChange={(e) => onInputChange("speechEnvironment", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="speech-custom">Есть:</Label>
+              <Label htmlFor="speech-custom">есть:</Label>
             </div>
             {formData.speechEnvironment === "custom" && (
               <Textarea
@@ -293,9 +293,9 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
               <SelectValue placeholder="Выберите вариант" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="right">Правша</SelectItem>
-              <SelectItem value="left">Левша</SelectItem>
-              <SelectItem value="retrained">Правша (переученный левша)</SelectItem>
+              <SelectItem value="right">правша</SelectItem>
+              <SelectItem value="left">левша</SelectItem>
+              <SelectItem value="retrained">правша (переученный левша)</SelectItem>
             </SelectContent>
           </Select>
         </div>

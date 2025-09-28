@@ -32,10 +32,10 @@ const AnamnesesDataSection = ({ diagData }: AnamnesesDataSectionProps) => {
         <CardTitle>Анамнестические данные</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p><strong>Особенности пренатального развития:</strong> {diagData.prenatalDevelopment || 'без особенностей'}</p>
-        <p><strong>Неврологические заболевания и/или психические расстройства:</strong> {diagData.neurologicalDiseases || 'нет / не диагностировано'}</p>
-        <p><strong>Нарушения слуха и/или зрения:</strong> {diagData.hearingVisionDisorders || 'нет / не диагностировано'}</p>
-        <p><strong>Другие хронические заболевания:</strong> {diagData.chronicDiseases || 'нет / не диагностировано'}</p>
+        <p><strong>Особенности пренатального развития:</strong> {diagData.prenatalDevelopment || 'нет'}</p>
+        <p><strong>Неврологические заболевания и/или психические расстройства:</strong> {diagData.neurologicalDiseases || 'нет'}</p>
+        <p><strong>Нарушения слуха и/или зрения:</strong> {diagData.hearingVisionDisorders || 'нет'}</p>
+        <p><strong>Другие хронические заболевания:</strong> {diagData.chronicDiseases || 'нет'}</p>
         <p><strong>Речевое окружение:</strong> {diagData.speechEnvironment || 'нет'}</p>
         {diagData.previousTherapy.length > 0 && (
           <p><strong>Занимался ранее:</strong> {diagData.previousTherapy.join(', ')}</p>
