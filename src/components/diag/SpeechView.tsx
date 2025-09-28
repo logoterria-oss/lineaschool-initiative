@@ -62,38 +62,38 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
       return "не оценивалась";
     }
 
-    const connectedSpeech = data.connectedSpeech;
+    const connectedSpeech = Array.isArray(data.connectedSpeech) ? data.connectedSpeech : [data.connectedSpeech];
     
     // Проверяем основное состояние
-    if (connectedSpeech.includes("норма")) {
+    if (connectedSpeech.some((item: string) => item === "норма")) {
       return "норма";
     }
     
-    if (connectedSpeech.includes("нарушена")) {
+    if (connectedSpeech.some((item: string) => item === "нарушена")) {
       const details: string[] = [];
       
       // Объем активного словаря
-      if (connectedSpeech.includes("объем активного словаря не соответствует возрастной норме")) {
+      if (connectedSpeech.some((item: string) => item === "объем активного словаря не соответствует возрастной норме")) {
         details.push("Объем активного словаря не соответствует возрастной норме");
       }
       
       // Вербальные парафазии
-      if (connectedSpeech.includes("наблюдаются вербальные парафазии")) {
+      if (connectedSpeech.some((item: string) => item === "наблюдаются вербальные парафазии")) {
         details.push("наблюдаются вербальные парафазии");
       }
       
       // Нарушения при составлении рассказа
       const storyProblems: string[] = [];
-      if (connectedSpeech.includes("нарушение логики передачи замысла")) {
+      if (connectedSpeech.some((item: string) => item === "нарушение логики передачи замысла")) {
         storyProblems.push("нарушение логики передачи замысла");
       }
-      if (connectedSpeech.includes("пропуск смысловых звеньев и связующих элементов")) {
+      if (connectedSpeech.some((item: string) => item === "пропуск смысловых звеньев и связующих элементов")) {
         storyProblems.push("пропуск смысловых звеньев и связующих элементов");
       }
-      if (connectedSpeech.includes("неоднократные необоснованные повторы")) {
+      if (connectedSpeech.some((item: string) => item === "неоднократные необоснованные повторы")) {
         storyProblems.push("неоднократные необоснованные повторы");
       }
-      if (connectedSpeech.includes("малая длина синтагм")) {
+      if (connectedSpeech.some((item: string) => item === "малая длина синтагм")) {
         storyProblems.push("малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры");
       }
       
