@@ -114,8 +114,6 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
             </RadioGroup>
           </div>
 
-        </div>
-
           {/* Слоговая структура слова */}
           <div className="mt-6">
             <Label className="text-sm font-medium text-gray-700">Слоговая структура слова</Label>
