@@ -20,9 +20,9 @@ interface PersonalDataSectionProps {
 const PersonalDataSection = ({ diagData }: PersonalDataSectionProps) => {
   const formatEducationForm = (value: string) => {
     const forms = {
-      'school': 'в образовательной организации (школа, лицей, гимназия)',
-      'correctional': 'в образовательной организации (коррекционная школа)',
-      'family': 'семейное образование'
+      'в образовательной организации (школа, лицей, гимназия)': 'общеобразовательная школа',
+      'в образовательной организации (коррекционная школа)': 'специальная (коррекционная) школа',
+      'семейное образование': 'семейное образование'
     };
     return forms[value as keyof typeof forms] || value;
   };
