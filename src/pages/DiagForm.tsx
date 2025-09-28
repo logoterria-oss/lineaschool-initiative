@@ -87,10 +87,91 @@ export default function DiagForm() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Функция форматирования связной речи для заключения
+  const formatConnectedSpeechForConclusion = (connectedSpeech: string[]) => {
+    if (!connectedSpeech || connectedSpeech.length === 0 || connectedSpeech.includes("норма")) {
+      return "";
+    }
+    
+    if (!connectedSpeech.includes("нарушена")) {
+      return "";
+    }
+    
+    // Формируем заключение для нарушенной связной речи
+    const parts: string[] = [];
+    
+    // Проверяем бедность активного словаря
+    if (connectedSpeech.includes("бедность активного словаря")) {
+      const vocabularyParts = [];
+      
+      if (!connectedSpeech.includes("номинативная функция сохранна")) {
+        vocabularyParts.push("Объем активного словаря не соответствует возрастной норме");
+        
+        const paraphasiaTypes = [];
+        if (connectedSpeech.includes("вербальные парафазии")) {
+          paraphasiaTypes.push("вербальные парафазии");
+        }
+        if (connectedSpeech.includes("латеральные парафазии")) {
+          paraphasiaTypes.push("латеральные парафазии");
+        }
+        if (connectedSpeech.includes("вербальные и латеральные парафазии")) {
+          paraphasiaTypes.push("вербальные и латеральные парафазии");
+        }
+        
+        if (paraphasiaTypes.length > 0) {
+          vocabularyParts.push(`наблюдаются ${paraphasiaTypes.join(", ")}`);
+        }
+      }
+      
+      if (vocabularyParts.length > 0) {
+        parts.push(vocabularyParts.join(", "));
+      }
+    }
+    
+    // Собираем описание нарушений при составлении рассказа
+    const storyViolations = [];
+    
+    if (connectedSpeech.includes("смысловая неадекватность")) {
+      storyViolations.push("нарушение логики передачи замысла");
+    }
+    
+    if (connectedSpeech.includes("пропуск отдельных смысловых звеньев и/или связующих элементов")) {
+      storyViolations.push("пропуск смысловых звеньев и связующих элементов");
+    }
+    
+    if (connectedSpeech.includes("неоднократные необоснованные повторы слов и предложений")) {
+      storyViolations.push("неоднократные необоснованные повторы");
+    }
+    
+    if (connectedSpeech.includes("малая длина синтагм")) {
+      storyViolations.push("малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры");
+    }
+    
+    if (connectedSpeech.includes("малая длина текста")) {
+      storyViolations.push("малая длина текста, которая свидетельствует о трудностях смыслового программирования и грамматического структурирования");
+    }
+    
+    if (connectedSpeech.includes("смысловая неточность")) {
+      storyViolations.push("смысловая неточность");
+    }
+    
+    if (storyViolations.length > 0) {
+      parts.push(`При составлении рассказа по серии сюжетных картинок наблюдается ${storyViolations.join(", ")}`);
+    }
+    
+    return parts.length > 0 ? `Связная речь: нарушена. ${parts.join(". ")}` : "";
+  };
+
   // Функция генерации заключения
   const generateConclusion = (diagData: any) => {
     try {
       const conclusionParts = [];
+      
+      // Добавляем связную речь в начало заключения, если она нарушена
+      const connectedSpeechText = formatConnectedSpeechForConclusion(diagData.connectedSpeech || []);
+      if (connectedSpeechText) {
+        conclusionParts.push(connectedSpeechText);
+      }
       
       if (diagData.speechDisorders && Array.isArray(diagData.speechDisorders) && diagData.speechDisorders.length > 0) {
         conclusionParts.push(diagData.speechDisorders.join(', '));
@@ -109,7 +190,7 @@ export default function DiagForm() {
       }
       
       const diagnosis = conclusionParts.length > 0 
-        ? conclusionParts.join('; ')
+        ? conclusionParts.join('. ')
         : 'Нарушения речевого развития';
       
       // Формируем рекомендации

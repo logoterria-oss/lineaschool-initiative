@@ -209,6 +209,82 @@ const DiagResult = () => {
     return formatMap[value as keyof typeof formatMap] || value;
   };
 
+  const formatConnectedSpeech = (connectedSpeech: string[]) => {
+    if (connectedSpeech.includes("норма")) {
+      return "норма";
+    }
+    
+    if (!connectedSpeech.includes("нарушена")) {
+      return connectedSpeech.join(", ");
+    }
+    
+    // Формируем заключение для нарушенной связной речи
+    const parts: string[] = [];
+    
+    // Проверяем бедность активного словаря
+    if (connectedSpeech.includes("бедность активного словаря")) {
+      const vocabularyParts = [];
+      
+      if (connectedSpeech.includes("номинативная функция сохранна")) {
+        // Не добавляем ничего, так как функция сохранна
+      } else {
+        vocabularyParts.push("Объем активного словаря не соответствует возрастной норме");
+        
+        const paraphasiaTypes = [];
+        if (connectedSpeech.includes("вербальные парафазии")) {
+          paraphasiaTypes.push("вербальные парафазии");
+        }
+        if (connectedSpeech.includes("латеральные парафазии")) {
+          paraphasiaTypes.push("латеральные парафазии");
+        }
+        if (connectedSpeech.includes("вербальные и латеральные парафазии")) {
+          paraphasiaTypes.push("вербальные и латеральные парафазии");
+        }
+        
+        if (paraphasiaTypes.length > 0) {
+          vocabularyParts.push(`наблюдаются ${paraphasiaTypes.join(", ")}`);
+        }
+      }
+      
+      if (vocabularyParts.length > 0) {
+        parts.push(vocabularyParts.join(", "));
+      }
+    }
+    
+    // Собираем описание нарушений при составлении рассказа
+    const storyViolations = [];
+    
+    if (connectedSpeech.includes("смысловая неадекватность")) {
+      storyViolations.push("нарушение логики передачи замысла");
+    }
+    
+    if (connectedSpeech.includes("пропуск отдельных смысловых звеньев и/или связующих элементов")) {
+      storyViolations.push("пропуск смысловых звеньев и связующих элементов");
+    }
+    
+    if (connectedSpeech.includes("неоднократные необоснованные повторы слов и предложений")) {
+      storyViolations.push("неоднократные необоснованные повторы");
+    }
+    
+    if (connectedSpeech.includes("малая длина синтагм")) {
+      storyViolations.push("малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры");
+    }
+    
+    if (connectedSpeech.includes("малая длина текста")) {
+      storyViolations.push("малая длина текста, которая свидетельствует о трудностях смыслового программирования и грамматического структурирования");
+    }
+    
+    if (connectedSpeech.includes("смысловая неточность")) {
+      storyViolations.push("смысловая неточность");
+    }
+    
+    if (storyViolations.length > 0) {
+      parts.push(`При составлении рассказа по серии сюжетных картинок наблюдается ${storyViolations.join(", ")}`);
+    }
+    
+    return parts.length > 0 ? `нарушена. ${parts.join(". ")}` : "нарушена";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation hideBookButton={true} />
@@ -294,7 +370,7 @@ const DiagResult = () => {
                     <p><strong>Сформированность грамматического строя речи:</strong> {formatGrammaticalStructure(diagData.grammaticalStructure)}</p>
                   )}
                   {diagData.connectedSpeech.length > 0 && (
-                    <p><strong>Связная речь:</strong> {diagData.connectedSpeech.join(', ')}</p>
+                    <p><strong>Связная речь:</strong> {formatConnectedSpeech(diagData.connectedSpeech)}</p>
                   )}
                   {diagData.nominativeFunction.length > 0 && (
                     <p><strong>Номинативная функция речи:</strong> {diagData.nominativeFunction.join(', ')}</p>
