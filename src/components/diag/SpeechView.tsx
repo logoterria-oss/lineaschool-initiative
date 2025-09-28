@@ -21,7 +21,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
           Импрессивная речь (понимание речи)
         </h2>
         <div className="space-y-3 text-sm">
-          <div><strong>Понимание слов:</strong> {diagData.wordUnderstanding}</div>
+          <div><strong>Понимание слов, обозначающих названия предметов и действий:</strong> {diagData.wordUnderstanding}</div>
           <div><strong>Понимание сложных логико-грамматических конструкций:</strong> {diagData.complexConstructions}</div>
           <div><strong>Фонематическое восприятие:</strong> {formatPhonemicPerception(diagData.phonematicPerception)}</div>
         </div>
