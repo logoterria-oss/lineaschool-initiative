@@ -47,7 +47,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
         <div>
           <Label className="text-base font-semibold">Моторная реализация высказывания</Label>
           <div className="mt-4">
-            <Label className="text-sm font-medium text-gray-700">звукопроизношение</Label>
+            <Label className="text-sm font-medium text-gray-700">Звукопроизношение:</Label>
             <RadioGroup 
               value={formData.motorRealization[0] || ""} 
               onValueChange={handleSoundGroupRadio}
