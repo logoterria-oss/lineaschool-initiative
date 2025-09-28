@@ -200,6 +200,15 @@ const DiagResult = () => {
     return shortViolations.join(", ");
   };
 
+  const formatGrammaticalStructure = (value: string) => {
+    const formatMap = {
+      'норма': 'норма',
+      'негрубые аграмматизмы': 'наблюдаются единичные аграмматизмы', 
+      'грубые аграмматизмы': 'наблюдаются множественные аграмматизмы'
+    };
+    return formatMap[value as keyof typeof formatMap] || value;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation hideBookButton={true} />
@@ -282,7 +291,7 @@ const DiagResult = () => {
                     <p><strong>Словообразовательные процессы:</strong> {formatWordFormation(diagData.wordFormation)}</p>
                   )}
                   {diagData.grammaticalStructure && (
-                    <p><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</p>
+                    <p><strong>Сформированность грамматического строя речи:</strong> {formatGrammaticalStructure(diagData.grammaticalStructure)}</p>
                   )}
                   {diagData.connectedSpeech.length > 0 && (
                     <p><strong>Связная речь:</strong> {diagData.connectedSpeech.join(', ')}</p>
