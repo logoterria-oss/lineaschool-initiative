@@ -13,6 +13,49 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
     return value.replace(/\s*\([^)]*\)/g, '');
   };
 
+  // Функция для форматирования моторной реализации
+  const formatMotorRealization = (data: any) => {
+    const parts: string[] = [];
+    
+    // Звукопроизношение
+    const soundFirst = data.motorRealization[0];
+    if (soundFirst === "норма") {
+      parts.push("звукопроизношение - норма");
+    } else if (soundFirst === "нарушена одна группа звуков") {
+      const soundGroups = data.motorRealization.slice(1).filter((item: string) => 
+        ["свистящие", "шипящие", "аффрикаты", "Л-Ль", "Р-Рь"].includes(item)
+      );
+      const otherGroup = data.motorRealizationOther;
+      
+      let groupText = "";
+      if (soundGroups.length > 0) {
+        groupText = soundGroups.join(", ");
+      }
+      if (otherGroup) {
+        groupText = groupText ? `${groupText}, ${otherGroup}` : otherGroup;
+      }
+      
+      parts.push(`звукопроизношение - нарушена одна группа звуков${groupText ? ` (${groupText})` : ""}`);
+    } else if (soundFirst === "нарушены 2 и более группы звуков") {
+      const multipleGroups = data.motorRealizationMultiple;
+      parts.push(`звукопроизношение - нарушены 2 и более группы звуков${multipleGroups ? ` (${multipleGroups})` : ""}`);
+    }
+    
+    // Слоговая структура слова
+    const syllableItem = data.motorRealization.find((item: string) => item.includes("слоговая структура слова"));
+    if (syllableItem) {
+      parts.push(syllableItem);
+    }
+    
+    // Кинетический артикуляционный праксис
+    const kineticItem = data.motorRealization.find((item: string) => item.includes("кинетический артикуляционный праксис"));
+    if (kineticItem) {
+      parts.push(kineticItem);
+    }
+    
+    return parts.join(", ");
+  };
+
   return (
     <>
       {/* Импрессивная речь */}
@@ -33,7 +76,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
           Экспрессивная речь (воспроизведение речи)
         </h2>
         <div className="space-y-3 text-sm">
-          <div><strong>Моторная реализация высказывания:</strong> {formatList(diagData.motorRealization)}</div>
+          <div><strong>Моторная реализация высказывания:</strong> {formatMotorRealization(diagData)}</div>
           <div><strong>Словообразование:</strong> {formatList(diagData.wordFormation)}</div>
           <div><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</div>
           <div><strong>Связная речь:</strong> {formatList(diagData.connectedSpeech)}</div>
