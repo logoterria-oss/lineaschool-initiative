@@ -43,7 +43,7 @@ const PersonalDataSection = ({ diagData }: PersonalDataSectionProps) => {
           <p><strong>E-mail:</strong> {diagData.email}</p>
         </div>
         {diagData.complaints && (
-          <p><strong>Жалобы:</strong> {diagData.complaints}</p>
+          <p><strong>Жалобы:</strong> "{diagData.complaints}"</p>
         )}
         <p><strong>Форма получения образования:</strong> {formatEducationForm(diagData.educationForm)}</p>
         {diagData.aoop && (
