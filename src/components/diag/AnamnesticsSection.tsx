@@ -42,7 +42,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 id="prenatal-normal"
                 name="prenatalDevelopment"
                 value="нет"
-                checked={formData.prenatalDevelopment === "нет"
+                checked={formData.prenatalDevelopment === "нет"}
                 onChange={(e) => onInputChange("prenatalDevelopment", e.target.value)}
                 className="rounded"
               />
@@ -81,7 +81,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 id="neuro-normal"
                 name="neurologicalDisorders"
                 value="нет"
-                checked={formData.neurologicalDisorders === "нет"
+                checked={formData.neurologicalDisorders === "нет"}
                 onChange={(e) => onInputChange("neurologicalDisorders", e.target.value)}
                 className="rounded"
               />
@@ -120,7 +120,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 id="hearing-normal"
                 name="hearingVisionDisorders"
                 value="нет"
-                checked={formData.hearingVisionDisorders === "нет"
+                checked={formData.hearingVisionDisorders === "нет"}
                 onChange={(e) => onInputChange("hearingVisionDisorders", e.target.value)}
                 className="rounded"
               />
@@ -159,7 +159,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 id="chronic-normal"
                 name="chronicDiseases"
                 value="нет"
-                checked={formData.chronicDiseases === "нет"
+                checked={formData.chronicDiseases === "нет"}
                 onChange={(e) => onInputChange("chronicDiseases", e.target.value)}
                 className="rounded"
               />
