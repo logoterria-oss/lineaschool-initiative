@@ -74,10 +74,10 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
       
       // Проблемы со словарем
       if (connectedSpeech.some((item: string) => item === "бедность активного словаря")) {
-        details.push("Объем активного словаря не соответствует возрастной норме");
+        details.push("объем активного словаря не соответствует возрастной норме");
       }
       if (connectedSpeech.some((item: string) => item === "объем активного словаря не соответствует возрастной норме")) {
-        details.push("Объем активного словаря не соответствует возрастной норме");
+        details.push("объем активного словаря не соответствует возрастной норме");
       }
       
       // Вербальные парафазии
@@ -107,7 +107,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
       }
       
       if (storyProblems.length > 0) {
-        details.push(`При составлении рассказа по серии сюжетных картинок наблюдается ${storyProblems.join(", ")}`);
+        details.push(`при составлении рассказа по серии сюжетных картинок наблюдается ${storyProblems.join(", ")}`);
       }
       
       // Другие нарушения
