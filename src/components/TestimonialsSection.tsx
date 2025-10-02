@@ -259,18 +259,14 @@ export default function TestimonialsSection() {
                           ref={(el) => {
                             if (el) {
                               videoRefs.current[video.id] = el;
-                              // Принудительно загружаем метаданные для получения обложки
-                              el.load();
                             }
                           }}
                           className="w-full h-full object-cover"
                           onEnded={handleVideoEnded}
                           controls={playingVideoId === video.id}
                           playsInline
-                          preload="auto"
+                          preload="metadata"
                           muted
-                          webkitPlaysinline={true}
-                          x5PlaysInline={true}
                         >
                           <source src={video.videoUrl} type="video/mp4" />
                           <source src={video.videoUrl} type="video/quicktime" />
@@ -345,6 +341,7 @@ export default function TestimonialsSection() {
                     <img 
                       src={photo} 
                       alt="Отзыв" 
+                      loading="lazy"
                       className="max-h-[70vh] max-w-[67%] rounded-lg shadow-lg object-contain" 
                     />
                   </div>
