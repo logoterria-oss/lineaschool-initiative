@@ -50,22 +50,42 @@ export default function Index() {
       <YandexMetaTags />
       
       <div className="min-h-screen bg-white relative">
-        <Suspense fallback={<SectionLoader />}>
+        <Suspense fallback={null}>
           <MobileOptimizedSpirals />
         </Suspense>
         <Navigation />
         <HeroSection />
         <Suspense fallback={<SectionLoader />}>
           <MethodologySection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <FeaturesSection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <DiagnosticSection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <WhyNotTeacherSection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <AboutSection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <SpecialistsSection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <TestimonialsSection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <FAQSection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <CTASection />
+        </Suspense>
+        <Suspense fallback={<SectionLoader />}>
           <Footer />
+        </Suspense>
+        <Suspense fallback={null}>
           <MobileFloatingButtons />
         </Suspense>
       </div>
