@@ -140,20 +140,64 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
               "побуквенно-послоговое чтение", 
               "послоговое чтение",
               "переход от послогового чтения к синтетическому",
-              "синтетическое чтение",
-              "- соответствует возрастной норме",
-              "- НЕ соответствует возрастной норме"
-            ].map(option => (
-              <div key={option} className="flex items-start space-x-2">
-                <Checkbox
-                  id={`reading-skill-${option}`}
-                  checked={formData.readingSkill.includes(option)}
-                  onCheckedChange={(checked) => handleCheckboxChange("readingSkill", option, !!checked)}
-                  className="mt-0.5"
-                />
-                <Label htmlFor={`reading-skill-${option}`} className="text-sm leading-5">{option}</Label>
-              </div>
-            ))}
+              "синтетическое чтение"
+            ].map(option => {
+              const isSelected = formData.readingSkill.some(skill => skill.startsWith(option));
+              const selectedWithNorm = formData.readingSkill.find(skill => skill.startsWith(option));
+              
+              return (
+                <div key={option} className="space-y-1">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id={`reading-skill-${option}`}
+                      checked={isSelected}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          handleCheckboxChange("readingSkill", option, true);
+                        } else {
+                          const toRemove = formData.readingSkill.filter(skill => skill.startsWith(option));
+                          toRemove.forEach(skill => {
+                            onInputChange("readingSkill", formData.readingSkill.filter(item => item !== skill));
+                          });
+                        }
+                      }}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor={`reading-skill-${option}`} className="text-sm leading-5">{option}</Label>
+                  </div>
+                  
+                  {isSelected && (
+                    <div className="ml-8 space-y-1">
+                      {["соответствует возрастной норме", "НЕ соответствует возрастной норме"].map(norm => {
+                        const fullValue = `${option} (${norm})`;
+                        const isNormSelected = selectedWithNorm === fullValue || (selectedWithNorm === option && norm === "соответствует возрастной норме");
+                        
+                        return (
+                          <div key={norm} className="flex items-start space-x-2">
+                            <Checkbox
+                              id={`reading-norm-${option}-${norm}`}
+                              checked={isNormSelected}
+                              onCheckedChange={(checked) => {
+                                const oldValues = formData.readingSkill.filter(skill => !skill.startsWith(option));
+                                if (checked) {
+                                  onInputChange("readingSkill", [...oldValues, fullValue]);
+                                } else {
+                                  onInputChange("readingSkill", [...oldValues, option]);
+                                }
+                              }}
+                              className="mt-0.5"
+                            />
+                            <Label htmlFor={`reading-norm-${option}-${norm}`} className="text-sm leading-5">
+                              {norm}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
