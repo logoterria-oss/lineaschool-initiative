@@ -142,12 +142,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
               "переход от послогового чтения к синтетическому",
               "синтетическое чтение",
               "- соответствует возрастной норме",
-              "- НЕ соответствует возрастной норме",
-              "пропуск, перестановка, замены букв/слогов/слов при чтении",
-              "аграмматизмы при чтении",
-              "ошибки угадывающего чтения",
-              "затруднения в припоминании букв",
-              "зеркальность чтения букв и/или слов"
+              "- НЕ соответствует возрастной норме"
             ].map(option => (
               <div key={option} className="flex items-start space-x-2">
                 <Checkbox
@@ -157,6 +152,30 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
                   className="mt-0.5"
                 />
                 <Label htmlFor={`reading-skill-${option}`} className="text-sm leading-5">{option}</Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Ошибки чтения */}
+        <div>
+          <Label className="text-base font-semibold">Ошибки чтения</Label>
+          <div className="mt-2 space-y-2">
+            {[
+              "пропуск, перестановка, замены букв/слогов/слов при чтении",
+              "аграмматизмы при чтении",
+              "ошибки угадывающего чтения",
+              "затруднения в припоминании букв",
+              "зеркальность чтения букв и/или слов"
+            ].map(option => (
+              <div key={option} className="flex items-start space-x-2">
+                <Checkbox
+                  id={`reading-errors-${option}`}
+                  checked={formData.readingSkill.includes(option)}
+                  onCheckedChange={(checked) => handleCheckboxChange("readingSkill", option, !!checked)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor={`reading-errors-${option}`} className="text-sm leading-5">{option}</Label>
               </div>
             ))}
           </div>
