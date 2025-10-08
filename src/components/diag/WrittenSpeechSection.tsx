@@ -264,8 +264,12 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
           </div>
         </div>
 
+        {/* Навык письма */}
+        <div className="space-y-6">
+          <Label className="text-lg font-semibold">Навык письма</Label>
+
         {/* Пример письменных работ */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Пример письменных работ (до 3 изображений)</Label>
           <div className="mt-2">
             <Input
@@ -307,7 +311,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Количество дисграфических ошибок */}
-        <div>
+        <div className="ml-4">
           <Label htmlFor="dysgraphic-errors" className="text-base font-semibold">Количество дисграфических ошибок</Label>
           <Input
             id="dysgraphic-errors"
@@ -320,7 +324,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Ошибки языкового анализа и синтеза */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Ошибки языкового анализа и синтеза</Label>
           <div className="mt-2 space-y-2">
             {[
@@ -343,7 +347,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Ошибки акустико-артикуляторного сходства */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Ошибки акустико-артикуляторного сходства</Label>
           <div className="mt-2 space-y-2">
             {[
@@ -372,7 +376,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Моторные ошибки */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Моторные ошибки</Label>
           <div className="mt-2 space-y-2">
             {[
@@ -398,7 +402,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Зрительно-моторные ошибки */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Зрительно-моторные ошибки</Label>
           <div className="mt-2 space-y-2">
             {[
@@ -421,7 +425,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Зрительно-пространственные ошибки */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Зрительно-пространственные ошибки</Label>
           <div className="mt-2 space-y-2">
             {[
@@ -450,7 +454,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Дополнительные характеристики письма */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Дополнительные характеристики письма</Label>
           <div className="mt-2 space-y-2">
             {[
@@ -472,7 +476,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         </div>
 
         {/* Нарушения регуляции письменной деятельности */}
-        <div>
+        <div className="ml-4">
           <Label className="text-base font-semibold">Нарушения регуляции письменной деятельности</Label>
           <div className="mt-2 space-y-2">
             {[
@@ -495,6 +499,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
               </div>
             ))}
           </div>
+        </div>
         </div>
       </div>
     </section>
