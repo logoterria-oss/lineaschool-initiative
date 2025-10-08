@@ -59,13 +59,12 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
       <div className="space-y-6">
         
         {/* Языковой анализ */}
-        <div>
-          <Label className="text-base font-semibold">Языковой анализ</Label>
-          <div className="mt-4 space-y-6">
+        <div className="space-y-6">
+          <Label className="text-lg font-semibold">Языковой анализ</Label>
             
             {/* Группа 1: Фонематический анализ и синтез */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Фонематический анализ и синтез</Label>
+            <div className="ml-4">
+              <Label className="text-base font-semibold">Фонематический анализ и синтез</Label>
               <div className="mt-2 space-y-2">
                 {[
                   "фонематический анализ и синтез - норма",
@@ -86,8 +85,8 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
             </div>
 
             {/* Группа 2: Слоговой анализ */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Слоговой анализ</Label>
+            <div className="ml-4">
+              <Label className="text-base font-semibold">Слоговой анализ</Label>
               <div className="mt-2 space-y-2">
                 {[
                   "слоговой анализ – норма",
@@ -108,8 +107,8 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
             </div>
 
             {/* Группа 3: Языковой анализ на уровне предложения */}
-            <div>
-              <Label className="text-sm font-medium text-gray-700">Языковой анализ на уровне предложения</Label>
+            <div className="ml-4">
+              <Label className="text-base font-semibold">Языковой анализ на уровне предложения</Label>
               <div className="mt-2 space-y-2">
                 {[
                   "языковой анализ на уровне предложения – норма",
@@ -128,7 +127,6 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
                 ))}
               </div>
             </div>
-          </div>
         </div>
 
         {/* Навык чтения */}
