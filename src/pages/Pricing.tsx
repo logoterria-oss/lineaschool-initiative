@@ -3,7 +3,6 @@ import Footer from "@/components/Footer";
 import PricingSection from "@/components/PricingSection";
 
 export default function Pricing() {
-
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
