@@ -5,6 +5,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import Icon from "@/components/ui/icon";
 import BookingModal from "@/components/BookingModal";
 
+declare global {
+  interface Window {
+    TinkoffPayment?: any;
+  }
+}
+
 const pricingData = [
   {
     title: "2 урока в неделю",
@@ -182,6 +188,39 @@ export default function PricingSection() {
     );
   };
 
+  const handlePayment = (plan: any, sectionTitle: string) => {
+    const amount = parseInt(plan.totalPrice.replace(/\s/g, '').replace('₽', ''));
+    const description = `${sectionTitle} - ${plan.title}`;
+    
+    console.log('Initiating payment:', { amount, description, plan });
+    
+    if (window.TinkoffPayment) {
+      try {
+        window.TinkoffPayment.init({
+          amount: amount,
+          description: description,
+          receipt: {
+            items: [
+              {
+                name: description,
+                price: amount,
+                quantity: 1,
+                amount: amount,
+                tax: 'none'
+              }
+            ]
+          }
+        });
+      } catch (error) {
+        console.error('Payment initialization error:', error);
+        alert('Ошибка инициализации оплаты. Попробуйте позже.');
+      }
+    } else {
+      console.error('TinkoffPayment not loaded');
+      alert('Платежная система загружается. Попробуйте через несколько секунд.');
+    }
+  };
+
   return (
     <>
     <section id="pricing" className="py-4 bg-white">
@@ -304,7 +343,7 @@ export default function PricingSection() {
                           <Button 
                             className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
                             size="sm"
-                            onClick={() => setIsBookingModalOpen(true)}
+                            onClick={() => handlePayment(plan, section.title)}
                           >
                             Выбрать тариф
                           </Button>
