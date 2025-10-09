@@ -266,7 +266,6 @@ export default function TestimonialsSection() {
                           controls={playingVideoId === video.id}
                           playsInline
                           preload="metadata"
-                          poster={`${video.videoUrl}#t=0.1`}
                           muted
                         >
                           <source src={video.videoUrl} type="video/mp4" />
