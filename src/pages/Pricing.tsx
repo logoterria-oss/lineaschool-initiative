@@ -6,14 +6,28 @@ import PricingSection from "@/components/PricingSection";
 declare global {
   interface Window {
     onPaymentIntegrationLoad: () => void;
-    TinkoffPayment?: any;
+    PaymentIntegration?: any;
   }
 }
 
 export default function Pricing() {
   useEffect(() => {
+    const initConfig = {
+      // Здесь будут параметры конфигурации от банка
+    };
+
     window.onPaymentIntegrationLoad = () => {
-      console.log('Tbank payment integration loaded');
+      console.log('T-Bank payment integration loaded');
+      
+      if (window.PaymentIntegration) {
+        window.PaymentIntegration.init(initConfig)
+          .then(() => {
+            console.log('Payment integration initialized successfully');
+          })
+          .catch((error: any) => {
+            console.error('Payment integration initialization error:', error);
+          });
+      }
     };
 
     const script = document.createElement('script');
@@ -27,8 +41,11 @@ export default function Pricing() {
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
       delete window.onPaymentIntegrationLoad;
+      delete window.PaymentIntegration;
     };
   }, []);
 

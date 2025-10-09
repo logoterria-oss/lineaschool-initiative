@@ -7,7 +7,7 @@ import BookingModal from "@/components/BookingModal";
 
 declare global {
   interface Window {
-    TinkoffPayment?: any;
+    PaymentIntegration?: any;
   }
 }
 
@@ -194,29 +194,17 @@ export default function PricingSection() {
     
     console.log('Initiating payment:', { amount, description, plan });
     
-    if (window.TinkoffPayment) {
+    if (window.PaymentIntegration) {
       try {
-        window.TinkoffPayment.init({
-          amount: amount,
-          description: description,
-          receipt: {
-            items: [
-              {
-                name: description,
-                price: amount,
-                quantity: 1,
-                amount: amount,
-                tax: 'none'
-              }
-            ]
-          }
-        });
+        // Здесь будет вызов метода оплаты через PaymentIntegration
+        console.log('Payment data ready:', { amount, description });
+        alert(`Оплата: ${description}\nСумма: ${amount} ₽\n\nИнтеграция настроена, ожидаем параметры от банка.`);
       } catch (error) {
         console.error('Payment initialization error:', error);
         alert('Ошибка инициализации оплаты. Попробуйте позже.');
       }
     } else {
-      console.error('TinkoffPayment not loaded');
+      console.error('PaymentIntegration not loaded');
       alert('Платежная система загружается. Попробуйте через несколько секунд.');
     }
   };
