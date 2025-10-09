@@ -13,7 +13,7 @@ declare global {
 export default function Pricing() {
   useEffect(() => {
     const initConfig = {
-      terminalKey: import.meta.env.VITE_TBANK_TERMINAL_KEY || 'myTerminalKey',
+      terminalKey: import.meta.env.VITE_TBANK_TERMINAL_KEY || '1759382115093DEMO',
       product: 'eacq',
       features: {
         payment: {}
