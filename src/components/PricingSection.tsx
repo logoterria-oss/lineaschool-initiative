@@ -5,6 +5,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import Icon from "@/components/ui/icon";
 import BookingModal from "@/components/BookingModal";
 
+declare global {
+  interface Window {
+    PaymentIntegration?: any;
+  }
+}
+
 const pricingData = [
   {
     title: "2 урока в неделю",
@@ -182,6 +188,10 @@ export default function PricingSection() {
     );
   };
 
+  const handlePayment = (plan: any, sectionTitle: string) => {
+    setIsBookingModalOpen(true);
+  };
+
   return (
     <>
     <section id="pricing" className="py-4 bg-white">
@@ -304,7 +314,7 @@ export default function PricingSection() {
                           <Button 
                             className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
                             size="sm"
-                            onClick={() => setIsBookingModalOpen(true)}
+                            onClick={() => handlePayment(plan, section.title)}
                           >
                             Выбрать тариф
                           </Button>
