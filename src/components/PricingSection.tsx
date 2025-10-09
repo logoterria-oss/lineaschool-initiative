@@ -188,20 +188,34 @@ export default function PricingSection() {
     );
   };
 
-  const handlePayment = (plan: any, sectionTitle: string) => {
-    const amount = parseInt(plan.totalPrice.replace(/\s/g, '').replace('₽', ''));
+  const handlePayment = async (plan: any, sectionTitle: string) => {
+    const amount = parseInt(plan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
     const description = `${sectionTitle} - ${plan.title}`;
     
     console.log('Initiating payment:', { amount, description, plan });
     
     if (window.PaymentIntegration) {
       try {
-        // Здесь будет вызов метода оплаты через PaymentIntegration
-        console.log('Payment data ready:', { amount, description });
-        alert(`Оплата: ${description}\nСумма: ${amount} ₽\n\nИнтеграция настроена, ожидаем параметры от банка.`);
+        const paymentData = {
+          amount: amount,
+          description: description,
+          receipt: {
+            items: [
+              {
+                name: description,
+                price: amount,
+                quantity: 1,
+                amount: amount,
+                tax: 'none'
+              }
+            ]
+          }
+        };
+
+        await window.PaymentIntegration.createPayment(paymentData);
       } catch (error) {
-        console.error('Payment initialization error:', error);
-        alert('Ошибка инициализации оплаты. Попробуйте позже.');
+        console.error('Payment error:', error);
+        alert('Ошибка при создании платежа. Попробуйте позже.');
       }
     } else {
       console.error('PaymentIntegration not loaded');
