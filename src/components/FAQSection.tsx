@@ -1,5 +1,4 @@
-import { useState } from "react";
-import Icon from "@/components/ui/icon";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const faqs = [
   {
@@ -37,12 +36,6 @@ const faqs = [
 ];
 
 export default function FAQSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const toggleFAQ = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
-
   return (
     <section id="faq" className="py-20 bg-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,33 +43,18 @@ export default function FAQSection() {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Часто задаваемые вопросы</h2>
         </div>
 
-        <div className="space-y-4">
+        <Accordion type="single" collapsible className="w-full">
           {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="border border-green-100 bg-white rounded-lg overflow-hidden"
-            >
-              <button
-                onClick={() => toggleFAQ(index)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <span className="text-lg font-semibold text-gray-900 pr-4">
-                  {faq.question}
-                </span>
-                <Icon
-                  name={openIndex === index ? "ChevronUp" : "ChevronDown"}
-                  size={20}
-                  className="text-green-500 flex-shrink-0"
-                />
-              </button>
-              {openIndex === index && (
-                <div className="px-6 pb-4 text-gray-600 leading-relaxed">
-                  {faq.answer}
-                </div>
-              )}
-            </div>
+            <AccordionItem key={index} value={`item-${index}`} className="border-green-100 bg-white mb-4 rounded-lg px-6">
+              <AccordionTrigger className="text-left text-lg font-semibold hover:no-underline">
+                {faq.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-gray-600 leading-relaxed">
+                {faq.answer}
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   );
