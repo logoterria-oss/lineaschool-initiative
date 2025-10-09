@@ -12,6 +12,8 @@ declare global {
 
 export default function Pricing() {
   useEffect(() => {
+    let script: HTMLScriptElement | null = null;
+
     const initConfig = {
       terminalKey: import.meta.env.VITE_TBANK_TERMINAL_KEY || '1759382115093DEMO',
       product: 'eacq',
@@ -34,22 +36,26 @@ export default function Pricing() {
       }
     };
 
-    const script = document.createElement('script');
-    script.src = 'https://integrationjs.tbank.ru/integration.js';
-    script.async = true;
-    script.onload = () => {
-      if (window.onPaymentIntegrationLoad) {
-        window.onPaymentIntegrationLoad();
-      }
-    };
-    document.body.appendChild(script);
+    const existingScript = document.querySelector('script[src="https://integrationjs.tbank.ru/integration.js"]');
+    
+    if (!existingScript) {
+      script = document.createElement('script');
+      script.src = 'https://integrationjs.tbank.ru/integration.js';
+      script.async = true;
+      script.onload = () => {
+        if (window.onPaymentIntegrationLoad) {
+          window.onPaymentIntegrationLoad();
+        }
+      };
+      document.body.appendChild(script);
+    } else if (window.PaymentIntegration) {
+      window.onPaymentIntegrationLoad();
+    }
 
     return () => {
-      if (document.body.contains(script)) {
+      if (script && document.body.contains(script)) {
         document.body.removeChild(script);
       }
-      delete window.onPaymentIntegrationLoad;
-      delete window.PaymentIntegration;
     };
   }, []);
 
