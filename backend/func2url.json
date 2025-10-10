@@ -1,7 +1,6 @@
 {
+  "dictations-admin": "https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0",
+  "telegram-bot": "https://functions.poehali.dev/12041006-8528-4f80-a248-bfdb27766f90",
   "payment-init": "https://functions.poehali.dev/9f468e7d-1f22-4bde-8030-cd12879879e5",
-  "admin-reports": "https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa",
-  "diag-get-by-id": "https://functions.poehali.dev/a5ea21c2-fada-4606-b21f-00cd65c05b8c",
-  "diag-save-full": "https://functions.poehali.dev/07850aca-9e34-468b-872d-2ebd23e5f959",
-  "save-diag": "https://functions.poehali.dev/4ca96950-03d4-45d2-96da-f90c6f652531"
+  "admin-reports": "https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa"
 }
