@@ -354,7 +354,10 @@ export default function PricingSection() {
                           <Button 
                             className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
                             size="sm"
-                            onClick={() => handlePayment(plan, section.title)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePayment(plan, section.title);
+                            }}
                           >
                             Выбрать тариф
                           </Button>
