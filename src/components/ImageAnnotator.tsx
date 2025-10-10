@@ -27,6 +27,32 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
+  const storageKey = `annotator_${imageUrl}`;
+
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        setMarkers(data.markers || []);
+        setGreenCount(data.greenCount || 0);
+        setRedCount(data.redCount || 0);
+      } catch (e) {
+        console.error('Failed to load saved markers:', e);
+      }
+    }
+  }, [imageUrl]);
+
+  useEffect(() => {
+    if (markers.length > 0 || greenCount > 0 || redCount > 0) {
+      localStorage.setItem(storageKey, JSON.stringify({
+        markers,
+        greenCount,
+        redCount
+      }));
+    }
+  }, [markers, greenCount, redCount, storageKey]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const markersCanvas = markersCanvasRef.current;
@@ -275,6 +301,9 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       
       const dataUrl = tempCanvas.toDataURL('image/png');
       console.log('Calling onSave with dataUrl length:', dataUrl.length);
+      
+      localStorage.removeItem(storageKey);
+      
       onSave(dataUrl);
       setShowSaveConfirm(false);
       console.log('Save completed');
