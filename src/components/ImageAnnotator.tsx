@@ -449,7 +449,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             <ul className="list-disc list-inside space-y-1 text-sm text-blue-800">
               <li>Зелёным выделяйте дисграфические ошибки (нарушения письма)</li>
               <li>Красным выделяйте дизорфографические ошибки (орфографические)</li>
-              <li>Нажмите и ведите мышкой для выделения</li>
+              <li>Ластик поможет убрать лишние выделения</li>
               <li>После разметки нажмите "Сохранить разметку"</li>
             </ul>
           </div>
