@@ -331,10 +331,33 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
               <Icon name="RotateCcw" className="mr-1" size={14} />
               Очистить
             </Button>
-            <Button size="sm" onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-              <Icon name="Save" className="mr-1" size={14} />
-              Сохранить
-            </Button>
+          </div>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-gray-300">
+          <Button 
+            onClick={handleSave} 
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+            size="lg"
+          >
+            <Icon name="Save" className="mr-2" size={18} />
+            Сохранить разметку
+          </Button>
+        </div>
+      </div>
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-2">
+          <Icon name="Info" className="text-blue-600 mt-0.5" size={16} />
+          <div className="text-sm text-blue-800">
+            <p className="font-semibold mb-1">Как размечать:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Зелёным выделяйте дисграфические ошибки (нарушения письма)</li>
+              <li>Красным выделяйте дизорфографические ошибки (орфографические)</li>
+              <li>Кликайте по ошибкам для их выделения</li>
+              <li>Используйте ластик для удаления отметок</li>
+              <li>После разметки нажмите "Сохранить разметку"</li>
+            </ul>
           </div>
         </div>
       </div>
