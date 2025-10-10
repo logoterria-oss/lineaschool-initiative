@@ -1,5 +1,5 @@
 '''
-Business: Initialize T-Bank payment and return payment URL
+Business: Initialize T-Bank payment and return payment URL with real credentials
 Args: event with httpMethod, body (amount, order, description, receipt)
 Returns: HTTP response with PaymentURL
 '''
