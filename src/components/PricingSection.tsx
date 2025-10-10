@@ -196,7 +196,7 @@ export default function PricingSection() {
     
     if (window.PaymentIntegration) {
       try {
-        const result = await window.PaymentIntegration.openPaymentForm({
+        await window.PaymentIntegration.pay({
           amount: amount,
           order: `ORDER_${Date.now()}`,
           description: description,
@@ -213,25 +213,10 @@ export default function PricingSection() {
           }
         });
         
-        console.log('Payment result:', result);
-        
-        if (result.success) {
-          alert('Оплата успешно завершена!');
-        }
+        console.log('Payment initiated successfully');
       } catch (error) {
         console.error('Payment error:', error);
-        
-        // Проверяем тип ошибки
-        if (error && typeof error === 'object' && 'code' in error) {
-          const err = error as { code?: string; message?: string };
-          if (err.code === 'PAYMENT_CANCELLED') {
-            console.log('Payment was cancelled by user');
-          } else {
-            alert(`Ошибка оплаты: ${err.message || 'Попробуйте позже'}`);
-          }
-        } else {
-          alert('Ошибка при создании платежа. Попробуйте позже.');
-        }
+        alert('Ошибка при создании платежа. Попробуйте позже.');
       }
     } else {
       console.error('PaymentIntegration not loaded');
