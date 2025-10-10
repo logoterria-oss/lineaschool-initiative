@@ -227,10 +227,16 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   const clearCanvas = () => {
-    setMarkers([]);
-    setGreenCount(0);
-    setRedCount(0);
-    setTimeout(() => saveToHistory(), 0);
+    if (markers.length === 0) {
+      return;
+    }
+    
+    if (window.confirm('Вы уверены, что хотите удалить все выделения?')) {
+      setMarkers([]);
+      setGreenCount(0);
+      setRedCount(0);
+      setTimeout(() => saveToHistory(), 0);
+    }
   };
 
   const handleSave = () => {
