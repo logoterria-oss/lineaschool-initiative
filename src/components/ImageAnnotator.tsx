@@ -71,10 +71,6 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     loadImage();
   }, [imageUrl]);
 
-  useEffect(() => {
-    redrawMarkers();
-  }, [markers, hoveredMarkerIndex, markerColor]);
-
   const redrawMarkers = () => {
     const markersCanvas = markersCanvasRef.current;
     if (!markersCanvas) return;
@@ -104,6 +100,10 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       ctx.globalAlpha = 1.0;
     });
   };
+
+  useEffect(() => {
+    redrawMarkers();
+  }, [markers, hoveredMarkerIndex, markerColor]);
 
   const saveToHistory = () => {
     const markersCanvas = markersCanvasRef.current;
