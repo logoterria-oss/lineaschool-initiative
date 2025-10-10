@@ -188,48 +188,9 @@ export default function PricingSection() {
     );
   };
 
-  const handlePayment = async (plan: any, sectionTitle: string) => {
-    const amount = parseInt(plan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
-    const description = `${sectionTitle} - ${plan.title}`;
-    
-    console.log('Initiating payment:', { amount, description, plan });
-    console.log('PaymentIntegration available:', !!window.PaymentIntegration);
-    
-    if (window.PaymentIntegration) {
-      console.log('PaymentIntegration methods:', Object.keys(window.PaymentIntegration));
-      
-      try {
-        const paymentData = {
-          amount: amount,
-          order: `ORDER_${Date.now()}`,
-          description: description,
-          receipt: {
-            items: [
-              {
-                name: description,
-                price: amount,
-                quantity: 1,
-                amount: amount,
-                tax: 'none'
-              }
-            ]
-          }
-        };
-        
-        console.log('Calling pay() with data:', paymentData);
-        const result = await window.PaymentIntegration.pay(paymentData);
-        console.log('Payment result:', result);
-        
-      } catch (error) {
-        console.error('Payment error details:', error);
-        console.error('Error type:', typeof error);
-        console.error('Error keys:', error && typeof error === 'object' ? Object.keys(error) : 'N/A');
-        alert('Ошибка при создании платежа. Попробуйте позже.');
-      }
-    } else {
-      console.error('PaymentIntegration not loaded');
-      alert('Платежная система загружается. Попробуйте через несколько секунд.');
-    }
+  const handlePayment = (plan: any, sectionTitle: string) => {
+    console.log('Opening booking modal for plan:', { plan, sectionTitle });
+    setIsBookingModalOpen(true);
   };
 
   return (
