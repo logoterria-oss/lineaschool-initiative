@@ -72,21 +72,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     setHistoryStep(newHistory.length - 1);
   };
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDrawing(true);
-    draw(e);
-  };
-
-  const stopDrawing = () => {
-    if (isDrawing) {
-      saveToHistory();
-    }
-    setIsDrawing(false);
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing && e.type !== 'mousedown') return;
-    
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -114,6 +100,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       ctx.fill();
       ctx.globalAlpha = 1.0;
     }
+    
+    saveToHistory();
   };
 
   const undo = () => {
@@ -248,10 +236,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       <div className="border rounded-lg overflow-hidden bg-white min-h-[200px]">
         <canvas
           ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
+          onClick={handleClick}
           className="w-full h-auto cursor-crosshair"
           style={{ display: imageLoaded ? 'block' : 'none' }}
         />
