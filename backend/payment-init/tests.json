@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test payment init with demo data",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "amount": 100000,
+        "order": "TEST_ORDER_123",
+        "description": "Test payment"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "PaymentURL": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

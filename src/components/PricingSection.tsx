@@ -188,9 +188,49 @@ export default function PricingSection() {
     );
   };
 
-  const handlePayment = (plan: any, sectionTitle: string) => {
-    console.log('Opening booking modal for plan:', { plan, sectionTitle });
-    setIsBookingModalOpen(true);
+  const handlePayment = async (plan: any, sectionTitle: string) => {
+    const amount = parseInt(plan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
+    const description = `${sectionTitle} - ${plan.title}`;
+    const orderId = `ORDER_${Date.now()}`;
+    
+    console.log('Initiating payment:', { amount, description, orderId });
+    
+    try {
+      const response = await fetch('https://functions.poehali.dev/9f468e7d-1f22-4bde-8030-cd12879879e5', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount,
+          order: orderId,
+          description,
+          receipt: {
+            items: [
+              {
+                name: description,
+                price: amount,
+                quantity: 1,
+                amount: amount,
+                tax: 'none'
+              }
+            ]
+          }
+        })
+      });
+      
+      const result = await response.json();
+      console.log('Payment init result:', result);
+      
+      if (result.PaymentURL) {
+        window.location.href = result.PaymentURL;
+      } else {
+        alert(`Ошибка: ${result.error || 'Не удалось создать платёж'}`);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Ошибка при создании платежа. Попробуйте позже.');
+    }
   };
 
   return (
