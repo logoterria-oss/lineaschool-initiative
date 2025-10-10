@@ -47,6 +47,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
                     'photo_url': d['photo_url'],
+                    'annotated_image': d.get('annotated_image'),
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
                     'created_at': d['created_at'].isoformat() if d['created_at'] else None,
@@ -71,13 +72,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if action == 'mark_checked':
                 dictation_id = body_data.get('id')
                 notes = body_data.get('notes', '')
+                annotated_image = body_data.get('annotated_image')
                 
                 cur.execute(
                     "UPDATE t_p93118852_lineaschool_initiati.dictations "
                     "SET status = 'checked', diagnostician_notes = %s, "
-                    "checked_at = CURRENT_TIMESTAMP "
+                    "annotated_image = %s, checked_at = CURRENT_TIMESTAMP "
                     "WHERE id = %s",
-                    (notes, dictation_id)
+                    (notes, annotated_image, dictation_id)
                 )
                 conn.commit()
                 cur.close()

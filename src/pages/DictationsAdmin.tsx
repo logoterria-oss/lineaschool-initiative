@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import ImageAnnotator from '@/components/ImageAnnotator';
 
 interface Dictation {
   id: number;
@@ -12,6 +13,7 @@ interface Dictation {
   child_name: string;
   photo_file_id: string;
   photo_url: string | null;
+  annotated_image: string | null;
   status: string;
   diagnostician_notes: string | null;
   created_at: string;
@@ -24,6 +26,8 @@ const DictationsAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDictation, setSelectedDictation] = useState<Dictation | null>(null);
   const [notes, setNotes] = useState('');
+  const [showAnnotator, setShowAnnotator] = useState(false);
+  const [annotatedImage, setAnnotatedImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadDictations();
@@ -50,15 +54,23 @@ const DictationsAdmin = () => {
         body: JSON.stringify({
           action: 'mark_checked',
           id,
-          notes
+          notes,
+          annotated_image: annotatedImage
         })
       });
       loadDictations();
       setSelectedDictation(null);
       setNotes('');
+      setAnnotatedImage(null);
+      setShowAnnotator(false);
     } catch (error) {
       console.error('Error marking dictation:', error);
     }
+  };
+
+  const handleSaveAnnotation = (imageDataUrl: string) => {
+    setAnnotatedImage(imageDataUrl);
+    setShowAnnotator(false);
   };
 
   const getStatusBadge = (status: string) => {
@@ -113,6 +125,8 @@ const DictationsAdmin = () => {
                   onClick={() => {
                     setSelectedDictation(dictation);
                     setNotes(dictation.diagnostician_notes || '');
+                    setAnnotatedImage(null);
+                    setShowAnnotator(false);
                   }}
                 >
                   <CardHeader>
@@ -153,23 +167,43 @@ const DictationsAdmin = () => {
                   <div>
                     <h3 className="font-semibold mb-2">Фото диктанта:</h3>
                     {selectedDictation.photo_url ? (
-                      <div className="bg-white rounded-lg border overflow-hidden">
-                        <img 
-                          src={selectedDictation.photo_url} 
-                          alt={`Диктант ${selectedDictation.child_name}`}
-                          className="w-full h-auto"
+                      showAnnotator ? (
+                        <ImageAnnotator
+                          imageUrl={selectedDictation.photo_url}
+                          onSave={handleSaveAnnotation}
                         />
-                        <div className="p-2 bg-gray-50 text-center">
-                          <a 
-                            href={selectedDictation.photo_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            Открыть в полном размере
-                          </a>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="bg-white rounded-lg border overflow-hidden">
+                            <img 
+                              src={annotatedImage || selectedDictation.annotated_image || selectedDictation.photo_url} 
+                              alt={`Диктант ${selectedDictation.child_name}`}
+                              className="w-full h-auto"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setShowAnnotator(true)}
+                              className="flex-1"
+                            >
+                              <Icon name="Pencil" className="mr-1" size={14} />
+                              {annotatedImage || selectedDictation.annotated_image ? 'Изменить разметку' : 'Разметить ошибки'}
+                            </Button>
+                            {annotatedImage && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setAnnotatedImage(null)}
+                              >
+                                <Icon name="X" className="mr-1" size={14} />
+                                Отменить разметку
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )
                     ) : (
                       <div className="bg-gray-100 rounded-lg p-4 text-center text-gray-500">
                         Фото недоступно
