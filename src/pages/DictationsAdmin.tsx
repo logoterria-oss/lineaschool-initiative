@@ -105,8 +105,27 @@ const DictationsAdmin = () => {
     }
   };
 
-  const handleSaveAnnotation = (imageDataUrl: string) => {
+  const handleSaveAnnotation = async (imageDataUrl: string) => {
+    if (!selectedDictation) return;
+    
     setAnnotatedImage(imageDataUrl);
+    
+    try {
+      await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_annotation',
+          id: selectedDictation.id,
+          annotated_image: imageDataUrl
+        })
+      });
+      
+      await loadDictations();
+    } catch (error) {
+      console.error('Error saving annotation:', error);
+    }
+    
     setShowAnnotator(false);
     localStorage.removeItem('annotator_state');
   };

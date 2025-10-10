@@ -69,6 +69,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             action = body_data.get('action')
             
+            if action == 'save_annotation':
+                dictation_id = body_data.get('id')
+                annotated_image = body_data.get('annotated_image')
+                
+                cur.execute(
+                    "UPDATE t_p93118852_lineaschool_initiati.dictations "
+                    "SET annotated_image = %s "
+                    "WHERE id = %s",
+                    (annotated_image, dictation_id)
+                )
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
             if action == 'mark_checked':
                 dictation_id = body_data.get('id')
                 notes = body_data.get('notes', '')
