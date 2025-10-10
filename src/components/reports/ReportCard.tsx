@@ -47,22 +47,6 @@ export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: Rep
               <Icon name="Link" size={14} className="mr-1" />
               Ссылка
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => onEdit(report)}
-            >
-              <Icon name="Edit" size={14} className="mr-1" />
-              Изменить
-            </Button>
-            <Button 
-              size="sm" 
-              variant="destructive"
-              onClick={() => onDelete(report.id)}
-            >
-              <Icon name="Trash2" size={14} className="mr-1" />
-              Удалить
-            </Button>
           </div>
         </div>
       </CardHeader>
