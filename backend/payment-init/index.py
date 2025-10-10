@@ -42,8 +42,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     description = body_data.get('description', '')
     receipt = body_data.get('receipt', {})
     
-    print(f'Payment request: amount={amount}, order={order_id}, desc={description}')
-    
     # Get Terminal Key and Password from environment
     terminal_key = os.environ.get('TBANK_TERMINAL_KEY', '1759382115093DEMO')
     password = os.environ.get('TBANK_PASSWORD', '_v&Yq26u%%v5C2YG')
@@ -74,8 +72,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     token = hashlib.sha256(sorted_values.encode()).hexdigest()
     init_data['Token'] = token
     
-    print(f'Sending to T-Bank: {json.dumps(init_data)}')
-    
     # Send request to T-Bank
     url = 'https://securepay.tinkoff.ru/v2/Init'
     req_data = json.dumps(init_data).encode('utf-8')
@@ -89,8 +85,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         with urllib.request.urlopen(req) as response:
             result = json.loads(response.read().decode('utf-8'))
             
-            print(f'T-Bank response: {json.dumps(result)}')
-            
             if result.get('Success'):
                 return {
                     'statusCode': 200,
@@ -99,11 +93,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             else:
-                print(f'T-Bank error: {result.get("Message")}, Details: {result.get("Details")}')
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': result.get('Message', 'Payment init failed'), 'details': result.get('Details')}),
+                    'body': json.dumps({'error': result.get('Message', 'Payment init failed')}),
                     'isBase64Encoded': False
                 }
     except urllib.error.HTTPError as e:
