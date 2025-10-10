@@ -23,9 +23,11 @@ const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
               onClick={() => navigate('/')}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">Л</span>
-              </div>
+              <img 
+                src="https://cdn.poehali.dev/files/13a5c25b-412b-4a65-a320-ddc9ab10719f.png" 
+                alt="Linea School" 
+                className="w-8 h-8"
+              />
               <span className="font-semibold text-gray-900 hidden sm:block">Linea School</span>
             </button>
             
