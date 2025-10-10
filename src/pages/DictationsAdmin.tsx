@@ -152,14 +152,29 @@ const DictationsAdmin = () => {
 
                   <div>
                     <h3 className="font-semibold mb-2">Фото диктанта:</h3>
-                    <div className="bg-gray-100 rounded-lg p-4 text-center">
-                      <p className="text-sm text-gray-600">
-                        File ID: {selectedDictation.photo_file_id}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Скачайте фото через Telegram Bot API
-                      </p>
-                    </div>
+                    {selectedDictation.photo_url ? (
+                      <div className="bg-white rounded-lg border overflow-hidden">
+                        <img 
+                          src={selectedDictation.photo_url} 
+                          alt={`Диктант ${selectedDictation.child_name}`}
+                          className="w-full h-auto"
+                        />
+                        <div className="p-2 bg-gray-50 text-center">
+                          <a 
+                            href={selectedDictation.photo_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline"
+                          >
+                            Открыть в полном размере
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-100 rounded-lg p-4 text-center text-gray-500">
+                        Фото недоступно
+                      </div>
+                    )}
                   </div>
 
                   <div>

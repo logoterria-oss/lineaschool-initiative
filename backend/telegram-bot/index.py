@@ -72,14 +72,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             largest_photo = max(photo, key=lambda p: p.get('file_size', 0))
             file_id = largest_photo.get('file_id')
             
+            photo_url = get_telegram_file_url(bot_token, file_id)
+            
             conn = psycopg2.connect(db_url)
             cur = conn.cursor()
             
             cur.execute(
                 "INSERT INTO t_p93118852_lineaschool_initiati.dictations "
-                "(telegram_user_id, telegram_username, child_name, photo_file_id, status) "
-                "VALUES (%s, %s, %s, %s, 'pending')",
-                (user_id, username, caption, file_id)
+                "(telegram_user_id, telegram_username, child_name, photo_file_id, photo_url, status) "
+                "VALUES (%s, %s, %s, %s, %s, 'pending')",
+                (user_id, username, caption, file_id, photo_url)
             )
             conn.commit()
             cur.close()
@@ -109,6 +111,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'ok': True}),
             'isBase64Encoded': False
         }
+
+def get_telegram_file_url(bot_token: str, file_id: str) -> str:
+    get_file_url = f'https://api.telegram.org/bot{bot_token}/getFile?file_id={file_id}'
+    
+    try:
+        with urllib.request.urlopen(get_file_url) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            if result.get('ok'):
+                file_path = result['result']['file_path']
+                return f'https://api.telegram.org/file/bot{bot_token}/{file_path}'
+            else:
+                print(f'Error getting file: {result}')
+                return ''
+    except Exception as e:
+        print(f'Error getting file URL: {str(e)}')
+        return ''
 
 def send_message(bot_token: str, chat_id: int, text: str):
     url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
