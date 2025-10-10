@@ -23,9 +23,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
     const loadImage = async () => {
       try {
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
+        const proxyUrl = `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(imageUrl)}`;
         
         const img = new Image();
         img.onload = () => {
@@ -38,14 +36,12 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             ctx.drawImage(img, 0, 0);
             setImageLoaded(true);
           }
-          
-          URL.revokeObjectURL(objectUrl);
         };
         img.onerror = () => {
           console.error('Failed to load image');
           setImageLoaded(false);
         };
-        img.src = objectUrl;
+        img.src = proxyUrl;
       } catch (error) {
         console.error('Error loading image:', error);
         setImageLoaded(false);
