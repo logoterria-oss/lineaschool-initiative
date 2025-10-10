@@ -122,6 +122,8 @@ const DictationsAdmin = () => {
       });
       
       await loadDictations();
+      
+      setSelectedDictation(prev => prev ? { ...prev, annotated_image: imageDataUrl } : null);
     } catch (error) {
       console.error('Error saving annotation:', error);
     }
