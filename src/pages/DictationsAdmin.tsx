@@ -181,27 +181,15 @@ const DictationsAdmin = () => {
                               className="w-full h-auto"
                             />
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setShowAnnotator(true)}
-                              className="flex-1"
-                            >
-                              <Icon name="Pencil" className="mr-1" size={14} />
-                              {annotatedImage || selectedDictation.annotated_image ? 'Изменить разметку' : 'Разметить ошибки'}
-                            </Button>
-                            {annotatedImage && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setAnnotatedImage(null)}
-                              >
-                                <Icon name="X" className="mr-1" size={14} />
-                                Отменить разметку
-                              </Button>
-                            )}
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowAnnotator(true)}
+                            className="w-full"
+                          >
+                            <Icon name="Pencil" className="mr-1" size={14} />
+                            {annotatedImage || selectedDictation.annotated_image ? 'Редактировать проверку' : 'Разметить ошибки'}
+                          </Button>
                         </div>
                       )
                     ) : (

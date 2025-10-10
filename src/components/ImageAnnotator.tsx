@@ -236,9 +236,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   const handleSave = () => {
     if (markers.length === 0) {
-      if (!window.confirm('Вы не сделали ни одной разметки. Продолжить сохранение?')) {
-        return;
-      }
+      setShowSaveConfirm(true);
+      return;
     }
     setShowSaveConfirm(true);
   };
@@ -255,6 +254,18 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     
     if (tempCtx) {
       tempCtx.drawImage(canvas, 0, 0);
+      
+      const markersCtx = markersCanvas.getContext('2d');
+      if (markersCtx) {
+        markersCtx.globalAlpha = 1.0;
+        markers.forEach((marker) => {
+          markersCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
+          markersCtx.beginPath();
+          markersCtx.arc(marker.x, marker.y, marker.size, 0, Math.PI * 2);
+          markersCtx.fill();
+        });
+      }
+      
       tempCtx.drawImage(markersCanvas, 0, 0);
       const dataUrl = tempCanvas.toDataURL('image/png');
       onSave(dataUrl);
@@ -263,6 +274,47 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   return (
+    <>
+      {showSaveConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-start gap-3 mb-4">
+              <Icon name="AlertTriangle" className="text-yellow-600 mt-0.5 flex-shrink-0" size={24} />
+              <div>
+                <h3 className="font-semibold text-lg text-gray-900">Подтверждение сохранения</h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  Найдено ошибок: <strong>{greenCount + redCount}</strong>
+                </p>
+                <p className="text-sm text-gray-600">
+                  Дисграфия: <span className="text-green-600 font-semibold">{greenCount}</span>, 
+                  Дизорфография: <span className="text-red-600 font-semibold">{redCount}</span>
+                </p>
+                <p className="text-sm text-gray-700 mt-3">
+                  После сохранения маркеры будут объединены с изображением, и редактор закроется.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button 
+                onClick={() => setShowSaveConfirm(false)} 
+                size="sm"
+                variant="outline"
+              >
+                Отмена
+              </Button>
+              <Button 
+                onClick={confirmSave} 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Icon name="Check" className="mr-1" size={14} />
+                Да, сохранить
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-green-50 to-red-50 border border-gray-200 rounded-lg p-4 mb-4">
         <div className="flex items-center justify-center gap-8">
@@ -329,37 +381,16 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             <span className="text-sm text-gray-600">{markerSize}px</span>
           </div>
 
-          {showSaveConfirm ? (
-            <div className="flex gap-2 ml-auto">
-              <Button 
-                onClick={confirmSave} 
-                size="sm"
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Icon name="Check" className="mr-1" size={14} />
-                Да, сохранить
-              </Button>
-              <Button 
-                onClick={() => setShowSaveConfirm(false)} 
-                size="sm"
-                variant="outline"
-              >
-                <Icon name="X" className="mr-1" size={14} />
-                Отмена
-              </Button>
-            </div>
-          ) : (
-            <div className="flex gap-2 ml-auto">
-              <Button 
-                onClick={handleSave} 
-                size="sm"
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Icon name="Save" className="mr-1" size={14} />
-                Сохранить
-              </Button>
-            </div>
-          )}
+          <div className="flex gap-2 ml-auto">
+            <Button 
+              onClick={handleSave} 
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Icon name="Save" className="mr-1" size={14} />
+              Сохранить
+            </Button>
+          </div>
 
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={undo} disabled={historyStep <= 0}>
@@ -376,25 +407,6 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             </Button>
           </div>
         </div>
-        
-        {showSaveConfirm && (
-          <div className="mt-4 pt-4 border-t border-gray-300">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <Icon name="AlertTriangle" className="text-yellow-600 mt-0.5" size={20} />
-                <div className="flex-1">
-                  <p className="font-semibold text-yellow-900">Подтверждение сохранения</p>
-                  <p className="text-sm text-yellow-800 mt-1">
-                    Найдено ошибок: {greenCount + redCount} (дисграфия: {greenCount}, дизорфография: {redCount})
-                  </p>
-                  <p className="text-sm text-yellow-800 mt-1">
-                    После сохранения редактор закроется. Продолжить?
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="border rounded-lg overflow-hidden bg-white min-h-[200px] relative">
@@ -441,6 +453,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
