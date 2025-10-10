@@ -23,6 +23,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [greenCount, setGreenCount] = useState(0);
   const [redCount, setRedCount] = useState(0);
   const [markers, setMarkers] = useState<Array<{x: number, y: number, size: number, color: 'green' | 'red'}>>([]);
+  const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -71,7 +72,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   useEffect(() => {
     redrawMarkers();
-  }, [markers]);
+  }, [markers, hoveredMarkerIndex, markerColor]);
 
   const redrawMarkers = () => {
     const markersCanvas = markersCanvasRef.current;
@@ -82,8 +83,19 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     
     ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
     
-    markers.forEach(marker => {
-      ctx.globalAlpha = 0.4;
+    markers.forEach((marker, index) => {
+      const isHovered = hoveredMarkerIndex === index && markerColor === 'eraser';
+      
+      if (isHovered) {
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(marker.x, marker.y, marker.size + 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      ctx.globalAlpha = isHovered ? 0.6 : 0.4;
       ctx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
       ctx.beginPath();
       ctx.arc(marker.x, marker.y, marker.size, 0, Math.PI * 2);
@@ -100,6 +112,30 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     newHistory.push(markersCanvas.toDataURL());
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (markerColor !== 'eraser') {
+      setHoveredMarkerIndex(null);
+      return;
+    }
+
+    const markersCanvas = markersCanvasRef.current;
+    if (!markersCanvas) return;
+
+    const rect = markersCanvas.getBoundingClientRect();
+    const scaleX = markersCanvas.width / rect.width;
+    const scaleY = markersCanvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    const hoveredIndex = markers.findIndex(marker => {
+      const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
+      return distance <= marker.size;
+    });
+
+    setHoveredMarkerIndex(hoveredIndex !== -1 ? hoveredIndex : null);
   };
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -129,6 +165,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         } else {
           setRedCount(prev => Math.max(0, prev - 1));
         }
+        setHoveredMarkerIndex(null);
       }
     } else {
       const newMarker = {
@@ -311,6 +348,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         <canvas
           ref={markersCanvasRef}
           onClick={handleClick}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHoveredMarkerIndex(null)}
           className="w-full h-auto cursor-crosshair relative"
           style={{ display: imageLoaded ? 'block' : 'none' }}
         />
