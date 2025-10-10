@@ -30,19 +30,37 @@ const DictationsAdmin = () => {
   const [annotatedImage, setAnnotatedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    loadDictations();
-    
-    const savedState = localStorage.getItem('annotator_state');
-    if (savedState) {
+    const loadData = async () => {
+      setLoading(true);
       try {
-        const state = JSON.parse(savedState);
-        if (state.showAnnotator) {
-          setShowAnnotator(true);
+        const response = await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0');
+        const data = await response.json();
+        setDictations(data.dictations || []);
+        
+        const savedState = localStorage.getItem('annotator_state');
+        if (savedState) {
+          try {
+            const state = JSON.parse(savedState);
+            if (state.selectedDictationId && state.showAnnotator) {
+              const dictation = (data.dictations || []).find((d: Dictation) => d.id === state.selectedDictationId);
+              if (dictation) {
+                setSelectedDictation(dictation);
+                setNotes(dictation.diagnostician_notes || '');
+                setShowAnnotator(true);
+              }
+            }
+          } catch (e) {
+            console.error('Failed to restore annotator state:', e);
+          }
         }
-      } catch (e) {
-        console.error('Failed to restore annotator state:', e);
+      } catch (error) {
+        console.error('Error loading dictations:', error);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+    
+    loadData();
   }, []);
 
   useEffect(() => {
