@@ -83,7 +83,7 @@ const AnnotationCanvas = ({
     };
 
     loadImage();
-  }, [imageUrl, onImageLoad]);
+  }, [imageUrl]);
 
   const redrawMarkers = () => {
     const markersCanvas = markersCanvasRef.current;
