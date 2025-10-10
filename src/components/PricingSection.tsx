@@ -206,13 +206,15 @@ export default function PricingSection() {
           order: orderId,
           description,
           receipt: {
-            items: [
+            Email: 'client@example.com',
+            Taxation: 'usn_income',
+            Items: [
               {
-                name: description,
-                price: amount,
-                quantity: 1,
-                amount: amount,
-                tax: 'none'
+                Name: description,
+                Price: amount,
+                Quantity: 1,
+                Amount: amount,
+                Tax: 'none'
               }
             ]
           }
