@@ -358,6 +358,7 @@ export default function PricingSection() {
                             className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
                             size="sm"
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               handlePayment(plan, section.title);
                             }}
