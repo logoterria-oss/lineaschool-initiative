@@ -7,22 +7,24 @@ interface ImageAnnotatorProps {
   onSave: (annotatedImageDataUrl: string) => void;
 }
 
-type MarkerColor = 'green' | 'red' | 'eraser';
+type MarkerColor = 'green' | 'red' | 'underline' | 'eraser';
 
 const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const markersCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [underlineStart, setUnderlineStart] = useState<{x: number, y: number} | null>(null);
   const [markerColor, setMarkerColor] = useState<MarkerColor>('green');
   const [markerSize, setMarkerSize] = useState(20);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [history, setHistory] = useState<Array<{markers: Array<{x: number, y: number, size: number, color: 'green' | 'red'}>, greenCount: number, redCount: number}>>([]);
+  const [history, setHistory] = useState<Array<{markers: Array<{x: number, y: number, size: number, color: 'green' | 'red'}>, underlines: Array<{x1: number, y1: number, x2: number, y2: number}>, greenCount: number, redCount: number}>>([]);
   const [historyStep, setHistoryStep] = useState(-1);
   const [greenCount, setGreenCount] = useState(0);
   const [redCount, setRedCount] = useState(0);
   const [markers, setMarkers] = useState<Array<{x: number, y: number, size: number, color: 'green' | 'red'}>>([]);
+  const [underlines, setUnderlines] = useState<Array<{x1: number, y1: number, x2: number, y2: number}>>([]);
   const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -35,6 +37,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       try {
         const data = JSON.parse(saved);
         setMarkers(data.markers || []);
+        setUnderlines(data.underlines || []);
         setGreenCount(data.greenCount || 0);
         setRedCount(data.redCount || 0);
       } catch (e) {
@@ -44,14 +47,15 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   }, [imageUrl]);
 
   useEffect(() => {
-    if (markers.length > 0 || greenCount > 0 || redCount > 0) {
+    if (markers.length > 0 || underlines.length > 0 || greenCount > 0 || redCount > 0) {
       localStorage.setItem(storageKey, JSON.stringify({
         markers,
+        underlines,
         greenCount,
         redCount
       }));
     }
-  }, [markers, greenCount, redCount, storageKey]);
+  }, [markers, underlines, greenCount, redCount, storageKey]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -108,6 +112,36 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     
     ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
     
+    // Draw underlines first (below markers)
+    underlines.forEach((line) => {
+      ctx.save();
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.8;
+      
+      // Draw wavy line
+      const amplitude = 4;
+      const frequency = 0.05;
+      const distance = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
+      const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1);
+      
+      ctx.translate(line.x1, line.y1);
+      ctx.rotate(angle);
+      
+      ctx.beginPath();
+      for (let i = 0; i <= distance; i += 1) {
+        const y = Math.sin(i * frequency) * amplitude;
+        if (i === 0) {
+          ctx.moveTo(i, y);
+        } else {
+          ctx.lineTo(i, y);
+        }
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+    
+    // Draw markers
     markers.forEach((marker, index) => {
       const isHovered = hoveredMarkerIndex === index && markerColor === 'eraser';
       
@@ -131,12 +165,13 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   useEffect(() => {
     redrawMarkers();
-  }, [markers, hoveredMarkerIndex, markerColor]);
+  }, [markers, underlines, hoveredMarkerIndex, markerColor]);
 
   const saveToHistory = () => {
     const newHistory = history.slice(0, historyStep + 1);
     newHistory.push({
       markers: [...markers],
+      underlines: [...underlines],
       greenCount,
       redCount
     });
@@ -178,6 +213,23 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
+
+    if (markerColor === 'underline') {
+      if (!underlineStart) {
+        setUnderlineStart({ x, y });
+      } else {
+        const newUnderline = {
+          x1: underlineStart.x,
+          y1: underlineStart.y,
+          x2: x,
+          y2: y
+        };
+        setUnderlines(prev => [...prev, newUnderline]);
+        setUnderlineStart(null);
+        setTimeout(() => saveToHistory(), 0);
+      }
+      return;
+    }
 
     if (markerColor === 'eraser') {
       const clickedMarkerIndex = markers.findIndex(marker => {
@@ -235,6 +287,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       const newStep = historyStep - 1;
       const state = history[newStep];
       setMarkers([...state.markers]);
+      setUnderlines([...state.underlines]);
       setGreenCount(state.greenCount);
       setRedCount(state.redCount);
       setHistoryStep(newStep);
@@ -246,6 +299,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       const newStep = historyStep + 1;
       const state = history[newStep];
       setMarkers([...state.markers]);
+      setUnderlines([...state.underlines]);
       setGreenCount(state.greenCount);
       setRedCount(state.redCount);
       setHistoryStep(newStep);
@@ -253,12 +307,14 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   const clearCanvas = () => {
-    if (markers.length === 0) {
+    if (markers.length === 0 && underlines.length === 0) {
       return;
     }
     
     if (window.confirm('Вы уверены, что хотите удалить все выделения?')) {
       setMarkers([]);
+      setUnderlines([]);
+      setUnderlineStart(null);
       setGreenCount(0);
       setRedCount(0);
       setTimeout(() => saveToHistory(), 0);
@@ -266,7 +322,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   const handleSave = () => {
-    if (markers.length === 0) {
+    if (markers.length === 0 && underlines.length === 0) {
       setShowSaveConfirm(true);
       return;
     }
@@ -290,6 +346,35 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     if (tempCtx) {
       tempCtx.drawImage(canvas, 0, 0);
       
+      // Draw underlines
+      underlines.forEach((line) => {
+        tempCtx.save();
+        tempCtx.strokeStyle = '#22c55e';
+        tempCtx.lineWidth = 3;
+        tempCtx.globalAlpha = 0.8;
+        
+        const amplitude = 4;
+        const frequency = 0.05;
+        const distance = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
+        const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1);
+        
+        tempCtx.translate(line.x1, line.y1);
+        tempCtx.rotate(angle);
+        
+        tempCtx.beginPath();
+        for (let i = 0; i <= distance; i += 1) {
+          const y = Math.sin(i * frequency) * amplitude;
+          if (i === 0) {
+            tempCtx.moveTo(i, y);
+          } else {
+            tempCtx.lineTo(i, y);
+          }
+        }
+        tempCtx.stroke();
+        tempCtx.restore();
+      });
+      
+      // Draw markers
       tempCtx.globalAlpha = 0.4;
       markers.forEach((marker) => {
         tempCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
@@ -379,7 +464,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             <Button
               size="sm"
               variant={markerColor === 'green' ? 'default' : 'outline'}
-              onClick={() => setMarkerColor('green')}
+              onClick={() => { setMarkerColor('green'); setUnderlineStart(null); }}
               className={markerColor === 'green' ? 'bg-green-500 hover:bg-green-600' : ''}
             >
               <Icon name="Highlighter" className="mr-1" size={14} />
@@ -388,7 +473,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             <Button
               size="sm"
               variant={markerColor === 'red' ? 'default' : 'outline'}
-              onClick={() => setMarkerColor('red')}
+              onClick={() => { setMarkerColor('red'); setUnderlineStart(null); }}
               className={markerColor === 'red' ? 'bg-red-500 hover:bg-red-600' : ''}
             >
               <Icon name="Highlighter" className="mr-1" size={14} />
@@ -396,8 +481,17 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             </Button>
             <Button
               size="sm"
+              variant={markerColor === 'underline' ? 'default' : 'outline'}
+              onClick={() => { setMarkerColor('underline'); setUnderlineStart(null); }}
+              className={markerColor === 'underline' ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              <Icon name="Underline" className="mr-1" size={14} />
+              Подчеркнуть
+            </Button>
+            <Button
+              size="sm"
               variant={markerColor === 'eraser' ? 'default' : 'outline'}
-              onClick={() => setMarkerColor('eraser')}
+              onClick={() => { setMarkerColor('eraser'); setUnderlineStart(null); }}
               className={markerColor === 'eraser' ? 'bg-gray-700 hover:bg-gray-800' : ''}
             >
               <Icon name="Eraser" className="mr-1" size={14} />
@@ -433,6 +527,17 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             </Button>
           </div>
         </div>
+        
+        {markerColor === 'underline' && (
+          <div className="bg-green-50 border border-green-300 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Icon name="Info" className="text-green-600" size={16} />
+              <span className="text-sm text-green-800">
+                {underlineStart ? 'Кликните в конечную точку подчеркивания' : 'Кликните в начальную точку подчеркивания'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="border rounded-lg overflow-hidden bg-white min-h-[200px] relative">
