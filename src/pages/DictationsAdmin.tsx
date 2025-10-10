@@ -31,7 +31,26 @@ const DictationsAdmin = () => {
 
   useEffect(() => {
     loadDictations();
+    
+    const savedState = localStorage.getItem('annotator_state');
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        if (state.showAnnotator) {
+          setShowAnnotator(true);
+        }
+      } catch (e) {
+        console.error('Failed to restore annotator state:', e);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('annotator_state', JSON.stringify({
+      showAnnotator,
+      selectedDictationId: selectedDictation?.id
+    }));
+  }, [showAnnotator, selectedDictation]);
 
   const loadDictations = async () => {
     setLoading(true);
@@ -71,6 +90,7 @@ const DictationsAdmin = () => {
   const handleSaveAnnotation = (imageDataUrl: string) => {
     setAnnotatedImage(imageDataUrl);
     setShowAnnotator(false);
+    localStorage.removeItem('annotator_state');
   };
 
   const getStatusBadge = (status: string) => {
