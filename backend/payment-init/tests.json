@@ -15,7 +15,7 @@
         "order": "TEST_ORDER_123",
         "description": "Test payment"
       },
-      "expectedStatus": 400,
+      "expectedStatus": 200,
       "expectedBody": {
         "PaymentURL": "string"
       },

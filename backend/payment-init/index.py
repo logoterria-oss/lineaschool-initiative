@@ -44,7 +44,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     # Get Terminal Key and Password from environment
     terminal_key = os.environ.get('TBANK_TERMINAL_KEY', '1759382115093DEMO')
-    password = os.environ.get('TBANK_PASSWORD', 'qnq29pprofckgiwa')
+    password = os.environ.get('TBANK_PASSWORD', '_v&Yq26u%%v5C2YG')
     
     # Prepare request to T-Bank Init API
     init_data = {
@@ -58,12 +58,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if receipt and receipt.get('items'):
         init_data['Receipt'] = receipt
     
-    # For DEMO terminal, token is optional
-    if terminal_key != '1759382115093DEMO':
-        # Calculate token (signature) for production
-        token_string = f"{str(amount)}{order_id}{password}{terminal_key}"
-        token = hashlib.sha256(token_string.encode()).hexdigest()
-        init_data['Token'] = token
+    # Calculate token (signature) - all non-empty values sorted alphabetically by key
+    token_params = {
+        'Amount': str(amount),
+        'Description': description,
+        'OrderId': order_id,
+        'Password': password,
+        'TerminalKey': terminal_key
+    }
+    
+    # Sort by key and concatenate values
+    sorted_values = ''.join([str(token_params[k]) for k in sorted(token_params.keys())])
+    token = hashlib.sha256(sorted_values.encode()).hexdigest()
+    init_data['Token'] = token
     
     # Send request to T-Bank
     url = 'https://securepay.tinkoff.ru/v2/Init'
