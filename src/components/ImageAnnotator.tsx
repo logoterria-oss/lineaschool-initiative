@@ -236,7 +236,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   const handleSave = () => {
     if (markers.length === 0) {
-      if (!confirm('Вы не сделали ни одной разметки. Продолжить сохранение?')) {
+      if (!window.confirm('Вы не сделали ни одной разметки. Продолжить сохранение?')) {
         return;
       }
     }
@@ -258,8 +258,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       tempCtx.drawImage(markersCanvas, 0, 0);
       const dataUrl = tempCanvas.toDataURL('image/png');
       onSave(dataUrl);
+      setShowSaveConfirm(false);
     }
-    setShowSaveConfirm(false);
   };
 
   return (
@@ -329,7 +329,39 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             <span className="text-sm text-gray-600">{markerSize}px</span>
           </div>
 
-          <div className="flex gap-2 ml-auto">
+          {showSaveConfirm ? (
+            <div className="flex gap-2 ml-auto">
+              <Button 
+                onClick={confirmSave} 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Icon name="Check" className="mr-1" size={14} />
+                Да, сохранить
+              </Button>
+              <Button 
+                onClick={() => setShowSaveConfirm(false)} 
+                size="sm"
+                variant="outline"
+              >
+                <Icon name="X" className="mr-1" size={14} />
+                Отмена
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2 ml-auto">
+              <Button 
+                onClick={handleSave} 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Icon name="Save" className="mr-1" size={14} />
+                Сохранить
+              </Button>
+            </div>
+          )}
+
+          <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={undo} disabled={historyStep <= 0}>
               <Icon name="Undo2" className="mr-1" size={14} />
               Назад
@@ -345,54 +377,24 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
           </div>
         </div>
         
-        <div className="mt-4 pt-4 border-t border-gray-300">
-          {showSaveConfirm ? (
-            <div className="space-y-3">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start gap-2">
-                  <Icon name="AlertTriangle" className="text-yellow-600 mt-0.5" size={20} />
-                  <div className="flex-1">
-                    <p className="font-semibold text-yellow-900">Подтверждение сохранения</p>
-                    <p className="text-sm text-yellow-800 mt-1">
-                      Найдено ошибок: {greenCount + redCount} (дисграфия: {greenCount}, дизорфография: {redCount})
-                    </p>
-                    <p className="text-sm text-yellow-800 mt-1">
-                      После сохранения редактор закроется. Продолжить?
-                    </p>
-                  </div>
+        {showSaveConfirm && (
+          <div className="mt-4 pt-4 border-t border-gray-300">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <Icon name="AlertTriangle" className="text-yellow-600 mt-0.5" size={20} />
+                <div className="flex-1">
+                  <p className="font-semibold text-yellow-900">Подтверждение сохранения</p>
+                  <p className="text-sm text-yellow-800 mt-1">
+                    Найдено ошибок: {greenCount + redCount} (дисграфия: {greenCount}, дизорфография: {redCount})
+                  </p>
+                  <p className="text-sm text-yellow-800 mt-1">
+                    После сохранения редактор закроется. Продолжить?
+                  </p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={confirmSave} 
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
-                  size="lg"
-                >
-                  <Icon name="Check" className="mr-2" size={18} />
-                  Да, сохранить
-                </Button>
-                <Button 
-                  onClick={() => setShowSaveConfirm(false)} 
-                  variant="outline"
-                  className="flex-1 py-3"
-                  size="lg"
-                >
-                  <Icon name="X" className="mr-2" size={18} />
-                  Отмена
-                </Button>
-              </div>
             </div>
-          ) : (
-            <Button 
-              onClick={handleSave} 
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
-              size="lg"
-            >
-              <Icon name="Save" className="mr-2" size={18} />
-              Сохранить разметку
-            </Button>
-          )}
-        </div>
+          </div>
+        )
       </div>
       
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
