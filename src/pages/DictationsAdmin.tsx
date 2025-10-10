@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import ImageAnnotator from '@/components/ImageAnnotator';
+import AdminHeader from '@/components/AdminHeader';
 
 interface Dictation {
   id: number;
@@ -152,10 +153,12 @@ const DictationsAdmin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader />
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
             <Icon name="FileText" className="inline mr-2" size={32} />
             Диктанты для проверки
           </h1>
@@ -312,6 +315,7 @@ const DictationsAdmin = () => {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

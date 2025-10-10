@@ -1,7 +1,8 @@
 import React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import LoginForm from './reports/LoginForm';
-import AdminHeader from './reports/AdminHeader';
+import AdminHeader from '@/components/AdminHeader';
+import ReportsToolbar from './reports/AdminHeader';
 import ReportForm from './reports/ReportForm';
 import ReportsList from './reports/ReportsList';
 import { useReportsAdmin } from './reports/useReportsAdmin';
@@ -45,12 +46,14 @@ export default function ReportsAdmin() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <AdminHeader
-        showForm={showForm}
-        onToggleForm={toggleForm}
-        onRefresh={loadReports}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader />
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <ReportsToolbar
+          showForm={showForm}
+          onToggleForm={toggleForm}
+          onRefresh={loadReports}
+        />
 
       {success && (
         <Alert className="mb-4 border-green-200 bg-green-50">
@@ -82,6 +85,7 @@ export default function ReportsAdmin() {
         onDeleteReport={deleteReport}
         onCopyPublicLink={copyPublicLink}
       />
+      </div>
     </div>
   );
 }
