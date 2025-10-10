@@ -56,24 +56,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'Description': description
     }
     
-    # Add receipt if provided and not empty
-    if receipt and receipt.get('Items'):
-        init_data['Receipt'] = receipt
+    # Temporarily disabled receipt to debug token issue
+    # if receipt and receipt.get('Items'):
+    #     init_data['Receipt'] = receipt
     
-    # Calculate token (signature) - all non-empty values sorted alphabetically by key
+    # Calculate token (signature) - all values sorted alphabetically by key
+    # Only include: Amount, Description, OrderId, Password, TerminalKey
     token_params = {
-        'Amount': str(amount),
+        'Amount': amount,  # Use int, not string
         'Description': description,
         'OrderId': order_id,
         'Password': password,
         'TerminalKey': terminal_key
     }
     
-    # Sort by key and concatenate values
+    # Sort by key and concatenate values (convert to string only when concatenating)
     sorted_values = ''.join([str(token_params[k]) for k in sorted(token_params.keys())])
     token = hashlib.sha256(sorted_values.encode()).hexdigest()
     init_data['Token'] = token
     
+    print(f'Token calculation: {sorted_values}')
+    print(f'Token hash: {token}')
     print(f'Sending to T-Bank: {json.dumps(init_data)}')
     
     # Send request to T-Bank
