@@ -19,6 +19,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [underlines, setUnderlines] = useState<Underline[]>([]);
   const [underlineStart, setUnderlineStart] = useState<{x: number, y: number} | null>(null);
   const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
+  const [hoveredUnderlineIndex, setHoveredUnderlineIndex] = useState<number | null>(null);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   const storageKey = `annotator_${imageUrl}`;
@@ -115,6 +116,12 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     setTimeout(() => saveToHistory(), 0);
   };
 
+  const handleUnderlineRemove = (index: number) => {
+    const newUnderlines = underlines.filter((_, i) => i !== index);
+    setUnderlines(newUnderlines);
+    setTimeout(() => saveToHistory(), 0);
+  };
+
   const clearCanvas = () => {
     if (markers.length === 0 && underlines.length === 0) {
       return;
@@ -161,8 +168,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         tempCtx.lineWidth = 3;
         tempCtx.globalAlpha = 0.8;
         
-        const amplitude = 4;
-        const frequency = 0.05;
+        const amplitude = 2;
+        const frequency = 0.15;
         const distance = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
         const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1);
         
@@ -234,12 +241,15 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
           markerSize={markerSize}
           underlineStart={underlineStart}
           hoveredMarkerIndex={hoveredMarkerIndex}
+          hoveredUnderlineIndex={hoveredUnderlineIndex}
           onImageLoad={handleImageLoad}
           onMarkerAdd={handleMarkerAdd}
           onMarkerRemove={handleMarkerRemove}
           onUnderlineAdd={handleUnderlineAdd}
+          onUnderlineRemove={handleUnderlineRemove}
           onUnderlineStartSet={setUnderlineStart}
           onHoveredMarkerChange={setHoveredMarkerIndex}
+          onHoveredUnderlineChange={setHoveredUnderlineIndex}
         />
 
         <Instructions />

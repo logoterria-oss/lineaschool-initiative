@@ -10,12 +10,15 @@ interface AnnotationCanvasProps {
   markerSize: number;
   underlineStart: { x: number; y: number } | null;
   hoveredMarkerIndex: number | null;
+  hoveredUnderlineIndex: number | null;
   onImageLoad: (img: HTMLImageElement, canvas: HTMLCanvasElement) => void;
   onMarkerAdd: (marker: Marker) => void;
   onMarkerRemove: (index: number) => void;
   onUnderlineAdd: (underline: Underline) => void;
+  onUnderlineRemove: (index: number) => void;
   onUnderlineStartSet: (point: { x: number; y: number } | null) => void;
   onHoveredMarkerChange: (index: number | null) => void;
+  onHoveredUnderlineChange: (index: number | null) => void;
 }
 
 const AnnotationCanvas = ({
@@ -26,12 +29,15 @@ const AnnotationCanvas = ({
   markerSize,
   underlineStart,
   hoveredMarkerIndex,
+  hoveredUnderlineIndex,
   onImageLoad,
   onMarkerAdd,
   onMarkerRemove,
   onUnderlineAdd,
+  onUnderlineRemove,
   onUnderlineStartSet,
-  onHoveredMarkerChange
+  onHoveredMarkerChange,
+  onHoveredUnderlineChange
 }: AnnotationCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const markersCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -94,14 +100,16 @@ const AnnotationCanvas = ({
     
     ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
     
-    underlines.forEach((line) => {
-      ctx.save();
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.8;
+    underlines.forEach((line, index) => {
+      const isHovered = hoveredUnderlineIndex === index && markerColor === 'eraser';
       
-      const amplitude = 4;
-      const frequency = 0.05;
+      ctx.save();
+      ctx.strokeStyle = isHovered ? '#ef4444' : '#22c55e';
+      ctx.lineWidth = isHovered ? 4 : 3;
+      ctx.globalAlpha = isHovered ? 0.9 : 0.8;
+      
+      const amplitude = 2;
+      const frequency = 0.15;
       const distance = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
       const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1);
       
@@ -144,11 +152,12 @@ const AnnotationCanvas = ({
 
   useEffect(() => {
     redrawMarkers();
-  }, [markers, underlines, hoveredMarkerIndex, markerColor]);
+  }, [markers, underlines, hoveredMarkerIndex, hoveredUnderlineIndex, markerColor]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (markerColor !== 'eraser') {
       onHoveredMarkerChange(null);
+      onHoveredUnderlineChange(null);
       return;
     }
 
@@ -162,12 +171,22 @@ const AnnotationCanvas = ({
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    const hoveredIndex = markers.findIndex(marker => {
+    const hoveredMarkerIdx = markers.findIndex(marker => {
       const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
       return distance <= marker.size;
     });
 
-    onHoveredMarkerChange(hoveredIndex !== -1 ? hoveredIndex : null);
+    const hoveredUnderlineIdx = underlines.findIndex(line => {
+      const lineLength = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
+      const t = Math.max(0, Math.min(1, ((x - line.x1) * (line.x2 - line.x1) + (y - line.y1) * (line.y2 - line.y1)) / (lineLength * lineLength)));
+      const projX = line.x1 + t * (line.x2 - line.x1);
+      const projY = line.y1 + t * (line.y2 - line.y1);
+      const distance = Math.sqrt(Math.pow(x - projX, 2) + Math.pow(y - projY, 2));
+      return distance <= 10;
+    });
+
+    onHoveredMarkerChange(hoveredMarkerIdx !== -1 ? hoveredMarkerIdx : null);
+    onHoveredUnderlineChange(hoveredUnderlineIdx !== -1 ? hoveredUnderlineIdx : null);
   };
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -198,6 +217,21 @@ const AnnotationCanvas = ({
     }
 
     if (markerColor === 'eraser') {
+      const clickedUnderlineIndex = underlines.findIndex(line => {
+        const lineLength = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
+        const t = Math.max(0, Math.min(1, ((x - line.x1) * (line.x2 - line.x1) + (y - line.y1) * (line.y2 - line.y1)) / (lineLength * lineLength)));
+        const projX = line.x1 + t * (line.x2 - line.x1);
+        const projY = line.y1 + t * (line.y2 - line.y1);
+        const distance = Math.sqrt(Math.pow(x - projX, 2) + Math.pow(y - projY, 2));
+        return distance <= 10;
+      });
+      
+      if (clickedUnderlineIndex !== -1) {
+        onUnderlineRemove(clickedUnderlineIndex);
+        onHoveredUnderlineChange(null);
+        return;
+      }
+      
       const clickedMarkerIndex = markers.findIndex(marker => {
         const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
         return distance <= marker.size;
@@ -229,7 +263,7 @@ const AnnotationCanvas = ({
         ref={markersCanvasRef}
         onClick={handleClick}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => onHoveredMarkerChange(null)}
+        onMouseLeave={() => { onHoveredMarkerChange(null); onHoveredUnderlineChange(null); }}
         className="w-full h-auto cursor-crosshair relative"
         style={{ display: imageLoaded ? 'block' : 'none' }}
       />
