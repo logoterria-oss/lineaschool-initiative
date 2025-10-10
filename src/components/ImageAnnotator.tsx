@@ -15,6 +15,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [markerColor, setMarkerColor] = useState<MarkerColor>('green');
   const [markerSize, setMarkerSize] = useState(20);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -23,10 +24,15 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
     const loadImage = async () => {
       try {
+        setImageLoaded(false);
+        setLoadError(null);
+        
         const proxyUrl = `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(imageUrl)}`;
+        console.log('Loading image via proxy:', proxyUrl);
         
         const img = new Image();
         img.onload = () => {
+          console.log('Image loaded successfully:', img.width, 'x', img.height);
           imageRef.current = img;
           canvas.width = img.width;
           canvas.height = img.height;
@@ -37,13 +43,15 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
             setImageLoaded(true);
           }
         };
-        img.onerror = () => {
-          console.error('Failed to load image');
+        img.onerror = (e) => {
+          console.error('Failed to load image:', e);
+          setLoadError('Не удалось загрузить изображение');
           setImageLoaded(false);
         };
         img.src = proxyUrl;
       } catch (error) {
         console.error('Error loading image:', error);
+        setLoadError(`Ошибка: ${error}`);
         setImageLoaded(false);
       }
     };
@@ -153,7 +161,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden bg-white">
+      <div className="border rounded-lg overflow-hidden bg-white min-h-[200px]">
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}
@@ -163,9 +171,17 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
           className="w-full h-auto cursor-crosshair"
           style={{ display: imageLoaded ? 'block' : 'none' }}
         />
-        {!imageLoaded && (
-          <div className="flex items-center justify-center p-12">
+        {!imageLoaded && !loadError && (
+          <div className="flex flex-col items-center justify-center p-12 gap-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <p className="text-sm text-gray-500">Загрузка изображения...</p>
+          </div>
+        )}
+        {loadError && (
+          <div className="flex flex-col items-center justify-center p-12 gap-2">
+            <Icon name="AlertCircle" className="text-red-500" size={32} />
+            <p className="text-sm text-red-600">{loadError}</p>
+            <p className="text-xs text-gray-500">URL: {imageUrl}</p>
           </div>
         )}
       </div>
