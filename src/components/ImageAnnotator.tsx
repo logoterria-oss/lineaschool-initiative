@@ -244,8 +244,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   const confirmSave = () => {
     const canvas = canvasRef.current;
-    const markersCanvas = markersCanvasRef.current;
-    if (!canvas || !markersCanvas) return;
+    if (!canvas) return;
 
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = canvas.width;
@@ -255,18 +254,15 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     if (tempCtx) {
       tempCtx.drawImage(canvas, 0, 0);
       
-      const markersCtx = markersCanvas.getContext('2d');
-      if (markersCtx) {
-        markersCtx.globalAlpha = 1.0;
-        markers.forEach((marker) => {
-          markersCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
-          markersCtx.beginPath();
-          markersCtx.arc(marker.x, marker.y, marker.size, 0, Math.PI * 2);
-          markersCtx.fill();
-        });
-      }
+      tempCtx.globalAlpha = 0.4;
+      markers.forEach((marker) => {
+        tempCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
+        tempCtx.beginPath();
+        tempCtx.arc(marker.x, marker.y, marker.size, 0, Math.PI * 2);
+        tempCtx.fill();
+      });
+      tempCtx.globalAlpha = 1.0;
       
-      tempCtx.drawImage(markersCanvas, 0, 0);
       const dataUrl = tempCanvas.toDataURL('image/png');
       onSave(dataUrl);
       setShowSaveConfirm(false);
