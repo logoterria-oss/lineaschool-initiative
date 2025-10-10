@@ -48,7 +48,7 @@ export default function LoginForm({ password, setPassword, loading, error, onAut
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center">Администрирование заключений</CardTitle>
+          <CardTitle className="text-center">Администрирование</CardTitle>
           <CardDescription className="text-center">
             Введите пароль для доступа к системе
           </CardDescription>
