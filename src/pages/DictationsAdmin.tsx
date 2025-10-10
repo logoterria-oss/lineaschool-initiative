@@ -184,7 +184,15 @@ const DictationsAdmin = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setShowAnnotator(true)}
+                            onClick={() => {
+                              if (annotatedImage || selectedDictation.annotated_image) {
+                                if (window.confirm('При редактировании текущая разметка будет удалена. Продолжить?')) {
+                                  setShowAnnotator(true);
+                                }
+                              } else {
+                                setShowAnnotator(true);
+                              }
+                            }}
                             className="w-full"
                           >
                             <Icon name="Pencil" className="mr-1" size={14} />
