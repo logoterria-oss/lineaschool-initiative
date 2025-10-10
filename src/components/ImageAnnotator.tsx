@@ -21,20 +21,38 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      imageRef.current = img;
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        setImageLoaded(true);
+    const loadImage = async () => {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        
+        const img = new Image();
+        img.onload = () => {
+          imageRef.current = img;
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            setImageLoaded(true);
+          }
+          
+          URL.revokeObjectURL(objectUrl);
+        };
+        img.onerror = () => {
+          console.error('Failed to load image');
+          setImageLoaded(false);
+        };
+        img.src = objectUrl;
+      } catch (error) {
+        console.error('Error loading image:', error);
+        setImageLoaded(false);
       }
     };
-    img.src = imageUrl;
+
+    loadImage();
   }, [imageUrl]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
