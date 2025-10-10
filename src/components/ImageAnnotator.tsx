@@ -22,6 +22,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [historyStep, setHistoryStep] = useState(-1);
   const [greenCount, setGreenCount] = useState(0);
   const [redCount, setRedCount] = useState(0);
+  const [markers, setMarkers] = useState<Array<{x: number, y: number, size: number, color: 'green' | 'red'}>>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -68,6 +69,29 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     loadImage();
   }, [imageUrl]);
 
+  useEffect(() => {
+    redrawMarkers();
+  }, [markers]);
+
+  const redrawMarkers = () => {
+    const markersCanvas = markersCanvasRef.current;
+    if (!markersCanvas) return;
+    
+    const ctx = markersCanvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
+    
+    markers.forEach(marker => {
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, marker.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    });
+  };
+
   const saveToHistory = () => {
     const markersCanvas = markersCanvasRef.current;
     if (!markersCanvas) return;
@@ -82,9 +106,6 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     const markersCanvas = markersCanvasRef.current;
     if (!markersCanvas) return;
 
-    const ctx = markersCanvas.getContext('2d');
-    if (!ctx) return;
-
     const rect = markersCanvas.getBoundingClientRect();
     const scaleX = markersCanvas.width / rect.width;
     const scaleY = markersCanvas.height / rect.height;
@@ -93,18 +114,30 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     const y = (e.clientY - rect.top) * scaleY;
 
     if (markerColor === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(x, y, markerSize, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
+      const clickedMarkerIndex = markers.findIndex(marker => {
+        const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
+        return distance <= marker.size;
+      });
+      
+      if (clickedMarkerIndex !== -1) {
+        const removedMarker = markers[clickedMarkerIndex];
+        const newMarkers = markers.filter((_, index) => index !== clickedMarkerIndex);
+        setMarkers(newMarkers);
+        
+        if (removedMarker.color === 'green') {
+          setGreenCount(prev => Math.max(0, prev - 1));
+        } else {
+          setRedCount(prev => Math.max(0, prev - 1));
+        }
+      }
     } else {
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = markerColor === 'green' ? '#22c55e' : '#ef4444';
-      ctx.beginPath();
-      ctx.arc(x, y, markerSize, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
+      const newMarker = {
+        x,
+        y,
+        size: markerSize,
+        color: markerColor as 'green' | 'red'
+      };
+      setMarkers(prev => [...prev, newMarker]);
       
       if (markerColor === 'green') {
         setGreenCount(prev => prev + 1);
@@ -157,16 +190,10 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   const clearCanvas = () => {
-    const markersCanvas = markersCanvasRef.current;
-    if (!markersCanvas) return;
-
-    const ctx = markersCanvas.getContext('2d');
-    if (ctx) {
-      ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
-      setGreenCount(0);
-      setRedCount(0);
-      saveToHistory();
-    }
+    setMarkers([]);
+    setGreenCount(0);
+    setRedCount(0);
+    saveToHistory();
   };
 
   const handleSave = () => {
