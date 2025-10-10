@@ -45,8 +45,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     print(f'Payment request: amount={amount}, order={order_id}, desc={description}')
     
     # Get Terminal Key and Password from environment
-    terminal_key = os.environ.get('TBANK_TERMINAL_KEY', '1759382115093DEMO')
-    password = os.environ.get('TBANK_PASSWORD', '_v&Yq26u%%v5C2YG')
+    terminal_key = os.environ.get('TBANK_TERMINAL_KEY', '1759382115116')
+    password = os.environ.get('TBANK_PASSWORD', 'n$$U2VG*02KQT*U!')
     
     # Prepare request to T-Bank Init API
     init_data = {
