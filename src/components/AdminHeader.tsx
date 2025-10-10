@@ -2,7 +2,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
-const AdminHeader = () => {
+interface AdminHeaderProps {
+  showOnlyHome?: boolean;
+}
+
+const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,7 +29,7 @@ const AdminHeader = () => {
               <span className="font-semibold text-gray-900 hidden sm:block">Linea School</span>
             </button>
             
-            {!isDashboard && (
+            {!showOnlyHome && !isDashboard && (
               <>
                 <div className="h-6 w-px bg-gray-300 hidden md:block"></div>
                 <nav className="hidden md:flex items-center gap-2">
@@ -53,7 +57,7 @@ const AdminHeader = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {!isDashboard && (
+            {!showOnlyHome && !isDashboard && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -64,14 +68,25 @@ const AdminHeader = () => {
                 Админ-панель
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/')}
-            >
-              <Icon name="Home" className="mr-2" size={16} />
-              <span className="hidden sm:inline">Главная</span>
-            </Button>
+            {!showOnlyHome && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/')}
+              >
+                <Icon name="Home" className="mr-2" size={16} />
+                <span className="hidden sm:inline">Главная</span>
+              </Button>
+            )}
+            {showOnlyHome && (
+              <Button
+                variant="outline"
+                onClick={() => navigate('/')}
+              >
+                <Icon name="Home" className="mr-2" size={18} />
+                На главную
+              </Button>
+            )}
           </div>
         </div>
       </div>
