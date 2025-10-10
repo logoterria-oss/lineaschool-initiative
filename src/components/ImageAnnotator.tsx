@@ -394,23 +394,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
               </div>
             </div>
           </div>
-        )
-      </div>
-      
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-2">
-          <Icon name="Info" className="text-blue-600 mt-0.5" size={16} />
-          <div className="text-sm text-blue-800">
-            <p className="font-semibold mb-1">Как размечать:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Зелёным выделяйте дисграфические ошибки (нарушения письма)</li>
-              <li>Красным выделяйте дизорфографические ошибки (орфографические)</li>
-              <li>Кликайте по ошибкам для их выделения</li>
-              <li>Используйте ластик для удаления отметок</li>
-              <li>После разметки нажмите "Сохранить разметку"</li>
-            </ul>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="border rounded-lg overflow-hidden bg-white min-h-[200px] relative">
