@@ -383,17 +383,6 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
               <Icon name="Save" className="mr-1" size={14} />
               Сохранить
             </Button>
-          </div>
-
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={undo} disabled={historyStep <= 0}>
-              <Icon name="Undo2" className="mr-1" size={14} />
-              Назад
-            </Button>
-            <Button size="sm" variant="outline" onClick={redo} disabled={historyStep >= history.length - 1}>
-              <Icon name="Redo2" className="mr-1" size={14} />
-              Вперёд
-            </Button>
             <Button size="sm" variant="outline" onClick={clearCanvas}>
               <Icon name="RotateCcw" className="mr-1" size={14} />
               Очистить
