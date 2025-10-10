@@ -14,11 +14,6 @@ export default function AdminHeader({ showForm, onToggleForm, onRefresh }: Admin
       <div>
         <h1 className="text-2xl font-bold">Логопедические заключения</h1>
         <p className="text-gray-600">Управление базой данных заключений</p>
-        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-700">
-            🎯 <strong>Автоматическое сохранение:</strong> Когда родители заполняют диагностическую форму <a href="/diag_form" className="underline hover:text-blue-800">/diag_form</a>, система создает логопедическое заключение с уникальным номером и ссылкой, которые автоматически сохраняются в этой базе данных
-          </p>
-        </div>
       </div>
       <div className="flex gap-2">
         <Button onClick={onRefresh} variant="outline" size="sm">
