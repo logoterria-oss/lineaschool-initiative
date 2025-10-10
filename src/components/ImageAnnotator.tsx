@@ -240,9 +240,14 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   const confirmSave = () => {
+    console.log('confirmSave called');
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.error('Canvas not found');
+      return;
+    }
 
+    console.log('Creating temp canvas, markers count:', markers.length);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
@@ -261,8 +266,10 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       tempCtx.globalAlpha = 1.0;
       
       const dataUrl = tempCanvas.toDataURL('image/png');
+      console.log('Calling onSave with dataUrl length:', dataUrl.length);
       onSave(dataUrl);
       setShowSaveConfirm(false);
+      console.log('Save completed');
     }
   };
 
