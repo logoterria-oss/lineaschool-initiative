@@ -196,8 +196,9 @@ export default function PricingSection() {
     
     if (window.PaymentIntegration) {
       try {
-        const paymentData = {
+        const result = await window.PaymentIntegration.openPaymentForm({
           amount: amount,
+          order: `ORDER_${Date.now()}`,
           description: description,
           receipt: {
             items: [
@@ -210,12 +211,27 @@ export default function PricingSection() {
               }
             ]
           }
-        };
-
-        await window.PaymentIntegration.createPayment(paymentData);
+        });
+        
+        console.log('Payment result:', result);
+        
+        if (result.success) {
+          alert('Оплата успешно завершена!');
+        }
       } catch (error) {
         console.error('Payment error:', error);
-        alert('Ошибка при создании платежа. Попробуйте позже.');
+        
+        // Проверяем тип ошибки
+        if (error && typeof error === 'object' && 'code' in error) {
+          const err = error as { code?: string; message?: string };
+          if (err.code === 'PAYMENT_CANCELLED') {
+            console.log('Payment was cancelled by user');
+          } else {
+            alert(`Ошибка оплаты: ${err.message || 'Попробуйте позже'}`);
+          }
+        } else {
+          alert('Ошибка при создании платежа. Попробуйте позже.');
+        }
       }
     } else {
       console.error('PaymentIntegration not loaded');
