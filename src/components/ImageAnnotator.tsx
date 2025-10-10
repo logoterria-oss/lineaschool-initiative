@@ -7,7 +7,7 @@ interface ImageAnnotatorProps {
   onSave: (annotatedImageDataUrl: string) => void;
 }
 
-type MarkerColor = 'green' | 'red';
+type MarkerColor = 'green' | 'red' | 'eraser';
 
 const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,6 +17,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyStep, setHistoryStep] = useState(-1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,6 +43,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
           if (ctx) {
             ctx.drawImage(img, 0, 0);
             setImageLoaded(true);
+            saveToHistory();
           }
         };
         img.onerror = (e) => {
@@ -59,12 +62,25 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     loadImage();
   }, [imageUrl]);
 
+  const saveToHistory = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const newHistory = history.slice(0, historyStep + 1);
+    newHistory.push(canvas.toDataURL());
+    setHistory(newHistory);
+    setHistoryStep(newHistory.length - 1);
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
     draw(e);
   };
 
   const stopDrawing = () => {
+    if (isDrawing) {
+      saveToHistory();
+    }
     setIsDrawing(false);
   };
 
@@ -84,12 +100,60 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    ctx.globalAlpha = 0.4;
-    ctx.fillStyle = markerColor === 'green' ? '#22c55e' : '#ef4444';
-    ctx.beginPath();
-    ctx.arc(x, y, markerSize, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1.0;
+    if (markerColor === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, markerSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = markerColor === 'green' ? '#22c55e' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(x, y, markerSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    }
+  };
+
+  const undo = () => {
+    if (historyStep > 0) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      const newStep = historyStep - 1;
+      setHistoryStep(newStep);
+      
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = history[newStep];
+    }
+  };
+
+  const redo = () => {
+    if (historyStep < history.length - 1) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      const newStep = historyStep + 1;
+      setHistoryStep(newStep);
+      
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = history[newStep];
+    }
   };
 
   const clearCanvas = () => {
@@ -100,6 +164,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     if (ctx) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(imageRef.current, 0, 0);
+      saveToHistory();
     }
   };
 
@@ -113,51 +178,70 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 p-4 bg-gray-100 rounded-lg">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Маркер:</span>
-          <Button
-            size="sm"
-            variant={markerColor === 'green' ? 'default' : 'outline'}
-            onClick={() => setMarkerColor('green')}
-            className={markerColor === 'green' ? 'bg-green-500 hover:bg-green-600' : ''}
-          >
-            <Icon name="Highlighter" className="mr-1" size={14} />
-            Дисграфия
-          </Button>
-          <Button
-            size="sm"
-            variant={markerColor === 'red' ? 'default' : 'outline'}
-            onClick={() => setMarkerColor('red')}
-            className={markerColor === 'red' ? 'bg-red-500 hover:bg-red-600' : ''}
-          >
-            <Icon name="Highlighter" className="mr-1" size={14} />
-            Дизорфография
-          </Button>
-        </div>
+      <div className="space-y-3">
+        <div className="flex items-center gap-4 p-4 bg-gray-100 rounded-lg flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Инструмент:</span>
+            <Button
+              size="sm"
+              variant={markerColor === 'green' ? 'default' : 'outline'}
+              onClick={() => setMarkerColor('green')}
+              className={markerColor === 'green' ? 'bg-green-500 hover:bg-green-600' : ''}
+            >
+              <Icon name="Highlighter" className="mr-1" size={14} />
+              Дисграфия
+            </Button>
+            <Button
+              size="sm"
+              variant={markerColor === 'red' ? 'default' : 'outline'}
+              onClick={() => setMarkerColor('red')}
+              className={markerColor === 'red' ? 'bg-red-500 hover:bg-red-600' : ''}
+            >
+              <Icon name="Highlighter" className="mr-1" size={14} />
+              Дизорфография
+            </Button>
+            <Button
+              size="sm"
+              variant={markerColor === 'eraser' ? 'default' : 'outline'}
+              onClick={() => setMarkerColor('eraser')}
+              className={markerColor === 'eraser' ? 'bg-gray-700 hover:bg-gray-800' : ''}
+            >
+              <Icon name="Eraser" className="mr-1" size={14} />
+              Ластик
+            </Button>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Размер:</span>
-          <input
-            type="range"
-            min="10"
-            max="40"
-            value={markerSize}
-            onChange={(e) => setMarkerSize(Number(e.target.value))}
-            className="w-24"
-          />
-          <span className="text-sm text-gray-600">{markerSize}px</span>
-        </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Размер:</span>
+            <input
+              type="range"
+              min="10"
+              max="40"
+              value={markerSize}
+              onChange={(e) => setMarkerSize(Number(e.target.value))}
+              className="w-24"
+            />
+            <span className="text-sm text-gray-600">{markerSize}px</span>
+          </div>
 
-        <div className="flex gap-2 ml-auto">
-          <Button size="sm" variant="outline" onClick={clearCanvas}>
-            <Icon name="RotateCcw" className="mr-1" size={14} />
-            Очистить
-          </Button>
-          <Button size="sm" onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-            <Icon name="Save" className="mr-1" size={14} />
-            Сохранить разметку
-          </Button>
+          <div className="flex gap-2 ml-auto">
+            <Button size="sm" variant="outline" onClick={undo} disabled={historyStep <= 0}>
+              <Icon name="Undo2" className="mr-1" size={14} />
+              Назад
+            </Button>
+            <Button size="sm" variant="outline" onClick={redo} disabled={historyStep >= history.length - 1}>
+              <Icon name="Redo2" className="mr-1" size={14} />
+              Вперёд
+            </Button>
+            <Button size="sm" variant="outline" onClick={clearCanvas}>
+              <Icon name="RotateCcw" className="mr-1" size={14} />
+              Очистить
+            </Button>
+            <Button size="sm" onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+              <Icon name="Save" className="mr-1" size={14} />
+              Сохранить
+            </Button>
+          </div>
         </div>
       </div>
 
