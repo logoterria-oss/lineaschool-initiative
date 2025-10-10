@@ -10,7 +10,7 @@ interface AnnotationCanvasProps {
   markerSize: number;
   underlineStart: { x: number; y: number } | null;
   hoveredMarkerIndex: number | null;
-  onImageLoad: (img: HTMLImageElement) => void;
+  onImageLoad: (img: HTMLImageElement, canvas: HTMLCanvasElement) => void;
   onMarkerAdd: (marker: Marker) => void;
   onMarkerRemove: (index: number) => void;
   onUnderlineAdd: (underline: Underline) => void;
@@ -66,7 +66,7 @@ const AnnotationCanvas = ({
           if (ctx) {
             ctx.drawImage(img, 0, 0);
             setImageLoaded(true);
-            onImageLoad(img);
+            onImageLoad(img, canvas);
           }
         };
         img.onerror = (e) => {

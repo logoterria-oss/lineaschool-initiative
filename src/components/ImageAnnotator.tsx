@@ -61,15 +61,9 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     setHistoryStep(newHistory.length - 1);
   };
 
-  const handleImageLoad = (img: HTMLImageElement) => {
+  const handleImageLoad = (img: HTMLImageElement, canvas: HTMLCanvasElement) => {
     imageRef.current = img;
-    canvasRef.current = document.createElement('canvas');
-    canvasRef.current.width = img.width;
-    canvasRef.current.height = img.height;
-    const ctx = canvasRef.current.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(img, 0, 0);
-    }
+    canvasRef.current = canvas;
     saveToHistory();
   };
 
