@@ -24,6 +24,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [redCount, setRedCount] = useState(0);
   const [markers, setMarkers] = useState<Array<{x: number, y: number, size: number, color: 'green' | 'red'}>>([]);
   const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -234,6 +235,15 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   const handleSave = () => {
+    if (markers.length === 0) {
+      if (!confirm('Вы не сделали ни одной разметки. Продолжить сохранение?')) {
+        return;
+      }
+    }
+    setShowSaveConfirm(true);
+  };
+
+  const confirmSave = () => {
     const canvas = canvasRef.current;
     const markersCanvas = markersCanvasRef.current;
     if (!canvas || !markersCanvas) return;
@@ -249,6 +259,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       const dataUrl = tempCanvas.toDataURL('image/png');
       onSave(dataUrl);
     }
+    setShowSaveConfirm(false);
   };
 
   return (
@@ -335,14 +346,52 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         </div>
         
         <div className="mt-4 pt-4 border-t border-gray-300">
-          <Button 
-            onClick={handleSave} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
-            size="lg"
-          >
-            <Icon name="Save" className="mr-2" size={18} />
-            Сохранить разметку
-          </Button>
+          {showSaveConfirm ? (
+            <div className="space-y-3">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <Icon name="AlertTriangle" className="text-yellow-600 mt-0.5" size={20} />
+                  <div className="flex-1">
+                    <p className="font-semibold text-yellow-900">Подтверждение сохранения</p>
+                    <p className="text-sm text-yellow-800 mt-1">
+                      Найдено ошибок: {greenCount + redCount} (дисграфия: {greenCount}, дизорфография: {redCount})
+                    </p>
+                    <p className="text-sm text-yellow-800 mt-1">
+                      После сохранения редактор закроется. Продолжить?
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={confirmSave} 
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+                  size="lg"
+                >
+                  <Icon name="Check" className="mr-2" size={18} />
+                  Да, сохранить
+                </Button>
+                <Button 
+                  onClick={() => setShowSaveConfirm(false)} 
+                  variant="outline"
+                  className="flex-1 py-3"
+                  size="lg"
+                >
+                  <Icon name="X" className="mr-2" size={18} />
+                  Отмена
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button 
+              onClick={handleSave} 
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+              size="lg"
+            >
+              <Icon name="Save" className="mr-2" size={18} />
+              Сохранить разметку
+            </Button>
+          )}
         </div>
       </div>
       
