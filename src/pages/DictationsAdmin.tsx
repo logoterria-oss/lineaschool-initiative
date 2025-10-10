@@ -106,7 +106,7 @@ const DictationsAdmin = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
           <div className="space-y-4">
             <h2 className="text-xl font-semibold mb-4">Список диктантов</h2>
             {dictations.length === 0 ? (
