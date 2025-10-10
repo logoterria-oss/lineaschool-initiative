@@ -46,6 +46,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'headers': {
                         'Content-Type': content_type,
                         'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Credentials': 'true',
                         'Cache-Control': 'public, max-age=86400'
                     },
                     'body': base64.b64encode(image_data).decode('utf-8'),

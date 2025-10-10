@@ -40,6 +40,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         console.log('Loading image via proxy:', proxyUrl);
         
         const img = new Image();
+        img.crossOrigin = 'anonymous';
         img.onload = () => {
           console.log('Image loaded successfully:', img.width, 'x', img.height);
           imageRef.current = img;
