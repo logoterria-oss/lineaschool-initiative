@@ -11,7 +11,10 @@ declare global {
 }
 
 export default function Pricing() {
+  console.log('Pricing page rendering');
+  
   useEffect(() => {
+    console.log('Pricing useEffect running');
     let script: HTMLScriptElement | null = null;
 
     const initConfig = {
