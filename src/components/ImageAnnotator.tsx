@@ -18,7 +18,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<Array<{markers: Array<{x: number, y: number, size: number, color: 'green' | 'red'}>, greenCount: number, redCount: number}>>([]);
   const [historyStep, setHistoryStep] = useState(-1);
   const [greenCount, setGreenCount] = useState(0);
   const [redCount, setRedCount] = useState(0);
@@ -106,11 +106,12 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   }, [markers, hoveredMarkerIndex, markerColor]);
 
   const saveToHistory = () => {
-    const markersCanvas = markersCanvasRef.current;
-    if (!markersCanvas) return;
-    
     const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(markersCanvas.toDataURL());
+    newHistory.push({
+      markers: [...markers],
+      greenCount,
+      redCount
+    });
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
   };
@@ -162,9 +163,17 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         setMarkers(newMarkers);
         
         if (removedMarker.color === 'green') {
-          setGreenCount(prev => Math.max(0, prev - 1));
+          setGreenCount(prev => {
+            const newCount = Math.max(0, prev - 1);
+            setTimeout(() => saveToHistory(), 0);
+            return newCount;
+          });
         } else {
-          setRedCount(prev => Math.max(0, prev - 1));
+          setRedCount(prev => {
+            const newCount = Math.max(0, prev - 1);
+            setTimeout(() => saveToHistory(), 0);
+            return newCount;
+          });
         }
         setHoveredMarkerIndex(null);
       }
@@ -178,52 +187,40 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       setMarkers(prev => [...prev, newMarker]);
       
       if (markerColor === 'green') {
-        setGreenCount(prev => prev + 1);
+        setGreenCount(prev => {
+          const newCount = prev + 1;
+          setTimeout(() => saveToHistory(), 0);
+          return newCount;
+        });
       } else if (markerColor === 'red') {
-        setRedCount(prev => prev + 1);
+        setRedCount(prev => {
+          const newCount = prev + 1;
+          setTimeout(() => saveToHistory(), 0);
+          return newCount;
+        });
       }
     }
-    
-    saveToHistory();
   };
 
   const undo = () => {
     if (historyStep > 0) {
-      const markersCanvas = markersCanvasRef.current;
-      if (!markersCanvas) return;
-      
-      const ctx = markersCanvas.getContext('2d');
-      if (!ctx) return;
-      
       const newStep = historyStep - 1;
+      const state = history[newStep];
+      setMarkers([...state.markers]);
+      setGreenCount(state.greenCount);
+      setRedCount(state.redCount);
       setHistoryStep(newStep);
-      
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = history[newStep];
     }
   };
 
   const redo = () => {
     if (historyStep < history.length - 1) {
-      const markersCanvas = markersCanvasRef.current;
-      if (!markersCanvas) return;
-      
-      const ctx = markersCanvas.getContext('2d');
-      if (!ctx) return;
-      
       const newStep = historyStep + 1;
+      const state = history[newStep];
+      setMarkers([...state.markers]);
+      setGreenCount(state.greenCount);
+      setRedCount(state.redCount);
       setHistoryStep(newStep);
-      
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = history[newStep];
     }
   };
 
@@ -231,7 +228,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     setMarkers([]);
     setGreenCount(0);
     setRedCount(0);
-    saveToHistory();
+    setTimeout(() => saveToHistory(), 0);
   };
 
   const handleSave = () => {
