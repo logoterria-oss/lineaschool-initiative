@@ -20,6 +20,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [historyStep, setHistoryStep] = useState(-1);
+  const [greenCount, setGreenCount] = useState(0);
+  const [redCount, setRedCount] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -103,6 +105,12 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       ctx.arc(x, y, markerSize, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1.0;
+      
+      if (markerColor === 'green') {
+        setGreenCount(prev => prev + 1);
+      } else if (markerColor === 'red') {
+        setRedCount(prev => prev + 1);
+      }
     }
     
     saveToHistory();
@@ -155,6 +163,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
     const ctx = markersCanvas.getContext('2d');
     if (ctx) {
       ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
+      setGreenCount(0);
+      setRedCount(0);
       saveToHistory();
     }
   };
@@ -179,6 +189,25 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   return (
     <div className="space-y-4">
+      <div className="bg-gradient-to-r from-green-50 to-red-50 border border-gray-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-center gap-8">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-green-500"></div>
+            <span className="text-sm font-medium text-gray-700">Дисграфия:</span>
+            <span className="text-2xl font-bold text-green-600">{greenCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-red-500"></div>
+            <span className="text-sm font-medium text-gray-700">Дизорфография:</span>
+            <span className="text-2xl font-bold text-red-600">{redCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Icon name="Circle" className="text-gray-400" size={16} />
+            <span className="text-sm font-medium text-gray-700">Всего:</span>
+            <span className="text-2xl font-bold text-gray-700">{greenCount + redCount}</span>
+          </div>
+        </div>
+      </div>
       <div className="space-y-3">
         <div className="flex items-center gap-4 p-4 bg-gray-100 rounded-lg flex-wrap">
           <div className="flex items-center gap-2">
