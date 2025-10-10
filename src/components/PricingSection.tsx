@@ -193,10 +193,13 @@ export default function PricingSection() {
     const description = `${sectionTitle} - ${plan.title}`;
     
     console.log('Initiating payment:', { amount, description, plan });
+    console.log('PaymentIntegration available:', !!window.PaymentIntegration);
     
     if (window.PaymentIntegration) {
+      console.log('PaymentIntegration methods:', Object.keys(window.PaymentIntegration));
+      
       try {
-        await window.PaymentIntegration.pay({
+        const paymentData = {
           amount: amount,
           order: `ORDER_${Date.now()}`,
           description: description,
@@ -211,11 +214,16 @@ export default function PricingSection() {
               }
             ]
           }
-        });
+        };
         
-        console.log('Payment initiated successfully');
+        console.log('Calling pay() with data:', paymentData);
+        const result = await window.PaymentIntegration.pay(paymentData);
+        console.log('Payment result:', result);
+        
       } catch (error) {
-        console.error('Payment error:', error);
+        console.error('Payment error details:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error keys:', error && typeof error === 'object' ? Object.keys(error) : 'N/A');
         alert('Ошибка при создании платежа. Попробуйте позже.');
       }
     } else {
