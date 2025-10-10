@@ -11,6 +11,7 @@ type MarkerColor = 'green' | 'red' | 'eraser';
 
 const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const markersCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [markerColor, setMarkerColor] = useState<MarkerColor>('green');
   const [markerSize, setMarkerSize] = useState(20);
@@ -22,7 +23,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const markersCanvas = markersCanvasRef.current;
+    if (!canvas || !markersCanvas) return;
 
     const loadImage = async () => {
       try {
@@ -38,6 +40,8 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
           imageRef.current = img;
           canvas.width = img.width;
           canvas.height = img.height;
+          markersCanvas.width = img.width;
+          markersCanvas.height = img.height;
           
           const ctx = canvas.getContext('2d');
           if (ctx) {
@@ -63,25 +67,25 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   }, [imageUrl]);
 
   const saveToHistory = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const markersCanvas = markersCanvasRef.current;
+    if (!markersCanvas) return;
     
     const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(canvas.toDataURL());
+    newHistory.push(markersCanvas.toDataURL());
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
   };
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const markersCanvas = markersCanvasRef.current;
+    if (!markersCanvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = markersCanvas.getContext('2d');
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const rect = markersCanvas.getBoundingClientRect();
+    const scaleX = markersCanvas.width / rect.width;
+    const scaleY = markersCanvas.height / rect.height;
     
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
@@ -106,10 +110,10 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   const undo = () => {
     if (historyStep > 0) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+      const markersCanvas = markersCanvasRef.current;
+      if (!markersCanvas) return;
       
-      const ctx = canvas.getContext('2d');
+      const ctx = markersCanvas.getContext('2d');
       if (!ctx) return;
       
       const newStep = historyStep - 1;
@@ -117,7 +121,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       
       const img = new Image();
       img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
         ctx.drawImage(img, 0, 0);
       };
       img.src = history[newStep];
@@ -126,10 +130,10 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   const redo = () => {
     if (historyStep < history.length - 1) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+      const markersCanvas = markersCanvasRef.current;
+      if (!markersCanvas) return;
       
-      const ctx = canvas.getContext('2d');
+      const ctx = markersCanvas.getContext('2d');
       if (!ctx) return;
       
       const newStep = historyStep + 1;
@@ -137,7 +141,7 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       
       const img = new Image();
       img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
         ctx.drawImage(img, 0, 0);
       };
       img.src = history[newStep];
@@ -145,23 +149,32 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   };
 
   const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !imageRef.current) return;
+    const markersCanvas = markersCanvasRef.current;
+    if (!markersCanvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = markersCanvas.getContext('2d');
     if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(imageRef.current, 0, 0);
+      ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
       saveToHistory();
     }
   };
 
   const handleSave = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const markersCanvas = markersCanvasRef.current;
+    if (!canvas || !markersCanvas) return;
 
-    const dataUrl = canvas.toDataURL('image/png');
-    onSave(dataUrl);
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    if (tempCtx) {
+      tempCtx.drawImage(canvas, 0, 0);
+      tempCtx.drawImage(markersCanvas, 0, 0);
+      const dataUrl = tempCanvas.toDataURL('image/png');
+      onSave(dataUrl);
+    }
   };
 
   return (
@@ -233,11 +246,16 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden bg-white min-h-[200px]">
+      <div className="border rounded-lg overflow-hidden bg-white min-h-[200px] relative">
         <canvas
           ref={canvasRef}
+          className="w-full h-auto absolute top-0 left-0"
+          style={{ display: imageLoaded ? 'block' : 'none' }}
+        />
+        <canvas
+          ref={markersCanvasRef}
           onClick={handleClick}
-          className="w-full h-auto cursor-crosshair"
+          className="w-full h-auto cursor-crosshair relative"
           style={{ display: imageLoaded ? 'block' : 'none' }}
         />
         {!imageLoaded && !loadError && (
