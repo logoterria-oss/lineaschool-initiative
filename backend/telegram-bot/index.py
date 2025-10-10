@@ -34,7 +34,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '8377726959:AAEsXjUKI0eDwImLzsNMTqHo8Hr4VyX3b_4')
+    bot_token = '8377726959:AAEsXjUKI0eDwImLzsNMTqHo8Hr4VyX3b_4'
     db_url = os.environ.get('DATABASE_URL')
     
     try:
@@ -114,9 +114,11 @@ def send_message(bot_token: str, chat_id: int, text: str):
     url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
     data = {
         'chat_id': chat_id,
-        'text': text,
-        'parse_mode': 'HTML'
+        'text': text
     }
+    
+    print(f'Sending to Telegram: {url}')
+    print(f'Data: {json.dumps(data)}')
     
     req_data = json.dumps(data).encode('utf-8')
     req = urllib.request.Request(
@@ -125,9 +127,14 @@ def send_message(bot_token: str, chat_id: int, text: str):
         headers={'Content-Type': 'application/json'}
     )
     
-    with urllib.request.urlopen(req) as response:
-        result = json.loads(response.read().decode('utf-8'))
-        print(f'Sent message: {result}')
+    try:
+        with urllib.request.urlopen(req) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            print(f'Telegram response: {json.dumps(result)}')
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print(f'Telegram API error: {e.code} - {error_body}')
+        raise
 
 def success_response():
     return {
