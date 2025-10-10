@@ -57,7 +57,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     }
     
     # Add receipt if provided and not empty
-    if receipt and receipt.get('items'):
+    if receipt and receipt.get('Items'):
         init_data['Receipt'] = receipt
     
     # Calculate token (signature) - all non-empty values sorted alphabetically by key
