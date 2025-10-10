@@ -270,7 +270,8 @@ export default function PricingSection() {
                 <CollapsibleContent className="p-6 pt-0 bg-gray-50">
                   <div className="grid md:grid-cols-3 gap-6">
                     {section.plans.map((plan, planIndex) => (
-                      <Card key={planIndex} className={`relative p-6 ${plan.popular ? 'border-2 border-green-500 bg-white shadow-lg scale-105' : 'border-gray-200 bg-white'} hover:shadow-lg transition-all duration-300`}>
+                      <div key={planIndex} className="flex flex-col">
+                      <Card className={`relative p-6 flex-1 ${plan.popular ? 'border-2 border-green-500 bg-white shadow-lg scale-105' : 'border-gray-200 bg-white'} hover:shadow-lg transition-all duration-300`}>
                         {plan.popular && (
                           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                             <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
@@ -353,22 +354,23 @@ export default function PricingSection() {
                           )}
 
                           <div className="flex-grow"></div>
-                          
-                          <Button 
-                            type="button"
-                            className={`w-full ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
-                            size="sm"
-                            onClick={(e) => {
-                              console.log('Button clicked - payment');
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handlePayment(plan, section.title);
-                            }}
-                          >
-                            Выбрать тариф
-                          </Button>
                         </div>
                       </Card>
+                      
+                      <Button 
+                        type="button"
+                        className={`w-full mt-4 ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
+                        size="sm"
+                        onClick={(e) => {
+                          console.log('Button clicked - payment');
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePayment(plan, section.title);
+                        }}
+                      >
+                        Выбрать тариф
+                      </Button>
+                      </div>
                     ))}
                   </div>
                 </CollapsibleContent>
