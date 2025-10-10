@@ -5,8 +5,8 @@ import { ReportFormData } from './ReportForm';
 const REPORTS_API_URL = 'https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa';
 
 export function useReportsAdmin() {
-  const [password, setPassword] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState(() => sessionStorage.getItem('admin_password') || '');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!sessionStorage.getItem('admin_authenticated'));
   const [reports, setReports] = useState<SpeechTherapyReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,6 +33,8 @@ export function useReportsAdmin() {
     
     if (password === '426874') {
       setIsAuthenticated(true);
+      sessionStorage.setItem('admin_authenticated', 'true');
+      sessionStorage.setItem('admin_password', password);
       setError('');
       setSuccess('Успешная авторизация! Загружаю данные из базы...');
       
@@ -44,13 +46,20 @@ export function useReportsAdmin() {
     }
   };
 
+  useEffect(() => {
+    if (isAuthenticated && reports.length === 0) {
+      loadReportsFromDB();
+    }
+  }, [isAuthenticated]);
+
   const loadReportsFromDB = async () => {
     setLoading(true);
+    const currentPassword = sessionStorage.getItem('admin_password') || password;
     try {
       const response = await fetch('https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa', {
         method: 'GET',
         headers: {
-          'X-Admin-Password': password,
+          'X-Admin-Password': currentPassword,
           'Content-Type': 'application/json'
         }
       });
@@ -93,11 +102,12 @@ export function useReportsAdmin() {
     if (!isAuthenticated) return;
 
     setLoading(true);
+    const currentPassword = sessionStorage.getItem('admin_password') || password;
     try {
       const response = await fetch(REPORTS_API_URL, {
         method: 'GET',
         headers: {
-          'X-Admin-Password': password
+          'X-Admin-Password': currentPassword
         }
       });
 
@@ -125,6 +135,7 @@ export function useReportsAdmin() {
     if (!isAuthenticated) return;
 
     setLoading(true);
+    const currentPassword = sessionStorage.getItem('admin_password') || password;
     try {
       const method = editingReport ? 'PUT' : 'POST';
       const url = editingReport 
@@ -135,7 +146,7 @@ export function useReportsAdmin() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-Auth-Password': password
+          'X-Auth-Password': currentPassword
         },
         body: JSON.stringify(formData)
       });
@@ -160,11 +171,12 @@ export function useReportsAdmin() {
     if (!isAuthenticated || !confirm('Удалить это заключение?')) return;
 
     setLoading(true);
+    const currentPassword = sessionStorage.getItem('admin_password') || password;
     try {
       const response = await fetch(`${REPORTS_API_URL}?id=${id}`, {
         method: 'DELETE',
         headers: {
-          'X-Auth-Password': password
+          'X-Auth-Password': currentPassword
         }
       });
 
