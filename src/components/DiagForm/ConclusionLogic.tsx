@@ -202,7 +202,7 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
       
       try {
         // Сохраняем полное заключение в БД
-        const saveResponse = await fetch('https://functions.poehali.dev/07850aca-9e34-468b-872d-2ebd23e5f959', {
+        const saveResponse = await fetch('https://functions.poehali.dev/7bc33dbc-e8a0-47b4-83cc-d792dc7e1696', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

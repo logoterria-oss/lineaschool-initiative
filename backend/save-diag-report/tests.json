@@ -1,0 +1,39 @@
+{
+  "tests": [
+    {
+      "name": "Сохранение заключения с полными данными",
+      "method": "POST",
+      "body": {
+        "student_name": "Иван Петров",
+        "student_age": 7,
+        "date_of_examination": "2025-10-14",
+        "therapist_name": "Логопед",
+        "diagnosis": "Дислалия",
+        "recommendations": "Коррекция звукопроизношения",
+        "report_content": "Тестовое заключение",
+        "form_data": {
+          "childName": "Иван Петров",
+          "age": "7"
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "id": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Сохранение заключения с минимальными данными",
+      "method": "POST",
+      "body": {
+        "student_name": "Мария Иванова"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
