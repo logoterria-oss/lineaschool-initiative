@@ -108,14 +108,14 @@ export default function VideoTestimonialsSection() {
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               <div className="aspect-video bg-black">
                 <video
+                  key={videoTestimonials[activeVideoTab].videoUrl}
                   width="100%"
                   height="100%"
                   controls
                   preload="metadata"
                   className="w-full h-full object-contain"
+                  src={`${videoTestimonials[activeVideoTab].videoUrl}#t=0.5`}
                 >
-                  <source src={videoTestimonials[activeVideoTab].videoUrl} type="video/quicktime" />
-                  <source src={videoTestimonials[activeVideoTab].videoUrl} type="video/mp4" />
                   Ваш браузер не поддерживает видео
                 </video>
               </div>
