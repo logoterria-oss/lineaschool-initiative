@@ -78,21 +78,23 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
 
     // Добавляем изображение в PDF
     const imgData = canvas.toDataURL('image/png');
+    const topMargin = 15; // Отступ сверху 15мм
+    const pageHeight = 297; // A4 height in mm
+    const contentHeight = pageHeight - topMargin; // Высота контента на странице
     
-    if (imgHeight <= 297) {
+    if (imgHeight <= contentHeight) {
       // Помещается на одну страницу
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 0, topMargin, imgWidth, imgHeight);
     } else {
       // Разбиваем на несколько страниц
       let position = 0;
-      const pageHeight = 297; // A4 height in mm
 
       while (position < imgHeight) {
         if (position > 0) {
           pdf.addPage();
         }
-        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
-        position += pageHeight;
+        pdf.addImage(imgData, 'PNG', 0, topMargin - position, imgWidth, imgHeight);
+        position += contentHeight;
       }
     }
 
