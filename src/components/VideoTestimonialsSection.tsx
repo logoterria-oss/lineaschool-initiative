@@ -11,19 +11,19 @@ export default function VideoTestimonialsSection() {
       id: 1,
       title: "Анна, мама Миши (5 лет)",
       description: "За 3 месяца сын заговорил четко",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      videoUrl: "/IMG_1141 (1) (1).mov",
     },
     {
       id: 2,
       title: "Елена, мама Софии (4 года)",
       description: "Проблемы с Р полностью решены",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      videoUrl: "/IMG_1143 (1).mov",
     },
     {
       id: 3,
       title: "Михаил, папа Артема (6 лет)",
       description: "Логопед помог подготовиться к школе",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      videoUrl: "/IMG_1144 (1).mov",
     }
   ];
 
@@ -106,17 +106,18 @@ export default function VideoTestimonialsSection() {
           {/* Активное видео */}
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="aspect-video">
-                <iframe
+              <div className="aspect-video bg-black">
+                <video
                   width="100%"
                   height="100%"
-                  src={videoTestimonials[activeVideoTab].videoUrl}
-                  title={videoTestimonials[activeVideoTab].title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                ></iframe>
+                  controls
+                  preload="metadata"
+                  className="w-full h-full object-contain"
+                >
+                  <source src={videoTestimonials[activeVideoTab].videoUrl} type="video/quicktime" />
+                  <source src={videoTestimonials[activeVideoTab].videoUrl} type="video/mp4" />
+                  Ваш браузер не поддерживает видео
+                </video>
               </div>
               <div className="p-6">
                 <h4 className="text-xl font-bold text-gray-800 mb-2">
