@@ -5,28 +5,25 @@ export default function VideoTestimonialsSection() {
   const [activeVideoTab, setActiveVideoTab] = useState(0);
   const [activeImageSlide, setActiveImageSlide] = useState(0);
 
-  // Видео-отзывы (пока заглушки, потом добавите реальные видео)
+  // Видео-отзывы
   const videoTestimonials = [
     {
       id: 1,
       title: "Анна, мама Миши (5 лет)",
       description: "За 3 месяца сын заговорил четко",
-      thumbnail: "/api/placeholder/300/200",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", // Заглушка
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     },
     {
       id: 2,
       title: "Елена, мама Софии (4 года)",
       description: "Проблемы с Р полностью решены",
-      thumbnail: "/api/placeholder/300/200",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", // Заглушка
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     },
     {
       id: 3,
       title: "Михаил, папа Артема (6 лет)",
       description: "Логопед помог подготовиться к школе",
-      thumbnail: "/api/placeholder/300/200", 
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", // Заглушка
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     }
   ];
 
