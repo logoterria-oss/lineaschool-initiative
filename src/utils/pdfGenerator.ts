@@ -45,12 +45,13 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.width = '210mm'; // A4 width
-    tempDiv.style.padding = '20mm';
+    tempDiv.style.padding = '30mm 20mm'; // 30мм сверху и снизу, 20мм по бокам
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.fontFamily = 'Arial, sans-serif';
     tempDiv.style.fontSize = '12px';
     tempDiv.style.lineHeight = '1.4';
     tempDiv.style.color = 'black';
+    tempDiv.style.boxSizing = 'border-box';
 
     tempDiv.innerHTML = createPDFContent(diagData, serialNumber);
     
@@ -78,14 +79,11 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
 
     // Добавляем изображение в PDF
     const imgData = canvas.toDataURL('image/png');
-    const topMargin = 30; // Отступ сверху 30мм (3см)
-    const bottomMargin = 30; // Отступ снизу 30мм (3см)
     const pageHeight = 297; // A4 height in mm
-    const contentHeight = pageHeight - topMargin - bottomMargin; // Высота контента на странице
     
-    if (imgHeight <= contentHeight) {
+    if (imgHeight <= pageHeight) {
       // Помещается на одну страницу
-      pdf.addImage(imgData, 'PNG', 0, topMargin, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
     } else {
       // Разбиваем на несколько страниц
       let position = 0;
@@ -94,8 +92,8 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
         if (position > 0) {
           pdf.addPage();
         }
-        pdf.addImage(imgData, 'PNG', 0, topMargin - position, imgWidth, imgHeight);
-        position += contentHeight;
+        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
+        position += pageHeight;
       }
     }
 
