@@ -17,14 +17,14 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
-      gradient: "from-pink-400 to-purple-500"
+      gradient: "from-green-400 to-teal-500"
     },
     {
       id: 2,
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
-      gradient: "from-blue-400 to-indigo-500"
+      gradient: "from-green-400 to-teal-500"
     },
     {
       id: 3,
@@ -38,28 +38,28 @@ export default function TestimonialsSection() {
       name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
-      gradient: "from-orange-400 to-red-500"
+      gradient: "from-green-400 to-teal-500"
     },
     {
       id: 5,
       name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
-      gradient: "from-yellow-400 to-orange-500"
+      gradient: "from-green-400 to-teal-500"
     },
     {
       id: 6,
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
-      gradient: "from-cyan-400 to-blue-500"
+      gradient: "from-green-400 to-teal-500"
     },
     {
       id: 7,
       name: "Мария, мама Ромы (11 лет)",
       description: "",
       videoUrl: "/IMG_1156.MOV",
-      gradient: "from-rose-400 to-pink-500"
+      gradient: "from-green-400 to-teal-500"
     }
   ];
 
