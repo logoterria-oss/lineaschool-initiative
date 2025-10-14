@@ -78,9 +78,10 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
 
     // Добавляем изображение в PDF
     const imgData = canvas.toDataURL('image/png');
-    const topMargin = 15; // Отступ сверху 15мм
+    const topMargin = 30; // Отступ сверху 30мм (3см)
+    const bottomMargin = 30; // Отступ снизу 30мм (3см)
     const pageHeight = 297; // A4 height in mm
-    const contentHeight = pageHeight - topMargin; // Высота контента на странице
+    const contentHeight = pageHeight - topMargin - bottomMargin; // Высота контента на странице
     
     if (imgHeight <= contentHeight) {
       // Помещается на одну страницу
