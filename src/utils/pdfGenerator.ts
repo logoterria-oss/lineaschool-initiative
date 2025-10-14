@@ -62,8 +62,7 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 794, // A4 width in pixels at 96 DPI
-      height: 1123 // A4 height in pixels at 96 DPI
+      width: tempDiv.scrollWidth
     });
 
     // Создаем PDF
