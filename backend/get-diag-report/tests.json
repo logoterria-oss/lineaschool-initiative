@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Получение существующего заключения",
+      "method": "GET",
+      "queryStringParameters": {
+        "id": "19"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "id": 19
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Получение несуществующего заключения",
+      "method": "GET",
+      "queryStringParameters": {
+        "id": "999999"
+      },
+      "expectedStatus": 404,
+      "expectedBody": {
+        "success": false
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -20,7 +20,7 @@ export function useDiagData(serialNumber: string | undefined) {
 
         // Попытка загрузить данные из БД
         try {
-          const response = await fetch(`https://functions.poehali.dev/a5ea21c2-fada-4606-b21f-00cd65c05b8c?id=${serialNumber}`);
+          const response = await fetch(`https://functions.poehali.dev/ccdf6e9e-8ab6-450b-a327-e0afd0a8a31c?id=${serialNumber}`);
           
           if (response.ok) {
             const data = await response.json();
