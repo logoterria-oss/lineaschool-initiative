@@ -20,21 +20,25 @@ export function useDiagData(serialNumber: string | undefined) {
 
         // Попытка загрузить данные из БД
         try {
-          const response = await fetch(`https://functions.poehali.dev/ccdf6e9e-8ab6-450b-a327-e0afd0a8a31c?id=${serialNumber}`);
+          const url = `https://functions.poehali.dev/ccdf6e9e-8ab6-450b-a327-e0afd0a8a31c?id=${serialNumber}`;
+          console.log('🌐 Запрос к базе данных:', url);
           
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.form_data) {
-              console.log('✅ Данные загружены из базы данных');
-              setDiagData(data.form_data);
-              setError(null);
-              setLoading(false);
-              return;
-            }
+          const response = await fetch(url);
+          console.log('📥 Статус ответа:', response.status);
+          
+          const data = await response.json();
+          console.log('📦 Полученные данные:', data);
+          
+          if (response.ok && data.success && data.form_data) {
+            console.log('✅ Данные загружены из базы данных');
+            setDiagData(data.form_data);
+            setError(null);
+            setLoading(false);
+            return;
           } else if (response.status === 404) {
             console.warn('🔍 Заключение не найдено в БД, пробуем localStorage');
           } else {
-            console.warn('⚠️ Ошибка загрузки из БД:', response.status);
+            console.warn('⚠️ Ошибка загрузки из БД:', response.status, data);
           }
         } catch (fetchError) {
           console.warn('⚠️ Сетевая ошибка при загрузке из БД:', fetchError);
