@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon';
 export default function VideoTestimonialsSection() {
   const [activeVideoTab, setActiveVideoTab] = useState(0);
   const [activeImageSlide, setActiveImageSlide] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Видео-отзывы
   const videoTestimonials = [
@@ -94,7 +95,10 @@ export default function VideoTestimonialsSection() {
             {videoTestimonials.map((video, index) => (
               <button
                 key={video.id}
-                onClick={() => setActiveVideoTab(index)}
+                onClick={() => {
+                  setActiveVideoTab(index);
+                  setIsPlaying(false);
+                }}
                 className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 ${
                   activeVideoTab === index
                     ? 'bg-green-600 text-white shadow-lg'
@@ -109,16 +113,42 @@ export default function VideoTestimonialsSection() {
           {/* Активное видео */}
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="aspect-video bg-black">
+              <div className="aspect-video bg-black relative">
+                {!isPlaying && (
+                  <div 
+                    className="absolute inset-0 cursor-pointer group"
+                    style={{
+                      backgroundImage: `url(${videoTestimonials[activeVideoTab].poster})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                    onClick={() => {
+                      const video = document.getElementById('main-video') as HTMLVideoElement;
+                      if (video) {
+                        video.play();
+                        setIsPlaying(true);
+                      }
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Icon name="Play" size={40} className="text-green-600 ml-1" />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <video
+                  id="main-video"
                   key={videoTestimonials[activeVideoTab].videoUrl}
                   width="100%"
                   height="100%"
-                  controls
+                  controls={isPlaying}
                   preload="metadata"
                   className="w-full h-full object-contain"
-                  poster={videoTestimonials[activeVideoTab].poster}
                   src={videoTestimonials[activeVideoTab].videoUrl}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
                 >
                   Ваш браузер не поддерживает видео
                 </video>
