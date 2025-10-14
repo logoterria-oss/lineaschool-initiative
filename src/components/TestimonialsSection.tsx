@@ -17,42 +17,49 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
+      gradient: "from-pink-400 to-purple-500"
     },
     {
       id: 2,
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
+      gradient: "from-blue-400 to-indigo-500"
     },
     {
       id: 3,
       name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
+      gradient: "from-green-400 to-teal-500"
     },
     {
       id: 4,
       name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
+      gradient: "from-orange-400 to-red-500"
     },
     {
       id: 5,
       name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
+      gradient: "from-yellow-400 to-orange-500"
     },
     {
       id: 6,
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
+      gradient: "from-cyan-400 to-blue-500"
     },
     {
       id: 7,
       name: "Мария, мама Ромы (11 лет)",
       description: "",
       videoUrl: "/IMG_1156.MOV",
+      gradient: "from-rose-400 to-pink-500"
     }
   ];
 
@@ -254,19 +261,23 @@ export default function TestimonialsSection() {
                       className="flex-shrink-0 w-72 sm:w-80 bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
                     >
                       {/* Видео с адаптивным форматом */}
-                      <div className="aspect-[9/16] bg-gray-100 relative group">
+                      <div className="aspect-[9/16] relative group overflow-hidden">
+                        {/* Градиентный фон как обложка */}
+                        {playingVideoId !== video.id && (
+                          <div className={`absolute inset-0 bg-gradient-to-br ${video.gradient}`} />
+                        )}
+                        
                         <video
                           ref={(el) => {
                             if (el) {
                               videoRefs.current[video.id] = el;
                             }
                           }}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${playingVideoId === video.id ? 'relative z-10' : 'opacity-0'}`}
                           onEnded={handleVideoEnded}
                           controls={playingVideoId === video.id}
                           playsInline
-                          preload="metadata"
-                          poster={`${video.videoUrl}#t=0.1`}
+                          preload="none"
                           muted
                         >
                           <source src={video.videoUrl} type="video/mp4" />
@@ -278,10 +289,10 @@ export default function TestimonialsSection() {
                       {playingVideoId !== video.id && (
                         <button
                           onClick={() => toggleVideoPlay(video.id)}
-                          className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-40 transition-all duration-300"
+                          className="absolute inset-0 flex items-center justify-center z-20 group-hover:bg-black group-hover:bg-opacity-10 transition-all duration-300"
                         >
-                          <div className="bg-white bg-opacity-95 rounded-full p-3 sm:p-4 hover:scale-110 transition-transform duration-200">
-                            <Icon name="Play" size={24} className="text-green-600" style={{ marginLeft: '2px' }} />
+                          <div className="bg-white rounded-full p-4 sm:p-5 hover:scale-110 transition-transform duration-200 shadow-2xl">
+                            <Icon name="Play" size={32} className="text-green-600" style={{ marginLeft: '3px' }} />
                           </div>
                         </button>
                       )}
