@@ -12,18 +12,21 @@ export default function VideoTestimonialsSection() {
       title: "Анна, мама Миши (5 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
+      poster: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/ebe5b421-b2a5-4085-a8ba-af05f320bc14.jpg"
     },
     {
       id: 2,
       title: "Елена, мама Софии (4 года)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
+      poster: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/38a6c23a-f99e-42cf-aabe-29640a8dbf18.jpg"
     },
     {
       id: 3,
       title: "Михаил, папа Артема (6 лет)",
       description: "Логопед помог подготовиться к школе",
       videoUrl: "/IMG_1144 (1).mov",
+      poster: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/a194ca8d-b0e1-4cff-ba9e-50cd144015e1.jpg"
     }
   ];
 
@@ -114,7 +117,8 @@ export default function VideoTestimonialsSection() {
                   controls
                   preload="metadata"
                   className="w-full h-full object-contain"
-                  src={`${videoTestimonials[activeVideoTab].videoUrl}#t=0.5`}
+                  poster={videoTestimonials[activeVideoTab].poster}
+                  src={videoTestimonials[activeVideoTab].videoUrl}
                 >
                   Ваш браузер не поддерживает видео
                 </video>
