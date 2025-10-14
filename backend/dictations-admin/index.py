@@ -34,7 +34,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET':
             cur.execute(
                 "SELECT * FROM t_p93118852_lineaschool_initiati.dictations "
-                "ORDER BY created_at DESC"
+                "ORDER BY created_at DESC LIMIT 50"
             )
             dictations = cur.fetchall()
             
@@ -47,7 +47,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
                     'photo_url': d['photo_url'],
-                    'annotated_image': d.get('annotated_image'),
+                    'has_annotation': bool(d.get('annotated_image')),
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
                     'created_at': d['created_at'].isoformat() if d['created_at'] else None,
@@ -71,14 +71,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if action == 'save_annotation':
                 dictation_id = body_data.get('id')
-                annotated_image = body_data.get('annotated_image')
+                annotated_image = body_data.get('annotated_image', '').replace("'", "''")
                 
-                cur.execute(
-                    "UPDATE t_p93118852_lineaschool_initiati.dictations "
-                    "SET annotated_image = %s "
-                    "WHERE id = %s",
-                    (annotated_image, dictation_id)
-                )
+                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image}' WHERE id = {dictation_id}"
+                cur.execute(query)
                 conn.commit()
                 cur.close()
                 conn.close()
@@ -92,16 +88,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if action == 'mark_checked':
                 dictation_id = body_data.get('id')
-                notes = body_data.get('notes', '')
-                annotated_image = body_data.get('annotated_image')
+                notes = body_data.get('notes', '').replace("'", "''")
+                annotated_image = body_data.get('annotated_image', '').replace("'", "''")
                 
-                cur.execute(
-                    "UPDATE t_p93118852_lineaschool_initiati.dictations "
-                    "SET status = 'checked', diagnostician_notes = %s, "
-                    "annotated_image = %s, checked_at = CURRENT_TIMESTAMP "
-                    "WHERE id = %s",
-                    (notes, annotated_image, dictation_id)
-                )
+                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET status = 'checked', diagnostician_notes = '{notes}', annotated_image = '{annotated_image}', checked_at = CURRENT_TIMESTAMP WHERE id = {dictation_id}"
+                cur.execute(query)
                 conn.commit()
                 cur.close()
                 conn.close()
