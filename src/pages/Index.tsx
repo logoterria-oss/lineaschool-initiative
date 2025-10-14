@@ -1,30 +1,20 @@
-import { Suspense, lazy } from 'react';
 import SEOHead from "@/components/SEOHead";
 import YandexMetaTags from "@/components/YandexMetaTags";
 import { organizationSchema, serviceSchema, faqSchema, webPageSchema } from "@/utils/structuredData";
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
-
-// Lazy load неприоритетных компонентов
-const MethodologySection = lazy(() => import("@/components/MethodologySection"));
-const FeaturesSection = lazy(() => import("@/components/FeaturesSection"));
-const DiagnosticSection = lazy(() => import("@/components/DiagnosticSection"));
-const WhyNotTeacherSection = lazy(() => import("@/components/WhyNotTeacherSection"));
-const AboutSection = lazy(() => import("@/components/AboutSection"));
-const SpecialistsSection = lazy(() => import("@/components/SpecialistsSection"));
-const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection"));
-const FAQSection = lazy(() => import("@/components/FAQSection"));
-const CTASection = lazy(() => import("@/components/CTASection"));
-const Footer = lazy(() => import("@/components/Footer"));
-const MobileFloatingButtons = lazy(() => import("@/components/MobileFloatingButtons"));
-const MobileOptimizedSpirals = lazy(() => import("@/components/MobileOptimizedSpirals"));
-
-// Компонент загрузки секций
-const SectionLoader = () => (
-  <div className="flex items-center justify-center py-8">
-    <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-  </div>
-);
+import MethodologySection from "@/components/MethodologySection";
+import FeaturesSection from "@/components/FeaturesSection";
+import DiagnosticSection from "@/components/DiagnosticSection";
+import WhyNotTeacherSection from "@/components/WhyNotTeacherSection";
+import AboutSection from "@/components/AboutSection";
+import SpecialistsSection from "@/components/SpecialistsSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
+import FAQSection from "@/components/FAQSection";
+import CTASection from "@/components/CTASection";
+import Footer from "@/components/Footer";
+import MobileFloatingButtons from "@/components/MobileFloatingButtons";
+import MobileOptimizedSpirals from "@/components/MobileOptimizedSpirals";
 
 export default function Index() {
   const combinedSchema = {
@@ -50,44 +40,20 @@ export default function Index() {
       <YandexMetaTags />
       
       <div className="min-h-screen bg-white relative">
-        <Suspense fallback={null}>
-          <MobileOptimizedSpirals />
-        </Suspense>
+        <MobileOptimizedSpirals />
         <Navigation />
         <HeroSection />
-        <Suspense fallback={<SectionLoader />}>
-          <MethodologySection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <FeaturesSection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <DiagnosticSection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <WhyNotTeacherSection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <AboutSection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <SpecialistsSection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <TestimonialsSection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <FAQSection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <CTASection />
-        </Suspense>
-        <Suspense fallback={<SectionLoader />}>
-          <Footer />
-        </Suspense>
-        <Suspense fallback={null}>
-          <MobileFloatingButtons />
-        </Suspense>
+        <MethodologySection />
+        <FeaturesSection />
+        <DiagnosticSection />
+        <WhyNotTeacherSection />
+        <AboutSection />
+        <SpecialistsSection />
+        <TestimonialsSection />
+        <FAQSection />
+        <CTASection />
+        <Footer />
+        <MobileFloatingButtons />
       </div>
     </>
   );
