@@ -177,6 +177,26 @@ function DetailedView({ responseId }: { responseId: number }) {
   const [details, setDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const translateValue = (value: string | undefined): string => {
+    if (!value) return '';
+    
+    const translations: Record<string, string> = {
+      'yes': 'Да',
+      'no': 'Нет',
+      'school': 'Школа',
+      'homeschool': 'Домашнее обучение',
+      'other': 'Другое',
+      'right': 'Правша',
+      'left': 'Левша',
+      'retrained': 'Переученный левша',
+      'Логопед': 'Логопед',
+      'Дефектолог': 'Дефектолог',
+      'Нейропсихолог': 'Нейропсихолог'
+    };
+    
+    return translations[value] || value;
+  };
+
   useEffect(() => {
     fetchDetails();
   }, [responseId]);
@@ -207,25 +227,25 @@ function DetailedView({ responseId }: { responseId: number }) {
   return (
     <div className="space-y-6">
       <Section title="Образование">
-        <Field label="Тип образования" value={details.education_type} />
-        <Field label="АООП требуется" value={details.aoop_required} />
-        {details.aoop_required === 'Да' && (
+        <Field label="Тип образования" value={translateValue(details.education_type)} />
+        <Field label="АООП требуется" value={translateValue(details.aoop_required)} />
+        {(details.aoop_required === 'yes' || details.aoop_required === 'Да') && (
           <Field label="Вариант АООП" value={details.aoop_variant} />
         )}
         <Field label="Возраст поступления в школу" value={details.school_start_age} />
-        <Field label="Детский сад" value={details.kindergarten} />
+        <Field label="Детский сад" value={translateValue(details.kindergarten)} />
       </Section>
 
       <Section title="Анамнез">
-        <Field label="Пренатальное развитие" value={details.prenatal_development} />
-        <Field label="Неврологические нарушения" value={details.neurological_disorders} />
-        <Field label="Нарушения слуха/зрения" value={details.hearing_vision_disorders} />
-        <Field label="Хронические заболевания" value={details.chronic_diseases} />
-        <Field label="Речевая среда" value={details.speech_environment} />
+        <Field label="Пренатальное развитие" value={translateValue(details.prenatal_development)} />
+        <Field label="Неврологические нарушения" value={translateValue(details.neurological_disorders)} />
+        <Field label="Нарушения слуха/зрения" value={translateValue(details.hearing_vision_disorders)} />
+        <Field label="Хронические заболевания" value={translateValue(details.chronic_diseases)} />
+        <Field label="Речевая среда" value={translateValue(details.speech_environment)} />
       </Section>
 
       <Section title="Предыдущие специалисты">
-        <Field label="Посещали" value={details.previous_specialists?.join(', ') || 'Нет'} />
+        <Field label="Посещали" value={details.previous_specialists?.map(translateValue).join(', ') || 'Нет'} />
         {details.speech_therapist_conclusion && (
           <Field label="Заключение логопеда" value={details.speech_therapist_conclusion} />
         )}
@@ -238,7 +258,7 @@ function DetailedView({ responseId }: { responseId: number }) {
       </Section>
 
       <Section title="Дополнительно">
-        <Field label="Доминантная рука" value={details.dominant_hand} />
+        <Field label="Доминантная рука" value={translateValue(details.dominant_hand)} />
       </Section>
     </div>
   );
