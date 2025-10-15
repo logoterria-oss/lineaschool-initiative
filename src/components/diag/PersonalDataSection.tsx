@@ -94,11 +94,11 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           }
           
           // Anamnesis data - fill radio buttons and custom text fields
-          // If "нет", "no", "другое" or empty - select "нет" radio, leave text field empty
-          // If has real content - select "custom" radio and fill text
-          if (data.prenatalDevelopment && data.prenatalDevelopment.trim() && 
-              data.prenatalDevelopment !== 'Нет' && data.prenatalDevelopment !== 'no' &&
-              data.prenatalDevelopment !== 'другое') {
+          // Check if value is empty, "нет", "no", or "другое" -> select "нет" radio, empty text
+          // Otherwise -> select "custom" radio and fill text
+          const trimmedPrenatal = data.prenatalDevelopment?.trim() || '';
+          if (trimmedPrenatal && trimmedPrenatal !== 'нет' && trimmedPrenatal !== 'Нет' && 
+              trimmedPrenatal !== 'no' && trimmedPrenatal !== 'другое') {
             onInputChange('prenatalDevelopment', 'custom');
             onInputChange('prenatalDevelopmentCustom', data.prenatalDevelopment);
           } else {
@@ -106,9 +106,9 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('prenatalDevelopmentCustom', '');
           }
           
-          if (data.neurologicalDisorders && data.neurologicalDisorders.trim() && 
-              data.neurologicalDisorders !== 'Нет' && data.neurologicalDisorders !== 'no' &&
-              data.neurologicalDisorders !== 'другое') {
+          const trimmedNeuro = data.neurologicalDisorders?.trim() || '';
+          if (trimmedNeuro && trimmedNeuro !== 'нет' && trimmedNeuro !== 'Нет' && 
+              trimmedNeuro !== 'no' && trimmedNeuro !== 'другое') {
             onInputChange('neurologicalDisorders', 'custom');
             onInputChange('neurologicalDisordersCustom', data.neurologicalDisorders);
           } else {
@@ -116,9 +116,9 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('neurologicalDisordersCustom', '');
           }
           
-          if (data.hearingVisionDisorders && data.hearingVisionDisorders.trim() && 
-              data.hearingVisionDisorders !== 'Нет' && data.hearingVisionDisorders !== 'no' &&
-              data.hearingVisionDisorders !== 'другое') {
+          const trimmedHearing = data.hearingVisionDisorders?.trim() || '';
+          if (trimmedHearing && trimmedHearing !== 'нет' && trimmedHearing !== 'Нет' && 
+              trimmedHearing !== 'no' && trimmedHearing !== 'другое') {
             onInputChange('hearingVisionDisorders', 'custom');
             onInputChange('hearingVisionDisordersCustom', data.hearingVisionDisorders);
           } else {
@@ -126,9 +126,9 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('hearingVisionDisordersCustom', '');
           }
           
-          if (data.chronicDiseases && data.chronicDiseases.trim() && 
-              data.chronicDiseases !== 'Нет' && data.chronicDiseases !== 'no' &&
-              data.chronicDiseases !== 'другое') {
+          const trimmedChronic = data.chronicDiseases?.trim() || '';
+          if (trimmedChronic && trimmedChronic !== 'нет' && trimmedChronic !== 'Нет' && 
+              trimmedChronic !== 'no' && trimmedChronic !== 'другое') {
             onInputChange('chronicDiseases', 'custom');
             onInputChange('chronicDiseasesCustom', data.chronicDiseases);
           } else {
@@ -136,9 +136,9 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('chronicDiseasesCustom', '');
           }
           
-          if (data.speechEnvironment && data.speechEnvironment.trim() && 
-              data.speechEnvironment !== 'Нет' && data.speechEnvironment !== 'no' &&
-              data.speechEnvironment !== 'другое') {
+          const trimmedSpeech = data.speechEnvironment?.trim() || '';
+          if (trimmedSpeech && trimmedSpeech !== 'нет' && trimmedSpeech !== 'Нет' && 
+              trimmedSpeech !== 'no' && trimmedSpeech !== 'другое') {
             onInputChange('speechEnvironment', 'custom');
             onInputChange('speechEnvironmentCustom', data.speechEnvironment);
           } else {
