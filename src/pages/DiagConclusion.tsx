@@ -56,17 +56,7 @@ export default function DiagConclusion() {
             </h1>
             <p className="text-lg text-gray-600 mb-4">№ {serialNumber}</p>
             
-            <div className="flex flex-col sm:flex-row gap-3 justify-center no-print">
-              <button
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                Печать
-              </button>
-              
+            <div className="flex justify-center no-print">
               <button
                 onClick={() => {
                   window.print();
@@ -83,17 +73,13 @@ export default function DiagConclusion() {
 
           <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8 print-page">
             {/* Логотип школы - только для печати */}
-            <div className="hidden print:block mb-8">
+            <div className="hidden print:block mb-6">
               <img 
                 src="https://cdn.poehali.dev/files/de9188c6-e5b1-4bed-8da4-7cdaf08d2550.png" 
                 alt="LineaSchool" 
                 className="h-16 object-contain"
               />
             </div>
-
-            <h1 className="hidden print:block text-center text-2xl font-bold mb-6">
-              Логопедическое заключение № {serialNumber}
-            </h1>
 
             <PersonalDataView diagData={diagData} />
             <AnamnesticsView diagData={diagData} />
