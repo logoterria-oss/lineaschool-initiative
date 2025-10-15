@@ -94,8 +94,8 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           }
           
           // Anamnesis data - fill radio buttons and custom text fields
-          // If has meaningful content - select "custom" (есть) and fill text
-          // Otherwise - select "нет"
+          // If "нет", "no", "другое" or empty - select "нет" radio, leave text field empty
+          // If has real content - select "custom" radio and fill text
           if (data.prenatalDevelopment && data.prenatalDevelopment.trim() && 
               data.prenatalDevelopment !== 'Нет' && data.prenatalDevelopment !== 'no' &&
               data.prenatalDevelopment !== 'другое') {
@@ -103,6 +103,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('prenatalDevelopmentCustom', data.prenatalDevelopment);
           } else {
             onInputChange('prenatalDevelopment', 'нет');
+            onInputChange('prenatalDevelopmentCustom', '');
           }
           
           if (data.neurologicalDisorders && data.neurologicalDisorders.trim() && 
@@ -112,6 +113,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('neurologicalDisordersCustom', data.neurologicalDisorders);
           } else {
             onInputChange('neurologicalDisorders', 'нет');
+            onInputChange('neurologicalDisordersCustom', '');
           }
           
           if (data.hearingVisionDisorders && data.hearingVisionDisorders.trim() && 
@@ -121,6 +123,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('hearingVisionDisordersCustom', data.hearingVisionDisorders);
           } else {
             onInputChange('hearingVisionDisorders', 'нет');
+            onInputChange('hearingVisionDisordersCustom', '');
           }
           
           if (data.chronicDiseases && data.chronicDiseases.trim() && 
@@ -130,6 +133,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('chronicDiseasesCustom', data.chronicDiseases);
           } else {
             onInputChange('chronicDiseases', 'нет');
+            onInputChange('chronicDiseasesCustom', '');
           }
           
           if (data.speechEnvironment && data.speechEnvironment.trim() && 
@@ -139,6 +143,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('speechEnvironmentCustom', data.speechEnvironment);
           } else {
             onInputChange('speechEnvironment', 'нет');
+            onInputChange('speechEnvironmentCustom', '');
           }
           
           // Previous specialists - map from questionnaire format to diag form format
