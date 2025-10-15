@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Footer from "@/components/Footer";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
@@ -18,6 +18,15 @@ export default function DiagConclusion() {
   const { serialNumber } = useParams();
   const { diagData, loading, error } = useDiagData(serialNumber);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Устанавливаем название документа для печати
+  useEffect(() => {
+    if (diagData?.childName) {
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('ru-RU').replace(/\./g, '-');
+      document.title = `${diagData.childName} - заключение - ${dateStr}`;
+    }
+  }, [diagData]);
 
   if (loading) {
     return <LoadingState />;
