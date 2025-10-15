@@ -32,7 +32,7 @@ const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
               <span className="font-semibold text-gray-900 hidden sm:block">Linea School</span>
             </button>
             
-            {!showOnlyHome && !isDashboard && (
+            {!showOnlyHome && (
               <>
                 <div className="h-6 w-px bg-gray-300 hidden md:block"></div>
                 <nav className="hidden md:flex items-center gap-2">
