@@ -109,8 +109,13 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
     // Удаляем временный элемент
     document.body.removeChild(tempDiv);
 
+    // Форматируем дату
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('ru-RU').replace(/\./g, '-');
+
     // Скачиваем PDF
-    const fileName = `Логопедическое_заключение_${diagData.childName.replace(/\s+/g, '_')}_${serialNumber}.pdf`;
+    const childName = diagData.childName || 'Пациент';
+    const fileName = `${childName} - заключение - ${dateStr}.pdf`;
     pdf.save(fileName);
 
   } catch (error) {
