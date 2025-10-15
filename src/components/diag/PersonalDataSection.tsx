@@ -94,45 +94,36 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           }
           
           // Anamnesis data - fill radio buttons and custom text fields
-          // If has content (not empty, not "Нет", not "no") - select "custom" and fill text
+          // If has content - select "custom" and fill text
+          // If empty or "no" - don't select anything (leave blank)
           if (data.prenatalDevelopment && data.prenatalDevelopment.trim() && 
               data.prenatalDevelopment !== 'Нет' && data.prenatalDevelopment !== 'no') {
             onInputChange('prenatalDevelopment', 'custom');
             onInputChange('prenatalDevelopmentCustom', data.prenatalDevelopment);
-          } else {
-            onInputChange('prenatalDevelopment', 'нет');
           }
           
           if (data.neurologicalDisorders && data.neurologicalDisorders.trim() && 
               data.neurologicalDisorders !== 'Нет' && data.neurologicalDisorders !== 'no') {
             onInputChange('neurologicalDisorders', 'custom');
             onInputChange('neurologicalDisordersCustom', data.neurologicalDisorders);
-          } else {
-            onInputChange('neurologicalDisorders', 'нет');
           }
           
           if (data.hearingVisionDisorders && data.hearingVisionDisorders.trim() && 
               data.hearingVisionDisorders !== 'Нет' && data.hearingVisionDisorders !== 'no') {
             onInputChange('hearingVisionDisorders', 'custom');
             onInputChange('hearingVisionDisordersCustom', data.hearingVisionDisorders);
-          } else {
-            onInputChange('hearingVisionDisorders', 'нет');
           }
           
           if (data.chronicDiseases && data.chronicDiseases.trim() && 
               data.chronicDiseases !== 'Нет' && data.chronicDiseases !== 'no') {
             onInputChange('chronicDiseases', 'custom');
             onInputChange('chronicDiseasesCustom', data.chronicDiseases);
-          } else {
-            onInputChange('chronicDiseases', 'нет');
           }
           
           if (data.speechEnvironment && data.speechEnvironment.trim() && 
               data.speechEnvironment !== 'Нет' && data.speechEnvironment !== 'no') {
             onInputChange('speechEnvironment', 'custom');
             onInputChange('speechEnvironmentCustom', data.speechEnvironment);
-          } else {
-            onInputChange('speechEnvironment', 'нет');
           }
           
           // Previous specialists - map from questionnaire format to diag form format
