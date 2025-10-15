@@ -74,9 +74,13 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('educationType', data.educationType);
           }
           
-          // Fill AOOP field
-          if (data.aoopRequired === 'yes' && data.aoopVariant) {
-            onInputChange('aoop', data.aoopVariant);
+          // Fill AOOP field - if variant exists use it, otherwise "Да" or "Нет"
+          if (data.aoopRequired === 'yes') {
+            if (data.aoopVariant && data.aoopVariant.trim()) {
+              onInputChange('aoop', data.aoopVariant);
+            } else {
+              onInputChange('aoop', 'Да');
+            }
           } else if (data.aoopRequired === 'no') {
             onInputChange('aoop', 'Нет');
           }
@@ -131,27 +135,36 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('speechEnvironment', 'нет');
           }
           
+          // Previous specialists - map from questionnaire format to diag form format
           if (data.previousSpecialists && data.previousSpecialists.length > 0) {
-            onInputChange('previousSpecialists', data.previousSpecialists);
+            const mappedSpecialists = data.previousSpecialists
+              .map((s: string) => s.toLowerCase())
+              .filter((s: string) => ['логопед', 'дефектолог', 'нейропсихолог'].includes(s));
+            
+            if (mappedSpecialists.length > 0) {
+              onInputChange('previousSpecialists', mappedSpecialists);
+              
+              // Fill conclusion fields if they exist
+              if (data.speechTherapistConclusion && data.speechTherapistConclusion.trim()) {
+                onInputChange('speechTherapistConclusion', data.speechTherapistConclusion);
+              }
+              
+              if (data.neuropsychologistConclusion && data.neuropsychologistConclusion.trim()) {
+                onInputChange('neuropsychologistConclusion', data.neuropsychologistConclusion);
+              }
+              
+              if (data.defectologistConclusion && data.defectologistConclusion.trim()) {
+                onInputChange('defectologistConclusion', data.defectologistConclusion);
+              }
+            } else {
+              onInputChange('previousSpecialists', ['нет']);
+            }
+          } else {
+            onInputChange('previousSpecialists', ['нет']);
           }
           
-          if (data.speechTherapistConclusion && data.speechTherapistConclusion.trim() && 
-              data.speechTherapistConclusion !== 'Нет' && data.speechTherapistConclusion !== 'no') {
-            onInputChange('speechTherapistConclusion', data.speechTherapistConclusion);
-          }
-          
-          if (data.neuropsychologistConclusion && data.neuropsychologistConclusion.trim() && 
-              data.neuropsychologistConclusion !== 'Нет' && data.neuropsychologistConclusion !== 'no') {
-            onInputChange('neuropsychologistConclusion', data.neuropsychologistConclusion);
-          }
-          
-          if (data.defectologistConclusion && data.defectologistConclusion.trim() && 
-              data.defectologistConclusion !== 'Нет' && data.defectologistConclusion !== 'no') {
-            onInputChange('defectologistConclusion', data.defectologistConclusion);
-          }
-          
-          if (data.dominantHand && data.dominantHand.trim() && 
-              data.dominantHand !== 'Нет' && data.dominantHand !== 'no') {
+          // Dominant hand
+          if (data.dominantHand && ['right', 'left', 'retrained'].includes(data.dominantHand)) {
             onInputChange('dominantHand', data.dominantHand);
           }
         }
@@ -305,15 +318,13 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
         <div className="md:col-span-2">
           <Label htmlFor="aoop">Реализуется ли АООП?</Label>
-          <Select value={formData.aoop} onValueChange={(value) => onInputChange("aoop", value)}>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Выберите ответ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Да">Да</SelectItem>
-              <SelectItem value="Нет">Нет</SelectItem>
-            </SelectContent>
-          </Select>
+          <Input
+            id="aoop"
+            value={formData.aoop}
+            onChange={(e) => onInputChange("aoop", e.target.value)}
+            className="mt-1"
+            placeholder='Введите вариант АООП или "Нет"'
+          />
         </div>
       </div>
     </section>

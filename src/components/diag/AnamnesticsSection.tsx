@@ -288,7 +288,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
         {/* Ведущая рука */}
         <div>
           <Label htmlFor="dominantHand">Ведущая рука</Label>
-          <Select onValueChange={(value) => onInputChange("dominantHand", value)}>
+          <Select value={formData.dominantHand} onValueChange={(value) => onInputChange("dominantHand", value)}>
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Выберите вариант" />
             </SelectTrigger>
