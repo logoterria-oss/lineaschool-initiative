@@ -68,14 +68,8 @@ export default function DiagConclusion() {
               </button>
               
               <button
-                onClick={async () => {
-                  try {
-                    const { generatePDF } = await import('@/utils/pdfGenerator');
-                    await generatePDF(diagData, serialNumber || 'Unknown');
-                  } catch (error) {
-                    console.error('Ошибка генерации PDF:', error);
-                    alert('Не удалось создать PDF файл');
-                  }
+                onClick={() => {
+                  window.print();
                 }}
                 className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
               >
@@ -88,6 +82,19 @@ export default function DiagConclusion() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8 print-page">
+            {/* Логотип школы - только для печати */}
+            <div className="hidden print:block mb-8">
+              <img 
+                src="https://cdn.poehali.dev/files/de9188c6-e5b1-4bed-8da4-7cdaf08d2550.png" 
+                alt="LineaSchool" 
+                className="h-16 object-contain"
+              />
+            </div>
+
+            <h1 className="hidden print:block text-center text-2xl font-bold mb-6">
+              Логопедическое заключение № {serialNumber}
+            </h1>
+
             <PersonalDataView diagData={diagData} />
             <AnamnesticsView diagData={diagData} />
             <SpeechView diagData={diagData} />
