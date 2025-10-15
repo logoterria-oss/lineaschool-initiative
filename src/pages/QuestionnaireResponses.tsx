@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import DiagFormNavigation from '@/components/diag/DiagFormNavigation';
+import AdminHeader from '@/components/AdminHeader';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +78,7 @@ export default function QuestionnaireResponses() {
 
   return (
     <div className="min-h-screen bg-white">
-      <DiagFormNavigation />
+      <AdminHeader />
 
       <main className="flex-1 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
