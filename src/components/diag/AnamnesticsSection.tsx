@@ -58,7 +58,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
                 onChange={(e) => onInputChange("prenatalDevelopment", e.target.value)}
                 className="rounded"
               />
-              <Label htmlFor="prenatal-custom">другое:</Label>
+              <Label htmlFor="prenatal-custom">есть:</Label>
             </div>
             {formData.prenatalDevelopment === "custom" && (
               <Textarea
