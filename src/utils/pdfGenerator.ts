@@ -45,10 +45,10 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.width = '210mm'; // A4 width
-    tempDiv.style.padding = '20mm'; // Уменьшаем padding для большего контента
+    tempDiv.style.padding = '0'; // Убираем padding, будем добавлять margin к страницам
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.fontFamily = 'Arial, sans-serif';
-    tempDiv.style.fontSize = '11px'; // Уменьшаем размер шрифта
+    tempDiv.style.fontSize = '11px';
     tempDiv.style.lineHeight = '1.4';
     tempDiv.style.color = 'black';
     tempDiv.style.boxSizing = 'border-box';
@@ -63,7 +63,8 @@ export async function generatePDF(diagData: DiagData, serialNumber: string): Pro
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: tempDiv.scrollWidth
+      width: tempDiv.scrollWidth,
+      windowWidth: tempDiv.scrollWidth
     });
 
     // Создаем PDF
@@ -241,11 +242,16 @@ async function createPDFContent(diagData: DiagData, serialNumber: string): Promi
   }
 
   return `
-    <div style="max-width: 100%; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5;">
-      <!-- Лейбл школы -->
-      <div style="margin-bottom: 20px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #3b82f6; border-radius: 4px;">
-        <p style="margin: 0; font-size: 12px; font-weight: bold; color: #3b82f6;">Школа речи Linea</p>
-        <p style="margin: 5px 0 0 0; font-size: 10px; color: #666;">Логопедическая диагностика и коррекция</p>
+    <div style="max-width: 100%; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5; padding: 25mm 20mm; box-sizing: border-box;">
+      <!-- Лого школы как в шапке сайта -->
+      <div style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+        <div style="width: 50px; height: 50px; background-color: #22c55e; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
+        <span style="font-size: 28px; font-weight: bold; color: #22c55e; font-family: Arial, sans-serif;">LineaSchool</span>
       </div>
 
       <!-- Заголовок -->
@@ -389,17 +395,21 @@ async function createPDFContent(diagData: DiagData, serialNumber: string): Promi
       ` : ''}
 
       <!-- Подпись -->
-      <div style="margin-top: 35px; border-top: 1px solid #333; padding-top: 15px;">
+      <div style="margin-top: 40px; padding-top: 20px;">
         <table style="width: 100%;">
           <tr>
             <td style="width: 48%; vertical-align: bottom;">
-              <div style="border-bottom: 1px solid #333; height: 25px; margin-bottom: 5px;"></div>
+              <div style="border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; min-height: 20px; text-align: center;">
+                ${diagData.logopedist || 'Логопед-диагност'}
+              </div>
               <div style="font-size: 10px; text-align: center; color: #666;">Подпись специалиста</div>
             </td>
             <td style="width: 4%;"></td>
             <td style="width: 48%; vertical-align: bottom;">
-              <div style="border-bottom: 1px solid #333; height: 25px; margin-bottom: 5px;"></div>
-              <div style="font-size: 10px; text-align: center; color: #666;">Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
+              <div style="border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; min-height: 20px; text-align: center;">
+                ${diagData.diagnosisDate ? new Date(diagData.diagnosisDate).toLocaleDateString('ru-RU') : new Date().toLocaleDateString('ru-RU')}
+              </div>
+              <div style="font-size: 10px; text-align: center; color: #666;">Дата</div>
             </td>
           </tr>
         </table>
