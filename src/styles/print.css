@@ -22,9 +22,8 @@
   }
 
   .print-page {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 20mm;
+    width: 100%;
+    padding: 0;
     margin: 0;
     background: white;
     box-shadow: none;
@@ -131,9 +130,9 @@
     text-shadow: none !important;
   }
 
-  /* Убрать отступы и поля для браузера */
+  /* Поля страницы */
   @page {
-    margin: 0;
+    margin: 20mm 15mm;
     size: A4;
   }
 
@@ -161,6 +160,11 @@
   }
 
   /* Секции */
+  section {
+    margin-bottom: 15pt;
+    page-break-inside: avoid;
+  }
+
   .print-section {
     margin-bottom: 20pt;
     page-break-inside: avoid;
