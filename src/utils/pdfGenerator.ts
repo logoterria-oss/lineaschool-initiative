@@ -40,70 +40,77 @@ interface DiagData {
 
 export async function generatePDF(diagData: DiagData, serialNumber: string): Promise<void> {
   try {
-    // Находим элемент страницы
-    const element = document.querySelector('.print-page') as HTMLElement;
-    if (!element) {
-      throw new Error('Элемент для печати не найден');
-    }
+    // Создаем временный div для рендеринга содержимого
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.width = '210mm'; // A4 width
+    tempDiv.style.padding = '0'; // Убираем padding, будем добавлять margin к страницам
+    tempDiv.style.backgroundColor = 'white';
+    tempDiv.style.fontFamily = 'Arial, sans-serif';
+    tempDiv.style.fontSize = '11px';
+    tempDiv.style.lineHeight = '1.4';
+    tempDiv.style.color = 'black';
+    tempDiv.style.boxSizing = 'border-box';
 
-    // Клонируем для модификации
-    const clone = element.cloneNode(true) as HTMLElement;
+    tempDiv.innerHTML = await createPDFContent(diagData, serialNumber);
     
-    // Показываем скрытые элементы для печати
-    const hiddenElements = clone.querySelectorAll('.hidden');
-    hiddenElements.forEach(el => {
-      (el as HTMLElement).classList.remove('hidden');
-      (el as HTMLElement).style.display = 'block';
-    });
+    document.body.appendChild(tempDiv);
 
-    // Временно добавляем в DOM
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.width = '794px'; // A4 width при 96 DPI
-    clone.style.padding = '0';
-    clone.style.background = 'white';
-    document.body.appendChild(clone);
-
-    // Генерируем canvas
-    const canvas = await html2canvas(clone, {
+    // Конвертируем в canvas
+    const canvas = await html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
-      logging: false,
+      allowTaint: true,
       backgroundColor: '#ffffff',
+      width: tempDiv.scrollWidth,
+      windowWidth: tempDiv.scrollWidth
     });
-
-    // Удаляем клон
-    document.body.removeChild(clone);
 
     // Создаем PDF
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4',
+      format: 'a4'
     });
 
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidth = 210; // A4 width
-    const pageHeight = 297; // A4 height
+    // Получаем размеры изображения
+    const imgWidth = 210; // A4 width in mm
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    // Добавляем изображение в PDF с отступами
+    const imgData = canvas.toDataURL('image/png');
+    const pageHeight = 297; // A4 height in mm
+    const topMargin = 25; // 25mm сверху (как в Word)
+    const bottomMargin = 25; // 25mm снизу
+    const contentHeight = pageHeight - topMargin - bottomMargin; // 247mm для контента
     
-    let heightLeft = imgHeight;
-    let position = 0;
+    if (imgHeight <= contentHeight) {
+      // Помещается на одну страницу
+      pdf.addImage(imgData, 'PNG', 0, topMargin, imgWidth, imgHeight);
+    } else {
+      // Разбиваем на несколько страниц с отступами
+      let position = 0;
+      let pageNumber = 0;
 
-    // Первая страница
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    // Дополнительные страницы
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      while (position < imgHeight) {
+        if (pageNumber > 0) {
+          pdf.addPage();
+        }
+        
+        // Добавляем изображение со смещением вверх на position и отступом сверху
+        pdf.addImage(imgData, 'PNG', 0, topMargin - position, imgWidth, imgHeight);
+        
+        position += contentHeight; // Переходим на следующую страницу с учетом контента
+        pageNumber++;
+      }
     }
 
-    // Сохраняем файл
-    const fileName = `Заключение_${serialNumber}_${diagData.lastName || diagData.childName?.split(' ')[0] || 'пациент'}.pdf`;
+    // Удаляем временный элемент
+    document.body.removeChild(tempDiv);
+
+    // Скачиваем PDF
+    const fileName = `Логопедическое_заключение_${diagData.childName.replace(/\s+/g, '_')}_${serialNumber}.pdf`;
     pdf.save(fileName);
 
   } catch (error) {

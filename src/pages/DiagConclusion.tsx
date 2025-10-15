@@ -58,14 +58,8 @@ export default function DiagConclusion() {
             
             <div className="flex justify-center no-print">
               <button
-                onClick={async () => {
-                  try {
-                    const { generatePDF } = await import('@/utils/pdfGenerator');
-                    await generatePDF(diagData, serialNumber || 'Unknown');
-                  } catch (error) {
-                    console.error('Ошибка генерации PDF:', error);
-                    alert('Не удалось создать PDF файл');
-                  }
+                onClick={() => {
+                  window.print();
                 }}
                 className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
               >
