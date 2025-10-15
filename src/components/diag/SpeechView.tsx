@@ -144,7 +144,6 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
         </h2>
         <div className="space-y-3 text-sm">
           <div><strong>Моторная реализация высказывания:</strong> {formatMotorRealization(diagData)}</div>
-          <div><strong>Словообразование:</strong> {formatList(diagData.wordFormation)}</div>
           <div><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</div>
           <div><strong>Связная речь:</strong> {formatConnectedSpeech(diagData)}</div>
 
