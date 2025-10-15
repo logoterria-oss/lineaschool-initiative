@@ -70,7 +70,7 @@ export default function OfferPage() {
               </ul>
 
               <p className="text-sm leading-relaxed">
-                1.5.1.2. Формирование четкости произношения и словообразования.
+                1.5.1.2. Формирование четкости произношения, словоизменения и словообразования.
               </p>
 
               <p className="text-sm leading-relaxed">
