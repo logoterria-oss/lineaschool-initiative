@@ -40,81 +40,12 @@ interface DiagData {
 
 export async function generatePDF(diagData: DiagData, serialNumber: string): Promise<void> {
   try {
-    // Создаем временный div для рендеринга содержимого
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.width = '210mm'; // A4 width
-    tempDiv.style.padding = '0'; // Убираем padding, будем добавлять margin к страницам
-    tempDiv.style.backgroundColor = 'white';
-    tempDiv.style.fontFamily = 'Arial, sans-serif';
-    tempDiv.style.fontSize = '11px';
-    tempDiv.style.lineHeight = '1.4';
-    tempDiv.style.color = 'black';
-    tempDiv.style.boxSizing = 'border-box';
-
-    tempDiv.innerHTML = await createPDFContent(diagData, serialNumber);
-    
-    document.body.appendChild(tempDiv);
-
-    // Конвертируем в canvas
-    const canvas = await html2canvas(tempDiv, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      width: tempDiv.scrollWidth,
-      windowWidth: tempDiv.scrollWidth
-    });
-
-    // Создаем PDF
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    // Получаем размеры изображения
-    const imgWidth = 210; // A4 width in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    // Добавляем изображение в PDF с отступами
-    const imgData = canvas.toDataURL('image/png');
-    const pageHeight = 297; // A4 height in mm
-    const topMargin = 25; // 25mm сверху (как в Word)
-    const bottomMargin = 25; // 25mm снизу
-    const contentHeight = pageHeight - topMargin - bottomMargin; // 247mm для контента
-    
-    if (imgHeight <= contentHeight) {
-      // Помещается на одну страницу
-      pdf.addImage(imgData, 'PNG', 0, topMargin, imgWidth, imgHeight);
-    } else {
-      // Разбиваем на несколько страниц с отступами
-      let position = 0;
-      let pageNumber = 0;
-
-      while (position < imgHeight) {
-        if (pageNumber > 0) {
-          pdf.addPage();
-        }
-        
-        // Добавляем изображение со смещением вверх на position и отступом сверху
-        pdf.addImage(imgData, 'PNG', 0, topMargin - position, imgWidth, imgHeight);
-        
-        position += contentHeight; // Переходим на следующую страницу с учетом контента
-        pageNumber++;
-      }
-    }
-
-    // Удаляем временный элемент
-    document.body.removeChild(tempDiv);
-
-    // Скачиваем PDF
-    const fileName = `Логопедическое_заключение_${diagData.childName.replace(/\s+/g, '_')}_${serialNumber}.pdf`;
-    pdf.save(fileName);
-
+    // Открываем окно печати вместо генерации PDF через html2canvas
+    // Это даст правильные отступы и разбиение на страницы
+    alert('Для сохранения PDF используйте функцию "Печать" и выберите "Сохранить как PDF" в диалоге печати');
+    window.print();
   } catch (error) {
-    console.error('Ошибка генерации PDF:', error);
+    console.error('Ошибка печати:', error);
     throw error;
   }
 }
