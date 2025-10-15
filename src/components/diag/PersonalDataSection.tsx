@@ -27,6 +27,26 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
   const { searchByChildName, isLoading } = useQuestionnaireSearch();
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  const calculateAge = (birthDate: string): string => {
+    if (!birthDate) return '';
+    
+    const parts = birthDate.split(/[-./]/);
+    if (parts.length !== 3) return '';
+    
+    const [year, month, day] = parts;
+    const birth = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const today = new Date();
+    
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age.toString();
+  };
+
   useEffect(() => {
     if (formData.childName.length >= 3) {
       if (searchTimeout) clearTimeout(searchTimeout);
@@ -38,21 +58,83 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           onInputChange('phone', data.parentPhone);
           onInputChange('email', data.parentEmail);
           onInputChange('birthDate', data.birthDate);
-          onInputChange('grade', data.grade);
-          onInputChange('educationType', data.educationType);
-          onInputChange('aoop', data.aoopRequired === 'Да' ? data.aoopVariant : 'Нет');
-          onInputChange('schoolStartAge', data.schoolStartAge);
-          onInputChange('kindergarten', data.kindergarten);
-          onInputChange('prenatalDevelopment', data.prenatalDevelopment);
-          onInputChange('neurologicalDisorders', data.neurologicalDisorders);
-          onInputChange('hearingVisionDisorders', data.hearingVisionDisorders);
-          onInputChange('chronicDiseases', data.chronicDiseases);
-          onInputChange('speechEnvironment', data.speechEnvironment);
-          onInputChange('previousSpecialists', data.previousSpecialists);
-          onInputChange('speechTherapistConclusion', data.speechTherapistConclusion);
-          onInputChange('neuropsychologistConclusion', data.neuropsychologistConclusion);
-          onInputChange('defectologistConclusion', data.defectologistConclusion);
-          onInputChange('dominantHand', data.dominantHand);
+          
+          // Calculate age from birth date
+          const calculatedAge = calculateAge(data.birthDate);
+          if (calculatedAge) {
+            onInputChange('age', calculatedAge);
+          }
+          
+          // Fill only if value exists and not "Нет" or "no"
+          if (data.grade && data.grade !== 'Нет' && data.grade !== 'no') {
+            onInputChange('grade', data.grade);
+          }
+          
+          if (data.educationType && data.educationType !== 'Нет' && data.educationType !== 'no') {
+            onInputChange('educationType', data.educationType);
+          }
+          
+          if (data.aoopRequired === 'yes' && data.aoopVariant) {
+            onInputChange('aoop', data.aoopVariant);
+          }
+          
+          if (data.schoolStartAge && data.schoolStartAge !== 'Нет' && data.schoolStartAge !== 'no') {
+            onInputChange('schoolStartAge', data.schoolStartAge);
+          }
+          
+          if (data.kindergarten && data.kindergarten !== 'Нет' && data.kindergarten !== 'no' && data.kindergarten === 'yes') {
+            onInputChange('kindergarten', data.kindergarten);
+          }
+          
+          // Anamnesis data - fill only if has content (not empty, not "Нет", not "no")
+          if (data.prenatalDevelopment && data.prenatalDevelopment.trim() && 
+              data.prenatalDevelopment !== 'Нет' && data.prenatalDevelopment !== 'no') {
+            onInputChange('prenatalDevelopment', data.prenatalDevelopment);
+          }
+          
+          if (data.neurologicalDisorders && data.neurologicalDisorders.trim() && 
+              data.neurologicalDisorders !== 'Нет' && data.neurologicalDisorders !== 'no') {
+            onInputChange('neurologicalDisorders', data.neurologicalDisorders);
+          }
+          
+          if (data.hearingVisionDisorders && data.hearingVisionDisorders.trim() && 
+              data.hearingVisionDisorders !== 'Нет' && data.hearingVisionDisorders !== 'no') {
+            onInputChange('hearingVisionDisorders', data.hearingVisionDisorders);
+          }
+          
+          if (data.chronicDiseases && data.chronicDiseases.trim() && 
+              data.chronicDiseases !== 'Нет' && data.chronicDiseases !== 'no') {
+            onInputChange('chronicDiseases', data.chronicDiseases);
+          }
+          
+          if (data.speechEnvironment && data.speechEnvironment.trim() && 
+              data.speechEnvironment !== 'Нет' && data.speechEnvironment !== 'no') {
+            onInputChange('speechEnvironment', data.speechEnvironment);
+          }
+          
+          if (data.previousSpecialists && data.previousSpecialists.length > 0) {
+            onInputChange('previousSpecialists', data.previousSpecialists);
+          }
+          
+          if (data.speechTherapistConclusion && data.speechTherapistConclusion.trim() && 
+              data.speechTherapistConclusion !== 'Нет' && data.speechTherapistConclusion !== 'no') {
+            onInputChange('speechTherapistConclusion', data.speechTherapistConclusion);
+          }
+          
+          if (data.neuropsychologistConclusion && data.neuropsychologistConclusion.trim() && 
+              data.neuropsychologistConclusion !== 'Нет' && data.neuropsychologistConclusion !== 'no') {
+            onInputChange('neuropsychologistConclusion', data.neuropsychologistConclusion);
+          }
+          
+          if (data.defectologistConclusion && data.defectologistConclusion.trim() && 
+              data.defectologistConclusion !== 'Нет' && data.defectologistConclusion !== 'no') {
+            onInputChange('defectologistConclusion', data.defectologistConclusion);
+          }
+          
+          if (data.dominantHand && data.dominantHand.trim() && 
+              data.dominantHand !== 'Нет' && data.dominantHand !== 'no') {
+            onInputChange('dominantHand', data.dominantHand);
+          }
         }
       }, 500);
       
@@ -92,7 +174,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
         <div>
           <Label htmlFor="age">Возраст</Label>
-          <Select onValueChange={(value) => onInputChange("age", value)}>
+          <Select value={formData.age} onValueChange={(value) => onInputChange("age", value)}>
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Выберите возраст" />
             </SelectTrigger>
@@ -106,7 +188,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
         <div>
           <Label htmlFor="grade">Класс</Label>
-          <Select onValueChange={(value) => onInputChange("grade", value)}>
+          <Select value={formData.grade} onValueChange={(value) => onInputChange("grade", value)}>
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Выберите класс" />
             </SelectTrigger>
@@ -152,7 +234,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
         <div>
           <Label htmlFor="educationType">Форма получения образования</Label>
-          <Select onValueChange={(value) => onInputChange("educationType", value)}>
+          <Select value={formData.educationType} onValueChange={(value) => onInputChange("educationType", value)}>
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Выберите форму" />
             </SelectTrigger>
@@ -166,7 +248,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
         <div>
           <Label htmlFor="schoolStartAge">Возраст начала школьного обучения</Label>
-          <Select onValueChange={(value) => onInputChange("schoolStartAge", value)}>
+          <Select value={formData.schoolStartAge} onValueChange={(value) => onInputChange("schoolStartAge", value)}>
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Выберите возраст" />
             </SelectTrigger>
@@ -180,7 +262,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
         <div>
           <Label htmlFor="kindergarten">Посещал ли ребенок детский сад</Label>
-          <Select onValueChange={(value) => onInputChange("kindergarten", value)}>
+          <Select value={formData.kindergarten} onValueChange={(value) => onInputChange("kindergarten", value)}>
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Выберите ответ" />
             </SelectTrigger>

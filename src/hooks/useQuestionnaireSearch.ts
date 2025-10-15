@@ -50,6 +50,13 @@ export function useQuestionnaireSearch() {
 
       const data = await response.json();
       
+      // Map education type values from questionnaire to diag form
+      const educationTypeMap: Record<string, string> = {
+        'school': 'school',
+        'correctional': 'special',
+        'family': 'homeschool'
+      };
+      
       // Map database fields to form fields
       return {
         parentName: data.parent_name || '',
@@ -57,7 +64,7 @@ export function useQuestionnaireSearch() {
         parentEmail: data.parent_email || '',
         birthDate: data.birth_date || '',
         grade: data.grade || '',
-        educationType: data.education_type || '',
+        educationType: educationTypeMap[data.education_type] || data.education_type || '',
         aoopRequired: data.aoop_required || '',
         aoopVariant: data.aoop_variant || '',
         schoolStartAge: data.school_start_age || '',
