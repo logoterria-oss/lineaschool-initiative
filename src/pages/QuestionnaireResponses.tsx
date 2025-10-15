@@ -228,7 +228,7 @@ function DetailedView({ responseId }: { responseId: number }) {
     <div className="space-y-6">
       <Section title="Образование">
         <Field label="Тип образования" value={translateValue(details.education_type)} />
-        <Field label="АООП требуется" value={translateValue(details.aoop_required)} />
+        <Field label="АООП" value={translateValue(details.aoop_required)} />
         {(details.aoop_required === 'yes' || details.aoop_required === 'Да') && (
           <Field label="Вариант АООП" value={details.aoop_variant} />
         )}
