@@ -72,13 +72,21 @@ export default function DiagConclusion() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8 print-page">
-            {/* Логотип школы - только для печати */}
-            <div className="hidden print:block mb-6">
+            {/* Логотип школы сверху - только для печати */}
+            <div className="hidden print:block mb-4">
               <img 
                 src="https://cdn.poehali.dev/files/de9188c6-e5b1-4bed-8da4-7cdaf08d2550.png" 
                 alt="LineaSchool" 
                 className="h-16 object-contain"
               />
+            </div>
+
+            {/* Заголовок - только для печати */}
+            <div className="hidden print:block text-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                Логопедическое заключение
+              </h1>
+              <p className="text-base text-gray-600">№ {serialNumber}</p>
             </div>
 
             <PersonalDataView diagData={diagData} />
