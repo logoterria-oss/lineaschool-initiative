@@ -82,7 +82,7 @@ export default function DiagConclusion() {
 
           <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8 print-page">
             {/* Логотип школы сверху - только для печати */}
-            <div className="hidden print:block mb-4">
+            <div className="hidden print:block mb-2">
               <img 
                 src="https://cdn.poehali.dev/files/de9188c6-e5b1-4bed-8da4-7cdaf08d2550.png" 
                 alt="LineaSchool" 
