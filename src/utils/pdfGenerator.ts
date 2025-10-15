@@ -130,11 +130,75 @@ async function createPDFContent(diagData: DiagData, serialNumber: string): Promi
     }
   };
 
-  const formatArray = (arr: string[] | string) => {
-    if (Array.isArray(arr)) {
-      return arr.filter(item => item && item.trim()).join(', ');
+  // Функции форматирования как в diagUtils.ts
+  const translateValue = (value: string) => {
+    if (!value) return 'Не указано';
+    
+    const translations: Record<string, string> = {
+      'в образовательной организации (школа, лицей, гимназия)': 'в общеобразовательной школе',
+      'в образовательной организации (коррекционная школа)': 'в специальной (коррекционной) школе',
+      'семейное образование': 'семейное образование',
+      'school': 'в общеобразовательной школе',
+      'general': 'в общеобразовательной школе',
+      'right': 'правша',
+      'left': 'левша',
+      'retrained': 'правша (переученный левша)',
+      'ambidextrous': 'обе руки',
+      'attended': 'Посещал',
+      'not_attended': 'Не посещал',
+      'aoop_1': 'АООП НОО ОВЗ вариант 1',
+      'aoop_2': 'АООП НОО ОВЗ вариант 2',
+      'none': 'Не требуется',
+      'yes': 'Да',
+      'no': 'Нет',
+      'нет /не диагностировано': 'нет /не диагностировано',
+      'не диагностировано': 'нет /не диагностировано'
+    };
+    
+    return translations[value] || value;
+  };
+
+  const formatList = (items: string[] | string) => {
+    if (!items) return 'Не указано';
+    if (!Array.isArray(items)) return translateValue(items) || 'Не указано';
+    return items.length > 0 ? items.map(translateValue).join(', ') : 'Не указано';
+  };
+
+  const formatValue = (value: string | string[]) => {
+    if (!value) return 'Не указано';
+    if (Array.isArray(value)) {
+      return formatList(value);
     }
-    return arr || '';
+    return translateValue(value) || 'Не указано';
+  };
+
+  const formatAnamnesticsValue = (value: string | string[], isCustom: boolean, customValue?: string, fieldType?: string) => {
+    if (isCustom) {
+      return customValue || 'Не указано';
+    }
+    
+    if (!value) return 'Не указано';
+    
+    if (value === 'нет') {
+      if (fieldType === 'prenatal' || fieldType === 'speech') {
+        return 'без особенностей';
+      }
+      return 'нет /не диагностировано';
+    }
+    
+    if (value === 'нет /не диагностировано' || value === 'не диагностировано') {
+      return 'нет /не диагностировано';
+    }
+    
+    if (Array.isArray(value)) {
+      return formatList(value);
+    }
+    
+    return translateValue(value) || 'Не указано';
+  };
+
+  const formatArray = (arr: string[] | string) => {
+    return formatList(arr);
   };
 
   // Функция для форматирования моторной реализации
@@ -275,38 +339,20 @@ async function createPDFContent(diagData: DiagData, serialNumber: string): Promi
         <h2 style="font-size: 14px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 4px;">
           Персональные данные
         </h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold; width: 35%;">Ф.И.О. ребенка:</td>
-            <td style="padding: 4px 8px; border-bottom: 1px solid #ddd;">${diagData.childName || ''}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold;">Дата рождения:</td>
-            <td style="padding: 4px 8px; border-bottom: 1px solid #ddd;">${formatDate(diagData.birthDate)}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold;">Возраст:</td>
-            <td style="padding: 4px 8px; border-bottom: 1px solid #ddd;">${diagData.age || ''} лет</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold;">Класс/группа:</td>
-            <td style="padding: 4px 8px; border-bottom: 1px solid #ddd;">${diagData.grade || ''}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold;">Ф.И.О. родителя:</td>
-            <td style="padding: 4px 8px; border-bottom: 1px solid #ddd;">${diagData.parentName || ''}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold;">Телефон:</td>
-            <td style="padding: 4px 8px; border-bottom: 1px solid #ddd;">${diagData.phone || ''}</td>
-          </tr>
-          ${diagData.email ? `
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold;">Email:</td>
-            <td style="padding: 4px 8px; border-bottom: 1px solid #ddd;">${diagData.email}</td>
-          </tr>
-          ` : ''}
-        </table>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+          <div><strong>ФИО ребенка:</strong> ${diagData.childName || 'Не указано'}</div>
+          <div><strong>Дата рождения:</strong> ${diagData.birthDate || 'Не указано'}</div>
+          <div><strong>Возраст:</strong> ${diagData.age || 'Не указано'}</div>
+          <div><strong>Класс:</strong> ${diagData.grade || 'Не указано'}</div>
+          <div><strong>ФИО родителя:</strong> ${diagData.parentName || 'Не указано'}</div>
+          <div><strong>Телефон:</strong> ${diagData.phone || 'Не указано'}</div>
+          <div><strong>Email:</strong> ${diagData.email || 'Не указано'}</div>
+          <div><strong>Тип образования:</strong> ${formatValue(diagData.educationType)}</div>
+          <div><strong>АООП:</strong> ${formatValue(diagData.aoop)}</div>
+          <div><strong>Возраст поступления в школу:</strong> ${diagData.schoolStartAge || 'Не указано'}</div>
+          <div><strong>Детский сад:</strong> ${formatValue(diagData.kindergarten)}</div>
+        </div>
+        ${diagData.complaints ? `<div style="margin-top: 10px;"><strong>Жалобы:</strong> "${diagData.complaints}"</div>` : ''}
       </div>
 
       <!-- Анамнез -->
@@ -314,17 +360,19 @@ async function createPDFContent(diagData: DiagData, serialNumber: string): Promi
         <h2 style="font-size: 14px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 4px;">
           Анамнестические данные
         </h2>
-        ${diagData.complaints ? `<div style="margin-bottom: 10px;"><strong>Жалобы:</strong> ${diagData.complaints}</div>` : ''}
-        ${diagData.educationType ? `<div style="margin-bottom: 10px;"><strong>Тип обучения:</strong> ${diagData.educationType === 'school' ? 'Школа' : diagData.educationType === 'kindergarten' ? 'Детский сад' : diagData.educationType}</div>` : ''}
-        ${diagData.aoop ? `<div style="margin-bottom: 10px;"><strong>АООП:</strong> ${diagData.aoop}</div>` : ''}
-        ${diagData.prenatalDevelopment ? `<div style="margin-bottom: 10px;"><strong>Пренатальное развитие:</strong> ${diagData.prenatalDevelopment}</div>` : ''}
-        ${diagData.neurologicalDisorders ? `<div style="margin-bottom: 10px;"><strong>Неврологические нарушения:</strong> ${diagData.neurologicalDisorders}</div>` : ''}
-        ${diagData.hearingVisionDisorders ? `<div style="margin-bottom: 10px;"><strong>Нарушения слуха/зрения:</strong> ${diagData.hearingVisionDisorders}</div>` : ''}
-        ${diagData.chronicDiseases ? `<div style="margin-bottom: 10px;"><strong>Хронические заболевания:</strong> ${diagData.chronicDiseases}</div>` : ''}
-        ${diagData.speechEnvironment ? `<div style="margin-bottom: 10px;"><strong>Речевая среда:</strong> ${diagData.speechEnvironment}</div>` : ''}
-        ${diagData.previousSpecialists && diagData.previousSpecialists.length > 0 ? `<div style="margin-bottom: 10px;"><strong>Консультации специалистов:</strong> ${formatArray(diagData.previousSpecialists)}</div>` : ''}
-        ${diagData.dominantHand ? `<div style="margin-bottom: 10px;"><strong>Ведущая рука:</strong> ${diagData.dominantHand === 'right' ? 'Правая' : diagData.dominantHand === 'left' ? 'Левая' : 'Не определена'}</div>` : ''}
-        ${diagData.additionalInfo ? `<div style="margin-bottom: 10px;"><strong>Дополнительная информация:</strong> ${diagData.additionalInfo}</div>` : ''}
+        <div style="font-size: 11px;">
+          <div style="margin-bottom: 8px;"><strong>Пренатальное развитие:</strong> ${formatAnamnesticsValue(diagData.prenatalDevelopment, diagData.prenatalDevelopment === "custom", diagData.prenatalDevelopmentCustom, "prenatal")}</div>
+          <div style="margin-bottom: 8px;"><strong>Неврологические нарушения:</strong> ${formatAnamnesticsValue(diagData.neurologicalDisorders, diagData.neurologicalDisorders === "custom", diagData.neurologicalDisordersCustom, "neurological")}</div>
+          <div style="margin-bottom: 8px;"><strong>Нарушения слуха/зрения:</strong> ${formatAnamnesticsValue(diagData.hearingVisionDisorders, diagData.hearingVisionDisorders === "custom", diagData.hearingVisionDisordersCustom, "hearing")}</div>
+          <div style="margin-bottom: 8px;"><strong>Хронические заболевания:</strong> ${formatAnamnesticsValue(diagData.chronicDiseases, diagData.chronicDiseases === "custom", diagData.chronicDiseasesCustom, "chronic")}</div>
+          <div style="margin-bottom: 8px;"><strong>Речевая среда:</strong> ${formatAnamnesticsValue(diagData.speechEnvironment, diagData.speechEnvironment === "custom", diagData.speechEnvironmentCustom, "speech")}</div>
+          <div style="margin-bottom: 8px;"><strong>Ведущая рука:</strong> ${formatValue(diagData.dominantHand)}</div>
+          <div style="margin-bottom: 8px;"><strong>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами?</strong> ${formatList(diagData.previousSpecialists)}</div>
+          ${diagData.speechTherapistConclusion ? `<div style="margin-bottom: 8px;"><strong>Заключение логопеда:</strong> ${diagData.speechTherapistConclusion}</div>` : ''}
+          ${diagData.defectologistConclusion ? `<div style="margin-bottom: 8px;"><strong>Заключение дефектолога:</strong> ${diagData.defectologistConclusion}</div>` : ''}
+          ${diagData.neuropsychologistConclusion ? `<div style="margin-bottom: 8px;"><strong>Заключение нейропсихолога:</strong> ${diagData.neuropsychologistConclusion}</div>` : ''}
+          ${diagData.additionalInfo ? `<div style="margin-bottom: 8px;"><strong>Дополнительная информация:</strong> ${diagData.additionalInfo}</div>` : ''}
+        </div>
       </div>
 
       <!-- Импрессивная речь -->
