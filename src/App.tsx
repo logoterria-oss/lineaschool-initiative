@@ -14,6 +14,7 @@ const OfferPage = lazy(() => import("./pages/OfferPage"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const DiagForm = lazy(() => import("./pages/DiagForm"));
 const DiagConclusion = lazy(() => import("./pages/DiagConclusion"));
+const ParentQuestionnaire = lazy(() => import("./pages/ParentQuestionnaire"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ReportsAdmin = lazy(() => import("./components/ReportsAdmin"));
 const DictationsAdmin = lazy(() => import("./pages/DictationsAdmin"));
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/price" element={<Pricing />} />
               <Route path="/oferta_2025" element={<OfferPage />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/anketa" element={<ParentQuestionnaire />} />
               <Route path="/diag_form" element={<DiagForm />} />
               <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
               <Route path="/admin" element={<AdminDashboard />} />

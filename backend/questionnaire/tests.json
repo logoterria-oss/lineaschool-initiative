@@ -1,0 +1,33 @@
+{
+  "tests": [
+    {
+      "name": "Test save questionnaire",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "parentName": "Иванова Мария Петровна",
+        "parentPhone": "+79001234567",
+        "parentEmail": "test@example.com",
+        "childName": "Иванов Иван Иванович",
+        "birthDate": "2014-04-17",
+        "grade": "3",
+        "educationType": "school",
+        "aoopRequired": "no",
+        "kindergarten": "yes"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test search questionnaire",
+      "method": "GET",
+      "path": "/?childName=Иванов",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
