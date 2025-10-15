@@ -55,21 +55,7 @@ export default function QuestionnaireResponses() {
     }
   };
 
-  const deleteResponse = async (id: number) => {
-    if (!confirm('Удалить эту анкету?')) return;
-    
-    try {
-      const response = await fetch(`https://functions.poehali.dev/65751635-528e-4830-bc09-e0b9c5344580?id=${id}`, {
-        method: 'DELETE'
-      });
-      
-      if (response.ok) {
-        setResponses(prev => prev.filter(r => r.id !== id));
-      }
-    } catch (error) {
-      console.error('Ошибка удаления:', error);
-    }
-  };
+
 
   const viewDetails = (id: number) => {
     setSelectedResponse(selectedResponse === id ? null : id);
@@ -165,14 +151,6 @@ export default function QuestionnaireResponses() {
                           size="sm"
                         >
                           <Icon name={selectedResponse === response.id ? "ChevronUp" : "ChevronDown"} size={18} />
-                        </Button>
-                        <Button
-                          onClick={() => deleteResponse(response.id)}
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Icon name="Trash2" size={18} />
                         </Button>
                       </div>
                     </div>
