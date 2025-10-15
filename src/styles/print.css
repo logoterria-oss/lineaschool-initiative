@@ -22,9 +22,9 @@
   }
 
   .print-page {
-    width: 100%;
-    min-height: auto;
-    padding: 0;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm;
     margin: 0;
     background: white;
     box-shadow: none;
@@ -131,10 +131,10 @@
     text-shadow: none !important;
   }
 
-  /* Стандартные отступы Word (25мм сверху/снизу, 20мм слева/справа) */
+  /* Убрать отступы и поля для браузера */
   @page {
-    margin: 25mm 20mm;
-    size: A4 portrait;
+    margin: 0;
+    size: A4;
   }
 
   /* Основной контейнер */
@@ -161,11 +161,6 @@
   }
 
   /* Секции */
-  section {
-    margin-bottom: 15pt;
-    page-break-inside: avoid;
-  }
-
   .print-section {
     margin-bottom: 20pt;
     page-break-inside: avoid;
