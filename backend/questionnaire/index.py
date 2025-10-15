@@ -19,7 +19,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400'
             },
@@ -103,8 +103,77 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         try:
-            # Search by child name
             params = event.get('queryStringParameters', {})
+            
+            dsn = os.environ.get('DATABASE_URL')
+            conn = psycopg2.connect(dsn)
+            cur = conn.cursor()
+            
+            # Get all responses
+            if params.get('all') == 'true':
+                cur.execute("""
+                    SELECT id, child_name, parent_name, parent_phone, parent_email, 
+                           birth_date, grade, created_at
+                    FROM parent_questionnaire
+                    ORDER BY created_at DESC
+                """)
+                
+                rows = cur.fetchall()
+                columns = [desc[0] for desc in cur.description]
+                results = [dict(zip(columns, row)) for row in rows]
+                
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps(results, default=str)
+                }
+            
+            # Get single response by ID
+            if params.get('id'):
+                cur.execute("""
+                    SELECT * FROM parent_questionnaire
+                    WHERE id = %s
+                """, (params.get('id'),))
+                
+                row = cur.fetchone()
+                
+                if row:
+                    columns = [desc[0] for desc in cur.description]
+                    result = dict(zip(columns, row))
+                    
+                    if result.get('previous_specialists'):
+                        result['previous_specialists'] = json.loads(result['previous_specialists'])
+                    
+                    cur.close()
+                    conn.close()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps(result, default=str)
+                    }
+                else:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 404,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'message': 'Данные не найдены'})
+                    }
+            
+            # Search by child name
             child_name = params.get('childName', '')
             
             if not child_name:
@@ -117,11 +186,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'childName parameter required'})
                 }
             
-            dsn = os.environ.get('DATABASE_URL')
-            conn = psycopg2.connect(dsn)
-            cur = conn.cursor()
-            
-            # Search for matching child name (case-insensitive, partial match)
             cur.execute("""
                 SELECT * FROM parent_questionnaire
                 WHERE LOWER(child_name) LIKE LOWER(%s)
@@ -135,7 +199,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 columns = [desc[0] for desc in cur.description]
                 result = dict(zip(columns, row))
                 
-                # Parse JSON fields
                 if result.get('previous_specialists'):
                     result['previous_specialists'] = json.loads(result['previous_specialists'])
                 
@@ -163,6 +226,50 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'message': 'Данные не найдены'})
                 }
                 
+        except Exception as e:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': str(e)})
+            }
+    
+    if method == 'DELETE':
+        try:
+            params = event.get('queryStringParameters', {})
+            response_id = params.get('id')
+            
+            if not response_id:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'id parameter required'})
+                }
+            
+            dsn = os.environ.get('DATABASE_URL')
+            conn = psycopg2.connect(dsn)
+            cur = conn.cursor()
+            
+            cur.execute("DELETE FROM parent_questionnaire WHERE id = %s", (response_id,))
+            conn.commit()
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'message': 'Анкета удалена'})
+            }
+            
         except Exception as e:
             return {
                 'statusCode': 500,

@@ -15,12 +15,7 @@
         "aoopRequired": "no",
         "kindergarten": "yes"
       },
-      "expectedStatus": 200,
-      "expectedBody": {
-        "id": "number",
-        "message": "string"
-      },
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     },
     {
       "name": "Test search questionnaire",

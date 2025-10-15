@@ -87,6 +87,39 @@ const AdminDashboard = () => {
                 </ul>
               </CardContent>
             </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-purple-500"
+              onClick={() => navigate('/admin/questionnaires')}
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <Icon name="ClipboardList" className="text-purple-600" size={32} />
+                  </div>
+                  <CardTitle className="text-2xl">Анкеты родителей</CardTitle>
+                </div>
+                <CardDescription className="text-base">
+                  Просмотр заполненных родительских анкет
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-purple-600" size={16} />
+                    <span>Все анкеты в одном месте</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-purple-600" size={16} />
+                    <span>Поиск по ФИО ребёнка</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-purple-600" size={16} />
+                    <span>Полная информация по каждой семье</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="mt-8 text-center">

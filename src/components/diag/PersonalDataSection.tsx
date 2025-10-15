@@ -2,6 +2,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import { useQuestionnaireSearch } from "@/hooks/useQuestionnaireSearch";
 
 interface PersonalDataSectionProps {
   formData: {
@@ -22,17 +24,58 @@ interface PersonalDataSectionProps {
 }
 
 export default function PersonalDataSection({ formData, onInputChange }: PersonalDataSectionProps) {
+  const { searchByChildName, isLoading } = useQuestionnaireSearch();
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (formData.childName.length >= 3) {
+      if (searchTimeout) clearTimeout(searchTimeout);
+      
+      const timeout = setTimeout(async () => {
+        const data = await searchByChildName(formData.childName);
+        if (data) {
+          onInputChange('parentName', data.parentName);
+          onInputChange('phone', data.parentPhone);
+          onInputChange('email', data.parentEmail);
+          onInputChange('birthDate', data.birthDate);
+          onInputChange('grade', data.grade);
+          onInputChange('educationType', data.educationType);
+          onInputChange('aoop', data.aoopRequired === 'Да' ? data.aoopVariant : 'Нет');
+          onInputChange('schoolStartAge', data.schoolStartAge);
+          onInputChange('kindergarten', data.kindergarten);
+          onInputChange('prenatalDevelopment', data.prenatalDevelopment);
+          onInputChange('neurologicalDisorders', data.neurologicalDisorders);
+          onInputChange('hearingVisionDisorders', data.hearingVisionDisorders);
+          onInputChange('chronicDiseases', data.chronicDiseases);
+          onInputChange('speechEnvironment', data.speechEnvironment);
+          onInputChange('previousSpecialists', data.previousSpecialists);
+          onInputChange('speechTherapistConclusion', data.speechTherapistConclusion);
+          onInputChange('neuropsychologistConclusion', data.neuropsychologistConclusion);
+          onInputChange('defectologistConclusion', data.defectologistConclusion);
+          onInputChange('dominantHand', data.dominantHand);
+        }
+      }, 500);
+      
+      setSearchTimeout(timeout);
+    }
+    
+    return () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+    };
+  }, [formData.childName]);
+
   return (
     <section className="bg-gray-50 p-6 rounded-lg">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Персональные данные</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <Label htmlFor="childName">ФИО ребенка</Label>
+          <Label htmlFor="childName">ФИО ребенка {isLoading && <span className="text-sm text-gray-500">(поиск...)</span>}</Label>
           <Input
             id="childName"
             value={formData.childName}
             onChange={(e) => onInputChange("childName", e.target.value)}
             className="mt-1"
+            placeholder="Начните вводить ФИО для автозаполнения"
           />
         </div>
 

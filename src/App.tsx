@@ -15,6 +15,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const DiagForm = lazy(() => import("./pages/DiagForm"));
 const DiagConclusion = lazy(() => import("./pages/DiagConclusion"));
 const ParentQuestionnaire = lazy(() => import("./pages/ParentQuestionnaire"));
+const QuestionnaireResponses = lazy(() => import("./pages/QuestionnaireResponses"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ReportsAdmin = lazy(() => import("./components/ReportsAdmin"));
 const DictationsAdmin = lazy(() => import("./pages/DictationsAdmin"));
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/reports" element={<ReportsAdmin />} />
               <Route path="/admin/dictations" element={<DictationsAdmin />} />
+              <Route path="/admin/questionnaires" element={<QuestionnaireResponses />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
