@@ -52,8 +52,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Step 1: Get file path from Telegram
             get_file_url = f'https://api.telegram.org/bot{bot_token}/getFile?file_id={file_id}'
             
+            print(f'Requesting file_id: {file_id}')
+            print(f'Bot token length: {len(bot_token) if bot_token else 0}')
+            
             with urllib.request.urlopen(get_file_url) as response:
                 result = json.loads(response.read().decode('utf-8'))
+                
+                print(f'Telegram API response: {json.dumps(result)}')
                 
                 if not result.get('ok'):
                     return {
