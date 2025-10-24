@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 
 interface WebhookInfo {
@@ -12,10 +13,22 @@ interface WebhookInfo {
   last_error_message?: string;
 }
 
+interface BotMessage {
+  text: string;
+  description: string;
+}
+
+interface BotMessages {
+  [key: string]: BotMessage;
+}
+
 const TelegramSetup = () => {
   const [webhookInfo, setWebhookInfo] = useState<WebhookInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [botMessages, setBotMessages] = useState<BotMessages>({});
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
 
   const fetchWebhookInfo = async () => {
     setLoading(true);
@@ -72,8 +85,43 @@ const TelegramSetup = () => {
     }
   };
 
+  const fetchBotMessages = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/d32d48c4-7302-4db6-a78e-ee12d18d0063');
+      const data = await response.json();
+      setBotMessages(data.messages || {});
+    } catch (error) {
+      console.error('Error fetching bot messages:', error);
+    }
+  };
+
+  const saveBotMessage = async (key: string, text: string) => {
+    setActionLoading(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/d32d48c4-7302-4db6-a78e-ee12d18d0063', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_key: key, message_text: text })
+      });
+      
+      if (response.ok) {
+        alert('✅ Текст сообщения обновлён!');
+        fetchBotMessages();
+        setEditingKey(null);
+      } else {
+        alert('❌ Ошибка при сохранении');
+      }
+    } catch (error) {
+      console.error('Error saving message:', error);
+      alert('❌ Ошибка при сохранении');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchWebhookInfo();
+    fetchBotMessages();
   }, []);
 
   if (loading) {
@@ -181,6 +229,74 @@ const TelegramSetup = () => {
                 Удалить вебхук
               </Button>
             )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border p-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">Тексты сообщений бота</h2>
+          <div className="space-y-4">
+            {Object.entries(botMessages).map(([key, message]) => (
+              <div key={key} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="font-medium text-gray-900">{message.description}</div>
+                    <div className="text-xs text-gray-500 font-mono">{key}</div>
+                  </div>
+                  {editingKey === key ? (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => saveBotMessage(key, editText)}
+                        disabled={actionLoading}
+                      >
+                        <Icon name="Check" size={16} className="mr-1" />
+                        Сохранить
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingKey(null);
+                          setEditText('');
+                        }}
+                        disabled={actionLoading}
+                      >
+                        Отмена
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingKey(key);
+                        setEditText(message.text);
+                      }}
+                    >
+                      <Icon name="Pencil" size={16} className="mr-1" />
+                      Изменить
+                    </Button>
+                  )}
+                </div>
+                {editingKey === key ? (
+                  <Textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    rows={5}
+                    className="font-mono text-sm"
+                  />
+                ) : (
+                  <div className="bg-gray-50 rounded p-3 text-sm whitespace-pre-wrap font-mono">
+                    {message.text}
+                  </div>
+                )}
+                {key === 'success' && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Доступные переменные: {'{parent_name}'}, {'{child_name}'}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 

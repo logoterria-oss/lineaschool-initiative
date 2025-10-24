@@ -69,19 +69,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Импортируем psycopg после получения DSN
         import psycopg
         
+        # Получаем тексты сообщений из БД
+        bot_messages = get_bot_messages(dsn)
+        
         # Обработка команды /start
         if text == '/start':
-            welcome_msg = (
-                '👋 Здравствуйте! Я бот для приёма диктантов.\n\n'
-                'Чтобы отправить диктант, пришлите:\n'
-                '1. Имя родителя\n'
-                '2. Имя ребёнка\n'
-                '3. Фото диктанта\n\n'
-                'Пример:\n'
-                'Иванова Мария\n'
-                'Петя Иванов\n'
-                '[фото]'
-            )
+            welcome_msg = bot_messages.get('welcome', 'Привет!')
             send_telegram_message(chat_id, welcome_msg)
             return {
                 'statusCode': 200,
@@ -95,7 +88,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             lines = text.strip().split('\n')
             
             if len(lines) < 2:
-                send_telegram_message(chat_id, '❌ Пожалуйста, укажите имя родителя и имя ребёнка в подписи к фото.')
+                send_telegram_message(chat_id, bot_messages.get('error_missing_data', '❌ Ошибка'))
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
@@ -124,15 +117,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         )
                         conn.commit()
                 
-                send_telegram_message(
-                    chat_id, 
-                    f'✅ Диктант получен!\n\nРодитель: {parent_name}\nРебёнок: {child_name}\n\nОжидайте проверки.'
-                )
+                success_msg = bot_messages.get('success', '✅ Диктант получен!')
+                success_msg = success_msg.replace('{parent_name}', parent_name).replace('{child_name}', child_name)
+                send_telegram_message(chat_id, success_msg)
                 print(f'Saved dictation: parent={parent_name}, child={child_name}, file_id={file_id}')
                 
             except Exception as db_error:
                 print(f'Database error: {str(db_error)}')
-                send_telegram_message(chat_id, '❌ Ошибка при сохранении. Попробуйте позже.')
+                send_telegram_message(chat_id, bot_messages.get('error_db', '❌ Ошибка'))
             
             return {
                 'statusCode': 200,
@@ -143,9 +135,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Если прислали только текст или только фото
         if photo and not text:
-            send_telegram_message(chat_id, '❌ Пожалуйста, добавьте подпись к фото с именем родителя и ребёнка.')
+            send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Ошибка'))
         elif text and not photo:
-            send_telegram_message(chat_id, '❌ Пожалуйста, прикрепите фото диктанта.')
+            send_telegram_message(chat_id, bot_messages.get('error_no_photo', '❌ Ошибка'))
         
         return {
             'statusCode': 200,
@@ -162,6 +154,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'ok': True}),
             'isBase64Encoded': False
         }
+
+def get_bot_messages(dsn: str) -> dict:
+    """Получает тексты сообщений из БД"""
+    import psycopg
+    
+    try:
+        with psycopg.connect(dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT message_key, message_text 
+                    FROM t_p93118852_lineaschool_initiati.bot_messages
+                    """
+                )
+                rows = cur.fetchall()
+                return {row[0]: row[1] for row in rows}
+    except Exception as e:
+        print(f'Error loading bot messages: {str(e)}')
+        return {}
 
 def send_telegram_message(chat_id: int, text: str):
     """Отправляет сообщение в Telegram"""
