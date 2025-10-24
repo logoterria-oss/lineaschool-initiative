@@ -113,13 +113,21 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
 
   const handleUnderlineAdd = (underline: Underline) => {
     setUnderlines(prev => [...prev, underline]);
-    setTimeout(() => saveToHistory(), 0);
+    setGreenCount(prev => {
+      const newCount = prev + 1;
+      setTimeout(() => saveToHistory(), 0);
+      return newCount;
+    });
   };
 
   const handleUnderlineRemove = (index: number) => {
     const newUnderlines = underlines.filter((_, i) => i !== index);
     setUnderlines(newUnderlines);
-    setTimeout(() => saveToHistory(), 0);
+    setGreenCount(prev => {
+      const newCount = Math.max(0, prev - 1);
+      setTimeout(() => saveToHistory(), 0);
+      return newCount;
+    });
   };
 
   const clearCanvas = () => {
