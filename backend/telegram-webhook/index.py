@@ -72,8 +72,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Получаем тексты сообщений из БД
         bot_messages = get_bot_messages(dsn)
         
+        # Получаем или создаём сессию пользователя
+        session = get_or_create_session(dsn, user_id, username)
+        
         # Обработка команды /start
         if text == '/start':
+            # Сбрасываем сессию
+            reset_session(dsn, user_id)
             welcome_msg = bot_messages.get('welcome', 'Привет!')
             send_telegram_message(chat_id, welcome_msg)
             return {
@@ -83,12 +88,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Обработка фото с подписью
-        if photo and text:
-            lines = text.strip().split('\n')
-            
-            if len(lines) < 2:
-                send_telegram_message(chat_id, bot_messages.get('error_missing_data', '❌ Ошибка'))
+        # Если пришло фото
+        if photo:
+            # Проверяем, есть ли имена в сессии
+            if not session.get('parent_name') or not session.get('child_name'):
+                send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Сначала отправьте имя родителя и ребёнка'))
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
@@ -96,12 +100,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            parent_name = lines[0].strip()
-            child_name = lines[1].strip()
-            
             # Берём последнее фото (самое большое)
             largest_photo = photo[-1]
             file_id = largest_photo['file_id']
+            
+            parent_name = session['parent_name']
+            child_name = session['child_name']
             
             # Сохраняем в БД
             try:
@@ -122,6 +126,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 send_telegram_message(chat_id, success_msg)
                 print(f'Saved dictation: parent={parent_name}, child={child_name}, file_id={file_id}')
                 
+                # Сбрасываем сессию после успешной отправки
+                reset_session(dsn, user_id)
+                
             except Exception as db_error:
                 print(f'Database error: {str(db_error)}')
                 send_telegram_message(chat_id, bot_messages.get('error_db', '❌ Ошибка'))
@@ -133,11 +140,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Если прислали только текст или только фото
-        if photo and not text:
-            send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Ошибка'))
-        elif text and not photo:
-            send_telegram_message(chat_id, bot_messages.get('error_no_photo', '❌ Ошибка'))
+        # Если пришёл только текст - это могут быть имена
+        if text and not photo:
+            lines = text.strip().split('\n')
+            
+            # Если две строки - это родитель и ребёнок
+            if len(lines) >= 2:
+                parent_name = lines[0].strip()
+                child_name = lines[1].strip()
+                
+                if parent_name and child_name:
+                    # Сохраняем имена в сессию
+                    update_session(dsn, user_id, parent_name, child_name)
+                    
+                    msg = f'✅ Данные сохранены:\nРодитель: {parent_name}\nРебёнок: {child_name}\n\nТеперь отправьте фото диктанта.'
+                    send_telegram_message(chat_id, msg)
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json'},
+                        'body': json.dumps({'ok': True}),
+                        'isBase64Encoded': False
+                    }
+            
+            # Если не понятно, что прислали - подсказываем
+            send_telegram_message(chat_id, bot_messages.get('error_missing_data', '❌ Пожалуйста, отправьте имя родителя и ребёнка (каждое с новой строки)'))
         
         return {
             'statusCode': 200,
@@ -154,6 +180,74 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'ok': True}),
             'isBase64Encoded': False
         }
+
+def get_or_create_session(dsn: str, user_id: int, username: str) -> dict:
+    """Получает или создаёт сессию пользователя"""
+    import psycopg
+    
+    try:
+        with psycopg.connect(dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO t_p93118852_lineaschool_initiati.bot_sessions 
+                    (telegram_user_id, telegram_username, state)
+                    VALUES (%s, %s, 'idle')
+                    ON CONFLICT (telegram_user_id) 
+                    DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+                    RETURNING state, parent_name, child_name
+                    """,
+                    (user_id, username)
+                )
+                row = cur.fetchone()
+                conn.commit()
+                
+                return {
+                    'state': row[0] if row else 'idle',
+                    'parent_name': row[1] if row and row[1] else None,
+                    'child_name': row[2] if row and row[2] else None
+                }
+    except Exception as e:
+        print(f'Error getting session: {str(e)}')
+        return {'state': 'idle', 'parent_name': None, 'child_name': None}
+
+def update_session(dsn: str, user_id: int, parent_name: str, child_name: str):
+    """Обновляет данные в сессии"""
+    import psycopg
+    
+    try:
+        with psycopg.connect(dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE t_p93118852_lineaschool_initiati.bot_sessions
+                    SET parent_name = %s, child_name = %s, state = 'waiting_photo', updated_at = CURRENT_TIMESTAMP
+                    WHERE telegram_user_id = %s
+                    """,
+                    (parent_name, child_name, user_id)
+                )
+                conn.commit()
+    except Exception as e:
+        print(f'Error updating session: {str(e)}')
+
+def reset_session(dsn: str, user_id: int):
+    """Сбрасывает сессию пользователя"""
+    import psycopg
+    
+    try:
+        with psycopg.connect(dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE t_p93118852_lineaschool_initiati.bot_sessions
+                    SET parent_name = NULL, child_name = NULL, state = 'idle', updated_at = CURRENT_TIMESTAMP
+                    WHERE telegram_user_id = %s
+                    """,
+                    (user_id,)
+                )
+                conn.commit()
+    except Exception as e:
+        print(f'Error resetting session: {str(e)}')
 
 def get_bot_messages(dsn: str) -> dict:
     """Получает тексты сообщений из БД"""
