@@ -34,7 +34,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    bot_token = '8377726959:AAEsXjUKI0eDwImLzsNMTqHo8Hr4VyX3b_4'
+    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
     db_url = os.environ.get('DATABASE_URL')
     
     try:

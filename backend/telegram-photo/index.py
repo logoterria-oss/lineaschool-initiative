@@ -7,6 +7,7 @@ import json
 import os
 from typing import Dict, Any
 import urllib.request
+import urllib.error
 import base64
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -82,12 +83,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': True
                 }
                 
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8')
+            print(f'HTTP Error {e.code}: {error_body}')
+            return {
+                'statusCode': 500,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'error': f'HTTP Error {e.code}',
+                    'details': error_body,
+                    'file_id': file_id
+                }),
+                'isBase64Encoded': False
+            }
         except Exception as e:
             print(f'Error fetching Telegram photo: {str(e)}')
             return {
                 'statusCode': 500,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': f'Failed to fetch photo: {str(e)}'}),
+                'body': json.dumps({'error': f'Failed to fetch photo: {str(e)}', 'file_id': file_id}),
                 'isBase64Encoded': False
             }
     
