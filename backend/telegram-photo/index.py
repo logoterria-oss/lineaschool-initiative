@@ -38,7 +38,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        bot_token = os.environ.get('TELEGRAM_BOT_API_TOKEN')
         
         if not bot_token:
             return {
