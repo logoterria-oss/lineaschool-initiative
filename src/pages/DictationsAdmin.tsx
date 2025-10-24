@@ -231,14 +231,14 @@ const DictationsAdmin = () => {
                     {selectedDictation.photo_url ? (
                       showAnnotator ? (
                         <ImageAnnotator
-                          imageUrl={selectedDictation.photo_url}
+                          imageUrl={`https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(selectedDictation.photo_url)}`}
                           onSave={handleSaveAnnotation}
                         />
                       ) : (
                         <div className="space-y-2">
                           <div className="bg-white rounded-lg border overflow-hidden">
                             <img 
-                              src={annotatedImage || selectedDictation.annotated_image || selectedDictation.photo_url} 
+                              src={annotatedImage || selectedDictation.annotated_image || `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(selectedDictation.photo_url)}`} 
                               alt={`Диктант ${selectedDictation.child_name}`}
                               className="w-full h-auto"
                             />
