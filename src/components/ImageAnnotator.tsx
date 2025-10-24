@@ -6,7 +6,7 @@ import SaveConfirmModal from './ImageAnnotator/SaveConfirmModal';
 import AnnotationCanvas from './ImageAnnotator/AnnotationCanvas';
 import Instructions from './ImageAnnotator/Instructions';
 
-const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
+const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [markerColor, setMarkerColor] = useState<MarkerColor>('green');
   const [markerSize, setMarkerSize] = useState(20);
@@ -25,19 +25,31 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
   const storageKey = `annotator_${imageUrl}`;
 
   useEffect(() => {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
+    if (savedMarkup) {
       try {
-        const data = JSON.parse(saved);
+        const data = JSON.parse(savedMarkup);
         setMarkers(data.markers || []);
         setUnderlines(data.underlines || []);
         setGreenCount(data.greenCount || 0);
         setRedCount(data.redCount || 0);
       } catch (e) {
-        console.error('Failed to load saved markers:', e);
+        console.error('Failed to load saved markup:', e);
+      }
+    } else {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          setMarkers(data.markers || []);
+          setUnderlines(data.underlines || []);
+          setGreenCount(data.greenCount || 0);
+          setRedCount(data.redCount || 0);
+        } catch (e) {
+          console.error('Failed to load saved markers:', e);
+        }
       }
     }
-  }, [imageUrl]);
+  }, [imageUrl, savedMarkup, storageKey]);
 
   useEffect(() => {
     if (markers.length > 0 || underlines.length > 0 || greenCount > 0 || redCount > 0) {
@@ -206,12 +218,17 @@ const ImageAnnotator = ({ imageUrl, onSave }: ImageAnnotatorProps) => {
       });
       tempCtx.globalAlpha = 1.0;
       
-      const dataUrl = tempCanvas.toDataURL('image/png');
-      console.log('Calling onSave with dataUrl length:', dataUrl.length);
+      const markupData = JSON.stringify({
+        markers,
+        underlines,
+        greenCount,
+        redCount
+      });
+      console.log('Calling onSave with markup data');
       
       localStorage.removeItem(storageKey);
       
-      onSave(dataUrl);
+      onSave(markupData);
       setShowSaveConfirm(false);
       console.log('Save completed');
     }

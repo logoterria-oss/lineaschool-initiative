@@ -6,7 +6,6 @@
   "save-diag-report": "https://functions.poehali.dev/7bc33dbc-e8a0-47b4-83cc-d792dc7e1696",
   "image-proxy": "https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5",
   "dictations-admin": "https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0",
-  "telegram-bot": "https://functions.poehali.dev/12041006-8528-4f80-a248-bfdb27766f90",
   "payment-init": "https://functions.poehali.dev/9f468e7d-1f22-4bde-8030-cd12879879e5",
   "admin-reports": "https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa"
 }

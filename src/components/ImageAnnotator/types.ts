@@ -24,4 +24,5 @@ export interface HistoryState {
 export interface ImageAnnotatorProps {
   imageUrl: string;
   onSave: (annotatedImageDataUrl: string) => void;
+  savedMarkup?: string | null;
 }

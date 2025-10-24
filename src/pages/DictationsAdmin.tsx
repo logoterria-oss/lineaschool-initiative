@@ -15,6 +15,7 @@ interface Dictation {
   photo_file_id: string;
   photo_url: string | null;
   annotated_image: string | null;
+  markup_data: any | null;
   status: string;
   diagnostician_notes: string | null;
   created_at: string;
@@ -233,6 +234,7 @@ const DictationsAdmin = () => {
                         <ImageAnnotator
                           imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
                           onSave={handleSaveAnnotation}
+                          savedMarkup={selectedDictation.markup_data ? JSON.stringify(selectedDictation.markup_data) : null}
                         />
                       ) : (
                         <div className="space-y-2">
