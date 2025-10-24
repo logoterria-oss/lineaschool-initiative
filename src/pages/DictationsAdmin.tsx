@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import ImageAnnotator from '@/components/ImageAnnotator';
-import AnnotatedImageView from '@/components/AnnotatedImageView';
+import AnnotatedImageView, { AnnotatedImageViewRef } from '@/components/AnnotatedImageView';
 import AdminHeader from '@/components/AdminHeader';
 
 interface Dictation {
@@ -30,6 +30,7 @@ const DictationsAdmin = () => {
   const [selectedDictation, setSelectedDictation] = useState<Dictation | null>(null);
   const [notes, setNotes] = useState('');
   const [showAnnotator, setShowAnnotator] = useState(false);
+  const annotatedImageRef = useRef<AnnotatedImageViewRef>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -238,29 +239,45 @@ const DictationsAdmin = () => {
                         <div className="space-y-2">
                           <div className="bg-white rounded-lg border overflow-hidden">
                             <AnnotatedImageView
+                              ref={annotatedImageRef}
                               imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
                               markupData={selectedDictation.markup_data}
                               alt={`Диктант ${selectedDictation.child_name}`}
                               className="w-full h-auto"
                             />
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              if (selectedDictation.markup_data) {
-                                if (window.confirm('При редактировании текущая разметка будет удалена. Продолжить?')) {
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                if (selectedDictation.markup_data) {
+                                  if (window.confirm('При редактировании текущая разметка будет удалена. Продолжить?')) {
+                                    setShowAnnotator(true);
+                                  }
+                                } else {
                                   setShowAnnotator(true);
                                 }
-                              } else {
-                                setShowAnnotator(true);
-                              }
-                            }}
-                            className="w-full"
-                          >
-                            <Icon name="Pencil" className="mr-1" size={14} />
-                            {annotatedImage || selectedDictation.annotated_image ? 'Редактировать проверку' : 'Разметить ошибки'}
-                          </Button>
+                              }}
+                              className="flex-1"
+                            >
+                              <Icon name="Pencil" className="mr-1" size={14} />
+                              {selectedDictation.markup_data ? 'Редактировать проверку' : 'Разметить ошибки'}
+                            </Button>
+                            {selectedDictation.markup_data && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  annotatedImageRef.current?.downloadImage(`${selectedDictation.child_name}_проверка.png`);
+                                }}
+                                className="flex-1"
+                              >
+                                <Icon name="Download" className="mr-1" size={14} />
+                                Скачать
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       )
                     ) : (

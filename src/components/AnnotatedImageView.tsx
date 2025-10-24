@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Marker, Underline } from './ImageAnnotator/types';
 
 interface AnnotatedImageViewProps {
@@ -11,7 +11,11 @@ interface AnnotatedImageViewProps {
   className?: string;
 }
 
-const AnnotatedImageView = ({ imageUrl, markupData, alt, className }: AnnotatedImageViewProps) => {
+export interface AnnotatedImageViewRef {
+  downloadImage: (filename: string) => void;
+}
+
+const AnnotatedImageView = forwardRef<AnnotatedImageViewRef, AnnotatedImageViewProps>(({ imageUrl, markupData, alt, className }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -74,11 +78,28 @@ const AnnotatedImageView = ({ imageUrl, markupData, alt, className }: AnnotatedI
     img.src = imageUrl;
   }, [imageUrl, markupData]);
 
+  useImperativeHandle(ref, () => ({
+    downloadImage: (filename: string) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    }
+  }));
+
   return (
     <div ref={containerRef} className={className}>
       <canvas ref={canvasRef} className="w-full h-auto" />
     </div>
   );
-};
+});
 
 export default AnnotatedImageView;
