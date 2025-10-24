@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Missing file_id parameter",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "Missing file_id parameter"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
