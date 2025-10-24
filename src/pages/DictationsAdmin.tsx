@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import ImageAnnotator from '@/components/ImageAnnotator';
+import AnnotatedImageView from '@/components/AnnotatedImageView';
 import AdminHeader from '@/components/AdminHeader';
 
 interface Dictation {
@@ -29,7 +30,6 @@ const DictationsAdmin = () => {
   const [selectedDictation, setSelectedDictation] = useState<Dictation | null>(null);
   const [notes, setNotes] = useState('');
   const [showAnnotator, setShowAnnotator] = useState(false);
-  const [annotatedImage, setAnnotatedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -87,6 +87,7 @@ const DictationsAdmin = () => {
 
   const markAsChecked = async (id: number) => {
     try {
+      const markupToSave = selectedDictation?.markup_data ? JSON.stringify(selectedDictation.markup_data) : '';
       await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,23 +95,20 @@ const DictationsAdmin = () => {
           action: 'mark_checked',
           id,
           notes,
-          annotated_image: annotatedImage
+          annotated_image: markupToSave
         })
       });
       loadDictations();
       setSelectedDictation(null);
       setNotes('');
-      setAnnotatedImage(null);
       setShowAnnotator(false);
     } catch (error) {
       console.error('Error marking dictation:', error);
     }
   };
 
-  const handleSaveAnnotation = async (imageDataUrl: string) => {
+  const handleSaveAnnotation = async (markupDataJson: string) => {
     if (!selectedDictation) return;
-    
-    setAnnotatedImage(imageDataUrl);
     
     try {
       await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0', {
@@ -119,13 +117,14 @@ const DictationsAdmin = () => {
         body: JSON.stringify({
           action: 'save_annotation',
           id: selectedDictation.id,
-          annotated_image: imageDataUrl
+          annotated_image: markupDataJson
         })
       });
       
       await loadDictations();
       
-      setSelectedDictation(prev => prev ? { ...prev, annotated_image: imageDataUrl } : null);
+      const markupData = JSON.parse(markupDataJson);
+      setSelectedDictation(prev => prev ? { ...prev, markup_data: markupData, annotated_image: markupDataJson } : null);
     } catch (error) {
       console.error('Error saving annotation:', error);
     }
@@ -188,7 +187,6 @@ const DictationsAdmin = () => {
                   onClick={() => {
                     setSelectedDictation(dictation);
                     setNotes(dictation.diagnostician_notes || '');
-                    setAnnotatedImage(null);
                     setShowAnnotator(false);
                   }}
                 >
@@ -239,8 +237,9 @@ const DictationsAdmin = () => {
                       ) : (
                         <div className="space-y-2">
                           <div className="bg-white rounded-lg border overflow-hidden">
-                            <img 
-                              src={annotatedImage || selectedDictation.annotated_image || `https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`} 
+                            <AnnotatedImageView
+                              imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
+                              markupData={selectedDictation.markup_data}
                               alt={`Диктант ${selectedDictation.child_name}`}
                               className="w-full h-auto"
                             />
@@ -249,7 +248,7 @@ const DictationsAdmin = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              if (annotatedImage || selectedDictation.annotated_image) {
+                              if (selectedDictation.markup_data) {
                                 if (window.confirm('При редактировании текущая разметка будет удалена. Продолжить?')) {
                                   setShowAnnotator(true);
                                 }
