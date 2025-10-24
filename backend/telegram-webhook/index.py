@@ -186,5 +186,9 @@ def send_telegram_message(chat_id: int, text: str):
         with urllib.request.urlopen(req) as response:
             result = json.loads(response.read().decode('utf-8'))
             print(f'Sent message to {chat_id}: {result.get("ok")}')
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print(f'Error sending Telegram message: {e.code} {e.reason}')
+        print(f'Response body: {error_body}')
     except Exception as e:
         print(f'Error sending Telegram message: {str(e)}')
