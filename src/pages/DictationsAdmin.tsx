@@ -228,7 +228,7 @@ const DictationsAdmin = () => {
 
                   <div>
                     <h3 className="font-semibold mb-2">Фото диктанта:</h3>
-                    {selectedDictation.photo_url ? (
+                    {selectedDictation.photo_file_id ? (
                       showAnnotator ? (
                         <ImageAnnotator
                           imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
