@@ -12,23 +12,9 @@ export default function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="px-2 sm:px-0">
             <div className="inline-flex items-center bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">🎓 Для детей 8-18 лет</div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">Онлайн-коррекция дислексии и дисграфии для детей</h1>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6 sm:mb-8 leading-relaxed">
-              Уникальный комплексный нейрологопедический подход для успешного обучения вашего ребёнка
-            </p>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 leading-tight">Онлайн-коррекция дислексии и дисграфии для детей</h1>
             
-            <div className="mb-8 sm:mb-12">
-              <Button 
-                size="lg" 
-                className="bg-green-500 hover:bg-green-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full sm:w-auto"
-                onClick={() => setIsBookingModalOpen(true)}
-              >
-                <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
-                <span className="whitespace-nowrap">Получить БЕСПЛАТНУЮ диагностику</span>
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4 mb-6 sm:mb-8">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">200+</div>
                 <div className="text-xs text-gray-600">довольных семей</div>
@@ -41,6 +27,17 @@ export default function HeroSection() {
                 <div className="text-2xl font-bold text-green-600">98%</div>
                 <div className="text-xs text-gray-600">успешных кейсов</div>
               </div>
+            </div>
+
+            <div>
+              <Button 
+                size="lg" 
+                className="bg-green-500 hover:bg-green-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full sm:w-auto"
+                onClick={() => setIsBookingModalOpen(true)}
+              >
+                <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
+                <span className="whitespace-nowrap">Получить БЕСПЛАТНУЮ диагностику</span>
+              </Button>
             </div>
           </div>
           
