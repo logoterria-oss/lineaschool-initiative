@@ -53,6 +53,16 @@ export default function HeroSection() {
                 alt="" 
                 className="w-28 h-28 opacity-30 -rotate-12 ml-12"
               />
+              <img 
+                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/48d82409-ebb2-4a42-a1d0-83f11cf3c270.jpg" 
+                alt="" 
+                className="w-24 h-24 opacity-30 rotate-6 ml-6"
+              />
+              <img 
+                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/48d82409-ebb2-4a42-a1d0-83f11cf3c270.jpg" 
+                alt="" 
+                className="w-28 h-28 opacity-30 -rotate-6"
+              />
             </div>
           </div>
           
