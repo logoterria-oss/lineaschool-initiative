@@ -39,21 +39,19 @@ export default function HeroSection() {
                 <div className="text-xs text-gray-600">успешных кейсов</div>
               </div>
             </div>
-            <div className="hidden lg:flex absolute -top-12 left-1/2 -translate-x-1/2 gap-6 pointer-events-none z-10">
+          </div>
+          
+          <div className="hidden lg:block absolute top-1/4 left-1/2 -translate-x-1/2 pointer-events-none">
+            <div className="flex flex-col gap-8">
               <img 
                 src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/48d82409-ebb2-4a42-a1d0-83f11cf3c270.jpg" 
                 alt="" 
-                className="w-24 h-24 opacity-40 rotate-12"
+                className="w-32 h-32 opacity-30 rotate-12"
               />
               <img 
-                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e87e9cf2-5f88-4311-90e4-0c22935a13d1.jpg" 
+                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/48d82409-ebb2-4a42-a1d0-83f11cf3c270.jpg" 
                 alt="" 
-                className="w-28 h-28 opacity-40 -rotate-6"
-              />
-              <img 
-                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e097eaa5-00ee-4dec-9e0d-ee453387a793.jpg" 
-                alt="" 
-                className="w-24 h-24 opacity-40 rotate-6"
+                className="w-28 h-28 opacity-30 -rotate-12 ml-12"
               />
             </div>
           </div>
