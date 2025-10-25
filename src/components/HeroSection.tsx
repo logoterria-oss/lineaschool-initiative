@@ -11,7 +11,7 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="px-2 sm:px-0 relative">
-            <div className="hidden lg:flex absolute -right-24 top-8 items-center justify-center bg-green-100 text-green-700 w-28 h-28 rounded-full text-sm font-semibold text-center leading-tight">
+            <div className="hidden lg:flex absolute -right-20 top-32 items-center justify-center bg-green-100 text-green-700 w-32 h-32 rounded-full text-base font-semibold text-center leading-snug">
               🎓<br/>8-18<br/>лет
             </div>
             
