@@ -25,31 +25,16 @@ export default function HeroSection() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 max-w-xl items-end relative">
-              <div className="text-center relative">
-                <img 
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/48d82409-ebb2-4a42-a1d0-83f11cf3c270.jpg" 
-                  alt="" 
-                  className="absolute -top-6 -left-1 w-6 h-6 opacity-70 rotate-12"
-                />
+            <div className="grid grid-cols-3 gap-4 max-w-xl items-end">
+              <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">200+</div>
                 <div className="text-xs text-gray-600">довольных семей</div>
               </div>
-              <div className="text-center relative">
-                <img 
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e87e9cf2-5f88-4311-90e4-0c22935a13d1.jpg" 
-                  alt="" 
-                  className="absolute -top-8 -left-2 w-8 h-8 opacity-70 -rotate-6"
-                />
+              <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">от 970₽</div>
                 <div className="text-xs text-gray-600">за урок</div>
               </div>
-              <div className="text-center relative">
-                <img 
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e097eaa5-00ee-4dec-9e0d-ee453387a793.jpg" 
-                  alt="" 
-                  className="absolute -top-6 -left-1 w-6 h-6 opacity-70 rotate-6"
-                />
+              <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">98%</div>
                 <div className="text-xs text-gray-600">успешных кейсов</div>
               </div>
@@ -57,6 +42,23 @@ export default function HeroSection() {
           </div>
           
           <div className="relative">
+            <div className="hidden lg:flex absolute top-0 left-0 right-0 h-48 items-center justify-center gap-8 pointer-events-none z-10">
+              <img 
+                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/48d82409-ebb2-4a42-a1d0-83f11cf3c270.jpg" 
+                alt="" 
+                className="w-20 h-20 opacity-50 rotate-12"
+              />
+              <img 
+                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e87e9cf2-5f88-4311-90e4-0c22935a13d1.jpg" 
+                alt="" 
+                className="w-24 h-24 opacity-50 -rotate-12"
+              />
+              <img 
+                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e097eaa5-00ee-4dec-9e0d-ee453387a793.jpg" 
+                alt="" 
+                className="w-20 h-20 opacity-50 rotate-6"
+              />
+            </div>
             <BeforeAfterSlider
               examples={[
                 {
