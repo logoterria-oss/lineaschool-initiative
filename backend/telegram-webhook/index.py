@@ -75,8 +75,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Получаем или создаём сессию пользователя
         session = get_or_create_session(dsn, user_id, username)
         
-        # Обработка команды /start
-        if text == '/start':
+        # Обработка команд /start и /restart
+        if text == '/start' or text == '/restart':
             # Сбрасываем сессию
             reset_session(dsn, user_id)
             welcome_msg = bot_messages.get('welcome', 'Привет!')
