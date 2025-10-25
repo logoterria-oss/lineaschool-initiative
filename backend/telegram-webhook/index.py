@@ -90,9 +90,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Если пришло фото
         if photo:
-            # Проверяем, есть ли имена в сессии
-            if not session.get('parent_name') or not session.get('child_name'):
-                send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Сначала отправьте имя родителя и ребёнка'))
+            # Проверяем, есть ли имя ребёнка в сессии
+            if not session.get('child_name'):
+                send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Сначала отправьте имя ребёнка'))
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
@@ -104,7 +104,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             largest_photo = photo[-1]
             file_id = largest_photo['file_id']
             
-            parent_name = session['parent_name']
             child_name = session['child_name']
             
             # Сохраняем в БД
@@ -117,14 +116,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             (telegram_user_id, telegram_username, parent_name, child_name, photo_file_id, status)
                             VALUES (%s, %s, %s, %s, %s, 'pending')
                             """,
-                            (user_id, username, parent_name, child_name, file_id)
+                            (user_id, username, username, child_name, file_id)
                         )
                         conn.commit()
                 
                 success_msg = bot_messages.get('success', '✅ Диктант получен!')
-                success_msg = success_msg.replace('{parent_name}', parent_name).replace('{child_name}', child_name)
+                success_msg = success_msg.replace('{child_name}', child_name)
                 send_telegram_message(chat_id, success_msg)
-                print(f'Saved dictation: parent={parent_name}, child={child_name}, file_id={file_id}')
+                print(f'Saved dictation: child={child_name}, file_id={file_id}')
                 
                 # Сбрасываем сессию после успешной отправки
                 reset_session(dsn, user_id)
@@ -140,30 +139,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Если пришёл только текст - это могут быть имена
+        # Если пришёл только текст - это имя ребёнка
         if text and not photo:
-            lines = text.strip().split('\n')
+            child_name = text.strip()
             
-            # Если две строки - это родитель и ребёнок
-            if len(lines) >= 2:
-                parent_name = lines[0].strip()
-                child_name = lines[1].strip()
+            if child_name:
+                # Сохраняем имя в сессию
+                update_session(dsn, user_id, username, child_name)
                 
-                if parent_name and child_name:
-                    # Сохраняем имена в сессию
-                    update_session(dsn, user_id, parent_name, child_name)
-                    
-                    msg = f'✅ Данные сохранены:\nРодитель: {parent_name}\nРебёнок: {child_name}\n\nТеперь отправьте фото диктанта.'
-                    send_telegram_message(chat_id, msg)
-                    return {
-                        'statusCode': 200,
-                        'headers': {'Content-Type': 'application/json'},
-                        'body': json.dumps({'ok': True}),
-                        'isBase64Encoded': False
-                    }
+                msg = f'✅ Имя ребёнка сохранено: {child_name}\n\nТеперь отправьте фото диктанта.'
+                send_telegram_message(chat_id, msg)
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'ok': True}),
+                    'isBase64Encoded': False
+                }
             
-            # Если не понятно, что прислали - подсказываем
-            send_telegram_message(chat_id, bot_messages.get('error_missing_data', '❌ Пожалуйста, отправьте имя родителя и ребёнка (каждое с новой строки)'))
+            # Если пустое сообщение - подсказываем
+            send_telegram_message(chat_id, bot_messages.get('error_missing_data', '❌ Пожалуйста, отправьте имя ребёнка'))
         
         return {
             'statusCode': 200,
@@ -195,7 +189,7 @@ def get_or_create_session(dsn: str, user_id: int, username: str) -> dict:
                     VALUES (%s, %s, 'idle')
                     ON CONFLICT (telegram_user_id) 
                     DO UPDATE SET updated_at = CURRENT_TIMESTAMP
-                    RETURNING state, parent_name, child_name
+                    RETURNING state, child_name
                     """,
                     (user_id, username)
                 )
@@ -204,8 +198,7 @@ def get_or_create_session(dsn: str, user_id: int, username: str) -> dict:
                 
                 return {
                     'state': row[0] if row else 'idle',
-                    'parent_name': row[1] if row and row[1] else None,
-                    'child_name': row[2] if row and row[2] else None
+                    'child_name': row[1] if row and row[1] else None
                 }
     except Exception as e:
         print(f'Error getting session: {str(e)}')
@@ -240,7 +233,7 @@ def reset_session(dsn: str, user_id: int):
                 cur.execute(
                     """
                     UPDATE t_p93118852_lineaschool_initiati.bot_sessions
-                    SET parent_name = NULL, child_name = NULL, state = 'idle', updated_at = CURRENT_TIMESTAMP
+                    SET child_name = NULL, state = 'idle', updated_at = CURRENT_TIMESTAMP
                     WHERE telegram_user_id = %s
                     """,
                     (user_id,)
