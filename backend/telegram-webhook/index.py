@@ -39,6 +39,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         print(f'Received Telegram update: {json.dumps(update)}')
         
+        # Проверяем, это callback от inline-кнопки или обычное сообщение
+        callback_query = update.get('callback_query')
+        if callback_query:
+            # Обработка нажатия на inline-кнопку
+            chat_id = callback_query.get('message', {}).get('chat', {}).get('id')
+            user_id = callback_query.get('from', {}).get('id')
+            callback_data = callback_query.get('data')
+            
+            # Подтверждаем получение callback
+            answer_callback_query(callback_query.get('id'))
+            
+            if callback_data == 'start_check':
+                send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'ok': True}),
+                'isBase64Encoded': False
+            }
+        
         message = update.get('message')
         if not message:
             return {
@@ -316,12 +337,9 @@ def send_telegram_message_with_button(chat_id: int, text: str):
         'text': text,
         'parse_mode': 'HTML',
         'reply_markup': {
-            'keyboard': [[
-                {'text': 'ПРОВЕРКА ДИКТАНТА'}
-            ]],
-            'resize_keyboard': True,
-            'one_time_keyboard': True,
-            'input_field_placeholder': ''
+            'inline_keyboard': [[
+                {'text': 'ПРОВЕРКА ДИКТАНТА', 'callback_data': 'start_check'}
+            ]]
         }
     }
     
@@ -340,3 +358,22 @@ def send_telegram_message_with_button(chat_id: int, text: str):
         print(f'Response body: {error_body}')
     except Exception as e:
         print(f'Error sending Telegram message: {str(e)}')
+
+def answer_callback_query(callback_query_id: str):
+    """Подтверждает получение callback от inline-кнопки"""
+    bot_token = os.environ.get('TELEGRAM_BOT_API_TOKEN')
+    if not bot_token:
+        return
+    
+    url = f'https://api.telegram.org/bot{bot_token}/answerCallbackQuery'
+    data = {'callback_query_id': callback_query_id}
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(data).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        urllib.request.urlopen(req)
+    except Exception as e:
+        print(f'Error answering callback: {str(e)}')
