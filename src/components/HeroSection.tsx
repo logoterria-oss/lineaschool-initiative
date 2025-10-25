@@ -10,8 +10,11 @@ export default function HeroSection() {
     <section className="relative py-8 lg:py-12 bg-white overflow-hidden" translate="no">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="px-2 sm:px-0">
-            <div className="inline-flex items-center bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">🎓 Для детей 8-18 лет</div>
+          <div className="px-2 sm:px-0 relative">
+            <div className="hidden lg:flex absolute -right-24 top-8 items-center justify-center bg-green-100 text-green-700 w-28 h-28 rounded-full text-sm font-semibold text-center leading-tight">
+              🎓<br/>8-18<br/>лет
+            </div>
+            
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 leading-tight">Онлайн-коррекция дислексии и дисграфии для детей</h1>
             
             <div className="mb-6 sm:mb-8 max-w-xl">
