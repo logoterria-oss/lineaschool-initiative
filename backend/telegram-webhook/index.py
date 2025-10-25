@@ -75,13 +75,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Получаем или создаём сессию пользователя
         session = get_or_create_session(dsn, user_id, username)
         
-        # Обработка команд /start и /restart
+        # Обработка /start или /restart - сброс сессии
         if text == '/start' or text == '/restart':
-            # Сбрасываем сессию
             reset_session(dsn, user_id)
             welcome_msg = bot_messages.get('welcome', 'Привет!')
             send_telegram_message(chat_id, welcome_msg)
-            # Сразу просим имя ребёнка
             send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
             return {
                 'statusCode': 200,
@@ -147,6 +145,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             child_name = text.strip()
             
             if child_name:
+                # Если это первое взаимодействие - приветствуем
+                if not session.get('child_name'):
+                    welcome_msg = bot_messages.get('welcome', 'Здравствуйте!')
+                    send_telegram_message(chat_id, welcome_msg)
+                
                 # Сохраняем имя в сессию
                 update_session(dsn, user_id, username, child_name)
                 
