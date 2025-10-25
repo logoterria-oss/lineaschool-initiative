@@ -79,7 +79,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if session.get('is_new_user'):
             welcome_msg = bot_messages.get('welcome', 'Здравствуйте! Я бот для проверки диктантов.')
             send_telegram_message(chat_id, welcome_msg)
-            send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
+            send_telegram_message(chat_id, 'Отправьте ФИО ребёнка:')
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json'},
@@ -92,7 +92,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             reset_session(dsn, user_id)
             welcome_msg = bot_messages.get('welcome', 'Привет!')
             send_telegram_message(chat_id, welcome_msg)
-            send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
+            send_telegram_message(chat_id, 'Отправьте ФИО ребёнка:')
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json'},
@@ -111,7 +111,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Если имени нет - просим отправить
             if not child_name:
-                send_telegram_message(chat_id, '❌ Сначала отправьте имя ребёнка. Используйте /start чтобы начать сначала.')
+                send_telegram_message(chat_id, '❌ Сначала отправьте ФИО ребёнка. Используйте /start чтобы начать сначала.')
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
@@ -160,7 +160,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 # Сохраняем имя в сессию
                 update_session(dsn, user_id, username, child_name)
                 
-                msg = f'✅ Имя ребёнка сохранено: {child_name}\n\nТеперь отправьте фото диктанта.'
+                msg = f'✅ ФИО ребёнка сохранено: {child_name}\n\nТеперь отправьте фото диктанта.'
                 send_telegram_message(chat_id, msg)
                 return {
                     'statusCode': 200,
@@ -170,7 +170,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             # Если пустое сообщение - подсказываем
-            send_telegram_message(chat_id, bot_messages.get('error_missing_data', '❌ Пожалуйста, отправьте имя ребёнка'))
+            send_telegram_message(chat_id, bot_messages.get('error_missing_data', '❌ Пожалуйста, отправьте ФИО ребёнка'))
         
         return {
             'statusCode': 200,
