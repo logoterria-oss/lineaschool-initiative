@@ -39,27 +39,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         print(f'Received Telegram update: {json.dumps(update)}')
         
-        # Проверяем, это callback от inline-кнопки или обычное сообщение
-        callback_query = update.get('callback_query')
-        if callback_query:
-            # Обработка нажатия на inline-кнопку
-            chat_id = callback_query.get('message', {}).get('chat', {}).get('id')
-            user_id = callback_query.get('from', {}).get('id')
-            callback_data = callback_query.get('data')
-            
-            # Подтверждаем получение callback
-            answer_callback_query(callback_query.get('id'))
-            
-            if callback_data == 'start_check':
-                send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
-            
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'ok': True}),
-                'isBase64Encoded': False
-            }
-        
         message = update.get('message')
         if not message:
             return {
@@ -101,7 +80,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Сбрасываем сессию
             reset_session(dsn, user_id)
             welcome_msg = bot_messages.get('welcome', 'Привет!')
-            send_telegram_message_with_button(chat_id, welcome_msg)
+            send_telegram_message(chat_id, welcome_msg)
+            # Сразу просим имя ребёнка
+            send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json'},
@@ -161,19 +142,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Обработка нажатия на кнопку или текста
+        # Обработка текстового сообщения - это имя ребёнка
         if text and not photo:
-            # Если нажата кнопка "ПРОВЕРКА ДИКТАНТА"
-            if text == 'ПРОВЕРКА ДИКТАНТА':
-                send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
-                return {
-                    'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json'},
-                    'body': json.dumps({'ok': True}),
-                    'isBase64Encoded': False
-                }
-            
-            # Иначе это имя ребёнка
             child_name = text.strip()
             
             if child_name:
