@@ -75,6 +75,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Получаем или создаём сессию пользователя
         session = get_or_create_session(dsn, user_id, username)
         
+        # Если это новый пользователь - приветствуем
+        if session.get('is_new_user'):
+            welcome_msg = bot_messages.get('welcome', 'Здравствуйте! Я бот для проверки диктантов.')
+            send_telegram_message(chat_id, welcome_msg)
+            send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'ok': True}),
+                'isBase64Encoded': False
+            }
+        
         # Обработка /start или /restart - сброс сессии
         if text == '/start' or text == '/restart':
             reset_session(dsn, user_id)
@@ -145,11 +157,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             child_name = text.strip()
             
             if child_name:
-                # Если это первое взаимодействие - приветствуем
-                if not session.get('child_name'):
-                    welcome_msg = bot_messages.get('welcome', 'Здравствуйте!')
-                    send_telegram_message(chat_id, welcome_msg)
-                
                 # Сохраняем имя в сессию
                 update_session(dsn, user_id, username, child_name)
                 
@@ -188,6 +195,18 @@ def get_or_create_session(dsn: str, user_id: int, username: str) -> dict:
     try:
         with psycopg.connect(dsn) as conn:
             with conn.cursor() as cur:
+                # Проверяем, существует ли сессия
+                cur.execute(
+                    """
+                    SELECT state, child_name FROM t_p93118852_lineaschool_initiati.bot_sessions
+                    WHERE telegram_user_id = %s
+                    """,
+                    (user_id,)
+                )
+                existing = cur.fetchone()
+                is_new_user = existing is None
+                
+                # Создаём или обновляем сессию
                 cur.execute(
                     """
                     INSERT INTO t_p93118852_lineaschool_initiati.bot_sessions 
@@ -204,11 +223,12 @@ def get_or_create_session(dsn: str, user_id: int, username: str) -> dict:
                 
                 return {
                     'state': row[0] if row else 'idle',
-                    'child_name': row[1] if row and row[1] else None
+                    'child_name': row[1] if row and row[1] else None,
+                    'is_new_user': is_new_user
                 }
     except Exception as e:
         print(f'Error getting session: {str(e)}')
-        return {'state': 'idle', 'parent_name': None, 'child_name': None}
+        return {'state': 'idle', 'parent_name': None, 'child_name': None, 'is_new_user': False}
 
 def update_session(dsn: str, user_id: int, parent_name: str, child_name: str):
     """Обновляет данные в сессии"""
