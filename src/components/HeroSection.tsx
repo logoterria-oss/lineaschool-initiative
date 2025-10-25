@@ -9,7 +9,7 @@ export default function HeroSection() {
   return (
     <section className="relative py-8 lg:py-12 bg-white overflow-hidden" translate="no">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 items-center relative">
           <div className="px-2 sm:px-0">
             <div className="inline-flex items-center bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">🎓 Для детей 8-18 лет</div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 leading-tight">Онлайн-коррекция дислексии и дисграфии для детей</h1>
@@ -39,26 +39,26 @@ export default function HeroSection() {
                 <div className="text-xs text-gray-600">успешных кейсов</div>
               </div>
             </div>
-          </div>
-          
-          <div className="relative">
-            <div className="hidden lg:flex absolute top-0 left-0 right-0 h-48 items-center justify-center gap-8 pointer-events-none z-10">
+            <div className="hidden lg:flex absolute -top-12 left-1/2 -translate-x-1/2 gap-6 pointer-events-none z-10">
               <img 
                 src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/48d82409-ebb2-4a42-a1d0-83f11cf3c270.jpg" 
                 alt="" 
-                className="w-20 h-20 opacity-50 rotate-12"
+                className="w-24 h-24 opacity-40 rotate-12"
               />
               <img 
                 src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e87e9cf2-5f88-4311-90e4-0c22935a13d1.jpg" 
                 alt="" 
-                className="w-24 h-24 opacity-50 -rotate-12"
+                className="w-28 h-28 opacity-40 -rotate-6"
               />
               <img 
                 src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/e097eaa5-00ee-4dec-9e0d-ee453387a793.jpg" 
                 alt="" 
-                className="w-20 h-20 opacity-50 rotate-6"
+                className="w-24 h-24 opacity-40 rotate-6"
               />
             </div>
+          </div>
+          
+          <div className="relative">
             <BeforeAfterSlider
               examples={[
                 {
