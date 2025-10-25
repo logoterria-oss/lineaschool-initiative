@@ -320,7 +320,8 @@ def send_telegram_message_with_button(chat_id: int, text: str):
                 {'text': 'ПРОВЕРКА ДИКТАНТА'}
             ]],
             'resize_keyboard': True,
-            'one_time_keyboard': False
+            'one_time_keyboard': True,
+            'input_field_placeholder': ''
         }
     }
     
