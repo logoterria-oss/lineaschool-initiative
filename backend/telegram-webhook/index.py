@@ -94,13 +94,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             largest_photo = photo[-1]
             file_id = largest_photo['file_id']
             
-            # Получаем имя из подписи к фото или из сессии
-            caption = message.get('caption', '').strip()
-            child_name = caption if caption else session.get('child_name')
+            # Получаем имя из сессии
+            child_name = session.get('child_name')
             
-            # Если имени нет нигде - просим отправить
+            # Если имени нет - просим отправить
             if not child_name:
-                send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Сначала отправьте имя ребёнка. Используйте /start чтобы начать сначала.'))
+                send_telegram_message(chat_id, '❌ Сначала отправьте имя ребёнка. Используйте /start чтобы начать сначала.')
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
