@@ -80,7 +80,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Сбрасываем сессию
             reset_session(dsn, user_id)
             welcome_msg = bot_messages.get('welcome', 'Привет!')
-            send_telegram_message(chat_id, welcome_msg)
+            send_telegram_message_with_button(chat_id, welcome_msg)
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json'},
@@ -139,8 +139,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Если пришёл только текст - это имя ребёнка
+        # Обработка нажатия на кнопку или текста
         if text and not photo:
+            # Если нажата кнопка "ПРОВЕРКА ДИКТАНТА"
+            if text == 'ПРОВЕРКА ДИКТАНТА':
+                send_telegram_message(chat_id, 'Отправьте имя ребёнка:')
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'ok': True}),
+                    'isBase64Encoded': False
+                }
+            
+            # Иначе это имя ребёнка
             child_name = text.strip()
             
             if child_name:
@@ -284,6 +295,43 @@ def send_telegram_message(chat_id: int, text: str):
         with urllib.request.urlopen(req) as response:
             result = json.loads(response.read().decode('utf-8'))
             print(f'Sent message to {chat_id}: {result.get("ok")}')
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print(f'Error sending Telegram message: {e.code} {e.reason}')
+        print(f'Response body: {error_body}')
+    except Exception as e:
+        print(f'Error sending Telegram message: {str(e)}')
+
+def send_telegram_message_with_button(chat_id: int, text: str):
+    """Отправляет сообщение с кнопкой ПРОВЕРКА ДИКТАНТА"""
+    bot_token = os.environ.get('TELEGRAM_BOT_API_TOKEN')
+    if not bot_token:
+        print('ERROR: TELEGRAM_BOT_API_TOKEN not configured')
+        return
+    
+    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+    data = {
+        'chat_id': chat_id,
+        'text': text,
+        'parse_mode': 'HTML',
+        'reply_markup': {
+            'keyboard': [[
+                {'text': 'ПРОВЕРКА ДИКТАНТА'}
+            ]],
+            'resize_keyboard': True,
+            'one_time_keyboard': False
+        }
+    }
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(data).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        with urllib.request.urlopen(req) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            print(f'Sent message with button to {chat_id}: {result.get("ok")}')
     except urllib.error.HTTPError as e:
         error_body = e.read().decode('utf-8')
         print(f'Error sending Telegram message: {e.code} {e.reason}')
