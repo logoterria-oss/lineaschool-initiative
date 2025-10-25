@@ -25,16 +25,31 @@ export default function HeroSection() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 max-w-xl items-end">
-              <div className="text-center">
+            <div className="grid grid-cols-3 gap-4 max-w-xl items-end relative">
+              <div className="text-center relative">
+                <img 
+                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/539484f5-a62f-4220-abd4-1dfb99052eab.jpg" 
+                  alt="" 
+                  className="absolute -top-8 -left-2 w-8 h-8 opacity-60 rotate-12"
+                />
                 <div className="text-2xl font-bold text-green-600">200+</div>
                 <div className="text-xs text-gray-600">довольных семей</div>
               </div>
-              <div className="text-center">
+              <div className="text-center relative">
+                <img 
+                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/539484f5-a62f-4220-abd4-1dfb99052eab.jpg" 
+                  alt="" 
+                  className="absolute -top-10 -left-3 w-10 h-10 opacity-60 -rotate-6"
+                />
                 <div className="text-3xl font-bold text-green-600">от 970₽</div>
                 <div className="text-xs text-gray-600">за урок</div>
               </div>
-              <div className="text-center">
+              <div className="text-center relative">
+                <img 
+                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/539484f5-a62f-4220-abd4-1dfb99052eab.jpg" 
+                  alt="" 
+                  className="absolute -top-8 -left-2 w-8 h-8 opacity-60 rotate-6"
+                />
                 <div className="text-2xl font-bold text-green-600">98%</div>
                 <div className="text-xs text-gray-600">успешных кейсов</div>
               </div>
