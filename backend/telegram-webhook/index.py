@@ -90,21 +90,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Если пришло фото
         if photo:
-            # Проверяем, есть ли имя ребёнка в сессии
-            if not session.get('child_name'):
-                send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Сначала отправьте имя ребёнка'))
+            # Берём последнее фото (самое большое)
+            largest_photo = photo[-1]
+            file_id = largest_photo['file_id']
+            
+            # Получаем имя из подписи к фото или из сессии
+            caption = message.get('caption', '').strip()
+            child_name = caption if caption else session.get('child_name')
+            
+            # Если имени нет нигде - просим отправить
+            if not child_name:
+                send_telegram_message(chat_id, bot_messages.get('error_photo_no_caption', '❌ Сначала отправьте имя ребёнка. Используйте /start чтобы начать сначала.'))
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
                     'body': json.dumps({'ok': True}),
                     'isBase64Encoded': False
                 }
-            
-            # Берём последнее фото (самое большое)
-            largest_photo = photo[-1]
-            file_id = largest_photo['file_id']
-            
-            child_name = session['child_name']
             
             # Сохраняем в БД
             try:
