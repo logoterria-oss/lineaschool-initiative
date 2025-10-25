@@ -14,18 +14,17 @@ export default function HeroSection() {
             <div className="inline-flex items-center bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">🎓 Для детей 8-18 лет</div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 leading-tight">Онлайн-коррекция дислексии и дисграфии для детей</h1>
             
-            <div className="mb-6 sm:mb-8">
-              <Button 
-                size="lg" 
-                className="bg-green-500 hover:bg-green-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full sm:w-auto"
-                onClick={() => setIsBookingModalOpen(true)}
-              >
-                <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
-                <span className="whitespace-nowrap">Получить БЕСПЛАТНУЮ диагностику</span>
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4 mb-6 sm:mb-8">
+              <div className="col-span-3 flex justify-center mb-4 sm:mb-6">
+                <Button 
+                  size="lg" 
+                  className="bg-green-500 hover:bg-green-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full sm:w-auto"
+                  onClick={() => setIsBookingModalOpen(true)}
+                >
+                  <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
+                  <span className="whitespace-nowrap">Получить БЕСПЛАТНУЮ диагностику</span>
+                </Button>
+              </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">200+</div>
                 <div className="text-xs text-gray-600">довольных семей</div>
