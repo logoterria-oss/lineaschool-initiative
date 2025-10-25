@@ -31,7 +31,7 @@ export default function HeroSection() {
                 <div className="text-xs text-gray-600">довольных семей</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">от 970₽</div>
+                <div className="text-3xl font-bold text-green-600">от 970₽</div>
                 <div className="text-xs text-gray-600">за урок</div>
               </div>
               <div className="text-center">
