@@ -62,6 +62,15 @@ const Toolbar = ({
             <Icon name="Eraser" className="mr-1" size={14} />
             Ластик
           </Button>
+          <Button
+            size="sm"
+            variant={markerColor === 'crop' ? 'default' : 'outline'}
+            onClick={() => onMarkerColorChange('crop')}
+            className={markerColor === 'crop' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          >
+            <Icon name="Crop" className="mr-1" size={14} />
+            Кадрировать
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -99,6 +108,17 @@ const Toolbar = ({
             <Icon name="Info" className="text-green-600" size={16} />
             <span className="text-sm text-green-800">
               {underlineStart ? 'Кликните в конечную точку подчеркивания' : 'Кликните в начальную точку подчеркивания'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {markerColor === 'crop' && (
+        <div className="bg-blue-50 border border-blue-300 rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <Icon name="Info" className="text-blue-600" size={16} />
+            <span className="text-sm text-blue-800">
+              Зажмите левую кнопку мыши и выделите область для кадрирования
             </span>
           </div>
         </div>

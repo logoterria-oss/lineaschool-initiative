@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { Marker, Underline, MarkerColor } from './types';
+import { Marker, Underline, MarkerColor, CropArea } from './types';
 
 interface AnnotationCanvasProps {
   imageUrl: string;

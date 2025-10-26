@@ -1,4 +1,4 @@
-export type MarkerColor = 'green' | 'red' | 'underline' | 'eraser';
+export type MarkerColor = 'green' | 'red' | 'underline' | 'eraser' | 'crop';
 
 export interface Marker {
   x: number;
@@ -14,11 +14,19 @@ export interface Underline {
   y2: number;
 }
 
+export interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface HistoryState {
   markers: Marker[];
   underlines: Underline[];
   greenCount: number;
   redCount: number;
+  cropArea?: CropArea | null;
 }
 
 export interface ImageAnnotatorProps {

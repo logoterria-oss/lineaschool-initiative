@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
-import { ImageAnnotatorProps, Marker, Underline, HistoryState, MarkerColor } from './ImageAnnotator/types';
+import { ImageAnnotatorProps, Marker, Underline, HistoryState, MarkerColor, CropArea } from './ImageAnnotator/types';
 import ErrorCounter from './ImageAnnotator/ErrorCounter';
 import Toolbar from './ImageAnnotator/Toolbar';
 import SaveConfirmModal from './ImageAnnotator/SaveConfirmModal';
 import AnnotationCanvas from './ImageAnnotator/AnnotationCanvas';
+import CropCanvas from './ImageAnnotator/CropCanvas';
 import Instructions from './ImageAnnotator/Instructions';
 
 const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) => {
@@ -21,6 +22,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
   const [hoveredUnderlineIndex, setHoveredUnderlineIndex] = useState<number | null>(null);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [cropArea, setCropArea] = useState<CropArea | null>(null);
+  const [cropDragStart, setCropDragStart] = useState<{x: number, y: number} | null>(null);
 
   const storageKey = `annotator_${imageUrl}`;
 
@@ -32,6 +35,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         setUnderlines(data.underlines || []);
         setGreenCount(data.greenCount || 0);
         setRedCount(data.redCount || 0);
+        setCropArea(data.cropArea || null);
       } catch (e) {
         console.error('Failed to load saved markup:', e);
       }
@@ -44,6 +48,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           setUnderlines(data.underlines || []);
           setGreenCount(data.greenCount || 0);
           setRedCount(data.redCount || 0);
+          setCropArea(data.cropArea || null);
         } catch (e) {
           console.error('Failed to load saved markers:', e);
         }
@@ -52,15 +57,16 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   }, [imageUrl, savedMarkup, storageKey]);
 
   useEffect(() => {
-    if (markers.length > 0 || underlines.length > 0 || greenCount > 0 || redCount > 0) {
+    if (markers.length > 0 || underlines.length > 0 || greenCount > 0 || redCount > 0 || cropArea) {
       localStorage.setItem(storageKey, JSON.stringify({
         markers,
         underlines,
         greenCount,
-        redCount
+        redCount,
+        cropArea
       }));
     }
-  }, [markers, underlines, greenCount, redCount, storageKey]);
+  }, [markers, underlines, greenCount, redCount, cropArea, storageKey]);
 
   const saveToHistory = () => {
     const newHistory = history.slice(0, historyStep + 1);
@@ -68,7 +74,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       markers: [...markers],
       underlines: [...underlines],
       greenCount,
-      redCount
+      redCount,
+      cropArea
     });
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
@@ -83,6 +90,18 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   const handleMarkerColorChange = (color: MarkerColor) => {
     setMarkerColor(color);
     setUnderlineStart(null);
+    setCropDragStart(null);
+  };
+
+  const handleCropApply = (area: CropArea) => {
+    setCropArea(area);
+    setMarkerColor('green');
+    setTimeout(() => saveToHistory(), 0);
+  };
+
+  const handleCropCancel = () => {
+    setMarkerColor('green');
+    setCropDragStart(null);
   };
 
   const handleMarkerAdd = (marker: Marker) => {
@@ -222,7 +241,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         markers,
         underlines,
         greenCount,
-        redCount
+        redCount,
+        cropArea
       });
       console.log('Calling onSave with markup data');
       
@@ -258,7 +278,15 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           onClear={clearCanvas}
         />
 
-        <AnnotationCanvas
+        {markerColor === 'crop' ? (
+          <CropCanvas
+            imageUrl={imageUrl}
+            initialCropArea={cropArea}
+            onApply={handleCropApply}
+            onCancel={handleCropCancel}
+          />
+        ) : (
+          <AnnotationCanvas
           imageUrl={imageUrl}
           markers={markers}
           underlines={underlines}
@@ -276,6 +304,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           onHoveredMarkerChange={setHoveredMarkerIndex}
           onHoveredUnderlineChange={setHoveredUnderlineIndex}
         />
+        )}
 
         <Instructions />
       </div>
