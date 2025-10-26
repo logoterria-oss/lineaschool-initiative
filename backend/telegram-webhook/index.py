@@ -120,17 +120,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Сохраняем в БД
             try:
-                with psycopg.connect(dsn) as conn:
-                    with conn.cursor() as cur:
-                        cur.execute(
-                            """
-                            INSERT INTO t_p93118852_lineaschool_initiati.dictations 
-                            (telegram_user_id, telegram_username, parent_name, child_name, photo_file_id, status)
-                            VALUES (%s, %s, %s, %s, %s, 'pending')
-                            """,
-                            (user_id, username, username, child_name, file_id)
-                        )
-                        conn.commit()
+                conn = psycopg2.connect(dsn)
+                cur = conn.cursor()
+                cur.execute(
+                    """
+                    INSERT INTO t_p93118852_lineaschool_initiati.dictations 
+                    (telegram_user_id, telegram_username, parent_name, child_name, photo_file_id, status)
+                    VALUES (%s, %s, %s, %s, %s, 'pending')
+                    """,
+                    (user_id, username, username, child_name, file_id)
+                )
+                conn.commit()
+                cur.close()
+                conn.close()
                 
                 success_msg = bot_messages.get('success', '✅ Диктант получен!')
                 success_msg = success_msg.replace('{child_name}', child_name)
