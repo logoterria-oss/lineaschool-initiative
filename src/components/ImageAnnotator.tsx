@@ -194,12 +194,42 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
 
     console.log('Creating temp canvas, markers count:', markers.length);
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
+    
+    let sourceX = 0;
+    let sourceY = 0;
+    let sourceWidth = canvas.width;
+    let sourceHeight = canvas.height;
+    let offsetX = 0;
+    let offsetY = 0;
+    
+    if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
+      sourceX = cropArea.x;
+      sourceY = cropArea.y;
+      sourceWidth = cropArea.width;
+      sourceHeight = cropArea.height;
+      offsetX = -cropArea.x;
+      offsetY = -cropArea.y;
+      tempCanvas.width = cropArea.width;
+      tempCanvas.height = cropArea.height;
+    } else {
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+    }
+    
     const tempCtx = tempCanvas.getContext('2d');
     
     if (tempCtx) {
-      tempCtx.drawImage(canvas, 0, 0);
+      tempCtx.drawImage(
+        canvas,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        sourceWidth,
+        sourceHeight
+      );
       
       underlines.forEach((line) => {
         tempCtx.save();
@@ -209,10 +239,15 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         
         const amplitude = 2;
         const frequency = 0.15;
-        const distance = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
-        const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1);
+        const adjustedX1 = line.x1 + offsetX;
+        const adjustedY1 = line.y1 + offsetY;
+        const adjustedX2 = line.x2 + offsetX;
+        const adjustedY2 = line.y2 + offsetY;
         
-        tempCtx.translate(line.x1, line.y1);
+        const distance = Math.sqrt(Math.pow(adjustedX2 - adjustedX1, 2) + Math.pow(adjustedY2 - adjustedY1, 2));
+        const angle = Math.atan2(adjustedY2 - adjustedY1, adjustedX2 - adjustedX1);
+        
+        tempCtx.translate(adjustedX1, adjustedY1);
         tempCtx.rotate(angle);
         
         tempCtx.beginPath();
@@ -232,7 +267,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       markers.forEach((marker) => {
         tempCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
         tempCtx.beginPath();
-        tempCtx.arc(marker.x, marker.y, marker.size, 0, Math.PI * 2);
+        tempCtx.arc(marker.x + offsetX, marker.y + offsetY, marker.size, 0, Math.PI * 2);
         tempCtx.fill();
       });
       tempCtx.globalAlpha = 1.0;
