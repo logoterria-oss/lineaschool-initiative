@@ -239,11 +239,16 @@ def update_session(dsn: str, user_id: int, parent_name: str, child_name: str):
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    UPDATE t_p93118852_lineaschool_initiati.bot_sessions
-                    SET parent_name = %s, child_name = %s, state = 'waiting_photo', updated_at = CURRENT_TIMESTAMP
-                    WHERE telegram_user_id = %s
+                    INSERT INTO t_p93118852_lineaschool_initiati.bot_sessions
+                    (telegram_user_id, telegram_username, state, child_name)
+                    VALUES (%s, '', 'waiting_photo', %s)
+                    ON CONFLICT (telegram_user_id)
+                    DO UPDATE SET 
+                        child_name = EXCLUDED.child_name,
+                        state = 'waiting_photo',
+                        updated_at = CURRENT_TIMESTAMP
                     """,
-                    (parent_name, child_name, user_id)
+                    (user_id, child_name)
                 )
                 conn.commit()
     except Exception as e:
