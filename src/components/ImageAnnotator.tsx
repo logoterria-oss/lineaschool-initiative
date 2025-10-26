@@ -231,7 +231,15 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         sourceHeight
       );
       
+      const isInCropArea = (x: number, y: number): boolean => {
+        if (!cropArea || cropArea.width === 0) return true;
+        return x >= sourceX && x <= sourceX + sourceWidth &&
+               y >= sourceY && y <= sourceY + sourceHeight;
+      };
+      
       underlines.forEach((line) => {
+        if (!isInCropArea(line.x1, line.y1) && !isInCropArea(line.x2, line.y2)) return;
+        
         tempCtx.save();
         tempCtx.strokeStyle = '#22c55e';
         tempCtx.lineWidth = 3;
@@ -265,6 +273,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       
       tempCtx.globalAlpha = 0.4;
       markers.forEach((marker) => {
+        if (!isInCropArea(marker.x, marker.y)) return;
+        
         tempCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
         tempCtx.beginPath();
         tempCtx.arc(marker.x + offsetX, marker.y + offsetY, marker.size, 0, Math.PI * 2);
