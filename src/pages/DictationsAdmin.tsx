@@ -252,15 +252,7 @@ const DictationsAdmin = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => {
-                                if (selectedDictation.markup_data) {
-                                  if (window.confirm('При редактировании текущая разметка будет удалена. Продолжить?')) {
-                                    setShowAnnotator(true);
-                                  }
-                                } else {
-                                  setShowAnnotator(true);
-                                }
-                              }}
+                              onClick={() => setShowAnnotator(true)}
                               className="flex-1"
                             >
                               <Icon name="Pencil" className="mr-1" size={14} />
