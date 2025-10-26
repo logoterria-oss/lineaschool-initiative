@@ -8,6 +8,8 @@ import os
 from typing import Dict, Any
 import urllib.request
 import urllib.parse
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'POST')
@@ -190,106 +192,119 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
 def get_or_create_session(dsn: str, user_id: int, username: str) -> dict:
     """Получает или создаёт сессию пользователя"""
-    import psycopg
-    
+    conn = None
     try:
-        with psycopg.connect(dsn) as conn:
-            with conn.cursor() as cur:
-                # Проверяем, существует ли сессия
-                cur.execute(
-                    """
-                    SELECT state, child_name FROM t_p93118852_lineaschool_initiati.bot_sessions
-                    WHERE telegram_user_id = %s
-                    """,
-                    (user_id,)
-                )
-                existing = cur.fetchone()
-                is_new_user = existing is None
-                
-                # Создаём или обновляем сессию
-                cur.execute(
-                    """
-                    INSERT INTO t_p93118852_lineaschool_initiati.bot_sessions 
-                    (telegram_user_id, telegram_username, state)
-                    VALUES (%s, %s, 'idle')
-                    ON CONFLICT (telegram_user_id) 
-                    DO UPDATE SET updated_at = CURRENT_TIMESTAMP
-                    RETURNING state, child_name
-                    """,
-                    (user_id, username)
-                )
-                row = cur.fetchone()
-                conn.commit()
-                
-                return {
-                    'state': row[0] if row else 'idle',
-                    'child_name': row[1] if row and row[1] else None,
-                    'is_new_user': is_new_user
-                }
+        conn = psycopg2.connect(dsn)
+        cur = conn.cursor()
+        
+        # Проверяем, существует ли сессия
+        cur.execute(
+            """
+            SELECT state, child_name FROM t_p93118852_lineaschool_initiati.bot_sessions
+            WHERE telegram_user_id = %s
+            """,
+            (user_id,)
+        )
+        existing = cur.fetchone()
+        is_new_user = existing is None
+        
+        # Создаём или обновляем сессию
+        cur.execute(
+            """
+            INSERT INTO t_p93118852_lineaschool_initiati.bot_sessions 
+            (telegram_user_id, telegram_username, state)
+            VALUES (%s, %s, 'idle')
+            ON CONFLICT (telegram_user_id) 
+            DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING state, child_name
+            """,
+            (user_id, username)
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'state': row[0] if row else 'idle',
+            'child_name': row[1] if row and row[1] else None,
+            'is_new_user': is_new_user
+        }
     except Exception as e:
         print(f'Error getting session: {str(e)}')
+        if conn:
+            conn.close()
         return {'state': 'idle', 'parent_name': None, 'child_name': None, 'is_new_user': False}
 
 def update_session(dsn: str, user_id: int, child_name: str, username: str):
     """Обновляет данные в сессии"""
-    import psycopg
-    
+    conn = None
     try:
-        with psycopg.connect(dsn) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO t_p93118852_lineaschool_initiati.bot_sessions
-                    (telegram_user_id, telegram_username, state, child_name)
-                    VALUES (%s, '', 'waiting_photo', %s)
-                    ON CONFLICT (telegram_user_id)
-                    DO UPDATE SET 
-                        child_name = EXCLUDED.child_name,
-                        state = 'waiting_photo',
-                        updated_at = CURRENT_TIMESTAMP
-                    """,
-                    (user_id, child_name)
-                )
-                conn.commit()
+        conn = psycopg2.connect(dsn)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO t_p93118852_lineaschool_initiati.bot_sessions
+            (telegram_user_id, telegram_username, state, child_name)
+            VALUES (%s, '', 'waiting_photo', %s)
+            ON CONFLICT (telegram_user_id)
+            DO UPDATE SET 
+                child_name = EXCLUDED.child_name,
+                state = 'waiting_photo',
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (user_id, child_name)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
     except Exception as e:
         print(f'Error updating session: {str(e)}')
+        if conn:
+            conn.close()
 
 def reset_session(dsn: str, user_id: int):
     """Сбрасывает сессию пользователя"""
-    import psycopg
-    
+    conn = None
     try:
-        with psycopg.connect(dsn) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE t_p93118852_lineaschool_initiati.bot_sessions
-                    SET child_name = NULL, state = 'idle', updated_at = CURRENT_TIMESTAMP
-                    WHERE telegram_user_id = %s
-                    """,
-                    (user_id,)
-                )
-                conn.commit()
+        conn = psycopg2.connect(dsn)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE t_p93118852_lineaschool_initiati.bot_sessions
+            SET child_name = NULL, state = 'idle', updated_at = CURRENT_TIMESTAMP
+            WHERE telegram_user_id = %s
+            """,
+            (user_id,)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
     except Exception as e:
         print(f'Error resetting session: {str(e)}')
+        if conn:
+            conn.close()
 
 def get_bot_messages(dsn: str) -> dict:
     """Получает тексты сообщений из БД"""
-    import psycopg
-    
+    conn = None
     try:
-        with psycopg.connect(dsn) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT message_key, message_text 
-                    FROM t_p93118852_lineaschool_initiati.bot_messages
-                    """
-                )
-                rows = cur.fetchall()
-                return {row[0]: row[1] for row in rows}
+        conn = psycopg2.connect(dsn)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT message_key, message_text 
+            FROM t_p93118852_lineaschool_initiati.bot_messages
+            """
+        )
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return {row[0]: row[1] for row in rows}
     except Exception as e:
         print(f'Error loading bot messages: {str(e)}')
+        if conn:
+            conn.close()
         return {}
 
 def send_telegram_message(chat_id: int, text: str):
