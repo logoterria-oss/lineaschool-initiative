@@ -158,7 +158,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if child_name:
                 # Сохраняем имя в сессию
-                update_session(dsn, user_id, username, child_name)
+                update_session(dsn, user_id, child_name, '')
                 
                 msg = f'✅ ФИО ребёнка сохранено: {child_name}\n\nТеперь отправьте фото диктанта.'
                 send_telegram_message(chat_id, msg)
@@ -230,7 +230,7 @@ def get_or_create_session(dsn: str, user_id: int, username: str) -> dict:
         print(f'Error getting session: {str(e)}')
         return {'state': 'idle', 'parent_name': None, 'child_name': None, 'is_new_user': False}
 
-def update_session(dsn: str, user_id: int, parent_name: str, child_name: str):
+def update_session(dsn: str, user_id: int, child_name: str, username: str):
     """Обновляет данные в сессии"""
     import psycopg
     
