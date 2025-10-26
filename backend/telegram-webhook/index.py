@@ -68,9 +68,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Импортируем psycopg после получения DSN
-        import psycopg
-        
         # Получаем тексты сообщений из БД
         bot_messages = get_bot_messages(dsn)
         
