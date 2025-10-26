@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import ImageAnnotator from '@/components/ImageAnnotator';
+import ImageCropper from '@/components/ImageCropper';
 import AnnotatedImageView, { AnnotatedImageViewRef } from '@/components/AnnotatedImageView';
 import AdminHeader from '@/components/AdminHeader';
 
@@ -30,6 +31,8 @@ const DictationsAdmin = () => {
   const [selectedDictation, setSelectedDictation] = useState<Dictation | null>(null);
   const [notes, setNotes] = useState('');
   const [showAnnotator, setShowAnnotator] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const annotatedImageRef = useRef<AnnotatedImageViewRef>(null);
 
   useEffect(() => {
@@ -134,6 +137,11 @@ const DictationsAdmin = () => {
     localStorage.removeItem('annotator_state');
   };
 
+  const handleCropSave = (croppedUrl: string) => {
+    setCroppedImageUrl(croppedUrl);
+    setShowCropper(false);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -189,6 +197,8 @@ const DictationsAdmin = () => {
                     setSelectedDictation(dictation);
                     setNotes(dictation.diagnostician_notes || '');
                     setShowAnnotator(false);
+                    setShowCropper(false);
+                    setCroppedImageUrl(null);
                   }}
                 >
                   <CardHeader>
@@ -229,9 +239,15 @@ const DictationsAdmin = () => {
                   <div>
                     <h3 className="font-semibold mb-2">Фото диктанта:</h3>
                     {selectedDictation.photo_file_id ? (
-                      showAnnotator ? (
+                      showCropper ? (
+                        <ImageCropper
+                          imageUrl={croppedImageUrl || `https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
+                          onSave={handleCropSave}
+                          onCancel={() => setShowCropper(false)}
+                        />
+                      ) : showAnnotator ? (
                         <ImageAnnotator
-                          imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
+                          imageUrl={croppedImageUrl || `https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
                           onSave={handleSaveAnnotation}
                           savedMarkup={selectedDictation.markup_data ? JSON.stringify(selectedDictation.markup_data) : null}
                         />
@@ -240,13 +256,22 @@ const DictationsAdmin = () => {
                           <div className="bg-white rounded-lg border overflow-hidden">
                             <AnnotatedImageView
                               ref={annotatedImageRef}
-                              imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
+                              imageUrl={croppedImageUrl || `https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
                               markupData={selectedDictation.markup_data}
                               alt={`Диктант ${selectedDictation.child_name}`}
                               className="w-full h-auto"
                             />
                           </div>
                           <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setShowCropper(true)}
+                              className="flex-1"
+                            >
+                              <Icon name="Crop" className="mr-1" size={14} />
+                              Кадрировать
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
