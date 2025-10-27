@@ -262,12 +262,15 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         y2: u.y2 - offsetY
       }));
       
+      const processedImageBase64 = tempCanvas.toDataURL('image/png');
+      
       const markupData = JSON.stringify({
         markers: adjustedMarkers,
         underlines: adjustedUnderlines,
         greenCount,
         redCount,
-        cropArea: null
+        cropArea: null,
+        processedImageUrl: processedImageBase64
       });
       console.log('Calling onSave with markup data');
       

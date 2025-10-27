@@ -6,6 +6,7 @@ interface AnnotatedImageViewProps {
   markupData: {
     markers: Marker[];
     underlines: Underline[];
+    processedImageUrl?: string;
   } | null;
   alt?: string;
   className?: string;
@@ -36,7 +37,7 @@ const AnnotatedImageView = forwardRef<AnnotatedImageViewRef, AnnotatedImageViewP
 
       ctx.drawImage(img, 0, 0);
 
-      if (markupData) {
+      if (markupData && !markupData.processedImageUrl) {
         markupData.underlines?.forEach((line) => {
           ctx.save();
           ctx.strokeStyle = '#22c55e';
@@ -75,7 +76,8 @@ const AnnotatedImageView = forwardRef<AnnotatedImageViewRef, AnnotatedImageViewP
       }
     };
 
-    img.src = imageUrl;
+    const finalImageUrl = markupData?.processedImageUrl || imageUrl;
+    img.src = finalImageUrl;
   }, [imageUrl, markupData]);
 
   useImperativeHandle(ref, () => ({
