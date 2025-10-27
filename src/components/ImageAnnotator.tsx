@@ -194,52 +194,18 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
 
     console.log('Creating temp canvas, markers count:', markers.length);
     const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
     
-    let sourceX = 0;
-    let sourceY = 0;
-    let sourceWidth = canvas.width;
-    let sourceHeight = canvas.height;
-    let offsetX = 0;
-    let offsetY = 0;
-    
-    if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
-      sourceX = cropArea.x;
-      sourceY = cropArea.y;
-      sourceWidth = cropArea.width;
-      sourceHeight = cropArea.height;
-      offsetX = -cropArea.x;
-      offsetY = -cropArea.y;
-      tempCanvas.width = cropArea.width;
-      tempCanvas.height = cropArea.height;
-    } else {
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-    }
+    const offsetX = cropArea ? cropArea.x : 0;
+    const offsetY = cropArea ? cropArea.y : 0;
     
     const tempCtx = tempCanvas.getContext('2d');
     
     if (tempCtx) {
-      tempCtx.drawImage(
-        canvas,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
-        0,
-        0,
-        sourceWidth,
-        sourceHeight
-      );
-      
-      const isInCropArea = (x: number, y: number): boolean => {
-        if (!cropArea || cropArea.width === 0) return true;
-        return x >= sourceX && x <= sourceX + sourceWidth &&
-               y >= sourceY && y <= sourceY + sourceHeight;
-      };
+      tempCtx.drawImage(canvas, 0, 0);
       
       underlines.forEach((line) => {
-        if (!isInCropArea(line.x1, line.y1) && !isInCropArea(line.x2, line.y2)) return;
-        
         tempCtx.save();
         tempCtx.strokeStyle = '#22c55e';
         tempCtx.lineWidth = 3;
@@ -247,10 +213,10 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         
         const amplitude = 2;
         const frequency = 0.15;
-        const adjustedX1 = line.x1 + offsetX;
-        const adjustedY1 = line.y1 + offsetY;
-        const adjustedX2 = line.x2 + offsetX;
-        const adjustedY2 = line.y2 + offsetY;
+        const adjustedX1 = line.x1 - offsetX;
+        const adjustedY1 = line.y1 - offsetY;
+        const adjustedX2 = line.x2 - offsetX;
+        const adjustedY2 = line.y2 - offsetY;
         
         const distance = Math.sqrt(Math.pow(adjustedX2 - adjustedX1, 2) + Math.pow(adjustedY2 - adjustedY1, 2));
         const angle = Math.atan2(adjustedY2 - adjustedY1, adjustedX2 - adjustedX1);
@@ -273,11 +239,12 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       
       tempCtx.globalAlpha = 0.4;
       markers.forEach((marker) => {
-        if (!isInCropArea(marker.x, marker.y)) return;
+        const adjustedX = marker.x - offsetX;
+        const adjustedY = marker.y - offsetY;
         
         tempCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
         tempCtx.beginPath();
-        tempCtx.arc(marker.x + offsetX, marker.y + offsetY, marker.size, 0, Math.PI * 2);
+        tempCtx.arc(adjustedX, adjustedY, marker.size, 0, Math.PI * 2);
         tempCtx.fill();
       });
       tempCtx.globalAlpha = 1.0;
