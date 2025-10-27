@@ -35,7 +35,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         setUnderlines(data.underlines || []);
         setGreenCount(data.greenCount || 0);
         setRedCount(data.redCount || 0);
-        setCropArea(data.cropArea || null);
+        setCropArea(null);
       } catch (e) {
         console.error('Failed to load saved markup:', e);
       }
@@ -249,12 +249,25 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       });
       tempCtx.globalAlpha = 1.0;
       
+      const adjustedMarkers = markers.map(m => ({
+        ...m,
+        x: m.x - offsetX,
+        y: m.y - offsetY
+      }));
+      
+      const adjustedUnderlines = underlines.map(u => ({
+        x1: u.x1 - offsetX,
+        y1: u.y1 - offsetY,
+        x2: u.x2 - offsetX,
+        y2: u.y2 - offsetY
+      }));
+      
       const markupData = JSON.stringify({
-        markers,
-        underlines,
+        markers: adjustedMarkers,
+        underlines: adjustedUnderlines,
         greenCount,
         redCount,
-        cropArea
+        cropArea: null
       });
       console.log('Calling onSave with markup data');
       
