@@ -249,28 +249,34 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       });
       tempCtx.globalAlpha = 1.0;
       
-      const adjustedMarkers = markers.map(m => ({
-        ...m,
-        x: m.x - offsetX,
-        y: m.y - offsetY
-      }));
+      let finalMarkers = markers;
+      let finalUnderlines = underlines;
+      let processedImageUrl = undefined;
       
-      const adjustedUnderlines = underlines.map(u => ({
-        x1: u.x1 - offsetX,
-        y1: u.y1 - offsetY,
-        x2: u.x2 - offsetX,
-        y2: u.y2 - offsetY
-      }));
-      
-      const processedImageBase64 = tempCanvas.toDataURL('image/png');
+      if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
+        finalMarkers = markers.map(m => ({
+          ...m,
+          x: m.x - offsetX,
+          y: m.y - offsetY
+        }));
+        
+        finalUnderlines = underlines.map(u => ({
+          x1: u.x1 - offsetX,
+          y1: u.y1 - offsetY,
+          x2: u.x2 - offsetX,
+          y2: u.y2 - offsetY
+        }));
+        
+        processedImageUrl = tempCanvas.toDataURL('image/png');
+      }
       
       const markupData = JSON.stringify({
-        markers: adjustedMarkers,
-        underlines: adjustedUnderlines,
+        markers: finalMarkers,
+        underlines: finalUnderlines,
         greenCount,
         redCount,
         cropArea: null,
-        processedImageUrl: processedImageBase64
+        processedImageUrl
       });
       console.log('Calling onSave with markup data');
       
