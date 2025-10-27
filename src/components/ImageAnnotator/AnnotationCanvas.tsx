@@ -65,14 +65,41 @@ const AnnotationCanvas = ({
         img.onload = () => {
           console.log('Image loaded successfully:', img.width, 'x', img.height);
           imageRef.current = img;
-          canvas.width = img.width;
-          canvas.height = img.height;
-          markersCanvas.width = img.width;
-          markersCanvas.height = img.height;
+          
+          let displayWidth = img.width;
+          let displayHeight = img.height;
+          let sourceX = 0;
+          let sourceY = 0;
+          let sourceWidth = img.width;
+          let sourceHeight = img.height;
+          
+          if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
+            displayWidth = cropArea.width;
+            displayHeight = cropArea.height;
+            sourceX = cropArea.x;
+            sourceY = cropArea.y;
+            sourceWidth = cropArea.width;
+            sourceHeight = cropArea.height;
+          }
+          
+          canvas.width = displayWidth;
+          canvas.height = displayHeight;
+          markersCanvas.width = displayWidth;
+          markersCanvas.height = displayHeight;
           
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(
+              img,
+              sourceX,
+              sourceY,
+              sourceWidth,
+              sourceHeight,
+              0,
+              0,
+              displayWidth,
+              displayHeight
+            );
             setImageLoaded(true);
             onImageLoad(img, canvas);
           }
@@ -91,7 +118,7 @@ const AnnotationCanvas = ({
     };
 
     loadImage();
-  }, [imageUrl]);
+  }, [imageUrl, cropArea]);
 
   const redrawMarkers = () => {
     const markersCanvas = markersCanvasRef.current;
@@ -102,20 +129,16 @@ const AnnotationCanvas = ({
     
     ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
     
-    if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.fillRect(0, 0, markersCanvas.width, markersCanvas.height);
-      ctx.clearRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-      
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10, 5]);
-      ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-      ctx.setLineDash([]);
-    }
+    const offsetX = cropArea ? cropArea.x : 0;
+    const offsetY = cropArea ? cropArea.y : 0;
     
     underlines.forEach((line, index) => {
       const isHovered = hoveredUnderlineIndex === index && markerColor === 'eraser';
+      
+      const adjustedX1 = line.x1 - offsetX;
+      const adjustedY1 = line.y1 - offsetY;
+      const adjustedX2 = line.x2 - offsetX;
+      const adjustedY2 = line.y2 - offsetY;
       
       ctx.save();
       ctx.strokeStyle = isHovered ? '#ef4444' : '#22c55e';
@@ -124,10 +147,10 @@ const AnnotationCanvas = ({
       
       const amplitude = 2;
       const frequency = 0.15;
-      const distance = Math.sqrt(Math.pow(line.x2 - line.x1, 2) + Math.pow(line.y2 - line.y1, 2));
-      const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1);
+      const distance = Math.sqrt(Math.pow(adjustedX2 - adjustedX1, 2) + Math.pow(adjustedY2 - adjustedY1, 2));
+      const angle = Math.atan2(adjustedY2 - adjustedY1, adjustedX2 - adjustedX1);
       
-      ctx.translate(line.x1, line.y1);
+      ctx.translate(adjustedX1, adjustedY1);
       ctx.rotate(angle);
       
       ctx.beginPath();
@@ -146,19 +169,22 @@ const AnnotationCanvas = ({
     markers.forEach((marker, index) => {
       const isHovered = hoveredMarkerIndex === index && markerColor === 'eraser';
       
+      const adjustedX = marker.x - offsetX;
+      const adjustedY = marker.y - offsetY;
+      
       if (isHovered) {
         ctx.globalAlpha = 0.7;
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(marker.x, marker.y, marker.size + 5, 0, Math.PI * 2);
+        ctx.arc(adjustedX, adjustedY, marker.size + 5, 0, Math.PI * 2);
         ctx.stroke();
       }
       
       ctx.globalAlpha = isHovered ? 0.6 : 0.4;
       ctx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
       ctx.beginPath();
-      ctx.arc(marker.x, marker.y, marker.size, 0, Math.PI * 2);
+      ctx.arc(adjustedX, adjustedY, marker.size, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1.0;
     });
@@ -182,8 +208,14 @@ const AnnotationCanvas = ({
     const scaleX = markersCanvas.width / rect.width;
     const scaleY = markersCanvas.height / rect.height;
     
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+    
+    const offsetX = cropArea ? cropArea.x : 0;
+    const offsetY = cropArea ? cropArea.y : 0;
+    
+    const x = canvasX + offsetX;
+    const y = canvasY + offsetY;
 
     const hoveredMarkerIdx = markers.findIndex(marker => {
       const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
@@ -211,8 +243,14 @@ const AnnotationCanvas = ({
     const scaleX = markersCanvas.width / rect.width;
     const scaleY = markersCanvas.height / rect.height;
     
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+    
+    const offsetX = cropArea ? cropArea.x : 0;
+    const offsetY = cropArea ? cropArea.y : 0;
+    
+    const x = canvasX + offsetX;
+    const y = canvasY + offsetY;
 
     if (markerColor === 'underline') {
       if (!underlineStart) {
