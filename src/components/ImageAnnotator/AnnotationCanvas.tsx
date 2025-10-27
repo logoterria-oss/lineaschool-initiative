@@ -11,6 +11,7 @@ interface AnnotationCanvasProps {
   underlineStart: { x: number; y: number } | null;
   hoveredMarkerIndex: number | null;
   hoveredUnderlineIndex: number | null;
+  cropArea: CropArea | null;
   onImageLoad: (img: HTMLImageElement, canvas: HTMLCanvasElement) => void;
   onMarkerAdd: (marker: Marker) => void;
   onMarkerRemove: (index: number) => void;
@@ -30,6 +31,7 @@ const AnnotationCanvas = ({
   underlineStart,
   hoveredMarkerIndex,
   hoveredUnderlineIndex,
+  cropArea,
   onImageLoad,
   onMarkerAdd,
   onMarkerRemove,
@@ -100,6 +102,18 @@ const AnnotationCanvas = ({
     
     ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
     
+    if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(0, 0, markersCanvas.width, markersCanvas.height);
+      ctx.clearRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+      
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 5]);
+      ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+      ctx.setLineDash([]);
+    }
+    
     underlines.forEach((line, index) => {
       const isHovered = hoveredUnderlineIndex === index && markerColor === 'eraser';
       
@@ -152,7 +166,7 @@ const AnnotationCanvas = ({
 
   useEffect(() => {
     redrawMarkers();
-  }, [markers, underlines, hoveredMarkerIndex, hoveredUnderlineIndex, markerColor]);
+  }, [markers, underlines, hoveredMarkerIndex, hoveredUnderlineIndex, markerColor, cropArea]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (markerColor !== 'eraser') {

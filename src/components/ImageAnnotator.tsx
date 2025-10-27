@@ -340,6 +340,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           underlineStart={underlineStart}
           hoveredMarkerIndex={hoveredMarkerIndex}
           hoveredUnderlineIndex={hoveredUnderlineIndex}
+          cropArea={cropArea}
           onImageLoad={handleImageLoad}
           onMarkerAdd={handleMarkerAdd}
           onMarkerRemove={handleMarkerRemove}
