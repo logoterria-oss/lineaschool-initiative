@@ -12,7 +12,7 @@ interface AnnotationCanvasProps {
   hoveredMarkerIndex: number | null;
   hoveredUnderlineIndex: number | null;
   cropArea: CropArea | null;
-  onImageLoad: (img: HTMLImageElement, canvas: HTMLCanvasElement) => void;
+  onImageLoad: (img: HTMLImageElement, canvas: HTMLCanvasElement, markersCanvas: HTMLCanvasElement) => void;
   onMarkerAdd: (marker: Marker) => void;
   onMarkerRemove: (index: number) => void;
   onUnderlineAdd: (underline: Underline) => void;
@@ -101,7 +101,7 @@ const AnnotationCanvas = ({
               displayHeight
             );
             setImageLoaded(true);
-            onImageLoad(img, canvas);
+            onImageLoad(img, canvas, markersCanvas);
           }
         };
         img.onerror = (e) => {

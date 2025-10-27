@@ -9,6 +9,7 @@ import Instructions from './ImageAnnotator/Instructions';
 
 const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const markersCanvasRef = useRef<HTMLCanvasElement>(null);
   const [markerColor, setMarkerColor] = useState<MarkerColor>('green');
   const [markerSize, setMarkerSize] = useState(20);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -81,9 +82,10 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     setHistoryStep(newHistory.length - 1);
   };
 
-  const handleImageLoad = (img: HTMLImageElement, canvas: HTMLCanvasElement) => {
+  const handleImageLoad = (img: HTMLImageElement, canvas: HTMLCanvasElement, markersCanvas: HTMLCanvasElement) => {
     imageRef.current = img;
     canvasRef.current = canvas;
+    markersCanvasRef.current = markersCanvas;
     saveToHistory();
   };
 
@@ -187,7 +189,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   const confirmSave = () => {
     console.log('confirmSave called');
     const canvas = canvasRef.current;
-    if (!canvas) {
+    const markersCanvas = markersCanvasRef.current;
+    if (!canvas || !markersCanvas) {
       console.error('Canvas not found');
       return;
     }
@@ -204,50 +207,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     
     if (tempCtx) {
       tempCtx.drawImage(canvas, 0, 0);
-      
-      underlines.forEach((line) => {
-        tempCtx.save();
-        tempCtx.strokeStyle = '#22c55e';
-        tempCtx.lineWidth = 3;
-        tempCtx.globalAlpha = 0.8;
-        
-        const amplitude = 2;
-        const frequency = 0.15;
-        const adjustedX1 = line.x1 - offsetX;
-        const adjustedY1 = line.y1 - offsetY;
-        const adjustedX2 = line.x2 - offsetX;
-        const adjustedY2 = line.y2 - offsetY;
-        
-        const distance = Math.sqrt(Math.pow(adjustedX2 - adjustedX1, 2) + Math.pow(adjustedY2 - adjustedY1, 2));
-        const angle = Math.atan2(adjustedY2 - adjustedY1, adjustedX2 - adjustedX1);
-        
-        tempCtx.translate(adjustedX1, adjustedY1);
-        tempCtx.rotate(angle);
-        
-        tempCtx.beginPath();
-        for (let i = 0; i <= distance; i += 1) {
-          const y = Math.sin(i * frequency) * amplitude;
-          if (i === 0) {
-            tempCtx.moveTo(i, y);
-          } else {
-            tempCtx.lineTo(i, y);
-          }
-        }
-        tempCtx.stroke();
-        tempCtx.restore();
-      });
-      
-      tempCtx.globalAlpha = 0.4;
-      markers.forEach((marker) => {
-        const adjustedX = marker.x - offsetX;
-        const adjustedY = marker.y - offsetY;
-        
-        tempCtx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
-        tempCtx.beginPath();
-        tempCtx.arc(adjustedX, adjustedY, marker.size, 0, Math.PI * 2);
-        tempCtx.fill();
-      });
-      tempCtx.globalAlpha = 1.0;
+      tempCtx.drawImage(markersCanvas, 0, 0);
       
       let finalMarkers = markers;
       let finalUnderlines = underlines;
