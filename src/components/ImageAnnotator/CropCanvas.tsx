@@ -16,6 +16,7 @@ const CropCanvas = ({ imageUrl, initialCropArea, onApply, onCancel }: CropCanvas
   const [cropArea, setCropArea] = useState<CropArea | null>(initialCropArea);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const scrollIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,6 +37,70 @@ const CropCanvas = ({ imageUrl, initialCropArea, onApply, onCancel }: CropCanvas
   useEffect(() => {
     drawCanvas();
   }, [cropArea]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!dragStart) return;
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+      const newCropArea = {
+        x: Math.min(dragStart.x, x),
+        y: Math.min(dragStart.y, y),
+        width: Math.abs(x - dragStart.x),
+        height: Math.abs(y - dragStart.y)
+      };
+      
+      setCropArea(newCropArea);
+
+      // Автопрокрутка
+      const scrollZone = 50;
+      const scrollSpeed = 10;
+      const viewportHeight = window.innerHeight;
+      
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+        scrollIntervalRef.current = null;
+      }
+
+      if (e.clientY > viewportHeight - scrollZone) {
+        scrollIntervalRef.current = window.setInterval(() => {
+          window.scrollBy(0, scrollSpeed);
+        }, 16);
+      } else if (e.clientY < scrollZone) {
+        scrollIntervalRef.current = window.setInterval(() => {
+          window.scrollBy(0, -scrollSpeed);
+        }, 16);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setDragStart(null);
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+        scrollIntervalRef.current = null;
+      }
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+      }
+    };
+  }, [isDragging, dragStart]);
 
   const drawCanvas = () => {
     const canvas = canvasRef.current;
@@ -84,30 +149,7 @@ const CropCanvas = ({ imageUrl, initialCropArea, onApply, onCancel }: CropCanvas
     setCropArea({ x, y, width: 0, height: 0 });
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !dragStart) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-    const newCropArea = {
-      x: Math.min(dragStart.x, x),
-      y: Math.min(dragStart.y, y),
-      width: Math.abs(x - dragStart.x),
-      height: Math.abs(y - dragStart.y)
-    };
-    
-    setCropArea(newCropArea);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setDragStart(null);
-  };
 
   const handleApply = () => {
     if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
@@ -153,9 +195,6 @@ const CropCanvas = ({ imageUrl, initialCropArea, onApply, onCancel }: CropCanvas
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
           className="cursor-crosshair mx-auto shadow-lg"
           style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
         />
