@@ -59,9 +59,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'Description': description
     }
     
-    # Temporarily disabled receipt to debug token issue
-    # if receipt and receipt.get('Items'):
-    #     init_data['Receipt'] = receipt
+    # Add receipt if provided
+    if receipt and receipt.get('Items'):
+        init_data['Receipt'] = receipt
     
     # Calculate token (signature) - all values sorted alphabetically by key
     # Only include: Amount, Description, OrderId, Password, TerminalKey

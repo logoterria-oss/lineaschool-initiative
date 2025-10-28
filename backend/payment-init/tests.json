@@ -7,13 +7,28 @@
       "expectedStatus": 200
     },
     {
-      "name": "Test payment init with demo data",
+      "name": "Test payment init receipt format only",
       "method": "POST",
       "path": "/",
       "body": {
         "amount": 100000,
-        "order": "TEST_ORDER_123",
-        "description": "Test payment"
+        "order": "TEST_ORDER_UNIQUE_V3",
+        "description": "Test payment",
+        "receipt": {
+          "Email": "test@example.com",
+          "Taxation": "usn_income",
+          "Items": [
+            {
+              "Name": "Test payment",
+              "Price": 100000,
+              "Quantity": 1,
+              "Amount": 100000,
+              "Tax": "none",
+              "PaymentMethod": "full_prepayment",
+              "PaymentObject": "service"
+            }
+          ]
+        }
       },
       "expectedStatus": 200,
       "expectedBody": {

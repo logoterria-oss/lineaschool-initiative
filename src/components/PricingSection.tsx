@@ -179,6 +179,10 @@ const pricingData = [
 export default function PricingSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [openSections, setOpenSections] = useState<number[]>([]);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedSectionTitle, setSelectedSectionTitle] = useState<string>('');
+  const [clientEmail, setClientEmail] = useState('');
 
   const toggleSection = (index: number) => {
     setOpenSections(prev => 
@@ -188,12 +192,20 @@ export default function PricingSection() {
     );
   };
 
-  const handlePayment = async (plan: any, sectionTitle: string) => {
-    const amount = parseInt(plan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
-    const description = `${sectionTitle} - ${plan.title}`;
+  const openPaymentModal = (plan: any, sectionTitle: string) => {
+    setSelectedPlan(plan);
+    setSelectedSectionTitle(sectionTitle);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePayment = async () => {
+    if (!clientEmail || !selectedPlan) return;
+    
+    const amount = parseInt(selectedPlan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
+    const description = `${selectedSectionTitle} - ${selectedPlan.title}`;
     const orderId = `ORDER_${Date.now()}`;
     
-    console.log('Initiating payment:', { amount, description, orderId });
+    console.log('Initiating payment:', { amount, description, orderId, email: clientEmail });
     
     try {
       const response = await fetch('https://functions.poehali.dev/9f468e7d-1f22-4bde-8030-cd12879879e5', {
@@ -206,7 +218,7 @@ export default function PricingSection() {
           order: orderId,
           description,
           receipt: {
-            Email: 'client@example.com',
+            Email: clientEmail,
             Taxation: 'usn_income',
             Items: [
               {
@@ -214,7 +226,9 @@ export default function PricingSection() {
                 Price: amount,
                 Quantity: 1,
                 Amount: amount,
-                Tax: 'none'
+                Tax: 'none',
+                PaymentMethod: 'full_prepayment',
+                PaymentObject: 'service'
               }
             ]
           }
@@ -365,7 +379,7 @@ export default function PricingSection() {
                           console.log('Button clicked - payment');
                           e.preventDefault();
                           e.stopPropagation();
-                          handlePayment(plan, section.title);
+                          openPaymentModal(plan, section.title);
                         }}
                       >
                         Выбрать тариф
@@ -401,6 +415,43 @@ export default function PricingSection() {
       isOpen={isBookingModalOpen} 
       onClose={() => setIsBookingModalOpen(false)} 
     />
+
+    {isPaymentModalOpen && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <h3 className="text-xl font-bold mb-4">Подтверждение оплаты</h3>
+          <p className="text-gray-600 mb-4">
+            Укажите ваш email для отправки чека
+          </p>
+          <input
+            type="email"
+            placeholder="example@mail.ru"
+            value={clientEmail}
+            onChange={(e) => setClientEmail(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsPaymentModalOpen(false);
+                setClientEmail('');
+              }}
+              className="flex-1"
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handlePayment}
+              disabled={!clientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+            >
+              Оплатить
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
