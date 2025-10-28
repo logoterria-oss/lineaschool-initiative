@@ -5,8 +5,6 @@ import Icon from '@/components/ui/icon';
 interface PaymentLead {
   id: number;
   name: string;
-  email: string;
-  phone: string;
   plan: string;
   amount: number;
   order_id: string;
@@ -63,41 +61,29 @@ export default function PaymentLeadsPage() {
         <div className="grid gap-4">
           {leads.map((lead) => (
             <Card key={lead.id} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex justify-between items-start">
                 <div>
-                  <div className="flex items-center mb-2">
-                    <Icon name="User" size={18} className="text-green-500 mr-2" />
-                    <span className="font-semibold text-gray-900">{lead.name}</span>
+                  <div className="flex items-center mb-3">
+                    <Icon name="User" size={20} className="text-green-500 mr-2" />
+                    <span className="text-xl font-semibold text-gray-900">{lead.name}</span>
                   </div>
-                  <div className="flex items-center mb-2">
-                    <Icon name="Mail" size={18} className="text-blue-500 mr-2" />
-                    <a href={`mailto:${lead.email}`} className="text-blue-600 hover:underline">
-                      {lead.email}
-                    </a>
-                  </div>
-                  <div className="flex items-center mb-2">
-                    <Icon name="Phone" size={18} className="text-purple-500 mr-2" />
-                    <a href={`tel:${lead.phone}`} className="text-gray-700 hover:underline">
-                      {lead.phone}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="md:text-right">
                   <div className="mb-2">
                     <span className="text-sm text-gray-500">Тариф:</span>
                     <div className="font-medium text-gray-900">{lead.plan}</div>
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-2xl font-bold text-green-600">
-                      {lead.amount.toLocaleString('ru-RU')} ₽
-                    </span>
                   </div>
                   <div className="text-xs text-gray-500">
                     {formatDate(lead.created_at)}
                   </div>
                   <div className="text-xs text-gray-400 mt-1">
                     ID: {lead.order_id}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="mb-2">
+                    <span className="text-2xl font-bold text-green-600">
+                      {lead.amount.toLocaleString('ru-RU')} ₽
+                    </span>
                   </div>
                 </div>
               </div>

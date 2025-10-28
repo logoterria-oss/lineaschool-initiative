@@ -12,11 +12,9 @@
       "path": "/",
       "body": {
         "name": "Test User",
-        "email": "test@example.com",
-        "phone": "+79001234567",
         "plan": "2 урока в неделю - 1 месяц",
         "amount": 10960,
-        "order_id": "TEST_ORDER_LEAD_123"
+        "order_id": "TEST_ORDER_LEAD_789"
       },
       "expectedStatus": 200,
       "expectedBody": {

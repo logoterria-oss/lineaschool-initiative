@@ -60,8 +60,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             leads.append({
                 'id': row[0],
                 'name': row[1],
-                'email': row[2],
-                'phone': row[3],
                 'plan': row[4],
                 'amount': float(row[5]),
                 'order_id': row[6],

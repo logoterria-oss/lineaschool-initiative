@@ -1,6 +1,6 @@
 '''
 Business: Save payment lead contact information to database
-Args: event with httpMethod, body (name, email, phone, plan, amount, order_id)
+Args: event with httpMethod, body (name, plan, amount, order_id)
 Returns: HTTP response with success status
 '''
 import json
@@ -36,13 +36,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # Parse request body
     body_data = json.loads(event.get('body', '{}'))
     name = body_data.get('name')
-    email = body_data.get('email')
-    phone = body_data.get('phone')
     plan = body_data.get('plan')
     amount = body_data.get('amount')
     order_id = body_data.get('order_id')
     
-    print(f'Saving payment lead: {name}, {email}, {phone}, {plan}, {amount}, {order_id}')
+    print(f'Saving payment lead: {name}, {plan}, {amount}, {order_id}')
     
     # Get database connection string
     dsn = os.environ.get('DATABASE_URL')
@@ -58,10 +56,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
         
-        # Insert lead data
+        # Insert lead data (email and phone as empty strings for NOT NULL constraint)
         cur.execute(
             "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
-            (name, email, phone, plan, amount, order_id)
+            (name, '', '', plan, amount, order_id)
         )
         
         conn.commit()
