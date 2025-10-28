@@ -25,13 +25,13 @@ export default function HeroSection() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 max-w-xl items-end">
+            <div className="grid grid-cols-3 gap-4 max-w-xl items-center">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">200+</div>
                 <div className="text-xs text-gray-600">довольных семей</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">от 970₽</div>
+                <div className="text-2xl font-bold text-green-600 whitespace-nowrap">от 970₽</div>
                 <div className="text-xs text-gray-600">за урок</div>
               </div>
               <div className="text-center">
