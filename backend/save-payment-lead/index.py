@@ -6,6 +6,7 @@ Returns: HTTP response with success status
 import json
 import os
 import psycopg2
+import urllib.request
 from typing import Dict, Any
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -67,6 +68,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn.close()
         
         print(f'Lead saved successfully: {order_id}')
+        
+        # Send Telegram notification
+        chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
+        bot_token = os.environ.get('TELEGRAM_PAYMENT_BOT_TOKEN')
+        
+        if chat_id and bot_token:
+            try:
+                message = f"💰 *Новая оплата!*\n\n👤 Имя: {name}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
+                
+                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                data = {
+                    'chat_id': chat_id,
+                    'text': message,
+                    'parse_mode': 'Markdown'
+                }
+                
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(data).encode('utf-8'),
+                    headers={'Content-Type': 'application/json'}
+                )
+                
+                with urllib.request.urlopen(req) as response:
+                    print(f'Telegram notification sent for order {order_id}')
+            except Exception as tg_error:
+                print(f'Telegram notification failed: {str(tg_error)}')
         
         return {
             'statusCode': 200,
