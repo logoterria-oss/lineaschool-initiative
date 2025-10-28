@@ -435,11 +435,11 @@ export default function PricingSection() {
         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
           <h3 className="text-xl font-bold mb-4">Подтверждение оплаты</h3>
           <p className="text-gray-600 mb-4">
-            Укажите ваше имя для идентификации платежа
+            Пока мы загружаем платёжную форму, пожалуйста, представьтесь
           </p>
           <input
             type="text"
-            placeholder="Ваше имя"
+            placeholder="Введите ФИО ребенка"
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-green-500"
