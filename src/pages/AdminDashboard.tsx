@@ -120,6 +120,39 @@ const AdminDashboard = () => {
                 </ul>
               </CardContent>
             </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-orange-500"
+              onClick={() => navigate('/admin/payment-leads')}
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3 bg-orange-100 rounded-lg">
+                    <Icon name="CreditCard" className="text-orange-600" size={32} />
+                  </div>
+                  <CardTitle className="text-2xl">Заявки на оплату</CardTitle>
+                </div>
+                <CardDescription className="text-base">
+                  Контакты клиентов, которые начали оплату
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-orange-600" size={16} />
+                    <span>Контактные данные клиентов</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-orange-600" size={16} />
+                    <span>Выбранные тарифы и суммы</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-orange-600" size={16} />
+                    <span>Дата и время заявки</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="mt-8 text-center">

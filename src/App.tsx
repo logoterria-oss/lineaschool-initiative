@@ -20,6 +20,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ReportsAdmin = lazy(() => import("./components/ReportsAdmin"));
 const DictationsAdmin = lazy(() => import("./pages/DictationsAdmin"));
 const TelegramSetup = lazy(() => import("./pages/TelegramSetup"));
+const PaymentLeadsPage = lazy(() => import("./pages/PaymentLeadsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Компонент загрузки
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/admin/dictations" element={<DictationsAdmin />} />
               <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
               <Route path="/admin/questionnaires" element={<QuestionnaireResponses />} />
+              <Route path="/admin/payment-leads" element={<PaymentLeadsPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -183,6 +183,8 @@ export default function PricingSection() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedSectionTitle, setSelectedSectionTitle] = useState<string>('');
   const [clientEmail, setClientEmail] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
 
   const toggleSection = (index: number) => {
     setOpenSections(prev => 
@@ -199,15 +201,31 @@ export default function PricingSection() {
   };
 
   const handlePayment = async () => {
-    if (!clientEmail || !selectedPlan) return;
+    if (!clientEmail || !clientName || !clientPhone || !selectedPlan) return;
     
     const amount = parseInt(selectedPlan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
     const description = `${selectedSectionTitle} - ${selectedPlan.title}`;
     const orderId = `ORDER_${Date.now()}`;
     
-    console.log('Initiating payment:', { amount, description, orderId, email: clientEmail });
+    console.log('Initiating payment:', { amount, description, orderId, email: clientEmail, name: clientName, phone: clientPhone });
     
     try {
+      // Сохраняем данные клиента в БД
+      await fetch('https://functions.poehali.dev/99e752b7-e754-4be4-8fe8-1b666731a12c', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: clientName,
+          email: clientEmail,
+          phone: clientPhone,
+          plan: `${selectedSectionTitle} - ${selectedPlan.title}`,
+          amount: amount / 100,
+          order_id: orderId
+        })
+      });
+
       const response = await fetch('https://functions.poehali.dev/9f468e7d-1f22-4bde-8030-cd12879879e5', {
         method: 'POST',
         headers: {
@@ -419,10 +437,24 @@ export default function PricingSection() {
     {isPaymentModalOpen && (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <h3 className="text-xl font-bold mb-4">Подтверждение оплаты</h3>
+          <h3 className="text-xl font-bold mb-4">Контактные данные</h3>
           <p className="text-gray-600 mb-4">
-            Укажите ваш email для отправки чека
+            Заполните данные для связи и получения чека
           </p>
+          <input
+            type="text"
+            placeholder="Ваше имя"
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="tel"
+            placeholder="+7 (___) ___-__-__"
+            value={clientPhone}
+            onChange={(e) => setClientPhone(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
           <input
             type="email"
             placeholder="example@mail.ru"
@@ -436,6 +468,8 @@ export default function PricingSection() {
               onClick={() => {
                 setIsPaymentModalOpen(false);
                 setClientEmail('');
+                setClientName('');
+                setClientPhone('');
               }}
               className="flex-1"
             >
@@ -443,8 +477,14 @@ export default function PricingSection() {
             </Button>
             <Button
               onClick={handlePayment}
-              disabled={!clientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+              disabled={
+                !clientEmail || 
+                !clientName || 
+                !clientPhone || 
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail) ||
+                clientPhone.length < 10
+              }
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Оплатить
             </Button>
