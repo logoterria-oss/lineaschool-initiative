@@ -17,6 +17,7 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
+      posterUrl: "https://cdn.poehali.dev/files/76b70c57-e751-4a17-ada5-dbb7068d27d6.png",
       gradient: "from-green-400 to-teal-500"
     },
     {
@@ -279,6 +280,7 @@ export default function TestimonialsSection() {
                           playsInline
                           preload="none"
                           muted
+                          poster={video.posterUrl || undefined}
                         >
                           <source src={video.videoUrl} type="video/mp4" />
                           <source src={video.videoUrl} type="video/quicktime" />
