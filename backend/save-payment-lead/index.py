@@ -75,13 +75,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if chat_id and bot_token:
             try:
-                message = f"💰 *Новая оплата!*\n\n👤 Имя: {name}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
+                # Escape special characters for Markdown
+                safe_name = name.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+                safe_plan = plan.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+                
+                message = f"💰 *Новая оплата\\!*\n\n👤 Имя: {safe_name}\n📦 Тариф: {safe_plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
                 
                 url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
                 data = {
                     'chat_id': chat_id,
                     'text': message,
-                    'parse_mode': 'Markdown'
+                    'parse_mode': 'MarkdownV2'
                 }
                 
                 req = urllib.request.Request(
