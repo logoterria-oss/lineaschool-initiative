@@ -231,9 +231,10 @@ export default function TestimonialsSection() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   prevVideo();
                 }}
-                className="absolute left-2 sm:left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors"
+                className="absolute left-2 sm:left-0 top-1/2 -translate-y-1/2 z-30 bg-white shadow-xl rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors"
               >
                 <Icon name="ChevronLeft" size={16} className="text-gray-600 sm:w-5 sm:h-5" />
               </button>
@@ -241,9 +242,10 @@ export default function TestimonialsSection() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   nextVideo();
                 }}
-                className="absolute right-2 sm:right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-xl rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors"
+                className="absolute right-2 sm:right-0 top-1/2 -translate-y-1/2 z-30 bg-white shadow-xl rounded-full p-2 sm:p-3 hover:bg-gray-50 transition-colors"
               >
                 <Icon name="ChevronRight" size={16} className="text-gray-600 sm:w-5 sm:h-5" />
               </button>
