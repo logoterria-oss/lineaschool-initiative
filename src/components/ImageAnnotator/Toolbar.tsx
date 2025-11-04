@@ -26,53 +26,72 @@ const Toolbar = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-4 p-4 bg-gray-100 rounded-lg flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Инструмент:</span>
-          <Button
-            size="sm"
-            variant={markerColor === 'green' ? 'default' : 'outline'}
-            onClick={() => onMarkerColorChange('green')}
-            className={markerColor === 'green' ? 'bg-green-500 hover:bg-green-600' : ''}
-          >
-            <Icon name="Highlighter" className="mr-1" size={14} />
-            Дисграфия
-          </Button>
-          <Button
-            size="sm"
-            variant={markerColor === 'red' ? 'default' : 'outline'}
-            onClick={() => onMarkerColorChange('red')}
-            className={markerColor === 'red' ? 'bg-red-500 hover:bg-red-600' : ''}
-          >
-            <Icon name="Highlighter" className="mr-1" size={14} />
-            Дизорфография
-          </Button>
-          <Button
-            size="sm"
-            variant={markerColor === 'underline' ? 'default' : 'outline'}
-            onClick={() => onMarkerColorChange('underline')}
-            className={markerColor === 'underline' ? 'bg-green-600 hover:bg-green-700' : ''}
-          >
-            <Icon name="Underline" className="mr-1" size={14} />
-            Подчеркнуть
-          </Button>
-          <Button
-            size="sm"
-            variant={markerColor === 'eraser' ? 'default' : 'outline'}
-            onClick={() => onMarkerColorChange('eraser')}
-            className={markerColor === 'eraser' ? 'bg-gray-700 hover:bg-gray-800' : ''}
-          >
-            <Icon name="Eraser" className="mr-1" size={14} />
-            Ластик
-          </Button>
-          <Button
-            size="sm"
-            variant={markerColor === 'crop' ? 'default' : 'outline'}
-            onClick={() => onMarkerColorChange('crop')}
-            className={markerColor === 'crop' ? 'bg-blue-600 hover:bg-blue-700' : ''}
-          >
-            <Icon name="Crop" className="mr-1" size={14} />
-            Кадрировать
-          </Button>
+        {/* Проверка */}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium">Проверка:</span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={markerColor === 'green' ? 'default' : 'outline'}
+              onClick={() => onMarkerColorChange('green')}
+              className={markerColor === 'green' ? 'bg-green-500 hover:bg-green-600' : ''}
+            >
+              <Icon name="Highlighter" className="mr-1" size={14} />
+              Дисграфия
+            </Button>
+            <Button
+              size="sm"
+              variant={markerColor === 'red' ? 'default' : 'outline'}
+              onClick={() => onMarkerColorChange('red')}
+              className={markerColor === 'red' ? 'bg-red-500 hover:bg-red-600' : ''}
+            >
+              <Icon name="Highlighter" className="mr-1" size={14} />
+              Дизорфография
+            </Button>
+            <Button
+              size="sm"
+              variant={markerColor === 'underline' ? 'default' : 'outline'}
+              onClick={() => onMarkerColorChange('underline')}
+              className={markerColor === 'underline' ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              <Icon name="Underline" className="mr-1" size={14} />
+              Подчеркнуть
+            </Button>
+            <Button
+              size="sm"
+              variant={markerColor === 'eraser' ? 'default' : 'outline'}
+              onClick={() => onMarkerColorChange('eraser')}
+              className={markerColor === 'eraser' ? 'bg-gray-700 hover:bg-gray-800' : ''}
+            >
+              <Icon name="Eraser" className="mr-1" size={14} />
+              Ластик
+            </Button>
+          </div>
+        </div>
+
+        {/* Редактирование */}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium">Редактирование:</span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={markerColor === 'crop' ? 'default' : 'outline'}
+              onClick={() => onMarkerColorChange('crop')}
+              className={markerColor === 'crop' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+            >
+              <Icon name="Crop" className="mr-1" size={14} />
+              Кадрировать
+            </Button>
+            <Button 
+              onClick={onRotate} 
+              size="sm"
+              variant="outline"
+              title="Повернуть изображение на 90°"
+            >
+              <Icon name="RotateCw" className="mr-1" size={14} />
+              Повернуть
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -90,21 +109,12 @@ const Toolbar = ({
 
         <div className="flex gap-2 ml-auto">
           <Button 
-            onClick={onRotate} 
-            size="sm"
-            variant="outline"
-            title="Повернуть изображение на 90°"
-          >
-            <Icon name="RotateCw" className="mr-1" size={14} />
-            Повернуть
-          </Button>
-          <Button 
             onClick={onSave} 
             size="sm"
             className="bg-green-600 hover:bg-green-700"
           >
             <Icon name="Save" className="mr-1" size={14} />
-            Сохранить
+            Сохранить разметку
           </Button>
           <Button size="sm" variant="outline" onClick={onClear}>
             <Icon name="RotateCcw" className="mr-1" size={14} />

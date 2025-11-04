@@ -59,11 +59,15 @@ const AnnotationCanvas = ({
         setImageLoaded(false);
         setLoadError(null);
         
-        const proxyUrl = `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(imageUrl)}`;
-        console.log('Loading image via proxy:', proxyUrl);
+        // Если это base64, загружаем напрямую, иначе через прокси
+        const isBase64 = imageUrl.startsWith('data:');
+        const finalUrl = isBase64 ? imageUrl : `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(imageUrl)}`;
+        console.log('Loading image:', isBase64 ? 'base64' : 'via proxy');
         
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        if (!isBase64) {
+          img.crossOrigin = 'anonymous';
+        }
         img.onload = () => {
           console.log('Image loaded successfully:', img.width, 'x', img.height);
           imageRef.current = img;
@@ -126,7 +130,7 @@ const AnnotationCanvas = ({
           setLoadError('Не удалось загрузить изображение');
           setImageLoaded(false);
         };
-        img.src = proxyUrl;
+        img.src = finalUrl;
       } catch (error) {
         console.error('Error loading image:', error);
         setLoadError(`Ошибка: ${error}`);

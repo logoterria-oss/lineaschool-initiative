@@ -26,6 +26,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   const [cropArea, setCropArea] = useState<CropArea | null>(null);
   const [cropDragStart, setCropDragStart] = useState<{x: number, y: number} | null>(null);
   const [rotation, setRotation] = useState(0);
+  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
 
   const storageKey = `annotator_${imageUrl}`;
 
@@ -37,6 +38,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         setUnderlines(data.underlines || []);
         setGreenCount(data.greenCount || 0);
         setRedCount(data.redCount || 0);
+        setRotation(data.rotation || 0);
+        setProcessedImageUrl(data.processedImageUrl || null);
         setCropArea(null);
       } catch (e) {
         console.error('Failed to load saved markup:', e);
@@ -50,7 +53,9 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           setUnderlines(data.underlines || []);
           setGreenCount(data.greenCount || 0);
           setRedCount(data.redCount || 0);
+          setRotation(data.rotation || 0);
           setCropArea(data.cropArea || null);
+          setProcessedImageUrl(null);
         } catch (e) {
           console.error('Failed to load saved markers:', e);
         }
@@ -205,47 +210,35 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
     
-    const offsetX = cropArea ? cropArea.x : 0;
-    const offsetY = cropArea ? cropArea.y : 0;
-    
     const tempCtx = tempCanvas.getContext('2d');
     
     if (tempCtx) {
+      // "Запекаем" изображение и разметку вместе
       tempCtx.drawImage(canvas, 0, 0);
       tempCtx.drawImage(markersCanvas, 0, 0);
       
-      let finalMarkers = markers;
-      let finalUnderlines = underlines;
-      let processedImageUrl = undefined;
-      
-      if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
-        finalMarkers = markers.map(m => ({
-          ...m,
-          x: m.x - offsetX,
-          y: m.y - offsetY
-        }));
-        
-        finalUnderlines = underlines.map(u => ({
-          x1: u.x1 - offsetX,
-          y1: u.y1 - offsetY,
-          x2: u.x2 - offsetX,
-          y2: u.y2 - offsetY
-        }));
-        
-        processedImageUrl = tempCanvas.toDataURL('image/png');
-      }
+      // Сохраняем объединенное изображение как base64
+      const newProcessedImageUrl = tempCanvas.toDataURL('image/png');
       
       const markupData = JSON.stringify({
-        markers: finalMarkers,
-        underlines: finalUnderlines,
+        markers: [],
+        underlines: [],
         greenCount,
         redCount,
         cropArea: null,
-        processedImageUrl
+        rotation: 0,
+        processedImageUrl: newProcessedImageUrl
       });
-      console.log('Calling onSave with markup data');
+      console.log('Calling onSave with baked markup data');
       
       localStorage.removeItem(storageKey);
+      
+      // Обновляем локальное состояние для продолжения работы
+      setProcessedImageUrl(newProcessedImageUrl);
+      setMarkers([]);
+      setUnderlines([]);
+      setRotation(0);
+      setCropArea(null);
       
       onSave(markupData);
       setShowSaveConfirm(false);
@@ -280,14 +273,14 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
 
         {markerColor === 'crop' ? (
           <CropCanvas
-            imageUrl={imageUrl}
+            imageUrl={processedImageUrl || imageUrl}
             initialCropArea={cropArea}
             onApply={handleCropApply}
             onCancel={handleCropCancel}
           />
         ) : (
           <AnnotationCanvas
-          imageUrl={imageUrl}
+          imageUrl={processedImageUrl || imageUrl}
           markers={markers}
           underlines={underlines}
           markerColor={markerColor}

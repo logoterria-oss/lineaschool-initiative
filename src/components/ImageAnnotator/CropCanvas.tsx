@@ -22,16 +22,21 @@ const CropCanvas = ({ imageUrl, initialCropArea, onApply, onCancel }: CropCanvas
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const proxyUrl = `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(imageUrl)}`;
+    // Если это base64, загружаем напрямую, иначе через прокси
+    const isBase64 = imageUrl.startsWith('data:');
+    const finalUrl = isBase64 ? imageUrl : `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(imageUrl)}`;
+    
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!isBase64) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => {
       imageRef.current = img;
       canvas.width = img.width;
       canvas.height = img.height;
       drawCanvas();
     };
-    img.src = proxyUrl;
+    img.src = finalUrl;
   }, [imageUrl]);
 
   useEffect(() => {
