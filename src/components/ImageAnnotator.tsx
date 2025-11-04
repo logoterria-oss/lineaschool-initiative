@@ -106,9 +106,74 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     }
   };
 
-  const handleOpenCheckModal = () => {
+  const handleOpenCheckModal = async () => {
+    if (cropArea && !processedImageUrl) {
+      await applyCropBeforeCheck();
+    }
     setMarkerColor('green');
     setShowCheckModal(true);
+  };
+
+  const applyCropBeforeCheck = () => {
+    return new Promise<void>((resolve) => {
+      const canvas = canvasRef.current;
+      const img = imageRef.current;
+      if (!canvas || !img || !cropArea) {
+        resolve();
+        return;
+      }
+
+      const tempCanvas = document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
+      if (!ctx) {
+        resolve();
+        return;
+      }
+
+      let displayWidth = img.width;
+      let displayHeight = img.height;
+
+      if (rotation % 180 !== 0) {
+        [displayWidth, displayHeight] = [displayHeight, displayWidth];
+      }
+
+      const rotatedCanvas = document.createElement('canvas');
+      rotatedCanvas.width = displayWidth;
+      rotatedCanvas.height = displayHeight;
+      const rotatedCtx = rotatedCanvas.getContext('2d');
+
+      if (rotatedCtx) {
+        rotatedCtx.save();
+        rotatedCtx.translate(displayWidth / 2, displayHeight / 2);
+        rotatedCtx.rotate((rotation * Math.PI) / 180);
+        rotatedCtx.drawImage(img, -img.width / 2, -img.height / 2);
+        rotatedCtx.restore();
+      }
+
+      const cropWidth = cropArea.width;
+      const cropHeight = cropArea.height;
+      tempCanvas.width = cropWidth;
+      tempCanvas.height = cropHeight;
+
+      ctx.drawImage(
+        rotatedCanvas,
+        cropArea.x,
+        cropArea.y,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight
+      );
+
+      const croppedImageUrl = tempCanvas.toDataURL('image/png');
+      setProcessedImageUrl(croppedImageUrl);
+      setCropArea(null);
+      setRotation(0);
+      
+      setTimeout(() => resolve(), 100);
+    });
   };
 
   const handleCloseCheckModal = () => {
