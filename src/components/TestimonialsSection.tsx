@@ -41,6 +41,7 @@ export default function TestimonialsSection() {
       name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
       videoUrl: "/IMG_1141 (1) (1).mov",
+      posterUrl: "https://cdn.poehali.dev/files/c34aa07b-6559-4396-864a-cc94bc86f06d.png",
       gradient: "from-green-400 to-teal-500"
     },
     {
