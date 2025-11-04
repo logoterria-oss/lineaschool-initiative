@@ -112,10 +112,30 @@ const CheckModal = ({
 
     underlines.forEach(underline => {
       ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2;
+      
+      const dx = underline.x2 - underline.x1;
+      const dy = underline.y2 - underline.y1;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const waveLength = 8;
+      const waveHeight = 3;
+      const steps = Math.ceil(length / waveLength);
+      
       ctx.beginPath();
-      ctx.moveTo(underline.startX, underline.startY);
-      ctx.lineTo(underline.endX, underline.endY);
+      ctx.moveTo(underline.x1, underline.y1);
+      
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = underline.x1 + dx * t;
+        const y = underline.y1 + dy * t;
+        const offsetY = Math.sin(i * Math.PI) * waveHeight;
+        
+        const perpX = -dy / length;
+        const perpY = dx / length;
+        
+        ctx.lineTo(x + perpX * offsetY, y + perpY * offsetY);
+      }
+      
       ctx.stroke();
     });
   };
@@ -134,10 +154,10 @@ const CheckModal = ({
         onUnderlineStartChange({ x, y });
       } else {
         const newUnderline: Underline = {
-          startX: underlineStart.x,
-          startY: underlineStart.y,
-          endX: x,
-          endY: y
+          x1: underlineStart.x,
+          y1: underlineStart.y,
+          x2: x,
+          y2: y
         };
         onUnderlinesChange([...underlines, newUnderline]);
         onUnderlineStartChange(null);
@@ -195,13 +215,16 @@ const CheckModal = ({
   const handleErase = (x: number, y: number) => {
     const eraseRadius = markerSize;
     
+    let greenRemoved = 0;
+    let redRemoved = 0;
+    
     const newMarkers = markers.filter(marker => {
       const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
       if (distance < eraseRadius + marker.size / 2) {
         if (marker.color === 'green') {
-          onCountsChange(Math.max(0, greenCount - 1), redCount);
+          greenRemoved++;
         } else {
-          onCountsChange(greenCount, Math.max(0, redCount - 1));
+          redRemoved++;
         }
         return false;
       }
@@ -211,15 +234,22 @@ const CheckModal = ({
     const newUnderlines = underlines.filter(underline => {
       const distToLine = pointToLineDistance(
         x, y,
-        underline.startX, underline.startY,
-        underline.endX, underline.endY
+        underline.x1, underline.y1,
+        underline.x2, underline.y2
       );
       if (distToLine < eraseRadius) {
-        onCountsChange(Math.max(0, greenCount - 1), redCount);
+        greenRemoved++;
         return false;
       }
       return true;
     });
+
+    if (greenRemoved > 0 || redRemoved > 0) {
+      onCountsChange(
+        Math.max(0, greenCount - greenRemoved),
+        Math.max(0, redCount - redRemoved)
+      );
+    }
 
     onMarkersChange(newMarkers);
     onUnderlinesChange(newUnderlines);
