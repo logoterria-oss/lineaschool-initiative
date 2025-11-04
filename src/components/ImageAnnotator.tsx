@@ -199,27 +199,72 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       return;
     }
 
-    const tempCanvas = document.createElement('canvas');
-    const ctx = tempCanvas.getContext('2d');
-    if (!ctx) {
+    const img = imageRef.current;
+    if (!img) {
       setCropArea(area);
       setMarkerColor('green');
       return;
     }
 
-    tempCanvas.width = area.width;
-    tempCanvas.height = area.height;
+    // Пересчитываем координаты crop с учётом rotation
+    let adjustedArea = { ...area };
+    const w = canvas.width;
+    const h = canvas.height;
+
+    if (rotation === 90) {
+      adjustedArea = {
+        x: area.y,
+        y: w - area.x - area.width,
+        width: area.height,
+        height: area.width
+      };
+    } else if (rotation === 180) {
+      adjustedArea = {
+        x: w - area.x - area.width,
+        y: h - area.y - area.height,
+        width: area.width,
+        height: area.height
+      };
+    } else if (rotation === 270) {
+      adjustedArea = {
+        x: h - area.y - area.height,
+        y: area.x,
+        width: area.height,
+        height: area.width
+      };
+    }
+
+    // Создаём canvas с исходным изображением БЕЗ поворота
+    const sourceCanvas = document.createElement('canvas');
+    const sourceCtx = sourceCanvas.getContext('2d');
+    if (!sourceCtx) return;
+
+    sourceCanvas.width = img.naturalWidth;
+    sourceCanvas.height = img.naturalHeight;
+    sourceCtx.drawImage(img, 0, 0);
+
+    // Вычисляем scale factor
+    const scaleX = img.naturalWidth / canvas.width;
+    const scaleY = img.naturalHeight / canvas.height;
+
+    // Применяем crop к исходному изображению с правильным масштабом
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+    if (!ctx) return;
+
+    tempCanvas.width = adjustedArea.width * scaleX;
+    tempCanvas.height = adjustedArea.height * scaleY;
 
     ctx.drawImage(
-      canvas,
-      area.x,
-      area.y,
-      area.width,
-      area.height,
+      sourceCanvas,
+      adjustedArea.x * scaleX,
+      adjustedArea.y * scaleY,
+      adjustedArea.width * scaleX,
+      adjustedArea.height * scaleY,
       0,
       0,
-      area.width,
-      area.height
+      tempCanvas.width,
+      tempCanvas.height
     );
 
     const croppedImageUrl = tempCanvas.toDataURL('image/png');
