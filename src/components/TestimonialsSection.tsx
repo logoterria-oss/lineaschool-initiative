@@ -49,6 +49,7 @@ export default function TestimonialsSection() {
       name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
       videoUrl: "/IMG_1143 (1).mov",
+      posterUrl: "https://cdn.poehali.dev/files/95c1208c-115e-4433-8267-a088aefdbd86.png",
       gradient: "from-green-400 to-teal-500"
     },
     {
