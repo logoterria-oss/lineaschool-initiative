@@ -192,7 +192,59 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   };
 
   const handleCropApply = (area: CropArea) => {
-    setCropArea(area);
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      setCropArea(area);
+      setMarkerColor('green');
+      return;
+    }
+
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+    if (!ctx) {
+      setCropArea(area);
+      setMarkerColor('green');
+      return;
+    }
+
+    tempCanvas.width = area.width;
+    tempCanvas.height = area.height;
+
+    ctx.drawImage(
+      canvas,
+      area.x,
+      area.y,
+      area.width,
+      area.height,
+      0,
+      0,
+      area.width,
+      area.height
+    );
+
+    const croppedImageUrl = tempCanvas.toDataURL('image/png');
+    
+    // Пересчитываем координаты маркеров
+    const adjustedMarkers = markers.map(marker => ({
+      ...marker,
+      x: marker.x - area.x,
+      y: marker.y - area.y
+    }));
+    
+    // Пересчитываем координаты подчёркиваний
+    const adjustedUnderlines = underlines.map(underline => ({
+      ...underline,
+      startX: underline.startX - area.x,
+      startY: underline.startY - area.y,
+      endX: underline.endX - area.x,
+      endY: underline.endY - area.y
+    }));
+    
+    setMarkers(adjustedMarkers);
+    setUnderlines(adjustedUnderlines);
+    setProcessedImageUrl(croppedImageUrl);
+    setCropArea(null);
+    setRotation(0);
     setMarkerColor('green');
     setTimeout(() => saveToHistory(), 0);
   };
@@ -275,7 +327,87 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   };
 
   const handleRotate = () => {
-    setRotation(prev => (prev + 90) % 360);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const newRotation = (rotation + 90) % 360;
+    
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Меняем размеры для поворота на 90/270
+    if (newRotation === 90 || newRotation === 270) {
+      tempCanvas.width = canvas.height;
+      tempCanvas.height = canvas.width;
+    } else {
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+    }
+
+    ctx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
+    ctx.rotate((newRotation * Math.PI) / 180);
+    ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+
+    const rotatedImageUrl = tempCanvas.toDataURL('image/png');
+    
+    // Пересчитываем координаты маркеров для поворота
+    const adjustedMarkers = markers.map(marker => {
+      let newX = marker.x;
+      let newY = marker.y;
+      
+      if (newRotation === 90) {
+        newX = marker.y;
+        newY = canvas.width - marker.x;
+      } else if (newRotation === 180) {
+        newX = canvas.width - marker.x;
+        newY = canvas.height - marker.y;
+      } else if (newRotation === 270) {
+        newX = canvas.height - marker.y;
+        newY = marker.x;
+      }
+      
+      return { ...marker, x: newX, y: newY };
+    });
+    
+    // Пересчитываем координаты подчёркиваний
+    const adjustedUnderlines = underlines.map(underline => {
+      let newStartX = underline.startX;
+      let newStartY = underline.startY;
+      let newEndX = underline.endX;
+      let newEndY = underline.endY;
+      
+      if (newRotation === 90) {
+        newStartX = underline.startY;
+        newStartY = canvas.width - underline.startX;
+        newEndX = underline.endY;
+        newEndY = canvas.width - underline.endX;
+      } else if (newRotation === 180) {
+        newStartX = canvas.width - underline.startX;
+        newStartY = canvas.height - underline.startY;
+        newEndX = canvas.width - underline.endX;
+        newEndY = canvas.height - underline.endY;
+      } else if (newRotation === 270) {
+        newStartX = canvas.height - underline.startY;
+        newStartY = underline.startX;
+        newEndX = canvas.height - underline.endY;
+        newEndY = underline.endX;
+      }
+      
+      return {
+        ...underline,
+        startX: newStartX,
+        startY: newStartY,
+        endX: newEndX,
+        endY: newEndY
+      };
+    });
+    
+    setMarkers(adjustedMarkers);
+    setUnderlines(adjustedUnderlines);
+    setProcessedImageUrl(rotatedImageUrl);
+    setRotation(0);
+    setTimeout(() => saveToHistory(), 0);
   };
 
   const handleSave = () => {
