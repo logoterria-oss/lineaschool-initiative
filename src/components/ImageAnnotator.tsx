@@ -1,5 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
-import { ImageAnnotatorProps, Marker, Underline, HistoryState, MarkerColor, CropArea } from './ImageAnnotator/types';
+import { ImageAnnotatorProps } from './ImageAnnotator/types';
 import ErrorCounter from './ImageAnnotator/ErrorCounter';
 import Toolbar from './ImageAnnotator/Toolbar';
 import SaveConfirmModal from './ImageAnnotator/SaveConfirmModal';
@@ -7,520 +6,190 @@ import CheckModal from './ImageAnnotator/CheckModal';
 import AnnotationCanvas from './ImageAnnotator/AnnotationCanvas';
 import CropCanvas from './ImageAnnotator/CropCanvas';
 import Instructions from './ImageAnnotator/Instructions';
+import { useImageAnnotatorState } from './ImageAnnotator/hooks/useImageAnnotatorState';
+import { useStorage } from './ImageAnnotator/hooks/useStorage';
+import { createAnnotationHandlers } from './ImageAnnotator/handlers/annotationHandlers';
+import { createCropHandlers } from './ImageAnnotator/handlers/cropHandlers';
+import { createSaveHandlers } from './ImageAnnotator/handlers/saveHandlers';
 
 const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const markersCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [markerColor, setMarkerColor] = useState<MarkerColor>('green');
-  const [markerSize, setMarkerSize] = useState(20);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const [history, setHistory] = useState<HistoryState[]>([]);
-  const [historyStep, setHistoryStep] = useState(-1);
-  const [greenCount, setGreenCount] = useState(0);
-  const [redCount, setRedCount] = useState(0);
-  const [markers, setMarkers] = useState<Marker[]>([]);
-  const [underlines, setUnderlines] = useState<Underline[]>([]);
-  const [underlineStart, setUnderlineStart] = useState<{x: number, y: number} | null>(null);
-  const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
-  const [hoveredUnderlineIndex, setHoveredUnderlineIndex] = useState<number | null>(null);
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const [showCheckModal, setShowCheckModal] = useState(false);
-  const [cropArea, setCropArea] = useState<CropArea | null>(null);
-  const [cropDragStart, setCropDragStart] = useState<{x: number, y: number} | null>(null);
-  const [rotation, setRotation] = useState(0);
-  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
+  const state = useImageAnnotatorState();
 
-  const storageKey = `annotator_${imageUrl}`;
+  useStorage(
+    imageUrl,
+    savedMarkup,
+    state.markers,
+    state.underlines,
+    state.greenCount,
+    state.redCount,
+    state.rotation,
+    state.cropArea,
+    state.setMarkers,
+    state.setUnderlines,
+    state.setGreenCount,
+    state.setRedCount,
+    state.setRotation,
+    state.setProcessedImageUrl,
+    state.setCropArea
+  );
 
-  useEffect(() => {
-    if (savedMarkup) {
-      try {
-        const data = JSON.parse(savedMarkup);
-        setMarkers(data.markers || []);
-        setUnderlines(data.underlines || []);
-        setGreenCount(data.greenCount || 0);
-        setRedCount(data.redCount || 0);
-        setRotation(data.rotation || 0);
-        setProcessedImageUrl(data.processedImageUrl || null);
-        setCropArea(null);
-      } catch (e) {
-        console.error('Failed to load saved markup:', e);
-      }
-    } else {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          setMarkers(data.markers || []);
-          setUnderlines(data.underlines || []);
-          setGreenCount(data.greenCount || 0);
-          setRedCount(data.redCount || 0);
-          setRotation(data.rotation || 0);
-          setCropArea(data.cropArea || null);
-          setProcessedImageUrl(null);
-        } catch (e) {
-          console.error('Failed to load saved markers:', e);
-        }
-      }
-    }
-  }, [imageUrl, savedMarkup, storageKey]);
+  const saveHandlers = createSaveHandlers(
+    state.canvasRef,
+    state.markersCanvasRef,
+    state.imageRef,
+    imageUrl,
+    state.markers,
+    state.underlines,
+    state.greenCount,
+    state.redCount,
+    state.rotation,
+    state.processedImageUrl,
+    state.history,
+    state.historyStep,
+    state.setHistory,
+    state.setHistoryStep,
+    state.setShowSaveConfirm,
+    onSave
+  );
 
-  useEffect(() => {
-    if (markers.length > 0 || underlines.length > 0 || greenCount > 0 || redCount > 0 || cropArea) {
-      localStorage.setItem(storageKey, JSON.stringify({
-        markers,
-        underlines,
-        greenCount,
-        redCount,
-        cropArea
-      }));
-    }
-  }, [markers, underlines, greenCount, redCount, cropArea, storageKey]);
+  const annotationHandlers = createAnnotationHandlers(
+    state.markers,
+    state.underlines,
+    state.setMarkers,
+    state.setUnderlines,
+    state.setGreenCount,
+    state.setRedCount,
+    state.setUnderlineStart,
+    state.setMarkerColor,
+    state.setShowCheckModal,
+    state.setCropDragStart,
+    saveHandlers.saveToHistory
+  );
 
-  const saveToHistory = () => {
-    const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push({
-      markers: [...markers],
-      underlines: [...underlines],
-      greenCount,
-      redCount,
-      cropArea
-    });
-    setHistory(newHistory);
-    setHistoryStep(newHistory.length - 1);
-  };
-
-  const handleImageLoad = (img: HTMLImageElement, canvas: HTMLCanvasElement, markersCanvas: HTMLCanvasElement) => {
-    imageRef.current = img;
-    canvasRef.current = canvas;
-    markersCanvasRef.current = markersCanvas;
-    saveToHistory();
-  };
-
-  const handleMarkerColorChange = (color: MarkerColor) => {
-    setMarkerColor(color);
-    setUnderlineStart(null);
-    setCropDragStart(null);
-    if (['green', 'red', 'underline', 'eraser'].includes(color)) {
-      setShowCheckModal(true);
-    }
-  };
+  const cropHandlers = createCropHandlers(
+    state.canvasRef,
+    state.imageRef,
+    state.rotation,
+    state.cropArea,
+    state.markers,
+    state.underlines,
+    state.setMarkers,
+    state.setUnderlines,
+    state.setProcessedImageUrl,
+    state.setCropArea,
+    state.setRotation,
+    state.setMarkerColor,
+    saveHandlers.saveToHistory
+  );
 
   const handleOpenCheckModal = async () => {
-    if (cropArea && !processedImageUrl) {
+    if (state.cropArea && !state.processedImageUrl) {
       console.log('Applying crop before opening check modal');
-      await applyCropBeforeCheck();
+      await cropHandlers.applyCropBeforeCheck();
       await new Promise(resolve => setTimeout(resolve, 200));
     }
-    setMarkerColor('green');
-    setShowCheckModal(true);
-  };
-
-  const applyCropBeforeCheck = () => {
-    return new Promise<void>((resolve) => {
-      const canvas = canvasRef.current;
-      if (!canvas || !cropArea) {
-        resolve();
-        return;
-      }
-
-      console.log('applyCropBeforeCheck:', {
-        canvasSize: { w: canvas.width, h: canvas.height },
-        cropArea,
-        rotation
-      });
-
-      const tempCanvas = document.createElement('canvas');
-      const ctx = tempCanvas.getContext('2d');
-      if (!ctx) {
-        resolve();
-        return;
-      }
-
-      tempCanvas.width = cropArea.width;
-      tempCanvas.height = cropArea.height;
-
-      ctx.drawImage(
-        canvas,
-        cropArea.x,
-        cropArea.y,
-        cropArea.width,
-        cropArea.height,
-        0,
-        0,
-        cropArea.width,
-        cropArea.height
-      );
-
-      const croppedImageUrl = tempCanvas.toDataURL('image/png');
-      console.log('Cropped image created:', { w: tempCanvas.width, h: tempCanvas.height });
-      console.log('Markers BEFORE adjustment:', markers);
-      console.log('CropArea:', cropArea);
-      
-      // Пересчитываем координаты маркеров относительно кадрированной области
-      const adjustedMarkers = markers.map(marker => ({
-        ...marker,
-        x: marker.x - cropArea.x,
-        y: marker.y - cropArea.y
-      }));
-      
-      // Пересчитываем координаты подчёркиваний
-      const adjustedUnderlines = underlines.map(underline => ({
-        ...underline,
-        startX: underline.startX - cropArea.x,
-        startY: underline.startY - cropArea.y,
-        endX: underline.endX - cropArea.x,
-        endY: underline.endY - cropArea.y
-      }));
-      
-      console.log('Markers AFTER adjustment:', adjustedMarkers);
-      
-      setMarkers(adjustedMarkers);
-      setUnderlines(adjustedUnderlines);
-      setProcessedImageUrl(croppedImageUrl);
-      setCropArea(null);
-      setRotation(0);
-      
-      setTimeout(() => resolve(), 100);
-    });
+    state.setMarkerColor('green');
+    state.setShowCheckModal(true);
   };
 
   const handleCloseCheckModal = () => {
-    setShowCheckModal(false);
-    setMarkerColor('green');
-    setUnderlineStart(null);
-  };
-
-  const handleCropApply = (area: CropArea) => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      setCropArea(area);
-      setMarkerColor('green');
-      return;
-    }
-
-    const img = imageRef.current;
-    if (!img) {
-      setCropArea(area);
-      setMarkerColor('green');
-      return;
-    }
-
-    // Пересчитываем координаты crop с учётом rotation
-    let adjustedArea = { ...area };
-    const w = canvas.width;
-    const h = canvas.height;
-
-    if (rotation === 90) {
-      adjustedArea = {
-        x: area.y,
-        y: w - area.x - area.width,
-        width: area.height,
-        height: area.width
-      };
-    } else if (rotation === 180) {
-      adjustedArea = {
-        x: w - area.x - area.width,
-        y: h - area.y - area.height,
-        width: area.width,
-        height: area.height
-      };
-    } else if (rotation === 270) {
-      adjustedArea = {
-        x: h - area.y - area.height,
-        y: area.x,
-        width: area.height,
-        height: area.width
-      };
-    }
-
-    // Создаём canvas с исходным изображением БЕЗ поворота
-    const sourceCanvas = document.createElement('canvas');
-    const sourceCtx = sourceCanvas.getContext('2d');
-    if (!sourceCtx) return;
-
-    sourceCanvas.width = img.naturalWidth;
-    sourceCanvas.height = img.naturalHeight;
-    sourceCtx.drawImage(img, 0, 0);
-
-    // Вычисляем scale factor
-    const scaleX = img.naturalWidth / canvas.width;
-    const scaleY = img.naturalHeight / canvas.height;
-
-    // Применяем crop к исходному изображению с правильным масштабом
-    const tempCanvas = document.createElement('canvas');
-    const ctx = tempCanvas.getContext('2d');
-    if (!ctx) return;
-
-    tempCanvas.width = adjustedArea.width * scaleX;
-    tempCanvas.height = adjustedArea.height * scaleY;
-
-    ctx.drawImage(
-      sourceCanvas,
-      adjustedArea.x * scaleX,
-      adjustedArea.y * scaleY,
-      adjustedArea.width * scaleX,
-      adjustedArea.height * scaleY,
-      0,
-      0,
-      tempCanvas.width,
-      tempCanvas.height
-    );
-
-    const croppedImageUrl = tempCanvas.toDataURL('image/png');
-    
-    // Пересчитываем координаты маркеров
-    const adjustedMarkers = markers.map(marker => ({
-      ...marker,
-      x: marker.x - area.x,
-      y: marker.y - area.y
-    }));
-    
-    // Пересчитываем координаты подчёркиваний
-    const adjustedUnderlines = underlines.map(underline => ({
-      ...underline,
-      startX: underline.startX - area.x,
-      startY: underline.startY - area.y,
-      endX: underline.endX - area.x,
-      endY: underline.endY - area.y
-    }));
-    
-    setMarkers(adjustedMarkers);
-    setUnderlines(adjustedUnderlines);
-    setProcessedImageUrl(croppedImageUrl);
-    setCropArea(null);
-    setRotation(0);
-    setMarkerColor('green');
-    setTimeout(() => saveToHistory(), 0);
-  };
-
-  const handleCropCancel = () => {
-    setMarkerColor('green');
-    setCropDragStart(null);
-  };
-
-  const handleMarkerAdd = (marker: Marker) => {
-    setMarkers(prev => [...prev, marker]);
-    
-    if (markerColor === 'green') {
-      setGreenCount(prev => {
-        const newCount = prev + 1;
-        setTimeout(() => saveToHistory(), 0);
-        return newCount;
-      });
-    } else if (markerColor === 'red') {
-      setRedCount(prev => {
-        const newCount = prev + 1;
-        setTimeout(() => saveToHistory(), 0);
-        return newCount;
-      });
-    }
-  };
-
-  const handleMarkerRemove = (index: number) => {
-    const removedMarker = markers[index];
-    const newMarkers = markers.filter((_, i) => i !== index);
-    setMarkers(newMarkers);
-    
-    if (removedMarker.color === 'green') {
-      setGreenCount(prev => {
-        const newCount = Math.max(0, prev - 1);
-        setTimeout(() => saveToHistory(), 0);
-        return newCount;
-      });
-    } else {
-      setRedCount(prev => {
-        const newCount = Math.max(0, prev - 1);
-        setTimeout(() => saveToHistory(), 0);
-        return newCount;
-      });
-    }
-  };
-
-  const handleUnderlineAdd = (underline: Underline) => {
-    setUnderlines(prev => [...prev, underline]);
-    setGreenCount(prev => {
-      const newCount = prev + 1;
-      setTimeout(() => saveToHistory(), 0);
-      return newCount;
-    });
-  };
-
-  const handleUnderlineRemove = (index: number) => {
-    const newUnderlines = underlines.filter((_, i) => i !== index);
-    setUnderlines(newUnderlines);
-    setGreenCount(prev => {
-      const newCount = Math.max(0, prev - 1);
-      setTimeout(() => saveToHistory(), 0);
-      return newCount;
-    });
-  };
-
-  const clearCanvas = () => {
-    if (markers.length === 0 && underlines.length === 0) {
-      return;
-    }
-    
-    if (window.confirm('Вы уверены, что хотите удалить все выделения?')) {
-      setMarkers([]);
-      setUnderlines([]);
-      setUnderlineStart(null);
-      setGreenCount(0);
-      setRedCount(0);
-      setTimeout(() => saveToHistory(), 0);
-    }
+    state.setShowCheckModal(false);
+    state.setMarkerColor('green');
+    state.setUnderlineStart(null);
   };
 
   const handleRotate = () => {
-    setRotation(prev => (prev + 90) % 360);
-    setTimeout(() => saveToHistory(), 0);
-  };
-
-  const handleSave = () => {
-    if (markers.length === 0 && underlines.length === 0) {
-      setShowSaveConfirm(true);
-      return;
-    }
-    setShowSaveConfirm(true);
-  };
-
-  const confirmSave = () => {
-    console.log('confirmSave called');
-    const canvas = canvasRef.current;
-    const markersCanvas = markersCanvasRef.current;
-    if (!canvas || !markersCanvas) {
-      console.error('Canvas not found');
-      return;
-    }
-
-    console.log('Creating temp canvas, markers count:', markers.length);
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    if (tempCtx) {
-      // "Запекаем" изображение и разметку вместе
-      tempCtx.drawImage(canvas, 0, 0);
-      tempCtx.drawImage(markersCanvas, 0, 0);
-      
-      // Сохраняем объединенное изображение как base64
-      const newProcessedImageUrl = tempCanvas.toDataURL('image/png');
-      
-      const markupData = JSON.stringify({
-        markers: [],
-        underlines: [],
-        greenCount,
-        redCount,
-        cropArea: null,
-        rotation: 0,
-        processedImageUrl: newProcessedImageUrl
-      });
-      console.log('Calling onSave with baked markup data');
-      
-      localStorage.removeItem(storageKey);
-      
-      // Обновляем локальное состояние для продолжения работы
-      setProcessedImageUrl(newProcessedImageUrl);
-      setMarkers([]);
-      setUnderlines([]);
-      setRotation(0);
-      setCropArea(null);
-      
-      onSave(markupData);
-      setShowSaveConfirm(false);
-      console.log('Save completed');
-    }
+    state.setRotation(prev => (prev + 90) % 360);
+    setTimeout(() => saveHandlers.saveToHistory(), 0);
   };
 
   return (
-    <>
-      {showSaveConfirm && (
+    <div className="w-full max-w-7xl mx-auto p-4">
+      <Instructions />
+      
+      {state.showSaveConfirm && (
         <SaveConfirmModal
-          greenCount={greenCount}
-          redCount={redCount}
-          onConfirm={confirmSave}
-          onCancel={() => setShowSaveConfirm(false)}
+          greenCount={state.greenCount}
+          redCount={state.redCount}
+          onConfirm={saveHandlers.confirmSave}
+          onCancel={() => state.setShowSaveConfirm(false)}
         />
       )}
 
-      {showCheckModal && (
+      {state.showCheckModal && (
         <CheckModal
           imageUrl={imageUrl}
-          processedImageUrl={processedImageUrl}
-          rotation={processedImageUrl ? 0 : rotation}
-          markerColor={markerColor}
-          markerSize={markerSize}
-          markers={markers}
-          underlines={underlines}
-          greenCount={greenCount}
-          redCount={redCount}
-          underlineStart={underlineStart}
-          onMarkerColorChange={handleMarkerColorChange}
-          onMarkerSizeChange={setMarkerSize}
-          onMarkersChange={setMarkers}
-          onUnderlinesChange={setUnderlines}
-          onUnderlineStartChange={setUnderlineStart}
+          processedImageUrl={state.processedImageUrl}
+          rotation={state.processedImageUrl ? 0 : state.rotation}
+          markerColor={state.markerColor}
+          markerSize={state.markerSize}
+          markers={state.markers}
+          underlines={state.underlines}
+          greenCount={state.greenCount}
+          redCount={state.redCount}
+          underlineStart={state.underlineStart}
+          onMarkerColorChange={annotationHandlers.handleMarkerColorChange}
+          onMarkerSizeChange={state.setMarkerSize}
+          onMarkersChange={state.setMarkers}
+          onUnderlinesChange={state.setUnderlines}
+          onUnderlineStartChange={state.setUnderlineStart}
           onCountsChange={(green, red) => {
-            setGreenCount(green);
-            setRedCount(red);
+            state.setGreenCount(() => green);
+            state.setRedCount(() => red);
           }}
-          onClear={clearCanvas}
-          onSave={handleSave}
+          onClear={annotationHandlers.clearCanvas}
+          onSave={saveHandlers.handleSave}
           onClose={handleCloseCheckModal}
         />
       )}
     
       <div className="space-y-4">
-        <ErrorCounter greenCount={greenCount} redCount={redCount} />
+        <ErrorCounter greenCount={state.greenCount} redCount={state.redCount} />
         
         <Toolbar
-          markerColor={markerColor}
-          markerSize={markerSize}
-          underlineStart={underlineStart}
-          hasMarkup={markers.length > 0 || underlines.length > 0}
-          onMarkerColorChange={handleMarkerColorChange}
-          onMarkerSizeChange={setMarkerSize}
+          markerColor={state.markerColor}
+          markerSize={state.markerSize}
+          underlineStart={state.underlineStart}
+          hasMarkup={state.markers.length > 0 || state.underlines.length > 0}
+          onMarkerColorChange={annotationHandlers.handleMarkerColorChange}
+          onMarkerSizeChange={state.setMarkerSize}
           onOpenCheckModal={handleOpenCheckModal}
-          onSave={handleSave}
-          onClear={clearCanvas}
+          onSave={saveHandlers.handleSave}
+          onClear={annotationHandlers.clearCanvas}
           onRotate={handleRotate}
         />
 
-        {markerColor === 'crop' ? (
+        {state.markerColor === 'crop' ? (
           <CropCanvas
-            imageUrl={processedImageUrl || imageUrl}
-            initialCropArea={cropArea}
-            onApply={handleCropApply}
-            onCancel={handleCropCancel}
+            imageUrl={state.processedImageUrl || imageUrl}
+            initialCropArea={state.cropArea}
+            onApply={cropHandlers.handleCropApply}
+            onCancel={cropHandlers.handleCropCancel}
           />
         ) : (
           <AnnotationCanvas
-          imageUrl={processedImageUrl || imageUrl}
-          markers={markers}
-          underlines={underlines}
-          markerColor={markerColor}
-          markerSize={markerSize}
-          underlineStart={underlineStart}
-          hoveredMarkerIndex={hoveredMarkerIndex}
-          hoveredUnderlineIndex={hoveredUnderlineIndex}
-          cropArea={cropArea}
-          rotation={rotation}
-          onImageLoad={handleImageLoad}
-          onMarkerAdd={handleMarkerAdd}
-          onMarkerRemove={handleMarkerRemove}
-          onUnderlineAdd={handleUnderlineAdd}
-          onUnderlineRemove={handleUnderlineRemove}
-          onUnderlineStartSet={setUnderlineStart}
-          onHoveredMarkerChange={setHoveredMarkerIndex}
-          onHoveredUnderlineChange={setHoveredUnderlineIndex}
-        />
+            imageUrl={state.processedImageUrl || imageUrl}
+            markers={state.markers}
+            underlines={state.underlines}
+            markerColor={state.markerColor}
+            markerSize={state.markerSize}
+            underlineStart={state.underlineStart}
+            hoveredMarkerIndex={state.hoveredMarkerIndex}
+            hoveredUnderlineIndex={state.hoveredUnderlineIndex}
+            cropArea={state.cropArea}
+            rotation={state.rotation}
+            onImageLoad={saveHandlers.handleImageLoad}
+            onMarkerAdd={annotationHandlers.handleMarkerAdd}
+            onMarkerRemove={annotationHandlers.handleMarkerRemove}
+            onUnderlineAdd={annotationHandlers.handleUnderlineAdd}
+            onUnderlineRemove={annotationHandlers.handleUnderlineRemove}
+            onUnderlineStartSet={state.setUnderlineStart}
+            onHoveredMarkerChange={state.setHoveredMarkerIndex}
+            onHoveredUnderlineChange={state.setHoveredUnderlineIndex}
+          />
         )}
-
-        <Instructions />
       </div>
-    </>
+    </div>
   );
 };
 
