@@ -25,6 +25,7 @@ export default function TestimonialsSection() {
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
+      posterUrl: "https://cdn.poehali.dev/files/aa2deff0-fd00-4b4c-885e-1d594dabb2fa.png",
       gradient: "from-green-400 to-teal-500"
     },
     {
