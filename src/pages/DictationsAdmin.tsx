@@ -45,10 +45,10 @@ const DictationsAdmin = () => {
           try {
             const state = JSON.parse(savedState);
             if (state.selectedDictationId && state.showAnnotator) {
-              const dictation = (data.dictations || []).find((d: Dictation) => d.id === state.selectedDictationId);
-              if (dictation) {
-                setSelectedDictation(dictation);
-                setNotes(dictation.diagnostician_notes || '');
+              const details = await loadDictationDetails(state.selectedDictationId);
+              if (details) {
+                setSelectedDictation(details);
+                setNotes(details.diagnostician_notes || '');
                 setShowAnnotator(true);
               }
             }
@@ -83,6 +83,17 @@ const DictationsAdmin = () => {
       console.error('Error loading dictations:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDictationDetails = async (id: number) => {
+    try {
+      const response = await fetch(`https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0?id=${id}`);
+      const data = await response.json();
+      return data.dictation;
+    } catch (error) {
+      console.error('Error loading dictation details:', error);
+      return null;
     }
   };
 
@@ -187,9 +198,12 @@ const DictationsAdmin = () => {
                   className={`cursor-pointer transition-all hover:shadow-md ${
                     selectedDictation?.id === dictation.id ? 'ring-2 ring-green-500' : ''
                   }`}
-                  onClick={() => {
-                    setSelectedDictation(dictation);
-                    setNotes(dictation.diagnostician_notes || '');
+                  onClick={async () => {
+                    const details = await loadDictationDetails(dictation.id);
+                    if (details) {
+                      setSelectedDictation(details);
+                      setNotes(details.diagnostician_notes || '');
+                    }
                     setShowAnnotator(false);
                   }}
                 >

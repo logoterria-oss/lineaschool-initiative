@@ -9,7 +9,7 @@ from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
     
     if method == 'OPTIONS':
@@ -32,6 +32,58 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         if method == 'GET':
+            query_params = event.get('queryStringParameters') or {}
+            dictation_id = query_params.get('id')
+            
+            if dictation_id:
+                cur.execute(
+                    f"SELECT * FROM t_p93118852_lineaschool_initiati.dictations WHERE id = {int(dictation_id)}"
+                )
+                d = cur.fetchone()
+                
+                if not d:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Not found'}),
+                        'isBase64Encoded': False
+                    }
+                
+                markup_data = None
+                if d.get('annotated_image'):
+                    try:
+                        markup_data = json.loads(d['annotated_image'])
+                    except:
+                        pass
+                
+                result = {
+                    'id': d['id'],
+                    'telegram_user_id': d['telegram_user_id'],
+                    'telegram_username': d['telegram_username'] or '',
+                    'child_name': d['child_name'],
+                    'photo_file_id': d['photo_file_id'],
+                    'photo_url': d['photo_url'],
+                    'markup_data': markup_data,
+                    'has_annotation': bool(d.get('annotated_image')),
+                    'status': d['status'],
+                    'diagnostician_notes': d['diagnostician_notes'],
+                    'created_at': d['created_at'].isoformat() if d['created_at'] else None,
+                    'checked_at': d['checked_at'].isoformat() if d['checked_at'] else None,
+                    'checked_by': d['checked_by']
+                }
+                
+                cur.close()
+                conn.close()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'dictation': result}),
+                    'isBase64Encoded': False
+                }
+            
             cur.execute(
                 "SELECT * FROM t_p93118852_lineaschool_initiati.dictations "
                 "ORDER BY created_at DESC LIMIT 50"
@@ -40,13 +92,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             result = []
             for d in dictations:
-                markup_data = None
-                if d.get('annotated_image'):
-                    try:
-                        markup_data = json.loads(d['annotated_image'])
-                    except:
-                        pass
-                
                 result.append({
                     'id': d['id'],
                     'telegram_user_id': d['telegram_user_id'],
@@ -54,7 +99,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
                     'photo_url': d['photo_url'],
-                    'markup_data': markup_data,
                     'has_annotation': bool(d.get('annotated_image')),
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
