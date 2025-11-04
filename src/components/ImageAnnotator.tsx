@@ -155,6 +155,24 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       const croppedImageUrl = tempCanvas.toDataURL('image/png');
       console.log('Cropped image created:', { w: tempCanvas.width, h: tempCanvas.height });
       
+      // Пересчитываем координаты маркеров относительно кадрированной области
+      const adjustedMarkers = markers.map(marker => ({
+        ...marker,
+        x: marker.x - cropArea.x,
+        y: marker.y - cropArea.y
+      }));
+      
+      // Пересчитываем координаты подчёркиваний
+      const adjustedUnderlines = underlines.map(underline => ({
+        ...underline,
+        startX: underline.startX - cropArea.x,
+        startY: underline.startY - cropArea.y,
+        endX: underline.endX - cropArea.x,
+        endY: underline.endY - cropArea.y
+      }));
+      
+      setMarkers(adjustedMarkers);
+      setUnderlines(adjustedUnderlines);
       setProcessedImageUrl(croppedImageUrl);
       setCropArea(null);
       setRotation(0);
