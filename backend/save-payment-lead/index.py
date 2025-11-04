@@ -75,7 +75,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if chat_id and bot_token:
             try:
-                message = f"💰 Новая оплата!\n\n👤 Имя: {name}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
+                message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
                 
                 url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
                 data = {
