@@ -57,6 +57,7 @@ export default function TestimonialsSection() {
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
+      posterUrl: "https://cdn.poehali.dev/files/f9c45555-2e89-4491-a5be-deab8dae18ca.png",
       gradient: "from-green-400 to-teal-500"
     },
     {
