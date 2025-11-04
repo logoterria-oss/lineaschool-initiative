@@ -116,8 +116,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
 
   const applyCropBeforeCheck = () => {
     return new Promise<void>((resolve) => {
-      const canvas = canvasRef.current;
-      if (!canvas || !cropArea) {
+      const img = imageRef.current;
+      if (!img || !cropArea) {
         resolve();
         return;
       }
@@ -129,21 +129,46 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         return;
       }
 
-      const cropWidth = cropArea.width;
-      const cropHeight = cropArea.height;
-      tempCanvas.width = cropWidth;
-      tempCanvas.height = cropHeight;
+      let displayWidth = img.width;
+      let displayHeight = img.height;
+
+      if (rotation % 180 !== 0) {
+        [displayWidth, displayHeight] = [displayHeight, displayWidth];
+      }
+
+      const rotatedCanvas = document.createElement('canvas');
+      rotatedCanvas.width = displayWidth;
+      rotatedCanvas.height = displayHeight;
+      const rotatedCtx = rotatedCanvas.getContext('2d');
+
+      if (rotatedCtx) {
+        rotatedCtx.save();
+        
+        if (rotation !== 0) {
+          const centerX = displayWidth / 2;
+          const centerY = displayHeight / 2;
+          rotatedCtx.translate(centerX, centerY);
+          rotatedCtx.rotate((rotation * Math.PI) / 180);
+          rotatedCtx.translate(-img.width / 2, -img.height / 2);
+        }
+        
+        rotatedCtx.drawImage(img, 0, 0);
+        rotatedCtx.restore();
+      }
+
+      tempCanvas.width = cropArea.width;
+      tempCanvas.height = cropArea.height;
 
       ctx.drawImage(
-        canvas,
+        rotatedCanvas,
         cropArea.x,
         cropArea.y,
-        cropWidth,
-        cropHeight,
+        cropArea.width,
+        cropArea.height,
         0,
         0,
-        cropWidth,
-        cropHeight
+        cropArea.width,
+        cropArea.height
       );
 
       const croppedImageUrl = tempCanvas.toDataURL('image/png');
