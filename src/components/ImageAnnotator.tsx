@@ -3,6 +3,7 @@ import { ImageAnnotatorProps, Marker, Underline, HistoryState, MarkerColor, Crop
 import ErrorCounter from './ImageAnnotator/ErrorCounter';
 import Toolbar from './ImageAnnotator/Toolbar';
 import SaveConfirmModal from './ImageAnnotator/SaveConfirmModal';
+import CheckModal from './ImageAnnotator/CheckModal';
 import AnnotationCanvas from './ImageAnnotator/AnnotationCanvas';
 import CropCanvas from './ImageAnnotator/CropCanvas';
 import Instructions from './ImageAnnotator/Instructions';
@@ -23,6 +24,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
   const [hoveredUnderlineIndex, setHoveredUnderlineIndex] = useState<number | null>(null);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showCheckModal, setShowCheckModal] = useState(false);
   const [cropArea, setCropArea] = useState<CropArea | null>(null);
   const [cropDragStart, setCropDragStart] = useState<{x: number, y: number} | null>(null);
   const [rotation, setRotation] = useState(0);
@@ -99,6 +101,20 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     setMarkerColor(color);
     setUnderlineStart(null);
     setCropDragStart(null);
+    if (['green', 'red', 'underline', 'eraser'].includes(color)) {
+      setShowCheckModal(true);
+    }
+  };
+
+  const handleOpenCheckModal = () => {
+    setMarkerColor('green');
+    setShowCheckModal(true);
+  };
+
+  const handleCloseCheckModal = () => {
+    setShowCheckModal(false);
+    setMarkerColor('green');
+    setUnderlineStart(null);
   };
 
   const handleCropApply = (area: CropArea) => {
@@ -256,6 +272,20 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           onCancel={() => setShowSaveConfirm(false)}
         />
       )}
+
+      {showCheckModal && (
+        <CheckModal
+          markerColor={markerColor}
+          markerSize={markerSize}
+          greenCount={greenCount}
+          redCount={redCount}
+          underlineStart={underlineStart}
+          onMarkerColorChange={handleMarkerColorChange}
+          onMarkerSizeChange={setMarkerSize}
+          onClear={clearCanvas}
+          onClose={handleCloseCheckModal}
+        />
+      )}
     
       <div className="space-y-4">
         <ErrorCounter greenCount={greenCount} redCount={redCount} />
@@ -264,8 +294,10 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           markerColor={markerColor}
           markerSize={markerSize}
           underlineStart={underlineStart}
+          hasMarkup={markers.length > 0 || underlines.length > 0}
           onMarkerColorChange={handleMarkerColorChange}
           onMarkerSizeChange={setMarkerSize}
+          onOpenCheckModal={handleOpenCheckModal}
           onSave={handleSave}
           onClear={clearCanvas}
           onRotate={handleRotate}
