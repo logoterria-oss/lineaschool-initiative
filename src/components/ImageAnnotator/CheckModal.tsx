@@ -1,58 +1,312 @@
+import { useRef, useEffect, MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import { MarkerColor } from './types';
+import { MarkerColor, Marker, Underline } from './types';
 
 interface CheckModalProps {
+  imageUrl: string;
+  processedImageUrl: string | null;
+  rotation: number;
   markerColor: MarkerColor;
   markerSize: number;
+  markers: Marker[];
+  underlines: Underline[];
   greenCount: number;
   redCount: number;
   underlineStart: { x: number; y: number } | null;
   onMarkerColorChange: (color: MarkerColor) => void;
   onMarkerSizeChange: (size: number) => void;
+  onMarkersChange: (markers: Marker[]) => void;
+  onUnderlinesChange: (underlines: Underline[]) => void;
+  onUnderlineStartChange: (start: { x: number; y: number } | null) => void;
+  onCountsChange: (green: number, red: number) => void;
   onClear: () => void;
+  onSave: () => void;
   onClose: () => void;
 }
 
 const CheckModal = ({
+  imageUrl,
+  processedImageUrl,
+  rotation,
   markerColor,
   markerSize,
+  markers,
+  underlines,
   greenCount,
   redCount,
   underlineStart,
   onMarkerColorChange,
   onMarkerSizeChange,
+  onMarkersChange,
+  onUnderlinesChange,
+  onUnderlineStartChange,
+  onCountsChange,
   onClear,
+  onSave,
   onClose
 }: CheckModalProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const markersCanvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const markersCanvas = markersCanvasRef.current;
+    if (!canvas || !markersCanvas) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = processedImageUrl || imageUrl;
+    
+    img.onload = () => {
+      imageRef.current = img;
+      
+      let displayWidth = img.width;
+      let displayHeight = img.height;
+
+      if (rotation % 180 !== 0) {
+        [displayWidth, displayHeight] = [displayHeight, displayWidth];
+      }
+
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+      markersCanvas.width = displayWidth;
+      markersCanvas.height = displayHeight;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.save();
+        ctx.translate(displayWidth / 2, displayHeight / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        ctx.restore();
+      }
+
+      drawMarkers();
+    };
+  }, [imageUrl, processedImageUrl, rotation]);
+
+  useEffect(() => {
+    drawMarkers();
+  }, [markers, underlines]);
+
+  const drawMarkers = () => {
+    const markersCanvas = markersCanvasRef.current;
+    if (!markersCanvas) return;
+
+    const ctx = markersCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, markersCanvas.width, markersCanvas.height);
+
+    markers.forEach(marker => {
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = marker.color === 'green' ? '#22c55e' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, marker.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    });
+
+    underlines.forEach(underline => {
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(underline.startX, underline.startY);
+      ctx.lineTo(underline.endX, underline.endY);
+      ctx.stroke();
+    });
+  };
+
+  const handleMouseDown = (e: MouseEvent<HTMLCanvasElement>) => {
+    if (markerColor === 'crop') return;
+
+    const rect = markersCanvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (markerColor === 'underline') {
+      if (!underlineStart) {
+        onUnderlineStartChange({ x, y });
+      } else {
+        const newUnderline: Underline = {
+          startX: underlineStart.x,
+          startY: underlineStart.y,
+          endX: x,
+          endY: y
+        };
+        onUnderlinesChange([...underlines, newUnderline]);
+        onUnderlineStartChange(null);
+        onCountsChange(greenCount + 1, redCount);
+      }
+      return;
+    }
+
+    if (markerColor === 'eraser') {
+      handleErase(x, y);
+      setIsDrawing(true);
+      return;
+    }
+
+    if (markerColor === 'green' || markerColor === 'red') {
+      const newMarker: Marker = { x, y, color: markerColor, size: markerSize };
+      onMarkersChange([...markers, newMarker]);
+      
+      if (markerColor === 'green') {
+        onCountsChange(greenCount + 1, redCount);
+      } else {
+        onCountsChange(greenCount, redCount + 1);
+      }
+      setIsDrawing(true);
+    }
+  };
+
+  const handleMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+
+    const rect = markersCanvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (markerColor === 'eraser') {
+      handleErase(x, y);
+    } else if (markerColor === 'green' || markerColor === 'red') {
+      const newMarker: Marker = { x, y, color: markerColor, size: markerSize };
+      onMarkersChange([...markers, newMarker]);
+      
+      if (markerColor === 'green') {
+        onCountsChange(greenCount + 1, redCount);
+      } else {
+        onCountsChange(greenCount, redCount + 1);
+      }
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDrawing(false);
+  };
+
+  const handleErase = (x: number, y: number) => {
+    const eraseRadius = markerSize;
+    
+    const newMarkers = markers.filter(marker => {
+      const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
+      if (distance < eraseRadius + marker.size / 2) {
+        if (marker.color === 'green') {
+          onCountsChange(Math.max(0, greenCount - 1), redCount);
+        } else {
+          onCountsChange(greenCount, Math.max(0, redCount - 1));
+        }
+        return false;
+      }
+      return true;
+    });
+
+    const newUnderlines = underlines.filter(underline => {
+      const distToLine = pointToLineDistance(
+        x, y,
+        underline.startX, underline.startY,
+        underline.endX, underline.endY
+      );
+      if (distToLine < eraseRadius) {
+        onCountsChange(Math.max(0, greenCount - 1), redCount);
+        return false;
+      }
+      return true;
+    });
+
+    onMarkersChange(newMarkers);
+    onUnderlinesChange(newUnderlines);
+  };
+
+  const pointToLineDistance = (px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+    if (lenSq !== 0) param = dot / lenSq;
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = px - xx;
+    const dy = py - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Проверка диктанта</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
+      {/* Верхняя панель */}
+      <div className="bg-white border-b shadow-sm p-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">Проверка диктанта</h2>
+          
+          {/* Счетчики */}
+          <div className="flex gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span className="text-sm font-medium">Дисграфия:</span>
+              <span className="text-lg font-bold text-green-600">{greenCount}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <span className="text-sm font-medium">Дизорфография:</span>
+              <span className="text-lg font-bold text-red-600">{redCount}</span>
+            </div>
+          </div>
+
           <Button variant="outline" size="sm" onClick={onClose}>
             <Icon name="X" size={16} />
           </Button>
         </div>
+      </div>
 
-        {/* Счетчики ошибок */}
-        <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-green-500"></div>
-            <span className="text-sm font-medium">Дисграфия:</span>
-            <span className="text-lg font-bold text-green-600">{greenCount}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500"></div>
-            <span className="text-sm font-medium">Дизорфография:</span>
-            <span className="text-lg font-bold text-red-600">{redCount}</span>
+      {/* Область изображения */}
+      <div className="flex-1 overflow-auto bg-gray-100 p-4">
+        <div className="max-w-7xl mx-auto flex justify-center">
+          <div className="relative inline-block">
+            <canvas
+              ref={canvasRef}
+              className="border border-gray-300 shadow-lg"
+            />
+            <canvas
+              ref={markersCanvasRef}
+              className="absolute top-0 left-0 cursor-crosshair"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Инструменты проверки */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">Инструменты:</h3>
-          <div className="flex flex-wrap gap-2">
+      {/* Нижняя панель инструментов */}
+      <div className="bg-white border-t shadow-sm p-4">
+        <div className="max-w-7xl mx-auto space-y-3">
+          {/* Инструменты */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-gray-700 mr-2">Инструменты:</span>
             <Button
               size="sm"
               variant={markerColor === 'green' ? 'default' : 'outline'}
@@ -91,8 +345,8 @@ const CheckModal = ({
             </Button>
           </div>
 
-          {/* Размер маркера */}
-          <div className="flex items-center gap-4 pt-2">
+          {/* Размер */}
+          <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-700">Размер:</span>
             <input
               type="range"
@@ -100,44 +354,55 @@ const CheckModal = ({
               max="40"
               value={markerSize}
               onChange={(e) => onMarkerSizeChange(Number(e.target.value))}
-              className="flex-1"
+              className="flex-1 max-w-xs"
             />
             <span className="text-sm text-gray-600 w-12">{markerSize}px</span>
           </div>
-        </div>
 
-        {/* Подсказки */}
-        {markerColor === 'underline' && (
-          <div className="bg-green-50 border border-green-300 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <Icon name="Info" className="text-green-600" size={16} />
-              <span className="text-sm text-green-800">
-                {underlineStart 
-                  ? 'Кликните в конечную точку подчеркивания' 
-                  : 'Кликните в начальную точку подчеркивания'}
-              </span>
+          {/* Подсказка */}
+          {markerColor === 'underline' && (
+            <div className="bg-green-50 border border-green-300 rounded-lg p-2">
+              <div className="flex items-center gap-2">
+                <Icon name="Info" className="text-green-600" size={16} />
+                <span className="text-sm text-green-800">
+                  {underlineStart 
+                    ? 'Кликните в конечную точку подчеркивания' 
+                    : 'Кликните в начальную точку подчеркивания'}
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Действия */}
-        <div className="flex gap-2 pt-4 border-t">
-          <Button variant="outline" size="sm" onClick={onClear}>
-            <Icon name="RotateCcw" className="mr-1" size={14} />
-            Очистить разметку
-          </Button>
-          <Button 
-            size="sm" 
-            className="ml-auto bg-green-600 hover:bg-green-700"
-            onClick={onClose}
-          >
-            <Icon name="Check" className="mr-1" size={14} />
-            Готово
-          </Button>
+          {/* Действия */}
+          <div className="flex gap-2 pt-2 border-t">
+            <Button variant="outline" size="sm" onClick={onClear}>
+              <Icon name="RotateCcw" className="mr-1" size={14} />
+              Очистить разметку
+            </Button>
+            <Button 
+              variant="default"
+              size="sm" 
+              onClick={onSave}
+              disabled={markers.length === 0 && underlines.length === 0}
+            >
+              <Icon name="Save" className="mr-1" size={14} />
+              Сохранить разметку
+            </Button>
+            <Button 
+              size="sm" 
+              className="ml-auto bg-green-600 hover:bg-green-700"
+              onClick={onClose}
+            >
+              <Icon name="Check" className="mr-1" size={14} />
+              Готово
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+import { useState } from 'react';
 
 export default CheckModal;

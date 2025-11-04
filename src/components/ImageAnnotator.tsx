@@ -275,14 +275,27 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
 
       {showCheckModal && (
         <CheckModal
+          imageUrl={imageUrl}
+          processedImageUrl={processedImageUrl}
+          rotation={rotation}
           markerColor={markerColor}
           markerSize={markerSize}
+          markers={markers}
+          underlines={underlines}
           greenCount={greenCount}
           redCount={redCount}
           underlineStart={underlineStart}
           onMarkerColorChange={handleMarkerColorChange}
           onMarkerSizeChange={setMarkerSize}
+          onMarkersChange={setMarkers}
+          onUnderlinesChange={setUnderlines}
+          onUnderlineStartChange={setUnderlineStart}
+          onCountsChange={(green, red) => {
+            setGreenCount(green);
+            setRedCount(red);
+          }}
           onClear={clearCanvas}
+          onSave={handleSave}
           onClose={handleCloseCheckModal}
         />
       )}
