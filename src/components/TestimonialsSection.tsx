@@ -17,7 +17,7 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
-      posterUrl: "https://cdn.poehali.dev/files/76b70c57-e751-4a17-ada5-dbb7068d27d6.png",
+      posterUrl: "https://cdn.poehali.dev/files/524d8cc7-dbd7-43eb-b572-f226aa3bd4ed.png",
       gradient: "from-green-400 to-teal-500"
     },
     {
@@ -263,9 +263,12 @@ export default function TestimonialsSection() {
                     >
                       {/* Видео с адаптивным форматом */}
                       <div className="aspect-[9/16] relative group overflow-hidden">
-                        {/* Градиентный фон как обложка */}
-                        {playingVideoId !== video.id && (
-                          <div className={`absolute inset-0 bg-gradient-to-br ${video.gradient}`} />
+                        {/* Фото-обложка */}
+                        {playingVideoId !== video.id && video.posterUrl && (
+                          <div 
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: `url(${video.posterUrl})` }}
+                          />
                         )}
                         
                         <video
