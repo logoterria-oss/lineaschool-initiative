@@ -10,6 +10,7 @@ interface ToolbarProps {
   onMarkerSizeChange: (size: number) => void;
   onSave: () => void;
   onClear: () => void;
+  onRotate: () => void;
 }
 
 const Toolbar = ({
@@ -19,7 +20,8 @@ const Toolbar = ({
   onMarkerColorChange,
   onMarkerSizeChange,
   onSave,
-  onClear
+  onClear,
+  onRotate
 }: ToolbarProps) => {
   return (
     <div className="space-y-3">
@@ -87,6 +89,15 @@ const Toolbar = ({
         </div>
 
         <div className="flex gap-2 ml-auto">
+          <Button 
+            onClick={onRotate} 
+            size="sm"
+            variant="outline"
+            title="Повернуть изображение на 90°"
+          >
+            <Icon name="RotateCw" className="mr-1" size={14} />
+            Повернуть
+          </Button>
           <Button 
             onClick={onSave} 
             size="sm"

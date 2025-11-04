@@ -25,6 +25,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [cropArea, setCropArea] = useState<CropArea | null>(null);
   const [cropDragStart, setCropDragStart] = useState<{x: number, y: number} | null>(null);
+  const [rotation, setRotation] = useState(0);
 
   const storageKey = `annotator_${imageUrl}`;
 
@@ -178,6 +179,10 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     }
   };
 
+  const handleRotate = () => {
+    setRotation(prev => (prev + 90) % 360);
+  };
+
   const handleSave = () => {
     if (markers.length === 0 && underlines.length === 0) {
       setShowSaveConfirm(true);
@@ -270,6 +275,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           onMarkerSizeChange={setMarkerSize}
           onSave={handleSave}
           onClear={clearCanvas}
+          onRotate={handleRotate}
         />
 
         {markerColor === 'crop' ? (
@@ -290,6 +296,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           hoveredMarkerIndex={hoveredMarkerIndex}
           hoveredUnderlineIndex={hoveredUnderlineIndex}
           cropArea={cropArea}
+          rotation={rotation}
           onImageLoad={handleImageLoad}
           onMarkerAdd={handleMarkerAdd}
           onMarkerRemove={handleMarkerRemove}

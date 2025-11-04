@@ -12,6 +12,7 @@ interface AnnotationCanvasProps {
   hoveredMarkerIndex: number | null;
   hoveredUnderlineIndex: number | null;
   cropArea: CropArea | null;
+  rotation?: number;
   onImageLoad: (img: HTMLImageElement, canvas: HTMLCanvasElement, markersCanvas: HTMLCanvasElement) => void;
   onMarkerAdd: (marker: Marker) => void;
   onMarkerRemove: (index: number) => void;
@@ -32,6 +33,7 @@ const AnnotationCanvas = ({
   hoveredMarkerIndex,
   hoveredUnderlineIndex,
   cropArea,
+  rotation = 0,
   onImageLoad,
   onMarkerAdd,
   onMarkerRemove,
@@ -82,13 +84,26 @@ const AnnotationCanvas = ({
             sourceHeight = cropArea.height;
           }
           
-          canvas.width = displayWidth;
-          canvas.height = displayHeight;
-          markersCanvas.width = displayWidth;
-          markersCanvas.height = displayHeight;
+          // Swap dimensions if rotated 90 or 270 degrees
+          const isRotated = rotation === 90 || rotation === 270;
+          canvas.width = isRotated ? displayHeight : displayWidth;
+          canvas.height = isRotated ? displayWidth : displayHeight;
+          markersCanvas.width = isRotated ? displayHeight : displayWidth;
+          markersCanvas.height = isRotated ? displayWidth : displayHeight;
           
           const ctx = canvas.getContext('2d');
           if (ctx) {
+            ctx.save();
+            
+            // Apply rotation transformation
+            if (rotation !== 0) {
+              const centerX = canvas.width / 2;
+              const centerY = canvas.height / 2;
+              ctx.translate(centerX, centerY);
+              ctx.rotate((rotation * Math.PI) / 180);
+              ctx.translate(-displayWidth / 2, -displayHeight / 2);
+            }
+            
             ctx.drawImage(
               img,
               sourceX,
@@ -100,6 +115,8 @@ const AnnotationCanvas = ({
               displayWidth,
               displayHeight
             );
+            
+            ctx.restore();
             setImageLoaded(true);
             onImageLoad(img, canvas, markersCanvas);
           }
@@ -118,7 +135,7 @@ const AnnotationCanvas = ({
     };
 
     loadImage();
-  }, [imageUrl, cropArea]);
+  }, [imageUrl, cropArea, rotation]);
 
   const redrawMarkers = () => {
     const markersCanvas = markersCanvasRef.current;
