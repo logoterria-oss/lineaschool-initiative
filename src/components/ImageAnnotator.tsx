@@ -117,8 +117,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   const applyCropBeforeCheck = () => {
     return new Promise<void>((resolve) => {
       const canvas = canvasRef.current;
-      const img = imageRef.current;
-      if (!canvas || !img || !cropArea) {
+      if (!canvas || !cropArea) {
         resolve();
         return;
       }
@@ -130,33 +129,13 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         return;
       }
 
-      let displayWidth = img.width;
-      let displayHeight = img.height;
-
-      if (rotation % 180 !== 0) {
-        [displayWidth, displayHeight] = [displayHeight, displayWidth];
-      }
-
-      const rotatedCanvas = document.createElement('canvas');
-      rotatedCanvas.width = displayWidth;
-      rotatedCanvas.height = displayHeight;
-      const rotatedCtx = rotatedCanvas.getContext('2d');
-
-      if (rotatedCtx) {
-        rotatedCtx.save();
-        rotatedCtx.translate(displayWidth / 2, displayHeight / 2);
-        rotatedCtx.rotate((rotation * Math.PI) / 180);
-        rotatedCtx.drawImage(img, -img.width / 2, -img.height / 2);
-        rotatedCtx.restore();
-      }
-
       const cropWidth = cropArea.width;
       const cropHeight = cropArea.height;
       tempCanvas.width = cropWidth;
       tempCanvas.height = cropHeight;
 
       ctx.drawImage(
-        rotatedCanvas,
+        canvas,
         cropArea.x,
         cropArea.y,
         cropWidth,
