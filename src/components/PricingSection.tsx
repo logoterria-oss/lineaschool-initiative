@@ -234,6 +234,7 @@ export default function PricingSection() {
           receipt: {
             Email: 'info@lineaschool.ru',
             Taxation: 'usn_income',
+            FfdVersion: '1.2',
             Items: [
               {
                 Name: description,
