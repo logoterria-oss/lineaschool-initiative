@@ -65,6 +65,7 @@ export default function TestimonialsSection() {
       name: "Мария, мама Ромы (11 лет)",
       description: "",
       videoUrl: "/IMG_1156.MOV",
+      posterUrl: "https://cdn.poehali.dev/files/dcaa1950-dbe7-475a-8abc-1e3fc58a1585.png",
       gradient: "from-green-400 to-teal-500"
     }
   ];
