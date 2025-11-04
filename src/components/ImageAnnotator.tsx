@@ -108,7 +108,9 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
 
   const handleOpenCheckModal = async () => {
     if (cropArea && !processedImageUrl) {
+      console.log('Applying crop before opening check modal');
       await applyCropBeforeCheck();
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
     setMarkerColor('green');
     setShowCheckModal(true);
@@ -121,6 +123,12 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         resolve();
         return;
       }
+
+      console.log('applyCropBeforeCheck:', {
+        canvasSize: { w: canvas.width, h: canvas.height },
+        cropArea,
+        rotation
+      });
 
       const tempCanvas = document.createElement('canvas');
       const ctx = tempCanvas.getContext('2d');
@@ -145,6 +153,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
       );
 
       const croppedImageUrl = tempCanvas.toDataURL('image/png');
+      console.log('Cropped image created:', { w: tempCanvas.width, h: tempCanvas.height });
+      
       setProcessedImageUrl(croppedImageUrl);
       setCropArea(null);
       setRotation(0);
@@ -319,7 +329,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
         <CheckModal
           imageUrl={imageUrl}
           processedImageUrl={processedImageUrl}
-          rotation={rotation}
+          rotation={processedImageUrl ? 0 : rotation}
           markerColor={markerColor}
           markerSize={markerSize}
           markers={markers}
