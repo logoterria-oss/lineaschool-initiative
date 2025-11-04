@@ -33,6 +33,7 @@ export default function TestimonialsSection() {
       name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
+      posterUrl: "https://cdn.poehali.dev/files/9ee7762b-6dde-4de8-bc8a-9404b8633499.png",
       gradient: "from-green-400 to-teal-500"
     },
     {
