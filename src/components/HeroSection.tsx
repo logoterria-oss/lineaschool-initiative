@@ -8,36 +8,44 @@ export default function HeroSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   return (
     <section className="relative py-8 lg:py-12 bg-gradient-to-br from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
-      {/* Декоративные элементы */}
+      {/* Декоративные элементы в пустых местах */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Звездочки */}
-        <svg className="absolute top-10 left-10 w-8 h-8 text-green-300 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        {/* Звездочки - верхние углы */}
+        <svg className="absolute top-8 left-8 w-10 h-10 text-blue-300 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" />
         </svg>
-        <svg className="absolute top-32 right-20 w-6 h-6 text-blue-300 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg className="absolute top-16 right-24 w-8 h-8 text-green-300 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" />
         </svg>
-        <svg className="absolute bottom-20 left-32 w-7 h-7 text-green-300 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg className="absolute top-40 right-12 w-6 h-6 text-blue-400 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" />
         </svg>
         
-        {/* Облачка */}
-        <svg className="absolute top-24 right-1/4 w-12 h-8 text-blue-200 opacity-50" viewBox="0 0 48 32" fill="none" stroke="currentColor" strokeWidth="2">
+        {/* Облачка - правый верх */}
+        <svg className="absolute top-20 right-32 w-14 h-10 text-blue-200 opacity-40" viewBox="0 0 48 32" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M38 16c0-3.3-2.7-6-6-6-.4 0-.8 0-1.2.1C29.5 6.6 26 4 22 4c-5 0-9 4-9 9 0 .3 0 .6.1.9C10.5 14.5 8 17.3 8 20.5 8 24.6 11.4 28 15.5 28H36c3.3 0 6-2.7 6-6s-2.7-6-6-6z" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-        <svg className="absolute bottom-32 right-16 w-10 h-7 text-green-200 opacity-50" viewBox="0 0 48 32" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg className="absolute top-4 right-64 w-12 h-8 text-green-200 opacity-40" viewBox="0 0 48 32" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M38 16c0-3.3-2.7-6-6-6-.4 0-.8 0-1.2.1C29.5 6.6 26 4 22 4c-5 0-9 4-9 9 0 .3 0 .6.1.9C10.5 14.5 8 17.3 8 20.5 8 24.6 11.4 28 15.5 28H36c3.3 0 6-2.7 6-6s-2.7-6-6-6z" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
         
-        {/* Завитушки */}
-        <svg className="absolute top-1/3 left-1/4 w-16 h-16 text-green-300 opacity-40" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M32 8 Q40 16 40 24 T32 40 Q24 48 16 48" strokeLinecap="round"/>
+        {/* Завитушки - нижние углы и края */}
+        <svg className="absolute bottom-12 left-12 w-16 h-16 text-blue-300 opacity-35" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M8 56 Q16 48 24 48 T40 56 Q48 64 56 56" strokeLinecap="round"/>
         </svg>
-        <svg className="absolute bottom-1/4 right-1/3 w-14 h-14 text-blue-300 opacity-40" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg className="absolute bottom-32 left-32 w-14 h-14 text-green-300 opacity-35" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M16 16 Q24 8 32 16 T48 32 Q56 40 48 48" strokeLinecap="round"/>
         </svg>
-        <svg className="absolute top-1/2 right-12 w-12 h-12 text-green-200 opacity-40" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M8 32 Q16 24 24 32 T40 32 Q48 32 56 40" strokeLinecap="round"/>
+        <svg className="absolute bottom-20 right-20 w-16 h-16 text-blue-200 opacity-35" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M32 8 Q40 16 40 24 T32 40 Q24 48 16 48" strokeLinecap="round"/>
+        </svg>
+        
+        {/* Дополнительные звездочки */}
+        <svg className="absolute bottom-40 right-40 w-7 h-7 text-green-300 opacity-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" />
+        </svg>
+        <svg className="absolute top-1/2 left-20 w-6 h-6 text-blue-300 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" />
         </svg>
       </div>
       
