@@ -19,8 +19,7 @@ export default function HeroSection() {
             <div className="mb-6 sm:mb-8 max-w-xl">
               <Button 
                 size="lg" 
-                variant="outline"
-                className="border-2 border-green-500 text-green-600 hover:bg-green-500 hover:text-white text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full transition-all duration-300"
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full transition-all duration-300 shadow-lg"
                 onClick={() => setIsBookingModalOpen(true)}
               >
                 <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
