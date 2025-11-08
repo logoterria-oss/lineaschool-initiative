@@ -16,12 +16,6 @@ const specialists = [
     avatar: "https://cdn.poehali.dev/files/39e06528-df6e-46ad-a501-a6a4de01c57e.jpg"
   },
   {
-    name: "Мила Яновець",
-    role: "Логопед",
-    description: "Специалист по коррекции дислексии и дисграфии у младших школьников",
-    avatar: "https://cdn.poehali.dev/files/b6aa3ad4-6e9c-4fe1-8741-3009f1cf33c2.jpg"
-  },
-  {
     name: "Дарья Еремина",
     role: "Логопед", 
     description: "Специалист по коррекции дислексии и дисграфии у старших школьников",
