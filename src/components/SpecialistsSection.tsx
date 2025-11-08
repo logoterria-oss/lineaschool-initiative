@@ -26,6 +26,12 @@ const specialists = [
     role: "Дефектолог, логопед, нейропсихолог",
     description: "Многопрофильный специалист",
     avatar: "https://cdn.poehali.dev/files/b998fb86-1c75-4e05-aa20-53b45bbe48ee.jpeg"
+  },
+  {
+    name: "Нонна Мельникова",
+    role: "Логопед, нейропсихолог",
+    description: "Специалист по развитию регуляторных функций",
+    avatar: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/73147e4d-d951-4f4e-9290-b5b3a4f39212.jpg"
   }
 ];
 
