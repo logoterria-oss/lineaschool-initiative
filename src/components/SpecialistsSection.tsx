@@ -98,7 +98,7 @@ export default function SpecialistsSection() {
             }}
           >
             {specialists.map((specialist, index) => (
-              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center min-w-[280px] snap-start flex-shrink-0">
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center w-[280px] snap-start flex-shrink-0">
                 <CardContent className="p-6">
                   <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
                     <img 
