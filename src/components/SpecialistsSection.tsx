@@ -73,7 +73,7 @@ export default function SpecialistsSection() {
                   <img 
                     src={specialist.avatar} 
                     alt={specialist.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-[center_20%]"
                     loading="lazy"
                     decoding="async"
                   />
@@ -120,7 +120,7 @@ export default function SpecialistsSection() {
                     <img 
                       src={specialist.avatar} 
                       alt={specialist.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-[center_20%]"
                       loading="lazy"
                       decoding="async"
                     />
