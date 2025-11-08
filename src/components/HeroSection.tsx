@@ -12,9 +12,11 @@ export default function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="px-2 sm:px-0">
             <div className="inline-flex items-center bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6 shadow-lg">🎓 Для детей 8-18 лет</div>
-            <h1 className="text-4xl sm:text-6xl font-bold mb-6 sm:mb-8 leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,197,94,0.15)]">
-              Онлайн-коррекция дислексии и дисграфии
-            </h1>
+            <div className="relative bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 border-2 border-green-200 shadow-lg">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                Онлайн-коррекция дислексии и дисграфии
+              </h1>
+            </div>
             
             <div className="mb-6 sm:mb-8 max-w-xl">
               <Button 
