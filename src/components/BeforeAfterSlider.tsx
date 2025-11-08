@@ -231,7 +231,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
         {/* Labels */}
         <div className="flex justify-between mt-4 px-4">
           <div className="text-center">
-            <div className="w-3 h-3 bg-blue-500 rounded-full mx-auto mb-1"></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full mx-auto mb-1"></div>
             <span className="text-sm font-medium text-gray-700">До коррекции</span>
           </div>
           <div className="text-center">
