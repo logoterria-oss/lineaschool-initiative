@@ -7,7 +7,7 @@ import BookingModal from "@/components/BookingModal";
 export default function HeroSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   return (
-    <section className="relative py-8 lg:py-12 bg-gradient-to-br from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
+    <section className="relative py-8 lg:py-12 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="px-2 sm:px-0">
