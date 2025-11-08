@@ -72,22 +72,20 @@ export default function SpecialistsSection() {
 
         {/* Desktop Scrollable */}
         <div className="hidden md:block relative">
-          {canScrollLeft && (
-            <button
-              onClick={scrollLeft}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center"
-            >
-              <Icon name="ChevronLeft" size={20} className="text-gray-600" />
-            </button>
-          )}
-          {canScrollRight && (
-            <button
-              onClick={scrollRight}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center"
-            >
-              <Icon name="ChevronRight" size={20} className="text-gray-600" />
-            </button>
-          )}
+          <button
+            onClick={scrollLeft}
+            disabled={!canScrollLeft}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:bg-green-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Icon name="ChevronLeft" size={24} className="text-gray-700" />
+          </button>
+          <button
+            onClick={scrollRight}
+            disabled={!canScrollRight}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:bg-green-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Icon name="ChevronRight" size={24} className="text-gray-700" />
+          </button>
           <div
             ref={scrollContainerRef}
             onScroll={checkScrollPosition}
