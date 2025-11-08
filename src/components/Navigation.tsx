@@ -8,7 +8,7 @@ export default function Navigation() {
 
   return (
     <>
-    <nav className="bg-white shadow-sm border-b border-green-100 sticky top-0 z-50">
+    <nav className="bg-white/95 backdrop-blur-md shadow-md border-b border-green-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex justify-between items-center h-24">
           <a href="/" className="flex items-center space-x-4">
@@ -21,14 +21,14 @@ export default function Navigation() {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4"
+              className="border-2 border-green-500 text-green-600 hover:bg-green-500 hover:text-white text-lg px-8 py-4 transition-all duration-300"
               onClick={() => window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
             >
               Задать вопрос
             </Button>
             <Button 
               size="lg" 
-              className="bg-green-500 hover:bg-green-600 text-lg px-8 py-4"
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg px-8 py-4 shadow-lg hover:shadow-xl transition-all duration-300"
               onClick={() => setIsBookingModalOpen(true)}
             >
               Записаться

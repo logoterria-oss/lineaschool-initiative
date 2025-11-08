@@ -7,17 +7,17 @@ import BookingModal from "@/components/BookingModal";
 export default function HeroSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   return (
-    <section className="relative py-8 lg:py-12 bg-white overflow-hidden" translate="no">
+    <section className="relative py-8 lg:py-12 bg-gradient-to-br from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="px-2 sm:px-0">
-            <div className="inline-flex items-center bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">🎓 Для детей 8-18 лет</div>
+            <div className="inline-flex items-center bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6 shadow-lg">🎓 Для детей 8-18 лет</div>
             <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 leading-none">Онлайн-коррекция дислексии и дисграфии</h1>
             
             <div className="mb-6 sm:mb-8 max-w-xl">
               <Button 
                 size="lg" 
-                className="bg-green-500 hover:bg-green-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full shadow-xl hover:shadow-2xl transition-all duration-300"
                 onClick={() => setIsBookingModalOpen(true)}
               >
                 <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
