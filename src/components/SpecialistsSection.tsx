@@ -20,6 +20,12 @@ const specialists = [
     role: "Логопед", 
     description: "Специалист по коррекции дислексии и дисграфии у старших школьников",
     avatar: "https://cdn.poehali.dev/files/093e20f2-e0ae-4a2e-9d50-61e102662d3e.jpg"
+  },
+  {
+    name: "Валерия Камнева",
+    role: "Дефектолог, логопед, нейропсихолог",
+    description: "Многопрофильный специалист",
+    avatar: "https://cdn.poehali.dev/files/b998fb86-1c75-4e05-aa20-53b45bbe48ee.jpeg"
   }
 ];
 
