@@ -31,7 +31,7 @@ const specialists = [
     name: "Нонна Мельникова",
     role: "Логопед, нейропсихолог",
     description: "Специалист по развитию регуляторных функций",
-    avatar: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/73147e4d-d951-4f4e-9290-b5b3a4f39212.jpg"
+    avatar: "https://cdn.poehali.dev/files/30606456-0ee2-4e60-9645-922284dd63d0.jpeg"
   }
 ];
 
@@ -70,26 +70,52 @@ export default function SpecialistsSection() {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Наши специалисты</h2>
         </div>
 
-        {/* Desktop Grid */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {specialists.map((specialist, index) => (
-            <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center">
-              <CardContent className="p-6">
-                <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
-                  <img 
-                    src={specialist.avatar} 
-                    alt={specialist.name}
-                    className="w-full h-full object-cover object-[center_20%]"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
-                <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
-                <p className="text-gray-600 text-sm leading-relaxed">{specialist.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Desktop Scrollable */}
+        <div className="hidden md:block relative">
+          {canScrollLeft && (
+            <button
+              onClick={scrollLeft}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center"
+            >
+              <Icon name="ChevronLeft" size={20} className="text-gray-600" />
+            </button>
+          )}
+          {canScrollRight && (
+            <button
+              onClick={scrollRight}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center"
+            >
+              <Icon name="ChevronRight" size={20} className="text-gray-600" />
+            </button>
+          )}
+          <div
+            ref={scrollContainerRef}
+            onScroll={checkScrollPosition}
+            className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+          >
+            {specialists.map((specialist, index) => (
+              <Card key={index} className="border-green-100 hover:shadow-lg transition-all duration-300 text-center min-w-[280px] snap-start flex-shrink-0">
+                <CardContent className="p-6">
+                  <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-green-200">
+                    <img 
+                      src={specialist.avatar} 
+                      alt={specialist.name}
+                      className="w-full h-full object-cover object-[center_20%]"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{specialist.name}</h3>
+                  <p className="text-green-600 font-medium mb-3">{specialist.role}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{specialist.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
 
         {/* Mobile Swipeable */}
