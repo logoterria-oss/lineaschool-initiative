@@ -12,10 +12,10 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
         <div className="flex justify-end md:justify-between items-center h-14 sm:h-16 md:h-20 lg:h-24">
           <a href="/" className="flex items-center space-x-2 xs:space-x-2.5 sm:space-x-3 md:space-x-4 min-w-0 flex-shrink overflow-hidden order-2 md:order-1">
+            <span className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 truncate">LineaSchool</span>
             <div className="w-11 h-11 xs:w-12 xs:h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 lg:w-16 lg:h-16 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
               <Icon name="BookOpen" size={22} className="text-white xs:w-6 xs:h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
             </div>
-            <span className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 truncate">LineaSchool</span>
           </a>
           <div className="hidden md:flex items-center space-x-3 lg:space-x-6 flex-shrink-0 order-2">
             <Button 
