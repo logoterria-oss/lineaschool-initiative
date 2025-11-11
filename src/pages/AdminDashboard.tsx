@@ -10,30 +10,30 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       <AdminHeader showOnlyHome />
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8 md:mb-12">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
               Панель администратора
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-base md:text-lg text-gray-600">
               Выберите раздел для работы
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
             <Card 
               className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-green-500"
               onClick={() => navigate('/admin/reports')}
             >
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <Icon name="FileText" className="text-green-600" size={32} />
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex items-center gap-2 md:gap-3 mb-2">
+                  <div className="p-2 md:p-3 bg-green-100 rounded-lg">
+                    <Icon name="FileText" className="text-green-600" size={24} />
                   </div>
-                  <CardTitle className="text-2xl">Логопедические заключения</CardTitle>
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Логопедические заключения</CardTitle>
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm md:text-base">
                   Просмотр и управление диагностическими отчётами
                 </CardDescription>
               </CardHeader>
@@ -59,14 +59,14 @@ const AdminDashboard = () => {
               className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-500"
               onClick={() => navigate('/admin/dictations')}
             >
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Icon name="PenTool" className="text-blue-600" size={32} />
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex items-center gap-2 md:gap-3 mb-2">
+                  <div className="p-2 md:p-3 bg-blue-100 rounded-lg">
+                    <Icon name="PenTool" className="text-blue-600" size={24} />
                   </div>
-                  <CardTitle className="text-2xl">Проверка диктантов</CardTitle>
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Проверка диктантов</CardTitle>
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm md:text-base">
                   Разметка и анализ диктантов из Telegram
                 </CardDescription>
               </CardHeader>
@@ -92,14 +92,14 @@ const AdminDashboard = () => {
               className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-purple-500"
               onClick={() => navigate('/admin/questionnaires')}
             >
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <Icon name="ClipboardList" className="text-purple-600" size={32} />
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex items-center gap-2 md:gap-3 mb-2">
+                  <div className="p-2 md:p-3 bg-purple-100 rounded-lg">
+                    <Icon name="ClipboardList" className="text-purple-600" size={24} />
                   </div>
-                  <CardTitle className="text-2xl">Анкеты родителей</CardTitle>
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Анкеты родителей</CardTitle>
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm md:text-base">
                   Просмотр заполненных родительских анкет
                 </CardDescription>
               </CardHeader>
@@ -125,14 +125,14 @@ const AdminDashboard = () => {
               className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-orange-500"
               onClick={() => navigate('/admin/payment-leads')}
             >
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <Icon name="CreditCard" className="text-orange-600" size={32} />
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex items-center gap-2 md:gap-3 mb-2">
+                  <div className="p-2 md:p-3 bg-orange-100 rounded-lg">
+                    <Icon name="CreditCard" className="text-orange-600" size={24} />
                   </div>
-                  <CardTitle className="text-2xl">Заявки на оплату</CardTitle>
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Заявки на оплату</CardTitle>
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm md:text-base">
                   Контакты клиентов, которые начали оплату
                 </CardDescription>
               </CardHeader>

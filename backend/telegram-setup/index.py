@@ -49,37 +49,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         if action == 'setWebhook':
-            # Устанавливаем вебхук и аватар бота
+            # Устанавливаем вебхук
             webhook_set_url = f'https://api.telegram.org/bot{bot_token}/setWebhook?url={webhook_url}'
             with urllib.request.urlopen(webhook_set_url) as response:
                 result = json.loads(response.read().decode('utf-8'))
-            
-            # Скачиваем изображение аватара
-            avatar_url = 'https://cdn.poehali.dev/files/aa1cc79e-921d-4830-adc4-37303f0ec98a.jpeg'
-            photo_result = {'ok': False}
-            try:
-                # Скачиваем изображение
-                with urllib.request.urlopen(avatar_url) as img_response:
-                    image_data = img_response.read()
-                
-                # Создаем multipart/form-data запрос
-                boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW'
-                body = (
-                    f'--{boundary}\r\n'
-                    f'Content-Disposition: form-data; name="photo"; filename="avatar.jpg"\r\n'
-                    f'Content-Type: image/jpeg\r\n\r\n'
-                ).encode('utf-8') + image_data + f'\r\n--{boundary}--\r\n'.encode('utf-8')
-                
-                photo_req = urllib.request.Request(
-                    f'https://api.telegram.org/bot{bot_token}/setUserProfilePhoto',
-                    data=body,
-                    headers={'Content-Type': f'multipart/form-data; boundary={boundary}'}
-                )
-                
-                with urllib.request.urlopen(photo_req) as photo_response:
-                    photo_result = json.loads(photo_response.read().decode('utf-8'))
-            except Exception as photo_error:
-                print(f'Avatar error: {str(photo_error)}')
             
             return {
                 'statusCode': 200,
@@ -88,8 +61,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'action': 'setWebhook',
                     'success': result.get('ok'),
                     'description': result.get('description'),
-                    'webhook_url': webhook_url,
-                    'avatar_set': photo_result.get('ok')
+                    'webhook_url': webhook_url
                 }),
                 'isBase64Encoded': False
             }
