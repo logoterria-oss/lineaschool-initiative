@@ -9,13 +9,13 @@ export default function Navigation() {
   return (
     <>
     <nav className="bg-white/95 backdrop-blur-md shadow-md border-b border-green-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 sm:h-20 md:h-24">
-          <a href="/" className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 min-w-0 flex-shrink">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Icon name="BookOpen" size={20} className="text-white sm:w-6 sm:h-6 md:w-8 md:h-8" />
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-14 sm:h-20 md:h-24">
+          <a href="/" className="flex items-center space-x-1.5 sm:space-x-3 md:space-x-4 min-w-0 flex-shrink overflow-hidden">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="BookOpen" size={18} className="text-white sm:w-6 sm:h-6 md:w-8 md:h-8" />
             </div>
-            <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 truncate">LineaSchool</span>
+            <span className="text-base sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 truncate">LineaSchool</span>
           </a>
           <div className="hidden md:flex items-center space-x-3 lg:space-x-6 flex-shrink-0">
             <Button 
