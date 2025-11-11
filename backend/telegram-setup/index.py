@@ -49,21 +49,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         if action == 'setWebhook':
-            # Устанавливаем вебхук
-            url = f'https://api.telegram.org/bot{bot_token}/setWebhook?url={webhook_url}'
-            with urllib.request.urlopen(url) as response:
+            # Устанавливаем вебхук и аватар бота
+            webhook_set_url = f'https://api.telegram.org/bot{bot_token}/setWebhook?url={webhook_url}'
+            with urllib.request.urlopen(webhook_set_url) as response:
                 result = json.loads(response.read().decode('utf-8'))
-                return {
-                    'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({
-                        'action': 'setWebhook',
-                        'success': result.get('ok'),
-                        'description': result.get('description'),
-                        'webhook_url': webhook_url
-                    }),
-                    'isBase64Encoded': False
-                }
+            
+            # Устанавливаем аватар бота
+            avatar_url = 'https://cdn.poehali.dev/files/aa1cc79e-921d-4830-adc4-37303f0ec98a.jpeg'
+            photo_req = urllib.request.Request(
+                f'https://api.telegram.org/bot{bot_token}/setUserProfilePhoto',
+                data=json.dumps({'photo': avatar_url}).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            try:
+                with urllib.request.urlopen(photo_req) as photo_response:
+                    photo_result = json.loads(photo_response.read().decode('utf-8'))
+            except:
+                photo_result = {'ok': False}
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'action': 'setWebhook',
+                    'success': result.get('ok'),
+                    'description': result.get('description'),
+                    'webhook_url': webhook_url,
+                    'avatar_set': photo_result.get('ok')
+                }),
+                'isBase64Encoded': False
+            }
         
         elif action == 'deleteWebhook':
             # Удаляем вебхук
