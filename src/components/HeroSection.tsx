@@ -10,35 +10,35 @@ export default function HeroSection() {
     <section className="relative py-8 lg:py-12 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="px-2 sm:px-0">
-            <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">🎓 Для детей 8-18 лет</div>
-            <h1 className="text-4xl sm:text-6xl font-bold mb-6 sm:mb-8 leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,197,94,0.15)]">
+          <div className="px-0">
+            <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold mb-3 sm:mb-4 md:mb-6">🎓 Для детей 8-18 лет</div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,197,94,0.15)]">
               Онлайн-коррекция дислексии и дисграфии
             </h1>
             
-            <div className="mb-6 sm:mb-8 max-w-xl">
+            <div className="mb-4 sm:mb-6 md:mb-8 w-full">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 w-full transition-all duration-300 shadow-lg"
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-xs sm:text-sm md:text-base lg:text-lg px-3 sm:px-4 md:px-6 lg:px-8 py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg"
                 onClick={() => setIsBookingModalOpen(true)}
               >
-                <Icon name="Calendar" className="mr-1 sm:mr-2" size={18} />
-                <span className="whitespace-nowrap">Получить БЕСПЛАТНУЮ диагностику</span>
+                <Icon name="Calendar" className="mr-1 sm:mr-2 flex-shrink-0" size={16} />
+                <span className="text-center leading-tight">Получить БЕСПЛАТНУЮ диагностику</span>
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 max-w-xl items-start">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 w-full items-start">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 leading-tight">200+</div>
-                <div className="text-xs text-gray-600">довольных семей</div>
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600 leading-tight">200+</div>
+                <div className="text-[10px] sm:text-xs text-gray-600 leading-tight mt-0.5">довольных семей</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 whitespace-nowrap leading-tight">от 970₽</div>
-                <div className="text-xs text-gray-600">за урок</div>
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600 leading-tight">от 970₽</div>
+                <div className="text-[10px] sm:text-xs text-gray-600 leading-tight mt-0.5">за урок</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 leading-tight">98%</div>
-                <div className="text-xs text-gray-600">успешных кейсов</div>
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600 leading-tight">98%</div>
+                <div className="text-[10px] sm:text-xs text-gray-600 leading-tight mt-0.5">успешных кейсов</div>
               </div>
             </div>
           </div>
