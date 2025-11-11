@@ -133,17 +133,17 @@ const TelegramSetup = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Настройка Telegram бота</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Настройка Telegram бота</h1>
           <p className="text-gray-600">Управление вебхуком для приёма диктантов</p>
         </div>
 
-        <div className="bg-white rounded-lg border p-4 md:p-6 mb-4">
-          <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6">
+        <div className="bg-white rounded-lg border p-6 mb-4">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-lg md:text-xl font-semibold mb-2">Статус вебхука</h2>
+              <h2 className="text-xl font-semibold mb-2">Статус вебхука</h2>
               <div className="space-y-2">
                 {webhookInfo?.is_configured ? (
                   <div className="flex items-center gap-2 text-green-600">
@@ -206,9 +206,9 @@ const TelegramSetup = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-lg border p-4 md:p-6">
-          <h2 className="text-lg md:text-xl font-semibold mb-4">Действия</h2>
-          <div className="flex flex-col sm:flex-row gap-3">
+        <div className="bg-white rounded-lg border p-6">
+          <h2 className="text-xl font-semibold mb-4">Действия</h2>
+          <div className="flex gap-3">
             <Button
               onClick={setWebhook}
               disabled={actionLoading}
@@ -232,8 +232,8 @@ const TelegramSetup = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border p-4 md:p-6 mt-6">
-          <h2 className="text-lg md:text-xl font-semibold mb-4">Тексты сообщений бота</h2>
+        <div className="bg-white rounded-lg border p-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">Тексты сообщений бота</h2>
           <div className="space-y-4">
             {Object.entries(botMessages).map(([key, message]) => (
               <div key={key} className="border rounded-lg p-4">

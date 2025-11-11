@@ -169,11 +169,11 @@ const DictationsAdmin = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
-      <div className="p-4 md:p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            <Icon name="FileText" className="inline mr-2" size={24} />
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+            <Icon name="FileText" className="inline mr-2" size={32} />
             Диктанты для проверки
           </h1>
           <Button onClick={loadDictations} variant="outline">
@@ -182,9 +182,9 @@ const DictationsAdmin = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[350px_1fr] gap-4 md:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
           <div className="space-y-4">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">Список диктантов</h2>
+            <h2 className="text-xl font-semibold mb-4">Список диктантов</h2>
             {dictations.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center text-gray-500">
