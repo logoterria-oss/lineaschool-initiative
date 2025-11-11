@@ -11,11 +11,11 @@ export default function Navigation() {
     <nav className="bg-white/95 backdrop-blur-md shadow-md border-b border-green-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16 md:h-20 lg:h-24">
-          <a href="/" className="flex items-center space-x-1.5 xs:space-x-2 sm:space-x-3 md:space-x-4 min-w-0 flex-shrink overflow-hidden">
-            <div className="w-9 h-9 xs:w-11 xs:h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Icon name="BookOpen" size={18} className="text-white xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
+          <a href="/" className="flex items-center space-x-2 xs:space-x-2.5 sm:space-x-3 md:space-x-4 min-w-0 flex-shrink overflow-hidden">
+            <div className="w-11 h-11 xs:w-12 xs:h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 lg:w-16 lg:h-16 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="BookOpen" size={22} className="text-white xs:w-6 xs:h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
             </div>
-            <span className="text-base xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 truncate">LineaSchool</span>
+            <span className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 truncate">LineaSchool</span>
           </a>
           <div className="hidden md:flex items-center space-x-3 lg:space-x-6 flex-shrink-0">
             <Button 
@@ -41,15 +41,7 @@ export default function Navigation() {
               <Icon name="Settings" size={20} />
             </a>
           </div>
-          <div className="flex md:hidden items-center space-x-2">
-            <Button 
-              size="sm" 
-              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 text-xs"
-              onClick={() => setIsBookingModalOpen(true)}
-            >
-              Записаться
-            </Button>
-          </div>
+
         </div>
       </div>
 
