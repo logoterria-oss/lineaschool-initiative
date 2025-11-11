@@ -11,15 +11,15 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="px-0">
-            <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 rounded-full text-[15px] xs:text-[18px] sm:text-sm font-semibold mb-2 xs:mb-3 sm:mb-4 md:mb-6">🎓 Для детей 8-18 лет</div>
-            <h1 className="text-[2.8rem] xs:text-[3.75rem] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 xs:mb-4 sm:mb-6 md:mb-8 leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,197,94,0.15)]">
+            <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] xs:text-[14px] sm:text-sm font-semibold mb-2 xs:mb-3 sm:mb-4 md:mb-6">🎓 Для детей 8-18 лет</div>
+            <h1 className="text-[2.25rem] xs:text-[3rem] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 xs:mb-4 sm:mb-6 md:mb-8 leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,197,94,0.15)]">
               Онлайн-коррекция дислексии и дисграфии
             </h1>
             
             <div className="mb-3 xs:mb-4 sm:mb-6 md:mb-8 w-full">
               <Button 
                 size="sm" 
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[15px] xs:text-[18px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px]"
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px]"
                 onClick={() => setIsBookingModalOpen(true)}
               >
                 <Icon name="Calendar" className="mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0" size={14} />
@@ -29,16 +29,16 @@ export default function HeroSection() {
 
             <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 w-full items-start">
               <div className="text-center px-0.5">
-                <div className="text-[1.5rem] xs:text-[1.875rem] sm:text-xl md:text-2xl font-bold text-green-600 leading-tight">200+</div>
-                <div className="text-[13.5px] xs:text-[15px] sm:text-xs text-gray-600 leading-tight mt-0.5">довольных семей</div>
+                <div className="text-[1.2rem] xs:text-[1.5rem] sm:text-xl md:text-2xl font-bold text-green-600 leading-tight">200+</div>
+                <div className="text-[11px] xs:text-[13px] sm:text-xs text-gray-600 leading-tight mt-0.5">довольных семей</div>
               </div>
               <div className="text-center px-0.5">
-                <div className="text-[1.5rem] xs:text-[1.875rem] sm:text-xl md:text-2xl font-bold text-green-600 leading-tight whitespace-nowrap">от 970₽</div>
-                <div className="text-[13.5px] xs:text-[15px] sm:text-xs text-gray-600 leading-tight mt-0.5">за урок</div>
+                <div className="text-[1.2rem] xs:text-[1.5rem] sm:text-xl md:text-2xl font-bold text-green-600 leading-tight whitespace-nowrap">от 970₽</div>
+                <div className="text-[11px] xs:text-[13px] sm:text-xs text-gray-600 leading-tight mt-0.5">за урок</div>
               </div>
               <div className="text-center px-0.5">
-                <div className="text-[1.5rem] xs:text-[1.875rem] sm:text-xl md:text-2xl font-bold text-green-600 leading-tight">98%</div>
-                <div className="text-[13.5px] xs:text-[15px] sm:text-xs text-gray-600 leading-tight mt-0.5">успешных кейсов</div>
+                <div className="text-[1.2rem] xs:text-[1.5rem] sm:text-xl md:text-2xl font-bold text-green-600 leading-tight">98%</div>
+                <div className="text-[11px] xs:text-[13px] sm:text-xs text-gray-600 leading-tight mt-0.5">успешных кейсов</div>
               </div>
             </div>
           </div>
