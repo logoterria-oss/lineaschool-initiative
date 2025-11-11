@@ -81,8 +81,42 @@ export default function MethodologySection() {
 
           
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start lg:items-center">
+            {/* Правая колонка - большая схема мозга */}
+            <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 lg:p-8 order-1 lg:order-2">
+              <h4 className="text-base sm:text-lg font-bold text-center mb-4">Карта активности мозга</h4>
+              <div className="h-48 sm:h-64 lg:h-96 flex items-center justify-center">
+                <div className="w-full max-w-xs sm:max-w-sm lg:max-w-none">
+                  <BrainSVG activeAreas={['frontal', 'parietal', 'temporal', 'occipital', 'motor']} />
+                </div>
+              </div>
+              
+              {/* Легенда */}
+              <div className="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-pink-300 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Лобная доля</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-yellow-400 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Теменная доля</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Височная доля</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-red-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Затылочная доля</span>
+                </div>
+                <div className="flex items-center sm:col-span-2 sm:justify-center">
+                  <div className="w-4 h-4 bg-cyan-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
+                  <span>Первичная моторная кора</span>
+                </div>
+              </div>
+            </div>
+
             {/* Левая колонка - навыки */}
-            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8 order-2 lg:order-1">
               <div className="border-l-4 border-purple-500 pl-3 sm:pl-4 lg:pl-6">
                 <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Сукцессивное восприятие</h4>
                 <p className="text-sm sm:text-base text-gray-600 mb-3">Последовательное восприятие, которое необходимо для того, чтобы буквы и слоги не "путались" при письме и чтении, - регуляторная функция</p>
@@ -127,40 +161,6 @@ export default function MethodologySection() {
                 <div className="flex items-center text-sm text-green-600">
                   <Icon name="MapPin" size={16} className="mr-2" />
                   Лобные, височные, теменные доли
-                </div>
-              </div>
-            </div>
-
-            {/* Правая колонка - большая схема мозга */}
-            <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 lg:p-8">
-              <h4 className="text-base sm:text-lg font-bold text-center mb-4">Карта активности мозга</h4>
-              <div className="h-48 sm:h-64 lg:h-96 flex items-center justify-center">
-                <div className="w-full max-w-xs sm:max-w-sm lg:max-w-none">
-                  <BrainSVG activeAreas={['frontal', 'parietal', 'temporal', 'occipital', 'motor']} />
-                </div>
-              </div>
-              
-              {/* Легенда */}
-              <div className="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-pink-300 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
-                  <span>Лобная доля</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-yellow-400 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
-                  <span>Теменная доля</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-green-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
-                  <span>Височная доля</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-red-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
-                  <span>Затылочная доля</span>
-                </div>
-                <div className="flex items-center sm:col-span-2 sm:justify-center">
-                  <div className="w-4 h-4 bg-cyan-500 rounded flex-shrink-0 mr-2 sm:mr-3"></div>
-                  <span>Первичная моторная кора</span>
                 </div>
               </div>
             </div>
