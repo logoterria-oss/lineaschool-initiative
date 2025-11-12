@@ -76,20 +76,22 @@ export default function SpecialistsSection() {
 
         {/* Desktop Scrollable */}
         <div className="hidden md:block relative">
-          <button
-            onClick={scrollLeft}
-            disabled={!canScrollLeft}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:bg-green-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <Icon name="ChevronLeft" size={24} className="text-gray-700" />
-          </button>
-          <button
-            onClick={scrollRight}
-            disabled={!canScrollRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:bg-green-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <Icon name="ChevronRight" size={24} className="text-gray-700" />
-          </button>
+          {canScrollLeft && (
+            <button
+              onClick={scrollLeft}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:bg-green-50 transition-all cursor-pointer"
+            >
+              <Icon name="ChevronLeft" size={24} className="text-gray-700" />
+            </button>
+          )}
+          {canScrollRight && (
+            <button
+              onClick={scrollRight}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:bg-green-50 transition-all cursor-pointer"
+            >
+              <Icon name="ChevronRight" size={24} className="text-gray-700" />
+            </button>
+          )}
           <div
             ref={desktopScrollRef}
             onScroll={checkScrollPosition}
