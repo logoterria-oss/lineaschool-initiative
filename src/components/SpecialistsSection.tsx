@@ -36,13 +36,15 @@ const specialists = [
 ];
 
 export default function SpecialistsSection() {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const desktopScrollRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   const checkScrollPosition = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    const container = window.innerWidth >= 768 ? desktopScrollRef.current : mobileScrollRef.current;
+    if (container) {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
       setCanScrollLeft(scrollLeft > 0);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
@@ -56,11 +58,13 @@ export default function SpecialistsSection() {
   }, []);
 
   const scrollLeft = () => {
-    scrollContainerRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
+    const container = window.innerWidth >= 768 ? desktopScrollRef.current : mobileScrollRef.current;
+    container?.scrollBy({ left: -300, behavior: 'smooth' });
   };
 
   const scrollRight = () => {
-    scrollContainerRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
+    const container = window.innerWidth >= 768 ? desktopScrollRef.current : mobileScrollRef.current;
+    container?.scrollBy({ left: 300, behavior: 'smooth' });
   };
 
   return (
@@ -87,7 +91,7 @@ export default function SpecialistsSection() {
             <Icon name="ChevronRight" size={24} className="text-gray-700" />
           </button>
           <div
-            ref={scrollContainerRef}
+            ref={desktopScrollRef}
             onScroll={checkScrollPosition}
             className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
             style={{
@@ -135,7 +139,7 @@ export default function SpecialistsSection() {
             </button>
           )}
           <div
-            ref={scrollContainerRef}
+            ref={mobileScrollRef}
             onScroll={checkScrollPosition}
             className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-2"
             style={{
