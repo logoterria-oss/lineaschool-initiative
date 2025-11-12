@@ -19,7 +19,7 @@ export default function HeroSection() {
             <div className="mb-3 xs:mb-4 sm:mb-6 md:mb-8 w-full">
               <Button 
                 size="sm" 
-                className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent after:-translate-x-full lg:after:animate-shimmer after:pointer-events-none"
+                className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] lg:button-shine"
                 onClick={() => setIsBookingModalOpen(true)}
               >
                 <Icon name="Calendar" className="mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0 relative z-10" size={14} />
