@@ -288,7 +288,7 @@ const CheckModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
       {/* Верхняя панель */}
       <div className="bg-white border-b shadow-sm p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">Проверка диктанта</h2>
           
           {/* Счетчики */}

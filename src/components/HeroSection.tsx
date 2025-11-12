@@ -8,7 +8,7 @@ export default function HeroSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   return (
     <section className="relative py-4 sm:py-6 md:py-8 lg:py-12 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="px-0">
             <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] xs:text-[14px] sm:text-sm font-semibold mb-2 xs:mb-3 sm:mb-4 md:mb-6">🎓 Для детей 8-18 лет</div>

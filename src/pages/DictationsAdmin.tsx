@@ -170,7 +170,7 @@ const DictationsAdmin = () => {
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
       <div className="p-4 md:p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
             <Icon name="FileText" className="inline mr-2" size={24} />

@@ -104,7 +104,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4">
+    <div className="w-full max-w-[1400px] mx-auto p-4">
       <Instructions />
       
       {state.showSaveConfirm && (
