@@ -95,10 +95,10 @@ export default {
 				},
 				shimmer: {
 					'0%': {
-						transform: 'translateX(-200%)'
+						transform: 'translateX(-100%)'
 					},
 					'100%': {
-						transform: 'translateX(200%)'
+						transform: 'translateX(100%)'
 					}
 				}
 			},
