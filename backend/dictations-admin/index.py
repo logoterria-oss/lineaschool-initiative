@@ -54,8 +54,14 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 markup_data = None
                 if d.get('markup_data'):
                     try:
-                        markup_data = json.loads(d['markup_data'])
-                    except:
+                        parsed = json.loads(d['markup_data'])
+                        # If it's a string inside JSON, parse again
+                        if isinstance(parsed, str):
+                            markup_data = json.loads(parsed)
+                        else:
+                            markup_data = parsed
+                    except Exception as e:
+                        print(f'Failed to parse markup_data: {e}')
                         pass
                 
                 result = {
@@ -128,10 +134,14 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 annotated_image_raw = body_data.get('annotated_image', '')
                 
                 print(f'Saving annotation for ID {dictation_id}')
+                print(f'markup_data type: {type(markup_data_raw)}')
                 print(f'markup_data length: {len(str(markup_data_raw))}')
                 
-                # Convert to proper format and escape
-                if isinstance(markup_data_raw, (dict, list)):
+                # If it's already a JSON string, keep it as is
+                # If it's a dict/list, convert to JSON string
+                if isinstance(markup_data_raw, str):
+                    markup_data = markup_data_raw
+                elif isinstance(markup_data_raw, (dict, list)):
                     markup_data = json.dumps(markup_data_raw)
                 else:
                     markup_data = str(markup_data_raw)
