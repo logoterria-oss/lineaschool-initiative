@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,6 +8,7 @@ import Icon from '@/components/ui/icon';
 import ImageAnnotator from '@/components/ImageAnnotator';
 import AnnotatedImageView, { AnnotatedImageViewRef } from '@/components/AnnotatedImageView';
 import AdminHeader from '@/components/AdminHeader';
+import { toast } from '@/hooks/use-toast';
 
 interface Dictation {
   id: number;
@@ -25,6 +27,7 @@ interface Dictation {
 }
 
 const DictationsAdmin = () => {
+  const navigate = useNavigate();
   const [dictations, setDictations] = useState<Dictation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDictation, setSelectedDictation] = useState<Dictation | null>(null);
@@ -160,7 +163,41 @@ const DictationsAdmin = () => {
     }
   };
 
+  const handleSendToDiagForm = async () => {
+    if (!selectedDictation || !selectedDictation.markup_data) return;
 
+    try {
+      const markupData = selectedDictation.markup_data;
+      const greenCount = markupData.greenCount || 0;
+      const redCount = markupData.redCount || 0;
+      const annotatedImage = selectedDictation.annotated_image;
+
+      const dictationData = {
+        childName: selectedDictation.child_name,
+        greenCount,
+        redCount,
+        annotatedImage
+      };
+
+      localStorage.setItem('dictation_to_form', JSON.stringify(dictationData));
+      
+      toast({
+        title: 'Данные подготовлены',
+        description: 'Перенаправляем в форму диагностики...'
+      });
+
+      setTimeout(() => {
+        navigate('/diag_form');
+      }, 500);
+    } catch (error) {
+      console.error('Error preparing dictation data:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось подготовить данные для формы',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -277,27 +314,40 @@ const DictationsAdmin = () => {
                               className="w-full h-auto"
                             />
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setShowAnnotator(true)}
-                              className="flex-1"
-                            >
-                              <Icon name="Pencil" className="mr-1" size={14} />
-                              {selectedDictation.markup_data ? 'Редактировать проверку' : 'Разметить ошибки'}
-                            </Button>
-                            {selectedDictation.markup_data && (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                  annotatedImageRef.current?.downloadImage(`${selectedDictation.child_name}_проверка.png`);
-                                }}
+                                onClick={() => setShowAnnotator(true)}
                                 className="flex-1"
                               >
-                                <Icon name="Download" className="mr-1" size={14} />
-                                Скачать
+                                <Icon name="Pencil" className="mr-1" size={14} />
+                                {selectedDictation.markup_data ? 'Редактировать проверку' : 'Разметить ошибки'}
+                              </Button>
+                              {selectedDictation.markup_data && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    annotatedImageRef.current?.downloadImage(`${selectedDictation.child_name}_проверка.png`);
+                                  }}
+                                  className="flex-1"
+                                >
+                                  <Icon name="Download" className="mr-1" size={14} />
+                                  Скачать
+                                </Button>
+                              )}
+                            </div>
+                            {selectedDictation.markup_data && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={handleSendToDiagForm}
+                                className="w-full bg-blue-600 hover:bg-blue-700"
+                              >
+                                <Icon name="FileText" className="mr-1" size={14} />
+                                Отправить в форму диагностики
                               </Button>
                             )}
                           </div>
