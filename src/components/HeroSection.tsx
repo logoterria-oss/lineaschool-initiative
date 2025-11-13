@@ -9,7 +9,7 @@ export default function HeroSection() {
   return (
     <section className="relative py-4 sm:py-6 md:py-8 lg:py-12 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
           <div className="px-0">
             <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] xs:text-[14px] sm:text-sm font-semibold mb-2 xs:mb-3 sm:mb-4 md:mb-6">🎓 Для детей 8-18 лет</div>
             <h1 className="text-[2.25rem] xs:text-[3rem] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 xs:mb-4 sm:mb-6 md:mb-8 leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,197,94,0.15)]">
@@ -27,7 +27,7 @@ export default function HeroSection() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 lg:gap-8 w-full items-center mb-3 sm:mb-6 md:mb-8 lg:mb-0">
+            <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 lg:gap-8 w-full items-center">
               <div className="text-center px-0.5">
                 <div className="text-[1.2rem] xs:text-[1.5rem] sm:text-xl md:text-2xl lg:text-2xl font-bold text-green-600 leading-tight">200+</div>
                 <div className="text-[11px] xs:text-[13px] sm:text-xs lg:text-sm text-gray-600 leading-tight mt-0.5">довольных семей</div>
@@ -43,7 +43,7 @@ export default function HeroSection() {
             </div>
           </div>
           
-          <div className="relative mt-6 sm:mt-0">
+          <div className="relative">
             <BeforeAfterSlider
               examples={[
                 {
