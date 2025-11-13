@@ -158,9 +158,6 @@ const DictationsAdmin = () => {
     } catch (error) {
       console.error('Error saving annotation:', error);
     }
-    
-    setShowAnnotator(false);
-    localStorage.removeItem('annotator_state');
   };
 
 
