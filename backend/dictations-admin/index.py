@@ -93,6 +93,13 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             
             result = []
             for d in dictations:
+                markup_data = None
+                if d.get('markup_data'):
+                    try:
+                        markup_data = json.loads(d['markup_data'])
+                    except:
+                        pass
+                
                 result.append({
                     'id': d['id'],
                     'telegram_user_id': d['telegram_user_id'],
@@ -100,6 +107,8 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
                     'photo_url': d['photo_url'],
+                    'markup_data': markup_data,
+                    'annotated_image': d.get('annotated_image'),
                     'has_annotation': bool(d.get('annotated_image')),
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
