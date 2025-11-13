@@ -108,8 +108,46 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   };
 
   const handleRotate = () => {
-    state.setRotation(prev => (prev + 90) % 360);
-    setTimeout(() => saveHandlers.saveToHistory(), 0);
+    const canvas = state.canvasRef.current;
+    const img = state.imageRef.current;
+    
+    if (!canvas || !img) {
+      state.setRotation(prev => (prev + 90) % 360);
+      setTimeout(() => saveHandlers.saveToHistory(), 0);
+      return;
+    }
+
+    const currentImageSrc = state.processedImageUrl || imageUrl;
+    const tempImg = new Image();
+    tempImg.crossOrigin = 'anonymous';
+    tempImg.src = currentImageSrc;
+    
+    tempImg.onload = () => {
+      const newRotation = (state.rotation + 90) % 360;
+      
+      const rotatedCanvas = document.createElement('canvas');
+      const ctx = rotatedCanvas.getContext('2d');
+      if (!ctx) return;
+
+      if (newRotation % 180 !== 0) {
+        rotatedCanvas.width = tempImg.height;
+        rotatedCanvas.height = tempImg.width;
+      } else {
+        rotatedCanvas.width = tempImg.width;
+        rotatedCanvas.height = tempImg.height;
+      }
+
+      ctx.save();
+      ctx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+      ctx.rotate((newRotation * Math.PI) / 180);
+      ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
+      ctx.restore();
+
+      const rotatedImageUrl = rotatedCanvas.toDataURL('image/png');
+      state.setProcessedImageUrl(rotatedImageUrl);
+      state.setRotation(0);
+      setTimeout(() => saveHandlers.saveToHistory(), 0);
+    };
   };
 
   return (
@@ -188,7 +226,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
           />
         ) : (
           <AnnotationCanvas
-            imageUrl={state.processedImageUrl || imageUrl}
+            imageUrl={imageUrl}
+            processedImageUrl={state.processedImageUrl}
             markers={state.markers}
             underlines={state.underlines}
             markerColor={state.markerColor}
@@ -197,7 +236,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
             hoveredMarkerIndex={state.hoveredMarkerIndex}
             hoveredUnderlineIndex={state.hoveredUnderlineIndex}
             cropArea={state.cropArea}
-            rotation={state.rotation}
+            rotation={state.processedImageUrl ? 0 : state.rotation}
             onImageLoad={saveHandlers.handleImageLoad}
             onMarkerAdd={annotationHandlers.handleMarkerAdd}
             onMarkerRemove={annotationHandlers.handleMarkerRemove}

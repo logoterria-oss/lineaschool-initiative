@@ -23,68 +23,23 @@ export const createCropHandlers = (
       return;
     }
 
-    const img = imageRef.current;
-    if (!img) {
-      setCropArea(area);
-      setMarkerColor('green');
-      return;
-    }
-
-    let adjustedArea = { ...area };
-    const w = canvas.width;
-    const h = canvas.height;
-
-    if (rotation === 90) {
-      adjustedArea = {
-        x: area.y,
-        y: w - area.x - area.width,
-        width: area.height,
-        height: area.width
-      };
-    } else if (rotation === 180) {
-      adjustedArea = {
-        x: w - area.x - area.width,
-        y: h - area.y - area.height,
-        width: area.width,
-        height: area.height
-      };
-    } else if (rotation === 270) {
-      adjustedArea = {
-        x: h - area.y - area.height,
-        y: area.x,
-        width: area.height,
-        height: area.width
-      };
-    }
-
-    const sourceCanvas = document.createElement('canvas');
-    const sourceCtx = sourceCanvas.getContext('2d');
-    if (!sourceCtx) return;
-
-    sourceCanvas.width = img.naturalWidth;
-    sourceCanvas.height = img.naturalHeight;
-    sourceCtx.drawImage(img, 0, 0);
-
-    const scaleX = img.naturalWidth / canvas.width;
-    const scaleY = img.naturalHeight / canvas.height;
-
     const tempCanvas = document.createElement('canvas');
     const ctx = tempCanvas.getContext('2d');
     if (!ctx) return;
 
-    tempCanvas.width = adjustedArea.width * scaleX;
-    tempCanvas.height = adjustedArea.height * scaleY;
+    tempCanvas.width = area.width;
+    tempCanvas.height = area.height;
 
     ctx.drawImage(
-      sourceCanvas,
-      adjustedArea.x * scaleX,
-      adjustedArea.y * scaleY,
-      adjustedArea.width * scaleX,
-      adjustedArea.height * scaleY,
+      canvas,
+      area.x,
+      area.y,
+      area.width,
+      area.height,
       0,
       0,
-      tempCanvas.width,
-      tempCanvas.height
+      area.width,
+      area.height
     );
 
     const croppedImageUrl = tempCanvas.toDataURL('image/png');
@@ -97,10 +52,10 @@ export const createCropHandlers = (
     
     const adjustedUnderlines = underlines.map(underline => ({
       ...underline,
-      startX: underline.startX - area.x,
-      startY: underline.startY - area.y,
-      endX: underline.endX - area.x,
-      endY: underline.endY - area.y
+      x1: underline.x1 - area.x,
+      y1: underline.y1 - area.y,
+      x2: underline.x2 - area.x,
+      y2: underline.y2 - area.y
     }));
     
     setMarkers(adjustedMarkers);
@@ -127,8 +82,7 @@ export const createCropHandlers = (
 
       console.log('applyCropBeforeCheck:', {
         canvasSize: { w: canvas.width, h: canvas.height },
-        cropArea,
-        rotation
+        cropArea
       });
 
       const tempCanvas = document.createElement('canvas');
@@ -155,8 +109,6 @@ export const createCropHandlers = (
 
       const croppedImageUrl = tempCanvas.toDataURL('image/png');
       console.log('Cropped image created:', { w: tempCanvas.width, h: tempCanvas.height });
-      console.log('Markers BEFORE adjustment:', markers);
-      console.log('CropArea:', cropArea);
       
       const adjustedMarkers = markers.map(marker => ({
         ...marker,
@@ -166,13 +118,11 @@ export const createCropHandlers = (
       
       const adjustedUnderlines = underlines.map(underline => ({
         ...underline,
-        startX: underline.startX - cropArea.x,
-        startY: underline.startY - cropArea.y,
-        endX: underline.endX - cropArea.x,
-        endY: underline.endY - cropArea.y
+        x1: underline.x1 - cropArea.x,
+        y1: underline.y1 - cropArea.y,
+        x2: underline.x2 - cropArea.x,
+        y2: underline.y2 - cropArea.y
       }));
-      
-      console.log('Markers AFTER adjustment:', adjustedMarkers);
       
       setMarkers(adjustedMarkers);
       setUnderlines(adjustedUnderlines);

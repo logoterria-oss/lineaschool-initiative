@@ -4,6 +4,7 @@ import { Marker, Underline, MarkerColor, CropArea } from './types';
 
 interface AnnotationCanvasProps {
   imageUrl: string;
+  processedImageUrl?: string | null;
   markers: Marker[];
   underlines: Underline[];
   markerColor: MarkerColor;
@@ -25,6 +26,7 @@ interface AnnotationCanvasProps {
 
 const AnnotationCanvas = ({
   imageUrl,
+  processedImageUrl,
   markers,
   underlines,
   markerColor,
@@ -59,10 +61,10 @@ const AnnotationCanvas = ({
         setImageLoaded(false);
         setLoadError(null);
         
-        // Если это base64, загружаем напрямую, иначе через прокси
-        const isBase64 = imageUrl.startsWith('data:');
-        const finalUrl = isBase64 ? imageUrl : `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(imageUrl)}`;
-        console.log('Loading image:', isBase64 ? 'base64' : 'via proxy');
+        const currentImageUrl = processedImageUrl || imageUrl;
+        const isBase64 = currentImageUrl.startsWith('data:');
+        const finalUrl = isBase64 ? currentImageUrl : `https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5?url=${encodeURIComponent(currentImageUrl)}`;
+        console.log('Loading image:', isBase64 ? 'base64' : 'via proxy', processedImageUrl ? '(processed)' : '(original)');
         
         const img = new Image();
         if (!isBase64) {
@@ -139,7 +141,7 @@ const AnnotationCanvas = ({
     };
 
     loadImage();
-  }, [imageUrl, cropArea, rotation]);
+  }, [imageUrl, processedImageUrl, cropArea, rotation]);
 
   const redrawMarkers = () => {
     const markersCanvas = markersCanvasRef.current;
