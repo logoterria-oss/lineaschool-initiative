@@ -107,6 +107,8 @@ const FormSections = ({ formData, onInputChange, onLoadDictation }: FormSections
               readingComprehension: formData.readingComprehension,
               writingSamples: formData.writingSamples,
               dysgraphicErrors: formData.dysgraphicErrors,
+              dysorthographicErrors: formData.dysorthographicErrors,
+              totalErrors: formData.totalErrors,
               analysisErrors: formData.analysisErrors,
               acousticErrors: formData.acousticErrors,
               motorErrors: formData.motorErrors,

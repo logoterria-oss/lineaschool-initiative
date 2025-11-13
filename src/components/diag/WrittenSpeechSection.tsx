@@ -9,6 +9,8 @@ interface WrittenSpeechData {
   readingComprehension: string;
   writingSamples: string[];
   dysgraphicErrors: string;
+  dysorthographicErrors: string;
+  totalErrors: string;
   analysisErrors: string[];
   acousticErrors: string[];
   motorErrors: string[];
@@ -74,6 +76,8 @@ export default function WrittenSpeechSection({ formData, onInputChange, onLoadDi
         <WritingSkillSection 
           writingSamples={formData.writingSamples}
           dysgraphicErrors={formData.dysgraphicErrors}
+          dysorthographicErrors={formData.dysorthographicErrors}
+          totalErrors={formData.totalErrors}
           analysisErrors={formData.analysisErrors}
           acousticErrors={formData.acousticErrors}
           motorErrors={formData.motorErrors}

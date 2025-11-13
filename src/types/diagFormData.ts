@@ -45,6 +45,8 @@ export interface DiagFormData {
   readingComprehension: string;
   writingSamples: string[];
   dysgraphicErrors: string;
+  dysorthographicErrors: string;
+  totalErrors: string;
   analysisErrors: string[];
   acousticErrors: string[];
   motorErrors: string[];

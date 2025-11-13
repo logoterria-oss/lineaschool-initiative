@@ -49,6 +49,8 @@ export const useFormDataManager = () => {
     readingComprehension: "",
     writingSamples: [] as string[],
     dysgraphicErrors: "",
+    dysorthographicErrors: "",
+    totalErrors: "",
     analysisErrors: [] as string[],
     acousticErrors: [] as string[],
     motorErrors: [] as string[],

@@ -43,9 +43,12 @@ export default function DiagForm() {
       const markupData = matchingDictation.markup_data;
       const greenCount = markupData.greenCount || 0;
       const redCount = markupData.redCount || 0;
+      const totalCount = greenCount + redCount;
       const annotatedImage = matchingDictation.annotated_image;
 
       handleInputChange('dysgraphicErrors', String(greenCount));
+      handleInputChange('dysorthographicErrors', String(redCount));
+      handleInputChange('totalErrors', String(totalCount));
       
       if (annotatedImage) {
         const currentSamples = formData.writingSamples || [];
@@ -54,13 +57,9 @@ export default function DiagForm() {
         }
       }
 
-      if (greenCount > 0 && !formData.analysisErrors.includes('пропуски')) {
-        handleInputChange('analysisErrors', [...formData.analysisErrors, 'пропуски']);
-      }
-
       toast({
         title: 'Диктант загружен',
-        description: `Данные диктанта добавлены: ${greenCount} дисграфических ошибок`
+        description: `Добавлено: ${greenCount} дисграфических, ${redCount} дизорфографических (всего ${totalCount})`
       });
     } catch (error) {
       console.error('Error loading dictation:', error);

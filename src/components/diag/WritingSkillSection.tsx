@@ -7,6 +7,8 @@ import Icon from '@/components/ui/icon';
 interface WritingSkillProps {
   writingSamples: string[];
   dysgraphicErrors: string;
+  dysorthographicErrors: string;
+  totalErrors: string;
   analysisErrors: string[];
   acousticErrors: string[];
   motorErrors: string[];
@@ -24,6 +26,8 @@ interface WritingSkillProps {
 export default function WritingSkillSection({
   writingSamples,
   dysgraphicErrors,
+  dysorthographicErrors,
+  totalErrors,
   analysisErrors,
   acousticErrors,
   motorErrors,
@@ -93,16 +97,42 @@ export default function WritingSkillSection({
         </div>
       </div>
 
-      <div className="ml-4">
-        <Label htmlFor="dysgraphic-errors" className="text-base font-semibold">Количество дисграфических ошибок</Label>
-        <Input
-          id="dysgraphic-errors"
-          type="number"
-          value={dysgraphicErrors}
-          onChange={(e) => onInputChange("dysgraphicErrors", e.target.value)}
-          className="mt-2 w-24"
-          min="0"
-        />
+      <div className="ml-4 space-y-4">
+        <div>
+          <Label htmlFor="dysgraphic-errors" className="text-base font-semibold">Количество дисграфических ошибок</Label>
+          <Input
+            id="dysgraphic-errors"
+            type="number"
+            value={dysgraphicErrors}
+            onChange={(e) => onInputChange("dysgraphicErrors", e.target.value)}
+            className="mt-2 w-32"
+            min="0"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="dysorthographic-errors" className="text-base font-semibold">Количество дизорфографических ошибок</Label>
+          <Input
+            id="dysorthographic-errors"
+            type="number"
+            value={dysorthographicErrors}
+            onChange={(e) => onInputChange("dysorthographicErrors", e.target.value)}
+            className="mt-2 w-32"
+            min="0"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="total-errors" className="text-base font-semibold">Ошибок всего</Label>
+          <Input
+            id="total-errors"
+            type="number"
+            value={totalErrors}
+            onChange={(e) => onInputChange("totalErrors", e.target.value)}
+            className="mt-2 w-32"
+            min="0"
+          />
+        </div>
       </div>
 
       <div className="ml-4">
