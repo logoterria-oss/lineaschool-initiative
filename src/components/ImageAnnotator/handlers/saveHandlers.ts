@@ -19,8 +19,7 @@ export const createSaveHandlers = (
   onSave: (data: { markup: string, imageUrl: string, croppedImageUrl?: string }) => void,
   setProcessedImageUrl: (url: string | null) => void,
   setMarkers: (markers: Marker[]) => void,
-  setUnderlines: (underlines: Underline[]) => void,
-  errorTypes?: Record<string, number>
+  setUnderlines: (underlines: Underline[]) => void
 ) => {
   const saveToHistory = () => {
     const newHistory = history.slice(0, historyStep + 1);
@@ -80,8 +79,7 @@ export const createSaveHandlers = (
       greenCount,
       redCount,
       rotation,
-      processedImageUrl,
-      errorTypes: errorTypes || {}
+      processedImageUrl
     });
 
     const storageKey = `annotator_${imageUrl}`;

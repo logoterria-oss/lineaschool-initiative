@@ -78,7 +78,6 @@ export default function DiagForm() {
       const redCount = markupData.redCount || 0;
       const totalCount = greenCount + redCount;
       const annotatedImage = dictationDetail.annotated_image;
-      const errorTypes = markupData.errorTypes || {};
 
       handleInputChange('dysgraphicErrors', String(greenCount));
       handleInputChange('dysorthographicErrors', String(redCount));
@@ -90,65 +89,6 @@ export default function DiagForm() {
           handleInputChange('writingSamples', [...currentSamples, annotatedImage].slice(0, 3));
         }
       }
-
-      const errorTypeMapping: Record<string, string[]> = {
-        'analysisErrors': ['пропуски', 'вставки', 'перестановки', 'антиципации (предвосхищение)'],
-        'acousticErrors': [
-          'замены и смешения звонких-глухих согласных',
-          'ошибки обозначения мягкости',
-          'замены и смешения свистящих-шипящих согласных',
-          'замены и смешения аффрикатов и их компонентов',
-          'замены и смешения заднеязычных согласных',
-          'замены и смешения соноров',
-          'замены и смешения гласных в сильной позиции',
-          'замены и смешения согласных по способу образования',
-          'замены и смешения согласных по месту образования'
-        ],
-        'motorErrors': [
-          'ошибки кинетического запуска',
-          'графический поиск при написании буквы',
-          'лишние элементы при написании буквы',
-          'недописывание отдельных элементов буквы',
-          'персеверации (повтор целой буквы, узнаваемой ее части или слога)',
-          'неоднократные правильные обводки букв'
-        ],
-        'visualMotorErrors': [
-          'смешение оптически сходных букв',
-          'неточность передачи графического образа буквы',
-          'неадекватность начертания буквы'
-        ],
-        'visualSpatialErrors': [
-          'зеркальность написания букв',
-          'неудержание строки',
-          'дисметрия букв',
-          'дисметрия элементов букв',
-          'колебание наклона букв',
-          'отсутствие слитности написания букв в словах',
-          'левостороннее игнорирование',
-          'неравномерность расстояний между словами',
-          'избегания переноса слов'
-        ],
-        'additionalCharacteristics': [
-          'гипертонус и гипотонус при письме',
-          'микрография или макрография'
-        ],
-        'regulationViolations': [
-          'пропуски элементов букв, букв, слогов, слов',
-          'персеверации (навязчивые повторения) элементов букв, букв, слогов, слов',
-          'контоминации (объединение слов)',
-          'антиципации (предвосхищение слов и их элементов)',
-          'ошибки обозначения границ предложения'
-        ]
-      };
-
-      Object.entries(errorTypeMapping).forEach(([field, options]) => {
-        const foundErrors = options.filter(opt => errorTypes[opt] > 0);
-        if (foundErrors.length > 0) {
-          handleInputChange(field, foundErrors);
-        } else {
-          handleInputChange(field, ['нет']);
-        }
-      });
 
       toast({
         title: 'Диктант загружен',

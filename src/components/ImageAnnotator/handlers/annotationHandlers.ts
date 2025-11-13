@@ -11,11 +11,7 @@ export const createAnnotationHandlers = (
   setMarkerColor: (color: MarkerColor) => void,
   setShowCheckModal: (show: boolean) => void,
   setCropDragStart: (pos: {x: number, y: number} | null) => void,
-  saveToHistory: () => void,
-  setShowErrorTypeModal?: (show: boolean) => void,
-  setPendingAnnotation?: (data: {type: 'marker' | 'underline', data: any} | null) => void,
-  errorTypes?: Record<string, number>,
-  setErrorTypes?: (types: Record<string, number>) => void
+  saveToHistory: () => void
 ) => {
   const handleMarkerColorChange = (color: MarkerColor) => {
     setMarkerColor(color);
@@ -27,17 +23,7 @@ export const createAnnotationHandlers = (
   };
 
   const handleMarkerAdd = (marker: Marker) => {
-    if (marker.color === 'green' && setShowErrorTypeModal && setPendingAnnotation) {
-      setPendingAnnotation({ type: 'marker', data: marker });
-      setShowErrorTypeModal(true);
-      return;
-    }
-    
-    const markerWithType = marker.color === 'red' 
-      ? { ...marker, errorType: 'орфографические ошибки' }
-      : marker;
-    
-    setMarkers([...markers, markerWithType]);
+    setMarkers([...markers, marker]);
     if (marker.color === 'green') {
       setGreenCount(prev => {
         const newCount = prev + 1;
@@ -74,12 +60,6 @@ export const createAnnotationHandlers = (
   };
 
   const handleUnderlineAdd = (underline: Underline) => {
-    if (setShowErrorTypeModal && setPendingAnnotation) {
-      setPendingAnnotation({ type: 'underline', data: underline });
-      setShowErrorTypeModal(true);
-      return;
-    }
-    
     setUnderlines([...underlines, underline]);
     setGreenCount(prev => {
       const newCount = prev + 1;
@@ -113,44 +93,12 @@ export const createAnnotationHandlers = (
     }
   };
 
-  const handleErrorTypeSelect = (errorType: string, pendingAnnotation: {type: 'marker' | 'underline', data: any} | null) => {
-    if (!pendingAnnotation) return;
-    
-    if (pendingAnnotation.type === 'marker') {
-      const marker = { ...pendingAnnotation.data, errorType };
-      setMarkers([...markers, marker]);
-      setGreenCount(prev => {
-        const newCount = prev + 1;
-        setTimeout(() => saveToHistory(), 0);
-        return newCount;
-      });
-    } else if (pendingAnnotation.type === 'underline') {
-      const underline = { ...pendingAnnotation.data, errorType };
-      setUnderlines([...underlines, underline]);
-      setGreenCount(prev => {
-        const newCount = prev + 1;
-        setTimeout(() => saveToHistory(), 0);
-        return newCount;
-      });
-    }
-    
-    if (errorTypes && setErrorTypes) {
-      const newErrorTypes = { ...errorTypes };
-      newErrorTypes[errorType] = (newErrorTypes[errorType] || 0) + 1;
-      setErrorTypes(newErrorTypes);
-    }
-    
-    if (setShowErrorTypeModal) setShowErrorTypeModal(false);
-    if (setPendingAnnotation) setPendingAnnotation(null);
-  };
-
   return {
     handleMarkerColorChange,
     handleMarkerAdd,
     handleMarkerRemove,
     handleUnderlineAdd,
     handleUnderlineRemove,
-    clearCanvas,
-    handleErrorTypeSelect
+    clearCanvas
   };
 };

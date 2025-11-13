@@ -2,7 +2,6 @@ import { useRef, useEffect, MouseEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { MarkerColor, Marker, Underline } from './types';
-import ErrorTypeModal from './ErrorTypeModal';
 
 interface CheckModalProps {
   imageUrl: string;
@@ -51,9 +50,6 @@ const CheckModal = ({
   const markersCanvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [showErrorTypeModal, setShowErrorTypeModal] = useState(false);
-  const [pendingMarker, setPendingMarker] = useState<{x: number, y: number} | null>(null);
-  const [errorTypes, setErrorTypes] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -157,8 +153,15 @@ const CheckModal = ({
       if (!underlineStart) {
         onUnderlineStartChange({ x, y });
       } else {
-        setPendingMarker({ x, y });
-        setShowErrorTypeModal(true);
+        const newUnderline: Underline = {
+          x1: underlineStart.x,
+          y1: underlineStart.y,
+          x2: x,
+          y2: y
+        };
+        onUnderlinesChange([...underlines, newUnderline]);
+        onUnderlineStartChange(null);
+        onCountsChange(greenCount + 1, redCount);
       }
       return;
     }
@@ -170,15 +173,15 @@ const CheckModal = ({
     }
 
     if (markerColor === 'green' || markerColor === 'red') {
+      const newMarker: Marker = { x, y, color: markerColor, size: markerSize };
+      onMarkersChange([...markers, newMarker]);
+      
       if (markerColor === 'green') {
-        setPendingMarker({ x, y });
-        setShowErrorTypeModal(true);
+        onCountsChange(greenCount + 1, redCount);
       } else {
-        const newMarker: Marker = { x, y, color: markerColor, size: markerSize, errorType: 'орфографические ошибки' };
-        onMarkersChange([...markers, newMarker]);
         onCountsChange(greenCount, redCount + 1);
-        setIsDrawing(true);
       }
+      setIsDrawing(true);
     }
   };
 
@@ -193,10 +196,15 @@ const CheckModal = ({
 
     if (markerColor === 'eraser') {
       handleErase(x, y);
-    } else if (markerColor === 'red') {
-      const newMarker: Marker = { x, y, color: markerColor, size: markerSize, errorType: 'орфографические ошибки' };
+    } else if (markerColor === 'green' || markerColor === 'red') {
+      const newMarker: Marker = { x, y, color: markerColor, size: markerSize };
       onMarkersChange([...markers, newMarker]);
-      onCountsChange(greenCount, redCount + 1);
+      
+      if (markerColor === 'green') {
+        onCountsChange(greenCount + 1, redCount);
+      } else {
+        onCountsChange(greenCount, redCount + 1);
+      }
     }
   };
 
@@ -276,40 +284,6 @@ const CheckModal = ({
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  const handleErrorTypeSelect = (errorType: string) => {
-    if (!pendingMarker) return;
-
-    if (underlineStart) {
-      const newUnderline: Underline = {
-        x1: underlineStart.x,
-        y1: underlineStart.y,
-        x2: pendingMarker.x,
-        y2: pendingMarker.y,
-        errorType
-      };
-      onUnderlinesChange([...underlines, newUnderline]);
-      onUnderlineStartChange(null);
-      onCountsChange(greenCount + 1, redCount);
-    } else {
-      const newMarker: Marker = { 
-        x: pendingMarker.x, 
-        y: pendingMarker.y, 
-        color: 'green', 
-        size: markerSize,
-        errorType
-      };
-      onMarkersChange([...markers, newMarker]);
-      onCountsChange(greenCount + 1, redCount);
-    }
-
-    const newErrorTypes = { ...errorTypes };
-    newErrorTypes[errorType] = (newErrorTypes[errorType] || 0) + 1;
-    setErrorTypes(newErrorTypes);
-
-    setShowErrorTypeModal(false);
-    setPendingMarker(null);
-  };
-
   const handleSaveAnnotation = () => {
     const canvas = canvasRef.current;
     const markersCanvas = markersCanvasRef.current;
@@ -333,39 +307,16 @@ const CheckModal = ({
     ctx.drawImage(markersCanvas, 0, 0);
 
     const bakedImageUrl = finalCanvas.toDataURL('image/png');
-    
-    const allErrorTypes = { ...errorTypes };
-    markers.forEach(marker => {
-      if (marker.errorType) {
-        allErrorTypes[marker.errorType] = (allErrorTypes[marker.errorType] || 0) + 1;
-      }
-    });
-    underlines.forEach(underline => {
-      if (underline.errorType) {
-        allErrorTypes[underline.errorType] = (allErrorTypes[underline.errorType] || 0) + 1;
-      }
-    });
-    
-    console.log('Разметка приклеена к изображению, типы ошибок:', allErrorTypes);
+    console.log('Разметка приклеена к изображению');
 
     onSave(bakedImageUrl);
     onClose();
   };
 
   return (
-    <>
-      <ErrorTypeModal
-        open={showErrorTypeModal}
-        onSelect={handleErrorTypeSelect}
-        onCancel={() => {
-          setShowErrorTypeModal(false);
-          setPendingMarker(null);
-        }}
-      />
-      
-      <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
-        {/* Верхняя панель */}
-        <div className="bg-white border-b shadow-sm p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
+      {/* Верхняя панель */}
+      <div className="bg-white border-b shadow-sm p-4">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">Проверка диктанта</h2>
           
@@ -500,7 +451,6 @@ const CheckModal = ({
         </div>
       </div>
     </div>
-    </>
   );
 };
 
