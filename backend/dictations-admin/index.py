@@ -125,30 +125,29 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             if action == 'save_annotation':
                 dictation_id = body_data.get('id')
                 markup_data_raw = body_data.get('markup_data', '')
-                annotated_image_raw = body_data.get('annotated_image', '')
                 
                 print(f'Saving annotation for ID {dictation_id}')
                 print(f'markup_data length: {len(str(markup_data_raw))}')
-                print(f'annotated_image length: {len(str(annotated_image_raw))}')
                 
-                # Convert to proper format
+                # Convert to proper format and escape
                 if isinstance(markup_data_raw, (dict, list)):
                     markup_data = json.dumps(markup_data_raw)
                 else:
                     markup_data = str(markup_data_raw)
                 
-                annotated_image = str(annotated_image_raw)
+                # Double escape single quotes for SQL
+                markup_data_escaped = markup_data.replace("'", "''")
                 
-                # Use dollar-quoted strings to avoid escaping issues
                 print(f'Executing UPDATE query')
-                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = $tag${annotated_image}$tag$, markup_data = $tag${markup_data}$tag$ WHERE id = {int(dictation_id)}"
+                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET markup_data = '{markup_data_escaped}', annotated_image = 'saved' WHERE id = {int(dictation_id)}"
                 
                 try:
                     cur.execute(query)
                     conn.commit()
-                    print(f'UPDATE successful')
+                    print(f'UPDATE successful, rows affected: {cur.rowcount}')
                 except Exception as e:
                     print(f'UPDATE failed: {str(e)}')
+                    print(f'Query was: {query[:200]}...')
                     cur.close()
                     conn.close()
                     return {
