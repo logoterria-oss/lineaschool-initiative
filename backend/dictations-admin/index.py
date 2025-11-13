@@ -123,7 +123,13 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             
             if action == 'save_annotation':
                 dictation_id = body_data.get('id')
-                annotated_image = body_data.get('annotated_image', '').replace("'", "''")
+                annotated_image_raw = body_data.get('annotated_image', '')
+                
+                # Convert to string if it's a dict/object
+                if isinstance(annotated_image_raw, (dict, list)):
+                    annotated_image = json.dumps(annotated_image_raw).replace("'", "''")
+                else:
+                    annotated_image = str(annotated_image_raw).replace("'", "''")
                 
                 query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image}' WHERE id = {dictation_id}"
                 cur.execute(query)
@@ -140,8 +146,14 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             
             if action == 'mark_checked':
                 dictation_id = body_data.get('id')
-                notes = body_data.get('notes', '').replace("'", "''")
-                annotated_image = body_data.get('annotated_image', '').replace("'", "''")
+                notes = str(body_data.get('notes', '')).replace("'", "''")
+                annotated_image_raw = body_data.get('annotated_image', '')
+                
+                # Convert to string if it's a dict/object
+                if isinstance(annotated_image_raw, (dict, list)):
+                    annotated_image = json.dumps(annotated_image_raw).replace("'", "''")
+                else:
+                    annotated_image = str(annotated_image_raw).replace("'", "''")
                 
                 query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET status = 'checked', diagnostician_notes = '{notes}', annotated_image = '{annotated_image}', checked_at = CURRENT_TIMESTAMP WHERE id = {dictation_id}"
                 cur.execute(query)
