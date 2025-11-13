@@ -25,6 +25,14 @@ export default function DiagForm() {
       const data = await response.json();
       const dictations = data.dictations || [];
 
+      console.log('Total dictations:', dictations.length);
+      console.log('Searching for:', formData.childName);
+      console.log('All dictation names:', dictations.map((d: any) => ({
+        name: d.child_name,
+        status: d.status,
+        hasMarkup: !!d.markup_data
+      })));
+
       const normalizeText = (text: string) => {
         return text
           .toLowerCase()
@@ -34,22 +42,30 @@ export default function DiagForm() {
       };
 
       const searchName = normalizeText(formData.childName);
+      console.log('Normalized search name:', searchName);
       
       const matchingDictation = dictations.find((d: any) => {
         if (d.status !== 'checked' || !d.markup_data) return false;
         
         const dictationName = normalizeText(d.child_name);
+        console.log('Comparing with:', dictationName);
         
         const searchWords = searchName.split(' ').filter(w => w.length > 0);
         const dictationWords = dictationName.split(' ').filter(w => w.length > 0);
         
+        console.log('Search words:', searchWords);
+        console.log('Dictation words:', dictationWords);
+        
         if (searchWords.length === 0 || dictationWords.length === 0) return false;
         
-        return searchWords.every(searchWord => 
+        const matches = searchWords.every(searchWord => 
           dictationWords.some(dictWord => 
             dictWord.includes(searchWord) || searchWord.includes(dictWord)
           )
         );
+        
+        console.log('Match result:', matches);
+        return matches;
       });
 
       if (!matchingDictation) {
