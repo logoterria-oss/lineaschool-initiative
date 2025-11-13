@@ -25,11 +25,32 @@ export default function DiagForm() {
       const data = await response.json();
       const dictations = data.dictations || [];
 
-      const matchingDictation = dictations.find((d: any) => 
-        d.child_name.toLowerCase().trim() === formData.childName.toLowerCase().trim() &&
-        d.status === 'checked' &&
-        d.markup_data
-      );
+      const normalizeText = (text: string) => {
+        return text
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, ' ')
+          .replace(/ё/g, 'е');
+      };
+
+      const searchName = normalizeText(formData.childName);
+      
+      const matchingDictation = dictations.find((d: any) => {
+        if (d.status !== 'checked' || !d.markup_data) return false;
+        
+        const dictationName = normalizeText(d.child_name);
+        
+        const searchWords = searchName.split(' ').filter(w => w.length > 0);
+        const dictationWords = dictationName.split(' ').filter(w => w.length > 0);
+        
+        if (searchWords.length === 0 || dictationWords.length === 0) return false;
+        
+        return searchWords.every(searchWord => 
+          dictationWords.some(dictWord => 
+            dictWord.includes(searchWord) || searchWord.includes(dictWord)
+          )
+        );
+      });
 
       if (!matchingDictation) {
         toast({
