@@ -174,6 +174,16 @@ export default function DiagForm() {
         }
       });
 
+      // Автоматически проставляем "орфографические ошибки" если есть красные маркеры (дизорфография)
+      if (redCount > 0) {
+        const currentRegulationViolations = formData.regulationViolations || [];
+        if (!currentRegulationViolations.includes('орфографические ошибки')) {
+          const newViolations = currentRegulationViolations.filter(v => v !== 'нет');
+          newViolations.push('орфографические ошибки');
+          handleInputChange('regulationViolations', newViolations);
+        }
+      }
+
       toast({
         title: 'Диктант загружен',
         description: `Добавлено: ${greenCount} дисграфических, ${redCount} дизорфографических (всего ${totalCount})`
