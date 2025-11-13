@@ -461,6 +461,4 @@ const CheckModal = ({
   );
 };
 
-import { useState } from 'react';
-
 export default CheckModal;
