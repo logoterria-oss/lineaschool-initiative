@@ -1,3 +1,18 @@
+/**
+ * ⚠️ КРИТИЧЕСКИЙ ХУК - НЕ ИЗМЕНЯТЬ БЕЗ НЕОБХОДИМОСТИ
+ * 
+ * Хук для сохранения и восстановления состояния аннотатора
+ * 
+ * Ключевой функционал:
+ * - Сохранение в localStorage: markers, underlines, counts, cropArea, rotation
+ * - Восстановление из savedMarkup или localStorage
+ * 
+ * ВАЖНО: rotation сохраняется в localStorage (строка 57-65)
+ * Это критично для восстановления поворота при перезагрузке
+ * 
+ * Последнее изменение: 13.11.2025
+ */
+
 import { useEffect } from 'react';
 import { Marker, Underline, CropArea } from '../types';
 

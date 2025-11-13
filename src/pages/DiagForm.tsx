@@ -1,3 +1,19 @@
+/**
+ * ⚠️ КРИТИЧЕСКАЯ СТРАНИЦА - НЕ ИЗМЕНЯТЬ БЕЗ НЕОБХОДИМОСТИ
+ * 
+ * Страница диагностической формы
+ * 
+ * Ключевой функционал (handleLoadDictation):
+ * - Загрузка проверенного диктанта по ФИ ребёнка
+ * - Парсинг markup_data.errorTypes из базы данных
+ * - Маппинг типов ошибок на поля формы (строки 147-160)
+ * 
+ * ВАЖНО: errorTypes приходят как объект {имя_типа: количество}
+ * Маппинг на поля формы происходит через errorTypeMapping
+ * 
+ * Последнее изменение: 13.11.2025
+ */
+
 import Footer from "@/components/Footer";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
 import FormSections from "@/components/DiagForm/FormSections";

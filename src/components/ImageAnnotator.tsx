@@ -1,3 +1,20 @@
+/**
+ * ⚠️ КРИТИЧЕСКИЙ КОМПОНЕНТ - НЕ ИЗМЕНЯТЬ БЕЗ НЕОБХОДИМОСТИ
+ * 
+ * Главный компонент аннотатора изображений диктанта
+ * 
+ * Ключевой функционал:
+ * - handleRotate() - поворот с запеканием в processedImageUrl (строки 110-145)
+ * - Передача errorTypes и setErrorTypes в saveHandlers (строка 58)
+ * - Передача processedImageUrl в AnnotationCanvas (строка 230)
+ * - rotation=0 когда есть processedImageUrl (строка 239)
+ * 
+ * ВАЖНО: При повороте изображение запекается сразу в processedImageUrl,
+ * rotation сбрасывается в 0. То же при кадрировании.
+ * 
+ * Последнее изменение: 13.11.2025
+ */
+
 import { ImageAnnotatorProps } from './ImageAnnotator/types';
 import ErrorCounter from './ImageAnnotator/ErrorCounter';
 import Toolbar from './ImageAnnotator/Toolbar';

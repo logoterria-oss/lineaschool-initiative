@@ -1,7 +1,21 @@
 '''
+⚠️ КРИТИЧЕСКАЯ ФУНКЦИЯ - НЕ ИЗМЕНЯТЬ БЕЗ НЕОБХОДИМОСТИ
+
 Business: Admin API for managing dictations from Telegram bot
 Args: event with httpMethod, body (action, id, notes)
 Returns: List of dictations or update status
+
+Ключевой функционал:
+- GET ?id=X - возвращает диктант с парсингом markup_data (строки 54-65)
+- POST action=save_annotation - сохраняет markup_data и annotated_image (строки 125-175)
+- POST action=mark_checked - отмечает диктант как проверенный (строки 187-209)
+
+ВАЖНО:
+- При чтении markup_data парсится дважды если это строка внутри JSON (строка 57-65)
+- При сохранении markup_data сохраняется как строка без двойного JSON.dumps (строка 133-141)
+- mark_checked НЕ трогает markup_data, только меняет статус
+
+Последнее изменение: 13.11.2025
 '''
 import json
 import os

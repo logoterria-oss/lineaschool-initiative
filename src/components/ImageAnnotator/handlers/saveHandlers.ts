@@ -1,3 +1,19 @@
+/**
+ * ⚠️ КРИТИЧЕСКИЙ МОДУЛЬ - НЕ ИЗМЕНЯТЬ БЕЗ НЕОБХОДИМОСТИ
+ * 
+ * Обработчики сохранения разметки диктанта
+ * 
+ * Ключевой функционал:
+ * - confirmSave() - финальное сохранение с errorTypes в markup_data
+ * - handleCheckModalSave() - сохранение из CheckModal с передачей errorTypes
+ * - saveToHistory() - сохранение состояния для undo/redo
+ * 
+ * ВАЖНО: errorTypes передаются из CheckModal и сохраняются в markup_data
+ * при вызове onSave({ markup, imageUrl, croppedImageUrl })
+ * 
+ * Последнее изменение: 13.11.2025
+ */
+
 import { Marker, Underline, HistoryState } from '../types';
 
 export const createSaveHandlers = (

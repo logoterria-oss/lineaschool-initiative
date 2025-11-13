@@ -1,3 +1,20 @@
+/**
+ * ⚠️ КРИТИЧЕСКИЙ КОМПОНЕНТ - НЕ ИЗМЕНЯТЬ БЕЗ НЕОБХОДИМОСТИ
+ * 
+ * Canvas для отрисовки изображения диктанта с разметкой
+ * 
+ * Ключевой функционал:
+ * - Загрузка изображения через прокси или base64
+ * - Поддержка processedImageUrl (запечённое изображение после поворота/кадрирования)
+ * - Отрисовка rotation, cropArea
+ * - Отрисовка маркеров и подчёркиваний
+ * 
+ * ВАЖНО: Использует processedImageUrl если он есть, иначе imageUrl
+ * При наличии processedImageUrl rotation должен быть 0
+ * 
+ * Последнее изменение: 13.11.2025
+ */
+
 import { useRef, useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Marker, Underline, MarkerColor, CropArea } from './types';
