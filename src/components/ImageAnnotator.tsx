@@ -93,6 +93,11 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
   };
 
   const handleCloseCheckModal = () => {
+    // Auto-save before closing if there's any markup
+    if (state.markers.length > 0 || state.underlines.length > 0) {
+      console.log('Auto-saving before close');
+      saveHandlers.confirmSave();
+    }
     state.setShowCheckModal(false);
     state.setMarkerColor('green');
     state.setUnderlineStart(null);

@@ -421,12 +421,7 @@ const CheckModal = ({
             <Button 
               size="sm" 
               className="ml-auto bg-green-600 hover:bg-green-700"
-              onClick={() => {
-                if (markers.length > 0 || underlines.length > 0) {
-                  onSave();
-                }
-                onClose();
-              }}
+              onClick={onClose}
             >
               <Icon name="Check" className="mr-1" size={14} />
               Готово
