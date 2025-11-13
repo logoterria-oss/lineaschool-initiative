@@ -66,6 +66,7 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     'photo_file_id': d['photo_file_id'],
                     'photo_url': d['photo_url'],
                     'markup_data': markup_data,
+                    'annotated_image': d.get('annotated_image'),
                     'has_annotation': bool(d.get('annotated_image')),
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
