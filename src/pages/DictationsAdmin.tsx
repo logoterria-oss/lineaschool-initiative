@@ -188,14 +188,14 @@ const DictationsAdmin = () => {
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            <Icon name="FileText" className="inline mr-2" size={24} />
-            Диктанты для проверки
-          </h1>
-          <Button onClick={loadDictations} variant="outline">
-            <Icon name="RefreshCw" className="mr-2" size={16} />
-            Обновить
-          </Button>
-        </div>
+              <Icon name="FileText" className="inline mr-2" size={24} />
+              Диктанты для проверки
+            </h1>
+            <Button onClick={loadDictations} variant="outline">
+              <Icon name="RefreshCw" className="mr-2" size={16} />
+              Обновить
+            </Button>
+          </div>
 
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[350px_1fr] gap-4 md:gap-6">
           <div className="space-y-4">
