@@ -127,6 +127,10 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 markup_data_raw = body_data.get('markup_data', '')
                 annotated_image_raw = body_data.get('annotated_image', '')
                 
+                print(f'Saving annotation for ID {dictation_id}')
+                print(f'markup_data length: {len(str(markup_data_raw))}')
+                print(f'annotated_image length: {len(str(annotated_image_raw))}')
+                
                 # Escape markup_data (JSON string)
                 if isinstance(markup_data_raw, (dict, list)):
                     markup_data = json.dumps(markup_data_raw).replace("'", "''")
@@ -136,9 +140,11 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 # Escape annotated_image (base64 image)
                 annotated_image = str(annotated_image_raw).replace("'", "''")
                 
+                print(f'Executing UPDATE query')
                 query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image}', markup_data = '{markup_data}' WHERE id = {dictation_id}"
                 cur.execute(query)
                 conn.commit()
+                print(f'UPDATE successful')
                 cur.close()
                 conn.close()
                 
