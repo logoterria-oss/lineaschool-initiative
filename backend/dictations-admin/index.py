@@ -52,9 +52,9 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     }
                 
                 markup_data = None
-                if d.get('annotated_image'):
+                if d.get('markup_data'):
                     try:
-                        markup_data = json.loads(d['annotated_image'])
+                        markup_data = json.loads(d['markup_data'])
                     except:
                         pass
                 
@@ -67,7 +67,7 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     'photo_url': d['photo_url'],
                     'markup_data': markup_data,
                     'annotated_image': d.get('annotated_image'),
-                    'has_annotation': bool(d.get('annotated_image')),
+                    'has_annotation': bool(d.get('markup_data')),
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
                     'created_at': d['created_at'].isoformat() if d['created_at'] else None,
@@ -124,15 +124,19 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             
             if action == 'save_annotation':
                 dictation_id = body_data.get('id')
+                markup_data_raw = body_data.get('markup_data', '')
                 annotated_image_raw = body_data.get('annotated_image', '')
                 
-                # Convert to string if it's a dict/object
-                if isinstance(annotated_image_raw, (dict, list)):
-                    annotated_image = json.dumps(annotated_image_raw).replace("'", "''")
+                # Escape markup_data (JSON string)
+                if isinstance(markup_data_raw, (dict, list)):
+                    markup_data = json.dumps(markup_data_raw).replace("'", "''")
                 else:
-                    annotated_image = str(annotated_image_raw).replace("'", "''")
+                    markup_data = str(markup_data_raw).replace("'", "''")
                 
-                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image}' WHERE id = {dictation_id}"
+                # Escape annotated_image (base64 image)
+                annotated_image = str(annotated_image_raw).replace("'", "''")
+                
+                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image}', markup_data = '{markup_data}' WHERE id = {dictation_id}"
                 cur.execute(query)
                 conn.commit()
                 cur.close()

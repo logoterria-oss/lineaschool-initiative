@@ -132,7 +132,8 @@ const DictationsAdmin = () => {
         body: JSON.stringify({
           action: 'save_annotation',
           id: selectedDictation.id,
-          annotated_image: data.markup
+          markup_data: data.markup,
+          annotated_image: data.imageUrl
         })
       });
       
