@@ -54,7 +54,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     state.setProcessedImageUrl,
     state.setMarkers,
     state.setUnderlines,
-    state.errorTypes
+    state.errorTypes,
+    state.setErrorTypes
   );
 
   const annotationHandlers = createAnnotationHandlers(

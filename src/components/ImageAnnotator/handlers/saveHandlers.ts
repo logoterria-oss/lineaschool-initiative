@@ -20,7 +20,8 @@ export const createSaveHandlers = (
   setProcessedImageUrl: (url: string | null) => void,
   setMarkers: (markers: Marker[]) => void,
   setUnderlines: (underlines: Underline[]) => void,
-  errorTypes?: Record<string, number>
+  errorTypes?: Record<string, number>,
+  setErrorTypes?: (types: Record<string, number>) => void
 ) => {
   const saveToHistory = () => {
     const newHistory = history.slice(0, historyStep + 1);
@@ -102,13 +103,18 @@ export const createSaveHandlers = (
     setShowSaveConfirm(false);
   };
 
-  const handleCheckModalSave = (bakedImageUrl?: string) => {
+  const handleCheckModalSave = (bakedImageUrl?: string, checkErrorTypes?: Record<string, number>) => {
     if (!bakedImageUrl) {
       handleSave();
       return;
     }
 
     console.log('Запекание изображения - возврат в редактор');
+    console.log('CheckModal errorTypes:', checkErrorTypes);
+    
+    if (checkErrorTypes && setErrorTypes) {
+      setErrorTypes(checkErrorTypes);
+    }
     
     setProcessedImageUrl(bakedImageUrl);
     setMarkers([]);

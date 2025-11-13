@@ -25,7 +25,7 @@ interface CheckModalProps {
   onUnderlineStartChange: (start: { x: number; y: number } | null) => void;
   onCountsChange: (green: number, red: number) => void;
   onClear: () => void;
-  onSave: (bakedImageUrl?: string) => void;
+  onSave: (bakedImageUrl?: string, errorTypes?: Record<string, number>) => void;
   onClose: () => void;
 }
 
@@ -167,7 +167,7 @@ const CheckModal = ({
     
     console.log('Разметка приклеена к изображению, типы ошибок:', allErrorTypes);
 
-    onSave(bakedImageUrl);
+    onSave(bakedImageUrl, allErrorTypes);
     onClose();
   };
 
