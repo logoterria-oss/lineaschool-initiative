@@ -80,6 +80,9 @@ export default function DiagForm() {
       const annotatedImage = dictationDetail.annotated_image;
       const errorTypes = markupData.errorTypes || {};
 
+      console.log('Loaded errorTypes:', errorTypes);
+      console.log('ErrorTypes keys:', Object.keys(errorTypes));
+
       handleInputChange('dysgraphicErrors', String(greenCount));
       handleInputChange('dysorthographicErrors', String(redCount));
       handleInputChange('totalErrors', String(totalCount));
@@ -142,7 +145,12 @@ export default function DiagForm() {
       };
 
       Object.entries(errorTypeMapping).forEach(([field, options]) => {
-        const foundErrors = options.filter(opt => errorTypes[opt] > 0);
+        const foundErrors = options.filter(opt => {
+          const hasError = errorTypes[opt] && errorTypes[opt] > 0;
+          console.log(`Checking ${opt}: ${errorTypes[opt]} -> ${hasError}`);
+          return hasError;
+        });
+        console.log(`Field ${field}: found ${foundErrors.length} errors:`, foundErrors);
         if (foundErrors.length > 0) {
           handleInputChange(field, foundErrors);
         } else {
