@@ -99,7 +99,7 @@ const DictationsAdmin = () => {
 
   const markAsChecked = async (id: number) => {
     try {
-      const markupToSave = selectedDictation?.markup_data ? JSON.stringify(selectedDictation.markup_data) : '';
+      const markupToSave = selectedDictation?.annotated_image || (selectedDictation?.markup_data ? JSON.stringify(selectedDictation.markup_data) : '');
       await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,10 +110,11 @@ const DictationsAdmin = () => {
           annotated_image: markupToSave
         })
       });
-      loadDictations();
+      await loadDictations();
       setSelectedDictation(null);
       setNotes('');
       setShowAnnotator(false);
+      localStorage.removeItem('annotator_state');
     } catch (error) {
       console.error('Error marking dictation:', error);
     }
