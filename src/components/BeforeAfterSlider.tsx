@@ -162,7 +162,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
     <div className="bg-white rounded-2xl shadow-2xl p-6">
       <div 
         ref={containerRef}
-        className="relative overflow-hidden rounded-lg cursor-ew-resize select-none"
+        className="relative overflow-hidden rounded-2xl cursor-ew-resize select-none"
         onMouseMove={handleMouseMove}
         onTouchMove={handleTouchMove}
       >
