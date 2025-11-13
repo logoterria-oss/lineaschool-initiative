@@ -136,12 +136,16 @@ const DictationsAdmin = () => {
         })
       });
       
-      console.log('Save response:', await response.json());
+      const saveResult = await response.json();
+      console.log('Save response:', saveResult);
+      
+      // Reload the specific dictation to get updated data from backend
+      const updatedDictation = await loadDictationDetails(selectedDictation.id);
+      if (updatedDictation) {
+        setSelectedDictation(updatedDictation);
+      }
       
       await loadDictations();
-      
-      const markupData = JSON.parse(data.markup);
-      setSelectedDictation(prev => prev ? { ...prev, markup_data: markupData, annotated_image: data.markup } : null);
     } catch (error) {
       console.error('Error saving annotation:', error);
     }
