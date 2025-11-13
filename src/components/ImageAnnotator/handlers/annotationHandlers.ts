@@ -21,9 +21,6 @@ export const createAnnotationHandlers = (
     setMarkerColor(color);
     setUnderlineStart(null);
     setCropDragStart(null);
-    if (['green', 'red', 'underline', 'eraser'].includes(color)) {
-      setShowCheckModal(true);
-    }
   };
 
   const handleMarkerAdd = (marker: Marker) => {
