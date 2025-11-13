@@ -159,7 +159,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
   }, [currentExample]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6">
+    <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6">
       <div 
         ref={containerRef}
         className="relative overflow-hidden rounded-2xl cursor-ew-resize select-none"
