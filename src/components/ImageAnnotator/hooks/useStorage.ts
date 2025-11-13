@@ -54,14 +54,15 @@ export const useStorage = (
   }, [imageUrl, savedMarkup, storageKey]);
 
   useEffect(() => {
-    if (markers.length > 0 || underlines.length > 0 || greenCount > 0 || redCount > 0 || cropArea) {
+    if (markers.length > 0 || underlines.length > 0 || greenCount > 0 || redCount > 0 || cropArea || rotation !== 0) {
       localStorage.setItem(storageKey, JSON.stringify({
         markers,
         underlines,
         greenCount,
         redCount,
-        cropArea
+        cropArea,
+        rotation
       }));
     }
-  }, [markers, underlines, greenCount, redCount, cropArea, storageKey]);
+  }, [markers, underlines, greenCount, redCount, cropArea, rotation, storageKey]);
 };
