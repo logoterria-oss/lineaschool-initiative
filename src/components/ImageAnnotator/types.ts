@@ -5,6 +5,7 @@ export interface Marker {
   y: number;
   size: number;
   color: 'green' | 'red';
+  errorType?: string;
 }
 
 export interface Underline {
@@ -12,6 +13,7 @@ export interface Underline {
   y1: number;
   x2: number;
   y2: number;
+  errorType?: string;
 }
 
 export interface CropArea {
@@ -27,6 +29,7 @@ export interface HistoryState {
   greenCount: number;
   redCount: number;
   cropArea?: CropArea | null;
+  errorTypes?: Record<string, number>;
 }
 
 export interface ImageAnnotatorProps {

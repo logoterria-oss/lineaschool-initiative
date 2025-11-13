@@ -23,6 +23,9 @@ export const useImageAnnotatorState = () => {
   const [cropDragStart, setCropDragStart] = useState<{x: number, y: number} | null>(null);
   const [rotation, setRotation] = useState(0);
   const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
+  const [showErrorTypeModal, setShowErrorTypeModal] = useState(false);
+  const [pendingAnnotation, setPendingAnnotation] = useState<{type: 'marker' | 'underline', data: any} | null>(null);
+  const [errorTypes, setErrorTypes] = useState<Record<string, number>>({});
 
   return {
     canvasRef,
@@ -61,6 +64,12 @@ export const useImageAnnotatorState = () => {
     rotation,
     setRotation,
     processedImageUrl,
-    setProcessedImageUrl
+    setProcessedImageUrl,
+    showErrorTypeModal,
+    setShowErrorTypeModal,
+    pendingAnnotation,
+    setPendingAnnotation,
+    errorTypes,
+    setErrorTypes
   };
 };
