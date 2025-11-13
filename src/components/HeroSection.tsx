@@ -11,7 +11,7 @@ export default function HeroSection() {
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
           <div className="px-0">
-            <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] xs:text-[14px] sm:text-sm font-semibold mb-2 xs:mb-3 sm:mb-4 md:mb-6">🎓 Для детей 8-18 лет</div>
+            <div className="inline-flex items-center border-2 border-blue-500 bg-gradient-to-br from-green-50 via-white to-green-50/30 text-blue-600 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 rounded-full text-[12px] xs:text-[14px] sm:text-sm font-semibold mb-2 xs:mb-3 sm:mb-4 md:mb-6 max-sm:mx-auto">🎓 Для детей 8-18 лет</div>
             <h1 className="text-[2.25rem] xs:text-[3rem] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 xs:mb-4 sm:mb-6 md:mb-8 leading-tight bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(34,197,94,0.15)]">
               Онлайн-коррекция дислексии и дисграфии
             </h1>
