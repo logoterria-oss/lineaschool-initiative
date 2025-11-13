@@ -1,4 +1,4 @@
-import { useRef, useEffect, MouseEvent } from 'react';
+import { useRef, useEffect, MouseEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { MarkerColor, Marker, Underline } from './types';
@@ -21,7 +21,7 @@ interface CheckModalProps {
   onUnderlineStartChange: (start: { x: number; y: number } | null) => void;
   onCountsChange: (green: number, red: number) => void;
   onClear: () => void;
-  onSave: () => void;
+  onSave: (bakedImageUrl?: string) => void;
   onClose: () => void;
 }
 
@@ -284,6 +284,34 @@ const CheckModal = ({
     return Math.sqrt(dx * dx + dy * dy);
   };
 
+  const handleSaveAnnotation = () => {
+    const canvas = canvasRef.current;
+    const markersCanvas = markersCanvasRef.current;
+    
+    if (!canvas || !markersCanvas) {
+      console.error('Canvas не найден');
+      return;
+    }
+
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = canvas.width;
+    finalCanvas.height = canvas.height;
+    const ctx = finalCanvas.getContext('2d');
+    
+    if (!ctx) {
+      console.error('Не удалось получить контекст');
+      return;
+    }
+
+    ctx.drawImage(canvas, 0, 0);
+    ctx.drawImage(markersCanvas, 0, 0);
+
+    const bakedImageUrl = finalCanvas.toDataURL('image/png');
+    console.log('Разметка приклеена к изображению');
+
+    onSave(bakedImageUrl);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
       {/* Верхняя панель */}
@@ -412,11 +440,11 @@ const CheckModal = ({
             <Button 
               variant="default"
               size="sm" 
-              onClick={onSave}
+              onClick={handleSaveAnnotation}
               disabled={markers.length === 0 && underlines.length === 0}
             >
               <Icon name="Save" className="mr-1" size={14} />
-              Сохранить разметку
+              Сохранить проверку
             </Button>
             <Button 
               size="sm" 

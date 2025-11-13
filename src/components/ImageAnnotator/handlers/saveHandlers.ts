@@ -97,10 +97,38 @@ export const createSaveHandlers = (
     setShowSaveConfirm(false);
   };
 
+  const handleCheckModalSave = (bakedImageUrl?: string) => {
+    if (!bakedImageUrl) {
+      handleSave();
+      return;
+    }
+
+    console.log('Сохранение из CheckModal с запечённым изображением');
+
+    const markupData = JSON.stringify({
+      markers,
+      underlines,
+      greenCount,
+      redCount,
+      rotation,
+      processedImageUrl
+    });
+
+    const storageKey = `annotator_${imageUrl}`;
+    localStorage.removeItem(storageKey);
+
+    onSave({
+      markup: markupData,
+      imageUrl: bakedImageUrl,
+      croppedImageUrl: processedImageUrl || undefined
+    });
+  };
+
   return {
     saveToHistory,
     handleImageLoad,
     handleSave,
-    confirmSave
+    confirmSave,
+    handleCheckModalSave
   };
 };

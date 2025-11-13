@@ -146,7 +146,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
             state.setRedCount(() => red);
           }}
           onClear={annotationHandlers.clearCanvas}
-          onSave={saveHandlers.handleSave}
+          onSave={saveHandlers.handleCheckModalSave}
           onClose={handleCloseCheckModal}
         />
       )}
