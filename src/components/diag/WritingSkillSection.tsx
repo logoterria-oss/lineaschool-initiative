@@ -1,6 +1,8 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import Icon from '@/components/ui/icon';
 
 interface WritingSkillProps {
   writingSamples: string[];
@@ -12,9 +14,11 @@ interface WritingSkillProps {
   visualSpatialErrors: string[];
   additionalCharacteristics: string[];
   regulationViolations: string[];
+  childName: string;
   onCheckboxChange: (field: string, value: string, checked: boolean) => void;
   onInputChange: (field: string, value: string | string[]) => void;
   onFileUpload: (field: string, files: FileList | null) => void;
+  onLoadDictation?: () => void;
 }
 
 export default function WritingSkillSection({
@@ -27,9 +31,11 @@ export default function WritingSkillSection({
   visualSpatialErrors,
   additionalCharacteristics,
   regulationViolations,
+  childName,
   onCheckboxChange,
   onInputChange,
-  onFileUpload
+  onFileUpload,
+  onLoadDictation
 }: WritingSkillProps) {
   return (
     <div className="space-y-6">
@@ -37,14 +43,25 @@ export default function WritingSkillSection({
 
       <div className="ml-4">
         <Label className="text-base font-semibold">Пример письменных работ (до 3 изображений)</Label>
-        <div className="mt-2">
+        <div className="mt-2 space-y-2">
           <Input
             type="file"
             accept="image/*"
             multiple
             onChange={(e) => onFileUpload("writingSamples", e.target.files)}
-            className="mb-2"
           />
+          {onLoadDictation && childName && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onLoadDictation}
+              className="w-full"
+            >
+              <Icon name="FileCheck" className="mr-2" size={16} />
+              Вставить проверенный диктант
+            </Button>
+          )}
           {writingSamples.length > 0 && (
             <div>
               <div className="text-sm text-gray-600 mb-2">

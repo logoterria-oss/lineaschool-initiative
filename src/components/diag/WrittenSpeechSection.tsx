@@ -16,14 +16,16 @@ interface WrittenSpeechData {
   visualSpatialErrors: string[];
   additionalCharacteristics: string[];
   regulationViolations: string[];
+  childName: string;
 }
 
 interface WrittenSpeechProps {
   formData: WrittenSpeechData;
   onInputChange: (field: string, value: string | string[]) => void;
+  onLoadDictation?: () => void;
 }
 
-export default function WrittenSpeechSection({ formData, onInputChange }: WrittenSpeechProps) {
+export default function WrittenSpeechSection({ formData, onInputChange, onLoadDictation }: WrittenSpeechProps) {
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof WrittenSpeechData] as string[];
     if (checked) {
@@ -79,9 +81,11 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
           visualSpatialErrors={formData.visualSpatialErrors}
           additionalCharacteristics={formData.additionalCharacteristics}
           regulationViolations={formData.regulationViolations}
+          childName={formData.childName}
           onCheckboxChange={handleCheckboxChange}
           onInputChange={onInputChange}
           onFileUpload={handleFileUpload}
+          onLoadDictation={onLoadDictation}
         />
 
       </div>

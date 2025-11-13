@@ -4,10 +4,73 @@ import FormSections from "@/components/DiagForm/FormSections";
 import { useFormDataManager } from "@/components/DiagForm/FormDataManager";
 import { useConclusionLogic } from "@/components/DiagForm/ConclusionLogic";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 export default function DiagForm() {
   const { formData, handleInputChange } = useFormDataManager();
   const { handleCreateConclusion } = useConclusionLogic();
+
+  const handleLoadDictation = async () => {
+    if (!formData.childName) {
+      toast({
+        title: 'Укажите ФИ ребёнка',
+        description: 'Заполните поле "ФИ ребёнка" для поиска диктанта',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0');
+      const data = await response.json();
+      const dictations = data.dictations || [];
+
+      const matchingDictation = dictations.find((d: any) => 
+        d.child_name.toLowerCase().trim() === formData.childName.toLowerCase().trim() &&
+        d.status === 'checked' &&
+        d.markup_data
+      );
+
+      if (!matchingDictation) {
+        toast({
+          title: 'Диктант не найден',
+          description: `Проверенный диктант для "${formData.childName}" не найден`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const markupData = matchingDictation.markup_data;
+      const greenCount = markupData.greenCount || 0;
+      const redCount = markupData.redCount || 0;
+      const annotatedImage = matchingDictation.annotated_image;
+
+      handleInputChange('dysgraphicErrors', String(greenCount));
+      
+      if (annotatedImage) {
+        const currentSamples = formData.writingSamples || [];
+        if (!currentSamples.includes(annotatedImage)) {
+          handleInputChange('writingSamples', [...currentSamples, annotatedImage].slice(0, 3));
+        }
+      }
+
+      if (greenCount > 0 && !formData.analysisErrors.includes('пропуски')) {
+        handleInputChange('analysisErrors', [...formData.analysisErrors, 'пропуски']);
+      }
+
+      toast({
+        title: 'Диктант загружен',
+        description: `Данные диктанта добавлены: ${greenCount} дисграфических ошибок`
+      });
+    } catch (error) {
+      console.error('Error loading dictation:', error);
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить диктант',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +89,7 @@ export default function DiagForm() {
             <FormSections 
               formData={formData}
               onInputChange={handleInputChange}
+              onLoadDictation={handleLoadDictation}
             />
 
             <div className="flex justify-center mt-8 pb-8">
