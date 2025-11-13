@@ -153,6 +153,7 @@ const DictationsAdmin = () => {
         console.log('Dictation updated with markup');
       }
       
+      await loadDictations();
       setShowAnnotator(false);
     } catch (error) {
       console.error('Error saving annotation:', error);

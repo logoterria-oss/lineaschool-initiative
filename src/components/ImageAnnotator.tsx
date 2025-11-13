@@ -49,7 +49,10 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     state.setHistory,
     state.setHistoryStep,
     state.setShowSaveConfirm,
-    onSave
+    onSave,
+    state.setProcessedImageUrl,
+    state.setMarkers,
+    state.setUnderlines
   );
 
   const annotationHandlers = createAnnotationHandlers(
@@ -92,15 +95,7 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     state.setShowCheckModal(true);
   };
 
-  const handleCloseCheckModal = async () => {
-    const hasMarkup = state.markers.length > 0 || state.underlines.length > 0;
-    
-    if (hasMarkup) {
-      console.log('Auto-saving before close');
-      saveHandlers.confirmSave();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
+  const handleCloseCheckModal = () => {
     state.setShowCheckModal(false);
     state.setMarkerColor('green');
     state.setUnderlineStart(null);

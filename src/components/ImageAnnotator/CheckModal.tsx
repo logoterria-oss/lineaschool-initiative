@@ -310,6 +310,7 @@ const CheckModal = ({
     console.log('Разметка приклеена к изображению');
 
     onSave(bakedImageUrl);
+    onClose();
   };
 
   return (
@@ -435,24 +436,16 @@ const CheckModal = ({
           <div className="flex gap-2 pt-2 border-t">
             <Button variant="outline" size="sm" onClick={onClear}>
               <Icon name="RotateCcw" className="mr-1" size={14} />
-              Очистить разметку
+              Сбросить проверку
             </Button>
             <Button 
-              variant="default"
               size="sm" 
+              className="ml-auto bg-green-600 hover:bg-green-700"
               onClick={handleSaveAnnotation}
               disabled={markers.length === 0 && underlines.length === 0}
             >
               <Icon name="Save" className="mr-1" size={14} />
               Сохранить проверку
-            </Button>
-            <Button 
-              size="sm" 
-              className="ml-auto bg-green-600 hover:bg-green-700"
-              onClick={onClose}
-            >
-              <Icon name="Check" className="mr-1" size={14} />
-              Готово
             </Button>
           </div>
         </div>

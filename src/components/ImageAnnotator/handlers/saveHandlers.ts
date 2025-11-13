@@ -16,7 +16,10 @@ export const createSaveHandlers = (
   setHistory: (history: HistoryState[]) => void,
   setHistoryStep: (step: number) => void,
   setShowSaveConfirm: (show: boolean) => void,
-  onSave: (data: { markup: string, imageUrl: string, croppedImageUrl?: string }) => void
+  onSave: (data: { markup: string, imageUrl: string, croppedImageUrl?: string }) => void,
+  setProcessedImageUrl: (url: string | null) => void,
+  setMarkers: (markers: Marker[]) => void,
+  setUnderlines: (underlines: Underline[]) => void
 ) => {
   const saveToHistory = () => {
     const newHistory = history.slice(0, historyStep + 1);
@@ -103,25 +106,11 @@ export const createSaveHandlers = (
       return;
     }
 
-    console.log('Сохранение из CheckModal с запечённым изображением');
-
-    const markupData = JSON.stringify({
-      markers,
-      underlines,
-      greenCount,
-      redCount,
-      rotation,
-      processedImageUrl
-    });
-
-    const storageKey = `annotator_${imageUrl}`;
-    localStorage.removeItem(storageKey);
-
-    onSave({
-      markup: markupData,
-      imageUrl: bakedImageUrl,
-      croppedImageUrl: processedImageUrl || undefined
-    });
+    console.log('Запекание изображения - возврат в редактор');
+    
+    setProcessedImageUrl(bakedImageUrl);
+    setMarkers([]);
+    setUnderlines([]);
   };
 
   return {
