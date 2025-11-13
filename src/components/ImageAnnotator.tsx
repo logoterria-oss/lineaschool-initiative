@@ -3,6 +3,7 @@ import ErrorCounter from './ImageAnnotator/ErrorCounter';
 import Toolbar from './ImageAnnotator/Toolbar';
 import SaveConfirmModal from './ImageAnnotator/SaveConfirmModal';
 import CheckModal from './ImageAnnotator/CheckModal';
+import ErrorTypeModal from './ImageAnnotator/ErrorTypeModal';
 import AnnotationCanvas from './ImageAnnotator/AnnotationCanvas';
 import CropCanvas from './ImageAnnotator/CropCanvas';
 import Instructions from './ImageAnnotator/Instructions';
@@ -52,7 +53,8 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     onSave,
     state.setProcessedImageUrl,
     state.setMarkers,
-    state.setUnderlines
+    state.setUnderlines,
+    state.errorTypes
   );
 
   const annotationHandlers = createAnnotationHandlers(
@@ -66,7 +68,11 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
     state.setMarkerColor,
     state.setShowCheckModal,
     state.setCropDragStart,
-    saveHandlers.saveToHistory
+    saveHandlers.saveToHistory,
+    state.setShowErrorTypeModal,
+    state.setPendingAnnotation,
+    state.errorTypes,
+    state.setErrorTypes
   );
 
   const cropHandlers = createCropHandlers(
@@ -141,9 +147,19 @@ const ImageAnnotator = ({ imageUrl, onSave, savedMarkup }: ImageAnnotatorProps) 
             state.setRedCount(() => red);
           }}
           onClear={annotationHandlers.clearCanvas}
-          onRotate={handleRotate}
           onSave={saveHandlers.handleCheckModalSave}
           onClose={handleCloseCheckModal}
+        />
+      )}
+
+      {state.showErrorTypeModal && (
+        <ErrorTypeModal
+          open={state.showErrorTypeModal}
+          onSelect={(errorType) => annotationHandlers.handleErrorTypeSelect(errorType, state.pendingAnnotation)}
+          onCancel={() => {
+            state.setShowErrorTypeModal(false);
+            state.setPendingAnnotation(null);
+          }}
         />
       )}
     
