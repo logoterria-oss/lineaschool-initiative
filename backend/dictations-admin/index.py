@@ -125,6 +125,7 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             if action == 'save_annotation':
                 dictation_id = body_data.get('id')
                 markup_data_raw = body_data.get('markup_data', '')
+                annotated_image_raw = body_data.get('annotated_image', '')
                 
                 print(f'Saving annotation for ID {dictation_id}')
                 print(f'markup_data length: {len(str(markup_data_raw))}')
@@ -138,8 +139,14 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 # Double escape single quotes for SQL
                 markup_data_escaped = markup_data.replace("'", "''")
                 
+                # Escape annotated image
+                if isinstance(annotated_image_raw, (dict, list)):
+                    annotated_image = json.dumps(annotated_image_raw).replace("'", "''")
+                else:
+                    annotated_image = str(annotated_image_raw).replace("'", "''")
+                
                 print(f'Executing UPDATE query')
-                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET markup_data = '{markup_data_escaped}', annotated_image = 'saved' WHERE id = {int(dictation_id)}"
+                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET markup_data = '{markup_data_escaped}', annotated_image = '{annotated_image}' WHERE id = {int(dictation_id)}"
                 
                 try:
                     cur.execute(query)
