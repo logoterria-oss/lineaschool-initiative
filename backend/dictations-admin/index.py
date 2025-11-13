@@ -139,12 +139,9 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 
                 annotated_image = str(annotated_image_raw)
                 
-                # Use proper escaping with double single quotes
-                markup_data_escaped = markup_data.replace("'", "''")
-                annotated_image_escaped = annotated_image.replace("'", "''")
-                
+                # Use dollar-quoted strings to avoid escaping issues
                 print(f'Executing UPDATE query')
-                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image_escaped}', markup_data = '{markup_data_escaped}' WHERE id = {int(dictation_id)}"
+                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = $tag${annotated_image}$tag$, markup_data = $tag${markup_data}$tag$ WHERE id = {int(dictation_id)}"
                 
                 try:
                     cur.execute(query)
