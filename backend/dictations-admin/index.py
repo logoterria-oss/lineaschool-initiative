@@ -131,20 +131,36 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 print(f'markup_data length: {len(str(markup_data_raw))}')
                 print(f'annotated_image length: {len(str(annotated_image_raw))}')
                 
-                # Escape markup_data (JSON string)
+                # Convert to proper format
                 if isinstance(markup_data_raw, (dict, list)):
-                    markup_data = json.dumps(markup_data_raw).replace("'", "''")
+                    markup_data = json.dumps(markup_data_raw)
                 else:
-                    markup_data = str(markup_data_raw).replace("'", "''")
+                    markup_data = str(markup_data_raw)
                 
-                # Escape annotated_image (base64 image)
-                annotated_image = str(annotated_image_raw).replace("'", "''")
+                annotated_image = str(annotated_image_raw)
+                
+                # Use proper escaping with double single quotes
+                markup_data_escaped = markup_data.replace("'", "''")
+                annotated_image_escaped = annotated_image.replace("'", "''")
                 
                 print(f'Executing UPDATE query')
-                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image}', markup_data = '{markup_data}' WHERE id = {dictation_id}"
-                cur.execute(query)
-                conn.commit()
-                print(f'UPDATE successful')
+                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET annotated_image = '{annotated_image_escaped}', markup_data = '{markup_data_escaped}' WHERE id = {int(dictation_id)}"
+                
+                try:
+                    cur.execute(query)
+                    conn.commit()
+                    print(f'UPDATE successful')
+                except Exception as e:
+                    print(f'UPDATE failed: {str(e)}')
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 500,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': f'Database update failed: {str(e)}'}),
+                        'isBase64Encoded': False
+                    }
+                
                 cur.close()
                 conn.close()
                 
