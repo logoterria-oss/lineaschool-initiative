@@ -123,7 +123,7 @@ const DictationsAdmin = () => {
   const handleSaveAnnotation = async (data: { markup: string, imageUrl: string, croppedImageUrl?: string }) => {
     if (!selectedDictation) return;
     
-    console.log('handleSaveAnnotation called with:', data);
+    console.log('handleSaveAnnotation called');
     
     try {
       const response = await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0', {
@@ -137,24 +137,21 @@ const DictationsAdmin = () => {
         })
       });
       
+      if (!response.ok) {
+        throw new Error(`Save failed: ${response.status}`);
+      }
+      
       const saveResult = await response.json();
-      console.log('Save response:', saveResult);
-      console.log('Saved markup length:', data.markup.length);
+      console.log('Save successful:', saveResult);
       
-      // Small delay to ensure DB write is complete
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Reload the specific dictation to get updated data from backend
       const updatedDictation = await loadDictationDetails(selectedDictation.id);
-      console.log('Updated dictation after save:', updatedDictation);
-      console.log('Updated markup_data:', updatedDictation?.markup_data);
-      console.log('Updated annotated_image length:', updatedDictation?.annotated_image?.length);
       
       if (updatedDictation) {
         setSelectedDictation(updatedDictation);
+        console.log('Dictation updated with markup');
       }
-      
-      await loadDictations();
     } catch (error) {
       console.error('Error saving annotation:', error);
     }
