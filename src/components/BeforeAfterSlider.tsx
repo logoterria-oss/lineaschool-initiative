@@ -162,11 +162,11 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
     <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6">
       <div 
         ref={containerRef}
-        className="relative overflow-hidden rounded-2xl cursor-ew-resize select-none"
+        className="relative cursor-ew-resize select-none"
         onMouseMove={handleMouseMove}
         onTouchMove={handleTouchMove}
       >
-        <div className="relative aspect-[5/4]">
+        <div className="relative aspect-[5/4] rounded-2xl overflow-hidden">
           <img 
             src={currentData.beforeImage} 
             alt={currentData.beforeAlt}
@@ -176,7 +176,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
             decoding="async"
           />
           <div 
-            className="absolute inset-0 overflow-hidden"
+            className="absolute inset-0 overflow-hidden rounded-2xl"
             style={{clipPath: `inset(0 ${100 - position}% 0 0)`}}
           >
             <img 
