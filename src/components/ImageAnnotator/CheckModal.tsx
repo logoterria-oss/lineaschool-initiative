@@ -310,7 +310,6 @@ const CheckModal = ({
     console.log('Разметка приклеена к изображению');
 
     onSave(bakedImageUrl);
-    onClose();
   };
 
   return (
