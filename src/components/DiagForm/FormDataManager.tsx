@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { DiagFormData } from "@/types/diagFormData";
-import { toast } from '@/hooks/use-toast';
 
 export const useFormDataManager = () => {
   const [formData, setFormData] = useState<DiagFormData>({
@@ -72,51 +71,6 @@ export const useFormDataManager = () => {
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
-
-  useEffect(() => {
-    const dictationDataStr = localStorage.getItem('dictation_to_form');
-    if (dictationDataStr) {
-      try {
-        const dictationData = JSON.parse(dictationDataStr);
-        const { childName, greenCount, redCount, annotatedImage } = dictationData;
-
-        const nameParts = (childName || '').trim().split(' ');
-        const lastName = nameParts[0] || '';
-        const firstName = nameParts[1] || '';
-        const fullName = `${lastName} ${firstName}`.trim();
-
-        if (fullName && formData.childName !== fullName) {
-          setFormData(prev => ({
-            ...prev,
-            childName: fullName,
-            dysgraphicErrors: String(greenCount || 0),
-            writingSamples: annotatedImage ? [annotatedImage] : prev.writingSamples
-          }));
-
-          const errorTypes: string[] = [];
-          if (greenCount > 0) errorTypes.push('дисграфия');
-          if (redCount > 0) errorTypes.push('дизорфография');
-
-          if (errorTypes.length > 0) {
-            setFormData(prev => ({
-              ...prev,
-              analysisErrors: greenCount > 0 ? ['пропуски', 'вставки'] : prev.analysisErrors
-            }));
-          }
-
-          toast({
-            title: 'Данные загружены',
-            description: `Автоматически заполнены данные для ${fullName}`
-          });
-
-          localStorage.removeItem('dictation_to_form');
-        }
-      } catch (error) {
-        console.error('Error loading dictation data:', error);
-        localStorage.removeItem('dictation_to_form');
-      }
-    }
-  }, []);
 
   return {
     formData,
