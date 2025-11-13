@@ -25,14 +25,6 @@ export default function DiagForm() {
       const data = await response.json();
       const dictations = data.dictations || [];
 
-      console.log('Total dictations:', dictations.length);
-      console.log('Searching for:', formData.childName);
-      console.log('All dictation names:', dictations.map((d: any) => ({
-        name: d.child_name,
-        status: d.status,
-        hasMarkup: !!d.markup_data
-      })));
-
       const normalizeText = (text: string) => {
         return text
           .toLowerCase()
@@ -42,30 +34,21 @@ export default function DiagForm() {
       };
 
       const searchName = normalizeText(formData.childName);
-      console.log('Normalized search name:', searchName);
       
       const matchingDictation = dictations.find((d: any) => {
-        if (d.status !== 'checked' || !d.markup_data) return false;
+        if (d.status !== 'checked' || !d.has_annotation) return false;
         
         const dictationName = normalizeText(d.child_name);
-        console.log('Comparing with:', dictationName);
-        
         const searchWords = searchName.split(' ').filter(w => w.length > 0);
         const dictationWords = dictationName.split(' ').filter(w => w.length > 0);
         
-        console.log('Search words:', searchWords);
-        console.log('Dictation words:', dictationWords);
-        
         if (searchWords.length === 0 || dictationWords.length === 0) return false;
         
-        const matches = searchWords.every(searchWord => 
+        return searchWords.every(searchWord => 
           dictationWords.some(dictWord => 
             dictWord.includes(searchWord) || searchWord.includes(dictWord)
           )
         );
-        
-        console.log('Match result:', matches);
-        return matches;
       });
 
       if (!matchingDictation) {
@@ -77,11 +60,24 @@ export default function DiagForm() {
         return;
       }
 
-      const markupData = matchingDictation.markup_data;
+      const detailResponse = await fetch(`https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0?id=${matchingDictation.id}`);
+      const detailData = await detailResponse.json();
+      const dictationDetail = detailData.dictation;
+
+      if (!dictationDetail || !dictationDetail.markup_data) {
+        toast({
+          title: 'Ошибка загрузки',
+          description: 'Не удалось получить данные разметки диктанта',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const markupData = dictationDetail.markup_data;
       const greenCount = markupData.greenCount || 0;
       const redCount = markupData.redCount || 0;
       const totalCount = greenCount + redCount;
-      const annotatedImage = matchingDictation.annotated_image;
+      const annotatedImage = dictationDetail.annotated_image;
 
       handleInputChange('dysgraphicErrors', String(greenCount));
       handleInputChange('dysorthographicErrors', String(redCount));
