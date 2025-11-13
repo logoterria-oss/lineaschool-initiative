@@ -152,6 +152,8 @@ const DictationsAdmin = () => {
         setSelectedDictation(updatedDictation);
         console.log('Dictation updated with markup');
       }
+      
+      setShowAnnotator(false);
     } catch (error) {
       console.error('Error saving annotation:', error);
     }
