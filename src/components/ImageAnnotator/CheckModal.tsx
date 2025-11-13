@@ -21,6 +21,7 @@ interface CheckModalProps {
   onUnderlineStartChange: (start: { x: number; y: number } | null) => void;
   onCountsChange: (green: number, red: number) => void;
   onClear: () => void;
+  onRotate: () => void;
   onSave: (bakedImageUrl?: string) => void;
   onClose: () => void;
 }
@@ -43,6 +44,7 @@ const CheckModal = ({
   onUnderlineStartChange,
   onCountsChange,
   onClear,
+  onRotate,
   onSave,
   onClose
 }: CheckModalProps) => {
@@ -434,6 +436,10 @@ const CheckModal = ({
 
           {/* Действия */}
           <div className="flex gap-2 pt-2 border-t">
+            <Button variant="outline" size="sm" onClick={onRotate}>
+              <Icon name="RotateCw" className="mr-1" size={14} />
+              Повернуть
+            </Button>
             <Button variant="outline" size="sm" onClick={onClear}>
               <Icon name="RotateCcw" className="mr-1" size={14} />
               Сбросить проверку
