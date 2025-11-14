@@ -243,7 +243,8 @@ export default function PricingSection() {
                 Amount: amount,
                 Tax: 'none',
                 PaymentMethod: 'full_prepayment',
-                PaymentObject: 'service'
+                PaymentObject: 'service',
+                MeasurementUnit: 'pc'
               }
             ]
           }
