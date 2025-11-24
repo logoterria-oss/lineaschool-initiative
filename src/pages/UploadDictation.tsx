@@ -9,7 +9,7 @@ import Footer from '@/components/Footer';
 import Navigation from '@/components/Navigation';
 
 export default function UploadDictation() {
-  const [parentName, setParentName] = useState('');
+
   const [childName, setChildName] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -39,10 +39,10 @@ export default function UploadDictation() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!parentName.trim() || !childName.trim()) {
+    if (!childName.trim()) {
       toast({
         title: 'Заполните все поля',
-        description: 'Укажите ФИО родителя и ребёнка',
+        description: 'Укажите ФИ ребёнка',
         variant: 'destructive'
       });
       return;
@@ -72,7 +72,7 @@ export default function UploadDictation() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            parent_name: parentName.trim(),
+            parent_name: 'Родитель (сайт)',
             child_name: childName.trim(),
             image: base64Image
           })
@@ -86,7 +86,6 @@ export default function UploadDictation() {
             description: 'Ваш диктант успешно загружен. Мы свяжемся с вами после проверки.'
           });
 
-          setParentName('');
           setChildName('');
           setImageFile(null);
           setImagePreview(null);
@@ -129,18 +128,6 @@ export default function UploadDictation() {
 
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="parentName">ФИО родителя</Label>
-                  <Input
-                    id="parentName"
-                    type="text"
-                    placeholder="Иванова Мария Петровна"
-                    value={parentName}
-                    onChange={(e) => setParentName(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="childName">ФИ ребёнка</Label>
                   <Input
