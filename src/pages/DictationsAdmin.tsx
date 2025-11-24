@@ -261,7 +261,9 @@ const DictationsAdmin = () => {
                     {selectedDictation.photo_file_id ? (
                       showAnnotator ? (
                         <ImageAnnotator
-                          imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
+                          imageUrl={selectedDictation.photo_file_id === 'WEB_UPLOAD' && selectedDictation.photo_url 
+                            ? `data:image/jpeg;base64,${selectedDictation.photo_url}`
+                            : `https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
                           onSave={handleSaveAnnotation}
                           savedMarkup={selectedDictation.markup_data ? JSON.stringify(selectedDictation.markup_data) : null}
                         />
@@ -270,7 +272,9 @@ const DictationsAdmin = () => {
                           <div className="bg-white rounded-lg border overflow-hidden">
                             <AnnotatedImageView
                               ref={annotatedImageRef}
-                              imageUrl={`https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
+                              imageUrl={selectedDictation.photo_file_id === 'WEB_UPLOAD' && selectedDictation.photo_url 
+                                ? `data:image/jpeg;base64,${selectedDictation.photo_url}`
+                                : `https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id=${encodeURIComponent(selectedDictation.photo_file_id)}`}
                               markupData={selectedDictation.markup_data}
                               alt={`Диктант ${selectedDictation.child_name}`}
                               className="w-full h-auto"

@@ -1,4 +1,5 @@
 {
+  "upload-dictation": "https://functions.poehali.dev/93d8070e-4f07-4586-97a9-9c2541aa0185",
   "send-telegram-notification": "https://functions.poehali.dev/c7e45041-9353-48b0-9496-bc4ae40b911d",
   "get-payment-leads": "https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2",
   "save-payment-lead": "https://functions.poehali.dev/99e752b7-e754-4be4-8fe8-1b666731a12c",
