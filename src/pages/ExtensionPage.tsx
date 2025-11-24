@@ -182,14 +182,24 @@ export default function ExtensionPage() {
             <p className="text-gray-700 mb-4">
               Свяжитесь с нами, и мы поможем настроить расширение
             </p>
-            <Button 
-              variant="outline" 
-              size="lg"
-              onClick={() => window.open('https://t.me/your_support', '_blank')}
-            >
-              <Icon name="MessageCircle" className="mr-2" />
-              Написать в поддержку
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => window.location.href = 'mailto:lineaschool@mail.ru?subject=Помощь с установкой расширения'}
+              >
+                <Icon name="Mail" className="mr-2" />
+                lineaschool@mail.ru
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => window.open('https://wa.me/79236251611?text=Здравствуйте!%20Нужна%20помощь%20с%20установкой%20расширения', '_blank')}
+              >
+                <Icon name="MessageCircle" className="mr-2" />
+                WhatsApp
+              </Button>
+            </div>
           </div>
         </main>
 
