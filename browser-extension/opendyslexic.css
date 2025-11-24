@@ -1,0 +1,62 @@
+@font-face {
+  font-family: "OpenDyslexic";
+  src:
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Regular.woff2)
+      format("woff2"),
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Regular.woff)
+      format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src:
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Bold.woff2)
+      format("woff2"),
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Bold.woff)
+      format("woff");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src:
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Italic.woff2)
+      format("woff2"),
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Italic.woff)
+      format("woff");
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src:
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Bold-Italic.woff2)
+      format("woff2"),
+    url(chrome-extension://__MSG_@@extension_id__/fonts/OpenDyslexic-Bold-Italic.woff)
+      format("woff");
+  font-weight: bold;
+  font-style: italic;
+  font-display: swap;
+}
+
+html.opendyslexic-enabled,
+html.opendyslexic-enabled body,
+html.opendyslexic-enabled * {
+  font-family: "OpenDyslexic", "Comic Sans MS", cursive, sans-serif !important;
+}
+
+html.opendyslexic-enabled pre,
+html.opendyslexic-enabled code,
+html.opendyslexic-enabled kbd,
+html.opendyslexic-enabled samp,
+html.opendyslexic-enabled tt,
+html.opendyslexic-enabled .monospace {
+  font-family: "OpenDyslexic Mono", "Courier New", monospace !important;
+}

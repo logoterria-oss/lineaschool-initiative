@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenDyslexic</title>
+  <style>
+    body {
+      width: 320px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #718096;
+      margin: 0 0 20px 0;
+    }
+
+    .toggle-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .toggle-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: #2d3748;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      background: #cbd5e0;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch.active {
+      background: #48bb78;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch.active .toggle-slider {
+      transform: translateX(24px);
+    }
+
+    .info {
+      background: #edf2f7;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #4a5568;
+      line-height: 1.5;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .status.show {
+      opacity: 1;
+    }
+
+    .status.enabled {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .status.disabled {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .icon {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <span class="icon">📖</span>
+      OpenDyslexic
+    </h1>
+    <p class="subtitle">Шрифт для упрощения чтения</p>
+    
+    <div class="toggle-section">
+      <span class="toggle-label">Включить шрифт</span>
+      <div class="toggle-switch" id="toggle">
+        <div class="toggle-slider"></div>
+      </div>
+    </div>
+
+    <div class="info">
+      💡 OpenDyslexic разработан специально для людей с дислексией. Буквы имеют утяжелённое основание, что помогает мозгу правильно ориентировать их при чтении.
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
