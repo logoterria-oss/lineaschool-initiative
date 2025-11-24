@@ -26,15 +26,6 @@ export default function CTASection() {
             size="lg" 
             variant="outline" 
             className="border-white bg-transparent text-white hover:bg-white hover:text-green-600 text-lg px-8"
-            onClick={() => window.location.href = '/upload-dictation'}
-          >
-            <Icon name="Upload" className="mr-2" size={20} />
-            Отправить диктант
-          </Button>
-          <Button 
-            size="lg" 
-            variant="outline" 
-            className="border-white bg-transparent text-white hover:bg-white hover:text-green-600 text-lg px-8"
             onClick={() => window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
           >
             <Icon name="Mail" className="mr-2" size={20} />
