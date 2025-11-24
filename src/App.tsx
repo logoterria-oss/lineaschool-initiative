@@ -22,6 +22,7 @@ const DictationsAdmin = lazy(() => import("./pages/DictationsAdmin"));
 const TelegramSetup = lazy(() => import("./pages/TelegramSetup"));
 const PaymentLeadsPage = lazy(() => import("./pages/PaymentLeadsPage"));
 const UploadDictation = lazy(() => import("./pages/UploadDictation"));
+const ExtensionPage = lazy(() => import("./pages/ExtensionPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Компонент загрузки
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/price" element={<Pricing />} />
               <Route path="/oferta_2025" element={<OfferPage />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/extension" element={<ExtensionPage />} />
               <Route path="/anketa" element={<ParentQuestionnaire />} />
               <Route path="/diag_form" element={<DiagForm />} />
               <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
