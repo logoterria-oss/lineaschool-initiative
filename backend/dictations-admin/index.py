@@ -120,7 +120,7 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
                     'photo_url': d['photo_url'],
-                    'has_annotation': bool(d.get('annotated_image')),
+                    'has_annotation': bool(d.get('markup_data')),
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
                     'created_at': d['created_at'].isoformat() if d['created_at'] else None,
