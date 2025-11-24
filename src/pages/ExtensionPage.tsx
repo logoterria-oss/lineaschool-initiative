@@ -176,31 +176,6 @@ export default function ExtensionPage() {
               </CardContent>
             </Card>
           </div>
-
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Нужна помощь с установкой?</h2>
-            <p className="text-gray-700 mb-4">
-              Свяжитесь с нами, и мы поможем настроить расширение
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => window.location.href = 'mailto:lineaschool@mail.ru?subject=Помощь с установкой расширения'}
-              >
-                <Icon name="Mail" className="mr-2" />
-                lineaschool@mail.ru
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => window.open('https://wa.me/79236251611?text=Здравствуйте!%20Нужна%20помощь%20с%20установкой%20расширения', '_blank')}
-              >
-                <Icon name="MessageCircle" className="mr-2" />
-                WhatsApp
-              </Button>
-            </div>
-          </div>
         </main>
 
         <Footer />
