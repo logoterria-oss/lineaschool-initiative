@@ -50,8 +50,9 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             dictation_id = query_params.get('id')
             
             if dictation_id:
+                dictation_id_int = int(dictation_id)
                 cur.execute(
-                    f"SELECT * FROM t_p93118852_lineaschool_initiati.dictations WHERE id = {int(dictation_id)}"
+                    "SELECT * FROM t_p93118852_lineaschool_initiati.dictations WHERE id = " + str(dictation_id_int)
                 )
                 d = cur.fetchone()
                 
@@ -106,7 +107,10 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                "SELECT * FROM t_p93118852_lineaschool_initiati.dictations "
+                "SELECT id, telegram_user_id, telegram_username, child_name, photo_file_id, "
+                "CASE WHEN markup_data IS NOT NULL THEN true ELSE false END as has_annotation, "
+                "status, LEFT(diagnostician_notes, 200) as diagnostician_notes, created_at, checked_at, checked_by "
+                "FROM t_p93118852_lineaschool_initiati.dictations "
                 "ORDER BY created_at DESC LIMIT 50"
             )
             dictations = cur.fetchall()
@@ -119,8 +123,8 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     'telegram_username': d['telegram_username'] or '',
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
-                    'photo_url': d['photo_url'],
-                    'has_annotation': bool(d.get('markup_data')),
+                    'photo_url': None,
+                    'has_annotation': d['has_annotation'],
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
                     'created_at': d['created_at'].isoformat() if d['created_at'] else None,
@@ -170,7 +174,8 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     annotated_image = str(annotated_image_raw).replace("'", "''")
                 
                 print(f'Executing UPDATE query')
-                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET markup_data = '{markup_data_escaped}', annotated_image = '{annotated_image}' WHERE id = {int(dictation_id)}"
+                dictation_id_int = int(dictation_id)
+                query = "UPDATE t_p93118852_lineaschool_initiati.dictations SET markup_data = '" + markup_data_escaped + "', annotated_image = '" + annotated_image + "' WHERE id = " + str(dictation_id_int)
                 
                 try:
                     cur.execute(query)
@@ -209,7 +214,8 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 else:
                     annotated_image = str(annotated_image_raw).replace("'", "''")
                 
-                query = f"UPDATE t_p93118852_lineaschool_initiati.dictations SET status = 'checked', diagnostician_notes = '{notes}', annotated_image = '{annotated_image}', checked_at = CURRENT_TIMESTAMP WHERE id = {dictation_id}"
+                dictation_id_int = int(dictation_id)
+                query = "UPDATE t_p93118852_lineaschool_initiati.dictations SET status = 'checked', diagnostician_notes = '" + notes + "', annotated_image = '" + annotated_image + "', checked_at = CURRENT_TIMESTAMP WHERE id = " + str(dictation_id_int)
                 cur.execute(query)
                 conn.commit()
                 cur.close()
