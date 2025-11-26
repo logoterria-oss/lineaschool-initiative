@@ -1,23 +1,22 @@
 {
   "tests": [
     {
-      "name": "Test OPTIONS for CORS",
+      "name": "OPTIONS request for CORS",
       "method": "OPTIONS",
       "path": "/",
       "expectedStatus": 200
     },
     {
-      "name": "Test send notification",
+      "name": "POST lead with valid data",
       "method": "POST",
       "path": "/",
       "body": {
-        "chat_id": "123456789",
-        "name": "Тестовый клиент",
-        "plan": "Премиум",
-        "amount": "5000",
-        "order_id": "TEST123"
+        "name": "Тестовый Родитель",
+        "email": "test@example.com",
+        "phone": "+79991234567",
+        "date": "15.12.2025",
+        "time": "14:00"
       },
-      "skipTest": true,
       "expectedStatus": 200,
       "expectedBody": {
         "success": true
