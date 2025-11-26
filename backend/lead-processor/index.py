@@ -27,13 +27,18 @@ def send_whatsapp_message(phone: str, message: str) -> bool:
     url = f'https://api.green-api.com/waInstance{instance_id}/sendMessage/{api_token}'
     
     try:
+        print(f'Sending WhatsApp to {chat_id}')
         response = requests.post(url, json={
             'chatId': chat_id,
             'message': message
         }, timeout=10)
         
+        print(f'GreenAPI response status: {response.status_code}')
+        print(f'GreenAPI response body: {response.text}')
+        
         if response.status_code == 200:
-            print(f'WhatsApp message sent to {phone}')
+            response_data = response.json()
+            print(f'WhatsApp message sent successfully: {response_data}')
             return True
         else:
             print(f'WhatsApp API error: {response.status_code} - {response.text}')
