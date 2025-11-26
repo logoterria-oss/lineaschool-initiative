@@ -71,8 +71,10 @@ def get_conversation_history(conversation_id: int, limit: int = 10) -> list:
         conn.close()
 
 def generate_ai_response(user_message: str, history: list) -> str:
-    openai_api_key = os.environ.get('OPENAI_API_KEY')
-    if not openai_api_key:
+    yandex_api_key = os.environ.get('YANDEX_API_KEY')
+    yandex_folder_id = os.environ.get('YANDEX_FOLDER_ID')
+    
+    if not yandex_api_key or not yandex_folder_id:
         return "Здравствуйте! Меня зовут Виктория. Пишу вам из онлайн-школы коррекции дислексии и дисграфии LineaSchool. Расскажите поподробнее про вашу проблему"
     
     system_prompt = """Ты - Виктория, руководитель и создатель онлайн-школы коррекции дислексии и дисграфии LineaSchool.
@@ -121,32 +123,38 @@ def generate_ai_response(user_message: str, history: list) -> str:
 
 ПОМНИ: Родитель НЕ ДОЛЖЕН понять, что ты AI!"""
 
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = []
+    messages.append({"role": "system", "text": system_prompt})
     
     for msg in history[-5:]:
         role = "assistant" if msg['sender'] in ['ai', 'victoria'] else "user"
-        messages.append({"role": role, "content": msg['message_text']})
+        messages.append({"role": role, "text": msg['message_text']})
     
-    messages.append({"role": "user", "content": user_message})
+    messages.append({"role": "user", "text": user_message})
     
     try:
         response = requests.post(
-            'https://api.openai.com/v1/chat/completions',
+            'https://llm.api.cloud.yandex.net/foundationModels/v1/completion',
             headers={
-                'Authorization': f'Bearer {openai_api_key}',
-                'Content-Type': 'application/json'
+                'Authorization': f'Api-Key {yandex_api_key}',
+                'Content-Type': 'application/json',
+                'x-folder-id': yandex_folder_id
             },
             json={
-                'model': 'gpt-4',
-                'messages': messages,
-                'temperature': 0.8,
-                'max_tokens': 500
+                'modelUri': f'gpt://{yandex_folder_id}/yandexgpt-lite/latest',
+                'completionOptions': {
+                    'stream': False,
+                    'temperature': 0.8,
+                    'maxTokens': 500
+                },
+                'messages': messages
             },
             timeout=30
         )
         
         if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content']
+            result = response.json()
+            return result['result']['alternatives'][0]['message']['text']
         else:
             return "Здравствуйте! Меня зовут Виктория. Пишу вам из онлайн-школы коррекции дислексии и дисграфии LineaSchool. Расскажите поподробнее про вашу проблему"
     except Exception:
