@@ -18,7 +18,8 @@ def get_conversation(telegram_user_id: int) -> Optional[Dict]:
                 "SELECT * FROM conversations WHERE telegram_user_id = %s ORDER BY id DESC LIMIT 1",
                 (telegram_user_id,)
             )
-            return dict(cur.fetchone()) if cur.fetchone() else None
+            row = cur.fetchone()
+            return dict(row) if row else None
     finally:
         conn.close()
 
@@ -176,7 +177,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
     try:

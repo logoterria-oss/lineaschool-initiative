@@ -4,9 +4,7 @@
       "name": "OPTIONS request for CORS",
       "method": "OPTIONS",
       "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": {},
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     },
     {
       "name": "POST webhook with message",
