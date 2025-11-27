@@ -7,6 +7,26 @@ import AdminHeader from '@/components/AdminHeader';
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
+  const emergencyStopAI = async () => {
+    if (!confirm('⚠️ ОСТАНОВИТЬ ВСЕ AI ДИАЛОГИ?\n\nЭто немедленно отключит автоответы во всех активных разговорах.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'stop_all_ai'})
+      });
+      
+      const result = await response.json();
+      alert(`✅ AI остановлен!\n\nОтключено диалогов: ${result.stopped || 0}`);
+    } catch (error) {
+      alert('❌ Ошибка остановки AI. Попробуйте ещё раз.');
+      console.error(error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       <AdminHeader showOnlyHome />
@@ -19,6 +39,15 @@ const AdminDashboard = () => {
             <p className="text-base md:text-lg text-gray-600">
               Выберите раздел для работы
             </p>
+            <Button 
+              onClick={emergencyStopAI}
+              variant="destructive" 
+              size="lg"
+              className="mt-4 text-lg px-8 py-6 animate-pulse"
+            >
+              <Icon name="StopCircle" size={24} className="mr-2" />
+              🚨 ЭКСТРЕННАЯ ОСТАНОВКА AI
+            </Button>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 md:gap-6">
