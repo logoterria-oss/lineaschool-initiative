@@ -194,17 +194,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         body = json.loads(event.get('body', '{}'))
         
+        print(f'=== WHATSAPP WEBHOOK ===')
+        print(f'Body: {json.dumps(body, indent=2)}')
+        
         if body.get('typeWebhook') != 'incomingMessageReceived':
+            print(f'Skipping webhook type: {body.get("typeWebhook")}')
             return {'statusCode': 200, 'body': json.dumps({'ok': True})}
         
         message_data = body.get('messageData', {})
         text_message = message_data.get('textMessageData', {}).get('textMessage', '')
         
         if not text_message:
+            print('No text message found')
             return {'statusCode': 200, 'body': json.dumps({'ok': True})}
         
         sender_data = body.get('senderData', {})
         sender_phone = sender_data.get('sender', '').replace('@c.us', '')
+        
+        print(f'Incoming message from {sender_phone}: {text_message}')
         
         conversation = get_conversation_by_phone(sender_phone)
         
