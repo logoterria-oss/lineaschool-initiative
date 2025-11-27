@@ -51,20 +51,30 @@ def send_whatsapp_message(phone: str, message: str) -> bool:
         return False
 
 def send_telegram_notification(name: str, email: str, phone: str, date: str, time: str):
-    bot_token = os.environ.get('AI_BOT_TOKEN')
-    chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID', '1112267464')
+    bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
+    chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
+    
+    print(f'=== TELEGRAM NOTIFICATION ===')
+    print(f'Bot token exists: {bool(bot_token)}')
+    print(f'Chat ID: {chat_id}')
     
     if not bot_token:
+        print('No bot token configured')
+        return
+    
+    if not chat_id:
+        print('No chat_id configured - skipping notification')
         return
     
     message = f"🎓 Новая запись на диагностику:\n\n👤 Имя: {name}\n📧 E-mail: {email}\n📱 Телефон: {phone}\n📅 Дата: {date}\n🕐 Время: {time}"
     
     try:
-        requests.post(
+        response = requests.post(
             f'https://api.telegram.org/bot{bot_token}/sendMessage',
             json={'chat_id': chat_id, 'text': message},
             timeout=5
         )
+        print(f'Telegram response: {response.status_code} - {response.text}')
     except Exception as e:
         print(f'Telegram notification failed: {str(e)}')
 
