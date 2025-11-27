@@ -22,6 +22,7 @@ import TelegramSetup from "./pages/TelegramSetup";
 import PaymentLeadsPage from "./pages/PaymentLeadsPage";
 import UploadDictation from "./pages/UploadDictation";
 import ExtensionPage from "./pages/ExtensionPage";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/telegram-setup" element={<TelegramSetup />} />
               <Route path="/admin/questionnaires" element={<QuestionnaireResponses />} />
               <Route path="/admin/payment-leads" element={<PaymentLeadsPage />} />
+              <Route path="/admin/ai-manager" element={<AdminPanel />} />
               <Route path="/upload-dictation" element={<UploadDictation />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
