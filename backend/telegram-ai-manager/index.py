@@ -191,6 +191,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         chat_id = message['chat']['id']
         text = message.get('text', '')
         
+        print(f'=== INCOMING MESSAGE ===')
+        print(f'Chat ID: {chat_id}')
+        print(f'Text: {text}')
+        print(f'From: {message.get("from", {})}')
+        print(f'=======================')
+        
         from_user = message.get('from', {})
         telegram_user_id = from_user.get('id')
         first_name = from_user.get('first_name', '')
