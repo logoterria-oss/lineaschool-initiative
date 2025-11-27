@@ -40,24 +40,27 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('📤 Отправка заявки:', formData);
+    // Отправка данных в Telegram
+    const message = `🎓 Новая запись на диагностику:\n\n👤 Имя: ${formData.name}\n📧 E-mail: ${formData.email}\n📱 Телефон: ${formData.phone}\n📅 Дата: ${formData.date}\n🕐 Время: ${formData.time}`;
     
     try {
-      const response = await fetch('https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094', {
+      // Замените YOUR_BOT_TOKEN и YOUR_CHAT_ID на ваши данные
+      const telegramBotToken = '8320634391:AAGxRCQdt_K-L5QliSLX9vDJmqhLlubfpB8';
+      const chatId = '1112267464';
+      
+      await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML'
+        }),
       });
-      
-      console.log('✅ Ответ сервера:', response.status, await response.clone().text());
-      
-      if (!response.ok) {
-        throw new Error('Ошибка отправки заявки');
-      }
     } catch (error) {
-      console.error('❌ Ошибка отправки заявки:', error);
+      console.error('Ошибка отправки в Telegram:', error);
     }
     
     onClose();

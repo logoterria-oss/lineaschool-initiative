@@ -1,0 +1,10 @@
+{
+  "tests": [
+    {
+      "name": "Check migration status",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}
