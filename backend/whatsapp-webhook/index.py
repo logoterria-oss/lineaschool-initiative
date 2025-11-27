@@ -126,6 +126,9 @@ def generate_ai_response(user_message: str, history: list) -> str:
     messages.append({"role": "user", "text": user_message})
     
     try:
+        print(f'=== YANDEX GPT REQUEST ===')
+        print(f'Messages count: {len(messages)}')
+        
         response = requests.post(
             'https://llm.api.cloud.yandex.net/foundationModels/v1/completion',
             headers={
@@ -145,13 +148,20 @@ def generate_ai_response(user_message: str, history: list) -> str:
             timeout=30
         )
         
+        print(f'Yandex GPT response status: {response.status_code}')
+        print(f'Yandex GPT response: {response.text}')
+        
         if response.status_code == 200:
             result = response.json()
-            return result['result']['alternatives'][0]['message']['text']
+            ai_text = result['result']['alternatives'][0]['message']['text']
+            print(f'✅ AI response generated: {ai_text[:100]}...')
+            return ai_text
         else:
-            return "Здравствуйте! Меня зовут Виктория. Пишу вам из онлайн-школы коррекции дислексии и дисграфии LineaSchool. Расскажите поподробнее про вашу проблему"
-    except Exception:
-        return "Здравствуйте! Меня зовут Виктория. Пишу вам из онлайн-школы коррекции дислексии и дисграфии LineaSchool. Расскажите поподробнее про вашу проблему"
+            print(f'❌ Yandex GPT error: {response.status_code} - {response.text}')
+            return "Отлично! Скажите, сколько лет вашему ребёнку и в каком он классе?"
+    except Exception as e:
+        print(f'❌ Exception in generate_ai_response: {str(e)}')
+        return "Отлично! Скажите, сколько лет вашему ребёнку и в каком он классе?"
 
 def send_whatsapp_message(phone: str, message: str):
     instance_id = os.environ.get('GREENAPI_INSTANCE_ID')
