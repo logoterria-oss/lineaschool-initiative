@@ -40,6 +40,8 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('📤 Отправка заявки:', formData);
+    
     try {
       const response = await fetch('https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094', {
         method: 'POST',
@@ -49,11 +51,13 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
         body: JSON.stringify(formData),
       });
       
+      console.log('✅ Ответ сервера:', response.status, await response.clone().text());
+      
       if (!response.ok) {
         throw new Error('Ошибка отправки заявки');
       }
     } catch (error) {
-      console.error('Ошибка отправки заявки:', error);
+      console.error('❌ Ошибка отправки заявки:', error);
     }
     
     onClose();
