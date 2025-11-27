@@ -55,7 +55,7 @@ export default function AdminPanel() {
 
   const loadConversations = async () => {
     try {
-      const response = await fetch('https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa');
+      const response = await fetch('https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa?endpoint=ai_manager');
       const data = await response.json();
       setConversations(data.conversations || []);
     } catch (error) {
@@ -65,7 +65,7 @@ export default function AdminPanel() {
 
   const loadMessages = async (conversationId: number) => {
     try {
-      const response = await fetch(`https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa?conversation_id=${conversationId}`);
+      const response = await fetch(`https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa?endpoint=ai_manager&conversation_id=${conversationId}`);
       const data = await response.json();
       setMessages(data.messages || []);
     } catch (error) {
