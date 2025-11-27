@@ -212,11 +212,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         sender_phone = sender_data.get('sender', '').replace('@c.us', '')
         
         print(f'Incoming message from {sender_phone}: {text_message}')
+        print(f'Searching conversation by phone: {sender_phone}')
         
         conversation = get_conversation_by_phone(sender_phone)
         
         if not conversation:
+            print(f'❌ Conversation not found for phone: {sender_phone}')
             return {'statusCode': 200, 'body': json.dumps({'ok': True, 'message': 'Conversation not found'})}
+        
+        print(f'✅ Found conversation: ID={conversation["id"]}, assigned_to={conversation.get("assigned_to")}')
         
         conversation_id = conversation['id']
         
