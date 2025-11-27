@@ -11,6 +11,9 @@ from psycopg2.extras import RealDictCursor
 import requests
 
 def send_whatsapp_message(phone: str, message: str) -> bool:
+    print(f'=== SEND WHATSAPP ===')
+    print(f'Phone: {phone}')
+    print(f'Message: {message}')
     instance_id = os.environ.get('GREENAPI_INSTANCE_ID')
     api_token = os.environ.get('GREENAPI_API_TOKEN')
     
@@ -48,8 +51,8 @@ def send_whatsapp_message(phone: str, message: str) -> bool:
         return False
 
 def send_telegram_notification(name: str, email: str, phone: str, date: str, time: str):
-    bot_token = os.environ.get('TELEGRAM_BOT_API_TOKEN')
-    chat_id = '1112267464'
+    bot_token = os.environ.get('AI_BOT_TOKEN')
+    chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID', '1112267464')
     
     if not bot_token:
         return
@@ -130,7 +133,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         )
         conversation_id = cur.fetchone()[0]
         
-        first_message = "Здравствуйте! Меня зовут Виктория. Пишу вам из онлайн-школы коррекции дислексии и дисграфии LineaSchool. Расскажите поподробнее про вашу проблему"
+        first_message = "Здравствуйте! Меня зовут Виктория. Я руководитель онлайн-школы коррекции дислексии и дисграфии LineaSchool. Вы оставили заявку на диагностику, верно?"
         
         cur.execute(
             "INSERT INTO messages (conversation_id, sender, message_text) VALUES (%s, %s, %s)",
@@ -141,8 +144,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.close()
         conn.close()
         
-        send_whatsapp_message(phone, first_message)
+        print(f'📱 Отправка WhatsApp на номер: {phone}')
+        whatsapp_sent = send_whatsapp_message(phone, first_message)
+        print(f'WhatsApp отправлен: {whatsapp_sent}')
         
+        print(f'📨 Отправка уведомления в Telegram')
         send_telegram_notification(name, email, phone, date, time)
         
         return {
