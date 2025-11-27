@@ -18,11 +18,12 @@ def get_conversation_by_phone(phone: str):
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '')
             cur.execute(
-                """SELECT * FROM conversations 
-                   WHERE telegram_username = %s 
+                """SELECT * FROM t_p93118852_lineaschool_initiati.conversations 
+                   WHERE REPLACE(REPLACE(REPLACE(telegram_username, '+', ''), ' ', ''), '-', '') = %s 
                    ORDER BY id DESC LIMIT 1""",
-                (phone,)
+                (clean_phone,)
             )
             row = cur.fetchone()
             return dict(row) if row else None
@@ -34,11 +35,11 @@ def save_message(conversation_id: int, sender: str, message_text: str):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO messages (conversation_id, sender, message_text) VALUES (%s, %s, %s)",
+                "INSERT INTO t_p93118852_lineaschool_initiati.messages (conversation_id, sender, message_text) VALUES (%s, %s, %s)",
                 (conversation_id, sender, message_text)
             )
             cur.execute(
-                "UPDATE conversations SET updated_at = NOW() WHERE id = %s",
+                "UPDATE t_p93118852_lineaschool_initiati.conversations SET updated_at = NOW() WHERE id = %s",
                 (conversation_id,)
             )
             conn.commit()
@@ -51,7 +52,7 @@ def get_conversation_history(conversation_id: int, limit: int = 10) -> list:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """SELECT sender, message_text, sent_at 
-                   FROM messages 
+                   FROM t_p93118852_lineaschool_initiati.messages 
                    WHERE conversation_id = %s 
                    ORDER BY sent_at DESC 
                    LIMIT %s""",
