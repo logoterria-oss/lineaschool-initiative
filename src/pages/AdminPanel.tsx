@@ -151,6 +151,25 @@ export default function AdminPanel() {
     }
   };
 
+  const stopAllAI = async () => {
+    if (!confirm('Остановить AI во всех активных диалогах?')) return;
+    
+    setLoading(true);
+    try {
+      await fetch('https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop_all_ai' })
+      });
+      loadConversations();
+      alert('AI остановлен во всех диалогах');
+    } catch (error) {
+      console.error('Ошибка остановки AI:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
@@ -184,11 +203,19 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Icon name="Settings" size={32} />
-            Админ-панель LineaSchool
-          </h1>
-          <p className="text-gray-600 mt-2">Управление AI-менеджером и диалогами</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <Icon name="Settings" size={32} />
+                Админ-панель LineaSchool
+              </h1>
+              <p className="text-gray-600 mt-2">Управление AI-менеджером и диалогами</p>
+            </div>
+            <Button onClick={stopAllAI} variant="destructive" disabled={loading}>
+              <Icon name="StopCircle" size={18} className="mr-2" />
+              Остановить всех AI
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="conversations" className="space-y-4">

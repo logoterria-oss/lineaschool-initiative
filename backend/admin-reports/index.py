@@ -206,6 +206,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'success': True}),
                     'isBase64Encoded': False
                 }
+            
+            if action == 'stop_all_ai':
+                cursor.execute(
+                    """UPDATE t_p93118852_lineaschool_initiati.conversations 
+                       SET assigned_to = 'manual' 
+                       WHERE status = 'active' AND assigned_to = 'ai'"""
+                )
+                affected_rows = cursor.rowcount
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'stopped': affected_rows}),
+                    'isBase64Encoded': False
+                }
         
         return {
             'statusCode': 400,
