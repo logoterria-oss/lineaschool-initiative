@@ -73,10 +73,7 @@ export default function ExtensionPage() {
                     <Icon name="Check" className="text-green-600 mt-1 flex-shrink-0" size={20} />
                     <span>Увеличенный размер шрифта на любой странице</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <Icon name="Check" className="text-green-600 mt-1 flex-shrink-0" size={20} />
-                    <span>Выбор цветовой схемы: светлая или тёмная тема</span>
-                  </li>
+
                   <li className="flex items-start gap-2">
                     <Icon name="Check" className="text-green-600 mt-1 flex-shrink-0" size={20} />
                     <span>Работает на всех сайтах автоматически</span>
