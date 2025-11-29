@@ -7,12 +7,7 @@ import Icon from "@/components/ui/icon";
 
 export default function ExtensionPage() {
   const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = '/browser-extension.zip';
-    link.download = 'dyslexia-helper-extension.zip';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    window.open('https://chromewebstore.google.com/detail/opendyslexic-шрифт-для-ди/pcgookkdmlcbdabeiciiibgpojmledfe', '_blank');
   };
 
   return (
@@ -39,9 +34,9 @@ export default function ExtensionPage() {
 
           <Card className="mb-8 border-2 border-green-500">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Скачать расширение</CardTitle>
+              <CardTitle className="text-2xl">Установить расширение</CardTitle>
               <CardDescription>
-                Совместимо с Chrome, Edge, Brave и другими браузерами на Chromium
+                Доступно в официальном магазине Chrome Web Store
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
@@ -51,7 +46,7 @@ export default function ExtensionPage() {
                 className="bg-green-600 hover:bg-green-700 text-lg px-8 py-6"
               >
                 <Icon name="Download" className="mr-2" size={24} />
-                Скачать расширение
+                Установить из Chrome Web Store
               </Button>
             </CardContent>
           </Card>
@@ -102,42 +97,19 @@ export default function ExtensionPage() {
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">1</span>
                     <div>
-                      <strong>Скачайте файл</strong>
-                      <p className="text-gray-600 mt-1">Нажмите кнопку "Скачать расширение" выше</p>
+                      <strong>Нажмите кнопку выше</strong>
+                      <p className="text-gray-600 mt-1">Откроется страница расширения в Chrome Web Store</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</span>
                     <div>
-                      <strong>Распакуйте архив</strong>
-                      <p className="text-gray-600 mt-1">Откройте скачанный ZIP-файл и извлеките папку на компьютер</p>
+                      <strong>Нажмите "Установить"</strong>
+                      <p className="text-gray-600 mt-1">Подтвердите установку во всплывающем окне</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">3</span>
-                    <div>
-                      <strong>Откройте настройки расширений Chrome</strong>
-                      <p className="text-gray-600 mt-1">
-                        Введите в адресной строке: <code className="bg-gray-100 px-2 py-1 rounded">chrome://extensions/</code>
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">4</span>
-                    <div>
-                      <strong>Включите режим разработчика</strong>
-                      <p className="text-gray-600 mt-1">Переключите тумблер "Режим разработчика" в правом верхнем углу</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">5</span>
-                    <div>
-                      <strong>Загрузите расширение</strong>
-                      <p className="text-gray-600 mt-1">Нажмите "Загрузить распакованное расширение" и выберите папку browser-extension</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">6</span>
                     <div>
                       <strong>Готово!</strong>
                       <p className="text-gray-600 mt-1">Расширение установлено. Нажмите на иконку расширения в браузере для настройки</p>
@@ -165,8 +137,8 @@ export default function ExtensionPage() {
                     <p className="text-gray-600">Да, расширение работает на всех браузерах на базе Chromium: Chrome, Edge, Brave, Opera и других.</p>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Почему не в Chrome Web Store?</h3>
-                    <p className="text-gray-600">Мы планируем добавить расширение в официальный магазин. Пока можно установить вручную.</p>
+                    <h3 className="font-semibold mb-2">Работает ли на мобильных устройствах?</h3>
+                    <p className="text-gray-600">К сожалению, расширения для Chrome не поддерживаются на мобильных браузерах iOS и Android.</p>
                   </div>
                   <div>
                     <h3 className="font-semibold mb-2">Как отключить расширение на конкретном сайте?</h3>
