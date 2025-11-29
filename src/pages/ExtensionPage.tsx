@@ -24,9 +24,8 @@ export default function ExtensionPage() {
         
         <main className="container mx-auto px-4 py-16 max-w-4xl">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              OpenDyslexic на русском (by LineaSchool)
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Шрифт OpenDyslexic на русском
+(by LineaSchool)</h1>
             <p className="text-xl text-gray-600">Бесплатный помощник для людей с дислексией </p>
           </div>
 
