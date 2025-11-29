@@ -67,7 +67,7 @@ export default function ExtensionPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Icon name="Check" className="text-green-600 mt-1 flex-shrink-0" size={20} />
-                    <span>Настройка межстрочного интервала и расстояния между буквами</span>
+                    <span>Увеличенный межстрочный интервал и расстояние между буквами</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Icon name="Check" className="text-green-600 mt-1 flex-shrink-0" size={20} />
