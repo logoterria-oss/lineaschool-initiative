@@ -60,7 +60,7 @@ export default function ExtensionPage() {
                 <ul className="space-y-3 text-gray-700">
                   <li className="flex items-start gap-2">
                     <Icon name="Check" className="text-green-600 mt-1 flex-shrink-0" size={20} />
-                    <span>Специальный шрифт OpenDyslexic для комфортного чтения</span>
+                    <span>Специальный шрифт с утяжеленным основанием букв OpenDyslexic для комфортного чтения</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Icon name="Check" className="text-green-600 mt-1 flex-shrink-0" size={20} />
