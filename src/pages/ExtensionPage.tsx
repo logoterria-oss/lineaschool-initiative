@@ -27,9 +27,7 @@ export default function ExtensionPage() {
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               OpenDyslexic на русском (by LineaSchool)
             </h1>
-            <p className="text-xl text-gray-600">
-              Бесплатный помощник для людей с дислексией в браузере Chrome
-            </p>
+            <p className="text-xl text-gray-600">Бесплатный помощник для людей с дислексией </p>
           </div>
 
           <Card className="mb-8 border-2 border-green-500">
