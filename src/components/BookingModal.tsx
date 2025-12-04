@@ -71,6 +71,28 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const formatBirthDate = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 4) return `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
+    return `${numbers.slice(0, 2)}.${numbers.slice(2, 4)}.${numbers.slice(4, 8)}`;
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length === 0) return '+7 ';
+    if (numbers.length <= 1) return '+7 ';
+    if (numbers.length <= 4) return `+7 (${numbers.slice(1)}`;
+    if (numbers.length <= 7) return `+7 (${numbers.slice(1, 4)}) ${numbers.slice(4)}`;
+    if (numbers.length <= 9) return `+7 (${numbers.slice(1, 4)}) ${numbers.slice(4, 7)}-${numbers.slice(7)}`;
+    return `+7 (${numbers.slice(1, 4)}) ${numbers.slice(4, 7)}-${numbers.slice(7, 9)}-${numbers.slice(9, 11)}`;
+  };
+
+  const formatTelegram = (value: string) => {
+    const cleaned = value.replace(/[^a-zA-Z0-9_]/g, '');
+    return cleaned ? `@${cleaned}` : '@';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
@@ -107,10 +129,14 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 id="childBirthDate"
                 type="text"
                 value={formData.childBirthDate}
-                onChange={(e) => handleInputChange("childBirthDate", e.target.value)}
-                placeholder="__.__.____"
+                onChange={(e) => {
+                  const formatted = formatBirthDate(e.target.value);
+                  handleInputChange("childBirthDate", formatted);
+                }}
+                placeholder="дд.мм.гггг"
                 required
                 className="mt-1"
+                maxLength={10}
               />
             </div>
 
@@ -139,11 +165,20 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               <Input
                 id="phone"
                 type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
+                value={formData.phone || '+7 '}
+                onChange={(e) => {
+                  const formatted = formatPhone(e.target.value);
+                  handleInputChange("phone", formatted);
+                }}
+                onFocus={(e) => {
+                  if (!formData.phone) {
+                    handleInputChange("phone", "+7 ");
+                  }
+                }}
                 placeholder="+7 (___) ___-__-__"
                 required
                 className="mt-1"
+                maxLength={18}
               />
             </div>
 
@@ -154,8 +189,16 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               <Input
                 id="telegram"
                 type="text"
-                value={formData.telegram}
-                onChange={(e) => handleInputChange("telegram", e.target.value)}
+                value={formData.telegram || '@'}
+                onChange={(e) => {
+                  const formatted = formatTelegram(e.target.value);
+                  handleInputChange("telegram", formatted);
+                }}
+                onFocus={(e) => {
+                  if (!formData.telegram) {
+                    handleInputChange("telegram", "@");
+                  }
+                }}
                 placeholder="@username"
                 required
                 className="mt-1"
