@@ -77,8 +77,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     )
     
     try:
+        print(f'Sending to AlfaCRM: {api_url}')
+        print(f'Data: {alfacrm_data}')
+        
         with urllib.request.urlopen(req) as response:
             result = json.loads(response.read().decode('utf-8'))
+            
+            print(f'AlfaCRM Response: {result}')
             
             return {
                 'statusCode': 200,
@@ -89,27 +94,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({
                     'success': True,
                     'customer_id': result.get('id'),
-                    'message': 'Lead sent to AlfaCRM successfully'
+                    'message': 'Lead sent to AlfaCRM successfully',
+                    'alfacrm_response': result
                 }),
                 'isBase64Encoded': False
             }
     
     except urllib.error.HTTPError as e:
         error_body = e.read().decode('utf-8')
+        print(f'AlfaCRM Error {e.code}: {error_body[:500]}')
+        
         return {
-            'statusCode': e.code,
-            'headers': {'Access-Control-Allow-Origin': '*'},
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
             'body': json.dumps({
                 'error': 'AlfaCRM API error',
-                'details': error_body
+                'status_code': e.code,
+                'details': error_body[:1000]
             }),
             'isBase64Encoded': False
         }
     
     except Exception as e:
+        print(f'Exception: {str(e)}')
         return {
-            'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
             'body': json.dumps({
                 'error': 'Failed to send lead to AlfaCRM',
                 'details': str(e)
