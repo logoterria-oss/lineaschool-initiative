@@ -59,21 +59,6 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           parse_mode: 'HTML'
         }),
       });
-
-      // Отправка в AlfaCRM
-      await fetch('https://functions.poehali.dev/83f1cd3b-868e-4515-9dc4-348aae4d4420', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          childName: formData.childName,
-          childBirthDate: formData.childBirthDate,
-          parentName: formData.parentName,
-          phone: formData.phone,
-          telegram: formData.telegram
-        }),
-      });
     } catch (error) {
       console.error('Ошибка отправки:', error);
     }
