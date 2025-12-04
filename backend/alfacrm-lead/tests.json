@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST request with valid lead data",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "childName": "Иванов Иван Иванович",
+        "childBirthDate": "01.01.2015",
+        "parentName": "Иванова Мария Петровна",
+        "phone": "+7 (999) 123-45-67",
+        "telegram": "@testuser"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
