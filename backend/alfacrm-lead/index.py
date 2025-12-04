@@ -47,10 +47,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'fields[1][value]': child_birth_date,
         'fields[2][value]': parent_name,
         'fields[3][value]': phone,
-        'fields[4][value]': telegram
+        'fields[4][value]': telegram,
+        'lead_source_id': '7'
     }
     
-    form_url = 'https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=7&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css'
+    form_url = 'https://11086.s20.online/common/1/form/send?id=1'
     
     encoded_data = urllib.parse.urlencode(form_data).encode('utf-8')
     

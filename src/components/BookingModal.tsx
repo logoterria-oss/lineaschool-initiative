@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +36,6 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,26 +60,20 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
         }),
       });
 
-      // Отправка в AlfaCRM через скрытый iframe
-      if (iframeRef.current?.contentWindow) {
-        const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
-        
-        // Заполняем поля формы AlfaCRM
-        const fields = iframeDoc.querySelectorAll('input[name^="fields"]');
-        if (fields.length >= 5) {
-          (fields[0] as HTMLInputElement).value = formData.childName;
-          (fields[1] as HTMLInputElement).value = formData.childBirthDate;
-          (fields[2] as HTMLInputElement).value = formData.parentName;
-          (fields[3] as HTMLInputElement).value = formData.phone;
-          (fields[4] as HTMLInputElement).value = formData.telegram;
-          
-          // Отправляем форму AlfaCRM
-          const submitButton = iframeDoc.querySelector('button[type="submit"]') as HTMLButtonElement;
-          if (submitButton) {
-            submitButton.click();
-          }
-        }
-      }
+      // Отправка в AlfaCRM
+      await fetch('https://functions.poehali.dev/83f1cd3b-868e-4515-9dc4-348aae4d4420', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          childName: formData.childName,
+          childBirthDate: formData.childBirthDate,
+          parentName: formData.parentName,
+          phone: formData.phone,
+          telegram: formData.telegram
+        }),
+      });
     } catch (error) {
       console.error('Ошибка отправки:', error);
     }
@@ -251,14 +244,6 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
             </div>
           </div>
         </form>
-        
-        {/* Скрытый iframe с формой AlfaCRM */}
-        <iframe
-          ref={iframeRef}
-          src="https://11086.s20.online/common/1/form/draw?id=1&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css"
-          style={{ display: 'none' }}
-          title="AlfaCRM Form"
-        />
       </DialogContent>
       
       <ConfirmationModal 
