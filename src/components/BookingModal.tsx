@@ -33,9 +33,6 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     parentName: "",
     phone: "",
     telegram: "",
-    email: "",
-    date: "",
-    time: "",
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -44,7 +41,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     e.preventDefault();
     
     // Отправка данных в Telegram
-    const message = `🎓 Новая запись на диагностику:\n\n👶 ФИО ребенка: ${formData.childName}\n🎂 Дата рождения ребенка: ${formData.childBirthDate}\n👤 ФИО родителя: ${formData.parentName}\n📱 Телефон: ${formData.phone}\n✈️ Telegram: ${formData.telegram}\n📧 E-mail: ${formData.email}\n📅 Дата: ${formData.date}\n🕐 Время: ${formData.time}`;
+    const message = `🎓 Новая запись на диагностику:\n\n👶 ФИО ребенка: ${formData.childName}\n🎂 Дата рождения ребенка: ${formData.childBirthDate}\n👤 ФИО родителя: ${formData.parentName}\n📱 Телефон: ${formData.phone}\n✈️ Telegram: ${formData.telegram}`;
     
     try {
       // Замените YOUR_BOT_TOKEN и YOUR_CHAT_ID на ваши данные
@@ -165,44 +162,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               />
             </div>
 
-            <div>
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                E-mail *
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="example@mail.com"
-                required
-                className="mt-1"
-              />
-            </div>
 
-            <div>
-              <Label htmlFor="date" className="text-sm font-medium text-gray-700">
-                Желаемые дата и время *
-              </Label>
-              <div className="grid grid-cols-2 gap-3 mt-1">
-                <Input
-                  id="date"
-                  type="text"
-                  value={formData.date}
-                  onChange={(e) => handleInputChange("date", e.target.value)}
-                  placeholder="__.__.2025"
-                  required
-                />
-                <Input
-                  id="time"
-                  type="text"
-                  value={formData.time}
-                  onChange={(e) => handleInputChange("time", e.target.value)}
-                  placeholder="__:__"
-                  required
-                />
-              </div>
-            </div>
           </div>
 
           <div className="flex flex-col space-y-3 pt-4">
