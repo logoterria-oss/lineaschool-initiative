@@ -28,9 +28,12 @@ interface BookingModalProps {
 
 export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    childName: "",
+    childBirthDate: "",
+    parentName: "",
     phone: "",
+    telegram: "",
+    email: "",
     date: "",
     time: "",
   });
@@ -41,7 +44,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     e.preventDefault();
     
     // Отправка данных в Telegram
-    const message = `🎓 Новая запись на диагностику:\n\n👤 Имя: ${formData.name}\n📧 E-mail: ${formData.email}\n📱 Телефон: ${formData.phone}\n📅 Дата: ${formData.date}\n🕐 Время: ${formData.time}`;
+    const message = `🎓 Новая запись на диагностику:\n\n👶 ФИО ребенка: ${formData.childName}\n🎂 Дата рождения ребенка: ${formData.childBirthDate}\n👤 ФИО родителя: ${formData.parentName}\n📱 Телефон: ${formData.phone}\n✈️ Telegram: ${formData.telegram}\n📧 E-mail: ${formData.email}\n📅 Дата: ${formData.date}\n🕐 Время: ${formData.time}`;
     
     try {
       // Замените YOUR_BOT_TOKEN и YOUR_CHAT_ID на ваши данные
@@ -86,14 +89,77 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                Как вас зовут? *
+              <Label htmlFor="childName" className="text-sm font-medium text-gray-700">
+                ФИО ребенка *
               </Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="Ваше имя"
+                id="childName"
+                value={formData.childName}
+                onChange={(e) => handleInputChange("childName", e.target.value)}
+                placeholder="Иванов Иван Иванович"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="childBirthDate" className="text-sm font-medium text-gray-700">
+                Дата рождения ребенка *
+              </Label>
+              <Input
+                id="childBirthDate"
+                type="text"
+                value={formData.childBirthDate}
+                onChange={(e) => handleInputChange("childBirthDate", e.target.value)}
+                placeholder="__.__.____"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div className="text-sm text-gray-600 p-3 bg-green-50 rounded-lg">
+              Мы бережно относимся к вашей приватности: данные используются только для организации диагностики и связи с вами 🙏🏻
+            </div>
+
+            <div>
+              <Label htmlFor="parentName" className="text-sm font-medium text-gray-700">
+                ФИО родителя *
+              </Label>
+              <Input
+                id="parentName"
+                value={formData.parentName}
+                onChange={(e) => handleInputChange("parentName", e.target.value)}
+                placeholder="Иванова Мария Петровна"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                Номер телефона *
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="+7 (___) ___-__-__"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="telegram" className="text-sm font-medium text-gray-700">
+                Имя в Telegram *
+              </Label>
+              <Input
+                id="telegram"
+                type="text"
+                value={formData.telegram}
+                onChange={(e) => handleInputChange("telegram", e.target.value)}
+                placeholder="@username"
                 required
                 className="mt-1"
               />
@@ -109,24 +175,6 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="example@mail.com"
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <div className="text-sm text-gray-600 mb-3 p-3 bg-green-50 rounded-lg">
-                Мы бережно относимся к вашей приватности: номер телефона нужен только для отправки ссылки на диагностику и важной информации о записи 🙏🏻
-              </div>
-              <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
-                Номер телефона *
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+7 (___) ___-__-__"
                 required
                 className="mt-1"
               />
