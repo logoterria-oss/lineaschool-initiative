@@ -37,9 +37,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     body_data = json.loads(event.get('body', '{}'))
     
     api_key = os.environ.get('ALFACRM_API_KEY')
+    x_app_key = os.environ.get('ALFACRM_X_APP_KEY')
     branch_id = os.environ.get('ALFACRM_BRANCH_ID')
     
-    if not api_key or not branch_id:
+    if not api_key or not branch_id or not x_app_key:
         return {
             'statusCode': 500,
             'headers': {'Access-Control-Allow-Origin': '*'},
@@ -53,20 +54,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     phone = body_data.get('phone', '')
     telegram = body_data.get('telegram', '')
     
-    params = {
-        'token': api_key,
-        'branch_id': branch_id,
+    alfacrm_data = {
         'name': parent_name,
         'phone': phone,
+        'branch_ids': [int(branch_id)],
         'note': f'Ребенок: {child_name}\nДата рождения: {child_birth_date}\nTelegram: {telegram}'
     }
     
-    query_string = urllib.parse.urlencode(params)
-    api_url = f'https://lineaschool.s20.online/v2api/1/customer/create?{query_string}'
+    api_url = f'https://lineaschool.s20.online/v2api/{branch_id}/customer/create'
+    
+    request_data = json.dumps(alfacrm_data).encode('utf-8')
     
     req = urllib.request.Request(
         api_url,
-        method='GET'
+        data=request_data,
+        headers={
+            'Content-Type': 'application/json',
+            'X-ALFACRM-TOKEN': api_key,
+            'X-APP-KEY': x_app_key
+        },
+        method='POST'
     )
     
     try:

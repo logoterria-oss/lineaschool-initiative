@@ -44,7 +44,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     const message = `🎓 Новая запись на диагностику:\n\n👶 ФИО ребенка: ${formData.childName}\n🎂 Дата рождения ребенка: ${formData.childBirthDate}\n👤 ФИО родителя: ${formData.parentName}\n📱 Телефон: ${formData.phone}\n✈️ Telegram: ${formData.telegram}`;
     
     try {
-      // Замените YOUR_BOT_TOKEN и YOUR_CHAT_ID на ваши данные
+      // Отправка в Telegram
       const telegramBotToken = '8320634391:AAGxRCQdt_K-L5QliSLX9vDJmqhLlubfpB8';
       const chatId = '1112267464';
       
@@ -59,8 +59,23 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           parse_mode: 'HTML'
         }),
       });
+
+      // Отправка в AlfaCRM
+      await fetch('https://functions.poehali.dev/83f1cd3b-868e-4515-9dc4-348aae4d4420', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          childName: formData.childName,
+          childBirthDate: formData.childBirthDate,
+          parentName: formData.parentName,
+          phone: formData.phone,
+          telegram: formData.telegram
+        }),
+      });
     } catch (error) {
-      console.error('Ошибка отправки в Telegram:', error);
+      console.error('Ошибка отправки:', error);
     }
     
     onClose();
