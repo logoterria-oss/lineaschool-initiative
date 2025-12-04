@@ -8,8 +8,8 @@ import urllib.parse
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Отправка данных лида в AlfaCRM
-    Принимает данные формы и создает лида в AlfaCRM
+    Отправка данных лида в AlfaCRM через форму захвата
+    Принимает данные с сайта и отправляет в форму AlfaCRM
     '''
     method: str = event.get('httpMethod', 'POST')
     
@@ -36,54 +36,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     body_data = json.loads(event.get('body', '{}'))
     
-    api_key = os.environ.get('ALFACRM_API_KEY')
-    x_app_key = os.environ.get('ALFACRM_X_APP_KEY')
-    branch_id = os.environ.get('ALFACRM_BRANCH_ID')
-    
-    if not api_key or not branch_id or not x_app_key:
-        return {
-            'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'AlfaCRM credentials not configured'}),
-            'isBase64Encoded': False
-        }
-    
     child_name = body_data.get('childName', '')
     child_birth_date = body_data.get('childBirthDate', '')
     parent_name = body_data.get('parentName', '')
     phone = body_data.get('phone', '')
     telegram = body_data.get('telegram', '')
     
-    alfacrm_data = {
-        'name': parent_name,
-        'phone': phone,
-        'branch_ids': [int(branch_id)],
-        'note': f'Ребенок: {child_name}\nДата рождения: {child_birth_date}\nTelegram: {telegram}'
+    form_data = {
+        'fields[0][value]': child_name,
+        'fields[1][value]': child_birth_date,
+        'fields[2][value]': parent_name,
+        'fields[3][value]': phone,
+        'fields[4][value]': telegram
     }
     
-    api_url = f'https://lineaschool.s20.online/v2api/{branch_id}/customer/create'
+    form_url = 'https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=7&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css'
     
-    request_data = json.dumps(alfacrm_data).encode('utf-8')
+    encoded_data = urllib.parse.urlencode(form_data).encode('utf-8')
     
     req = urllib.request.Request(
-        api_url,
-        data=request_data,
+        form_url,
+        data=encoded_data,
         headers={
-            'Content-Type': 'application/json',
-            'X-ALFACRM-TOKEN': api_key,
-            'X-APP-KEY': x_app_key
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0'
         },
         method='POST'
     )
     
     try:
-        print(f'Sending to AlfaCRM: {api_url}')
-        print(f'Data: {alfacrm_data}')
+        print(f'Sending to AlfaCRM form: {form_url}')
+        print(f'Data: {form_data}')
         
         with urllib.request.urlopen(req) as response:
-            result = json.loads(response.read().decode('utf-8'))
+            response_body = response.read().decode('utf-8')
             
-            print(f'AlfaCRM Response: {result}')
+            print(f'AlfaCRM Response: {response_body[:500]}')
             
             return {
                 'statusCode': 200,
@@ -93,9 +81,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 },
                 'body': json.dumps({
                     'success': True,
-                    'customer_id': result.get('id'),
-                    'message': 'Lead sent to AlfaCRM successfully',
-                    'alfacrm_response': result
+                    'message': 'Lead sent to AlfaCRM successfully'
                 }),
                 'isBase64Encoded': False
             }
@@ -111,9 +97,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json'
             },
             'body': json.dumps({
-                'error': 'AlfaCRM API error',
-                'status_code': e.code,
-                'details': error_body[:1000]
+                'success': False,
+                'error': 'AlfaCRM form error',
+                'status_code': e.code
             }),
             'isBase64Encoded': False
         }
@@ -127,6 +113,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json'
             },
             'body': json.dumps({
+                'success': False,
                 'error': 'Failed to send lead to AlfaCRM',
                 'details': str(e)
             }),
