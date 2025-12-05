@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
-import BookingModal from "@/components/BookingModal";
 
 export default function CTASection() {
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const openAlfaCRMWidget = () => {
+    window.open('https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=8&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css', '_blank', 'width=600,height=700');
+  };
 
   return (
     <section className="py-20 bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 relative overflow-hidden">
@@ -18,7 +18,7 @@ export default function CTASection() {
           Запишитесь на бесплатную консультацию и узнайте, как мы можем помочь вашему ребёнку
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 text-lg px-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105" onClick={() => setIsBookingModalOpen(true)}>
+          <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 text-lg px-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105" onClick={openAlfaCRMWidget}>
             <Icon name="Calendar" className="mr-2" size={20} />
             Записаться на диагностику
           </Button>
@@ -34,11 +34,6 @@ export default function CTASection() {
         </div>
       </div>
       </div>
-
-      <BookingModal 
-        isOpen={isBookingModalOpen} 
-        onClose={() => setIsBookingModalOpen(false)} 
-      />
     </section>
   );
 }

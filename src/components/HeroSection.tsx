@@ -1,11 +1,12 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
-import BookingModal from "@/components/BookingModal";
 
 export default function HeroSection() {
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const openAlfaCRMWidget = () => {
+    window.open('https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=8&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css', '_blank', 'width=600,height=700');
+  };
+  
   return (
     <section className="relative py-4 sm:py-6 md:py-8 lg:py-12 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
@@ -20,7 +21,7 @@ export default function HeroSection() {
               <Button 
                 size="sm" 
                 className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] lg:button-shine"
-                onClick={() => setIsBookingModalOpen(true)}
+                onClick={openAlfaCRMWidget}
               >
                 <Icon name="Calendar" className="mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0 relative z-10" size={14} />
                 <span className="text-center leading-tight relative z-10">Получить БЕСПЛАТНУЮ диагностику</span>
@@ -87,11 +88,6 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-      
-      <BookingModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-      />
     </section>
   );
 }

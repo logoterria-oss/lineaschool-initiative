@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
-import BookingModal from "@/components/BookingModal";
 
 export default function Navigation() {
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const openAlfaCRMWidget = () => {
+    window.open('https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=8&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css', '_blank', 'width=600,height=700');
+  };
 
   return (
     <>
@@ -29,7 +29,7 @@ export default function Navigation() {
             <Button 
               size="lg" 
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-sm lg:text-lg px-4 lg:px-8 py-2 lg:py-4 shadow-lg hover:shadow-xl transition-all duration-300"
-              onClick={() => setIsBookingModalOpen(true)}
+              onClick={openAlfaCRMWidget}
             >
               Записаться
             </Button>
@@ -44,11 +44,6 @@ export default function Navigation() {
 
         </div>
       </div>
-
-      <BookingModal 
-        isOpen={isBookingModalOpen} 
-        onClose={() => setIsBookingModalOpen(false)} 
-      />
     </nav>
     </>
   );
