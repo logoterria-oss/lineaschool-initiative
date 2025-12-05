@@ -5,13 +5,9 @@ import BookingModal from "@/components/BookingModal";
 
 export default function MobileFloatingButtons() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  
+
   const handleQuestionClick = () => {
     window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank');
-  };
-
-  const openAlfaCRMWidget = () => {
-    window.open('https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=8&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css', '_blank', 'width=600,height=700');
   };
 
   return (
@@ -30,7 +26,7 @@ export default function MobileFloatingButtons() {
         </Button>
         
         <Button 
-          onClick={openAlfaCRMWidget}
+          onClick={() => setIsBookingModalOpen(true)}
           size="sm"
           className="bg-green-500 hover:bg-green-600 text-white shadow-lg h-11 px-3 text-xs font-medium animate-button-pulse rounded-full"
         >
