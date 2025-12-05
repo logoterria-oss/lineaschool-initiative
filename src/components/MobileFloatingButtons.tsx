@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
+import BookingModal from "@/components/BookingModal";
 
 export default function MobileFloatingButtons() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  
   const handleQuestionClick = () => {
     window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank');
   };
@@ -34,6 +38,11 @@ export default function MobileFloatingButtons() {
           <span className="whitespace-nowrap">Записаться</span>
         </Button>
       </div>
+
+      <BookingModal 
+        isOpen={isBookingModalOpen} 
+        onClose={() => setIsBookingModalOpen(false)} 
+      />
     </>
   );
 }

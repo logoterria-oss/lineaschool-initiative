@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+import BookingModal from "@/components/BookingModal";
 
 export default function HeroSection() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  
   const openAlfaCRMWidget = () => {
+    // Открываем виджет АльфаCRM
     window.open('https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=8&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css', '_blank', 'width=600,height=700');
   };
   
@@ -88,6 +93,11 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
+      
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+      />
     </section>
   );
 }

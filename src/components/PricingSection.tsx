@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Icon from "@/components/ui/icon";
+import BookingModal from "@/components/BookingModal";
 
 declare global {
   interface Window {
@@ -176,6 +177,7 @@ const pricingData = [
 ];
 
 export default function PricingSection() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [openSections, setOpenSections] = useState<number[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -416,7 +418,7 @@ export default function PricingSection() {
           <Button 
             variant="outline" 
             className="border-green-500 text-green-600 hover:bg-green-50"
-            onClick={() => window.open('https://11086.s20.online/common/1/form/draw?id=1&lead_source_id=8&baseColor=205EDC&borderRadius=8&css=%2F%2Fcdn.alfacrm.pro%2Flead-form%2Fform.css', '_blank', 'width=600,height=700')}
+            onClick={() => setIsBookingModalOpen(true)}
           >
             <Icon name="MessageCircle" className="mr-2" size={20} />
             Получить консультацию
@@ -424,6 +426,11 @@ export default function PricingSection() {
         </div>
       </div>
     </section>
+
+    <BookingModal 
+      isOpen={isBookingModalOpen} 
+      onClose={() => setIsBookingModalOpen(false)} 
+    />
 
     {isPaymentModalOpen && (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
