@@ -14,7 +14,7 @@ export default function DiagFormNavigation() {
           <div className="hidden md:flex items-center space-x-6">
             <button 
               className="border border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4 rounded-md"
-              onClick={() => window.open('https://wa.me/79236251611?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
+              onClick={() => window.open('https://t.me/logoterria?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
             >
               Задать вопрос
             </button>
