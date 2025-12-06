@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import PricingSection from "@/components/PricingSection";
@@ -6,6 +7,15 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-white">
+      <Helmet>
+        <title>Стоимость занятий - LineaSchool</title>
+        <meta name="description" content="Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии." />
+        <meta property="og:title" content="Стоимость занятий - LineaSchool" />
+        <meta property="og:description" content="Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии." />
+        <meta property="og:url" content="https://lineaschool.ru/price" />
+        <link rel="canonical" href="https://lineaschool.ru/price" />
+      </Helmet>
+      
       <Navigation />
       
       <main className="pt-20">
