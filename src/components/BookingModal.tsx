@@ -40,23 +40,25 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Отправка данных в Telegram
-    const message = `🎓 Новая запись на диагностику:\n\n👶 ФИО ребенка: ${formData.childName}\n🎂 Дата рождения ребенка: ${formData.childBirthDate}\n👤 ФИО родителя: ${formData.parentName}\n📱 Телефон: ${formData.phone}\n✈️ Telegram: ${formData.telegram}`;
-    
     try {
-      // Отправка в Telegram
-      const telegramBotToken = '8320634391:AAGxRCQdt_K-L5QliSLX9vDJmqhLlubfpB8';
-      const chatId = '1112267464';
+      // Отправка через backend-функцию (интеграция с AlfaCRM + Telegram)
+      const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
       
-      await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+      // Формируем примечание с полными данными о ребенке
+      const note = `ФИО ребенка: ${formData.childName}\nДата рождения: ${formData.childBirthDate}\nTelegram: ${formData.telegram}`;
+      
+      await fetch(leadProcessorUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chat_id: chatId,
-          text: message,
-          parse_mode: 'HTML'
+          name: formData.parentName,
+          phone: formData.phone.replace(/\D/g, ''), // Убираем форматирование
+          email: '', // Email не обязателен в этой форме
+          date: '', // Дату записи пользователь выбирает позже
+          time: '',
+          note: note
         }),
       });
     } catch (error) {
