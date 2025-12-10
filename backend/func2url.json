@@ -1,6 +1,4 @@
 {
-  "alfacrm-webhook": "https://functions.poehali.dev/d251605e-bc38-4b5a-8fde-bd2b49d86304",
-  "alfacrm-lead": "https://functions.poehali.dev/83f1cd3b-868e-4515-9dc4-348aae4d4420",
   "lead-processor": "https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094",
   "upload-dictation": "https://functions.poehali.dev/93d8070e-4f07-4586-97a9-9c2541aa0185",
   "get-payment-leads": "https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2",

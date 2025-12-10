@@ -1,12 +1,91 @@
 '''
-Business: Process diagnostic booking leads and send Telegram notification
+Business: Process diagnostic booking leads, send to AlfaCRM and Telegram notification
 Args: event with body containing name, email, phone, date, time
-Returns: Success response after sending notification
+Returns: Success response after sending to CRM and notification
 '''
 import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import requests
+
+def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> Optional[Dict]:
+    """Отправка лида в AlfaCRM через API"""
+    
+    crm_email = os.environ.get('ALFACRM_EMAIL')
+    api_key = os.environ.get('ALFACRM_API_KEY')
+    branch_id = os.environ.get('ALFACRM_BRANCH_ID', '1')
+    
+    print(f'=== ALFACRM INTEGRATION ===')
+    print(f'Email configured: {bool(crm_email)}')
+    print(f'API Key configured: {bool(api_key)}')
+    print(f'Branch ID: {branch_id}')
+    
+    if not crm_email or not api_key:
+        print('AlfaCRM credentials not configured - skipping CRM integration')
+        return None
+    
+    try:
+        # Шаг 1: Получение токена авторизации
+        auth_url = 'https://11086.s20.online/v2api/auth/login'
+        auth_data = {
+            'email': crm_email,
+            'api_key': api_key
+        }
+        
+        print(f'Auth request to: {auth_url}')
+        auth_response = requests.post(auth_url, json=auth_data, timeout=10)
+        print(f'Auth response: {auth_response.status_code}')
+        
+        if auth_response.status_code != 200:
+            print(f'Auth failed: {auth_response.text}')
+            return None
+        
+        token = auth_response.json().get('token')
+        if not token:
+            print('No token received from AlfaCRM')
+            return None
+        
+        print(f'Token received successfully')
+        
+        # Шаг 2: Создание лида
+        lead_url = f'https://11086.s20.online/v2api/{branch_id}/lead/create'
+        lead_data = {
+            'name': name,
+            'phone': phone,
+            'branch_id': int(branch_id),
+            'status_id': 1  # Статус "Основная"
+        }
+        
+        if email:
+            lead_data['email'] = email
+        
+        if note:
+            lead_data['note'] = note
+        
+        headers = {
+            'X-ALFACRM-TOKEN': token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+        
+        print(f'Creating lead: {lead_url}')
+        print(f'Lead data: {lead_data}')
+        
+        lead_response = requests.post(lead_url, json=lead_data, headers=headers, timeout=10)
+        print(f'Lead creation response: {lead_response.status_code}')
+        print(f'Response body: {lead_response.text}')
+        
+        if lead_response.status_code == 200:
+            result = lead_response.json()
+            print(f'✅ Lead created in AlfaCRM: ID {result.get("id")}')
+            return result
+        else:
+            print(f'❌ Failed to create lead: {lead_response.text}')
+            return None
+            
+    except Exception as e:
+        print(f'AlfaCRM integration error: {str(e)}')
+        return None
 
 def send_telegram_notification(name: str, email: str, phone: str, date: str, time: str):
     bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
@@ -76,13 +155,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
+        # Отправка в AlfaCRM
+        print(f'📤 Отправка лида в AlfaCRM')
+        note = f'Запись на диагностику: {date} в {time}' if date and time else 'Заявка с сайта'
+        crm_result = send_to_alfacrm(name, phone, email, note)
+        
+        # Отправка в Telegram
         print(f'📨 Отправка уведомления в Telegram')
         send_telegram_notification(name, email, phone, date, time)
         
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'success': True}),
+            'body': json.dumps({
+                'success': True,
+                'crm_status': 'created' if crm_result else 'skipped'
+            }),
             'isBase64Encoded': False
         }
         
