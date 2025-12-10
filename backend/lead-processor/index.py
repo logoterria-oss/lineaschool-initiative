@@ -60,14 +60,13 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
         # Формируем данные для создания лида (клиента без статуса студента)
         lead_data = {
             'name': name,
-            'phone': phone,
-            'branch_id': 1,
-            'is_study': 0,  # 0 = лид (не студент)
-            'legal_type': 0  # 0 = физлицо
+            'phone': [phone],  # Телефон как массив
+            'branch_ids': [1],  # Филиалы как массив
+            'is_study': 0  # 0 = лид (не студент)
         }
         
         if email:
-            lead_data['email'] = email
+            lead_data['email'] = [email]  # Email как массив
         
         if note:
             lead_data['note'] = note
