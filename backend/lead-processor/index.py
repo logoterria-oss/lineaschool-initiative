@@ -49,19 +49,20 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
         
         print(f'Token received successfully')
         
-        # Шаг 2: Создание лида (используем формат customer вместо lead)
-        # В AlfaCRM v2api используется customer для создания лидов
-        lead_url = 'https://11086.s20.online/v2api/1/customer/index'
+        # Шаг 2: Создание лида через customer/create
+        lead_url = 'https://11086.s20.online/v2api/1/customer/create'
         headers = {
             'X-ALFACRM-TOKEN': token,
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         }
+        
+        # Формируем данные для создания лида (клиента без статуса студента)
         lead_data = {
             'name': name,
             'phone': phone,
-            'branch_id': int(branch_id),
-            'is_study': 0,  # 0 = лид, 1 = студент
+            'branch_id': 1,
+            'is_study': 0,  # 0 = лид (не студент)
             'legal_type': 0  # 0 = физлицо
         }
         
@@ -76,14 +77,28 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
         
         lead_response = requests.post(lead_url, json=lead_data, headers=headers, timeout=10)
         print(f'Lead creation response: {lead_response.status_code}')
-        print(f'Response body: {lead_response.text[:500]}')
         
-        if lead_response.status_code in [200, 201]:
-            result = lead_response.json()
-            print(f'✅ Lead created in AlfaCRM: ID {result.get("id")}')
-            return result
-        else:
-            print(f'❌ Failed to create lead: {lead_response.text[:200]}')
+        try:
+            response_json = lead_response.json()
+            print(f'Response JSON: {response_json}')
+            
+            if lead_response.status_code in [200, 201]:
+                # AlfaCRM возвращает success, errors, model
+                if response_json.get('success'):
+                    model = response_json.get('model', {})
+                    lead_id = model.get('id')
+                    print(f'✅ Lead created in AlfaCRM: ID {lead_id}')
+                    return model
+                else:
+                    errors = response_json.get('errors', {})
+                    print(f'❌ AlfaCRM returned errors: {errors}')
+                    return None
+            else:
+                print(f'❌ Failed to create lead: {response_json}')
+                return None
+        except Exception as e:
+            print(f'❌ Failed to parse response: {lead_response.text[:500]}')
+            print(f'Error: {str(e)}')
             return None
             
     except Exception as e:
