@@ -8,7 +8,8 @@ import os
 from typing import Dict, Any, Optional
 import requests
 
-def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> Optional[Dict]:
+def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '', 
+                    dob: str = '', telegram: str = '', parent_name: str = '') -> Optional[Dict]:
     """Отправка лида в AlfaCRM через API"""
     
     crm_email = os.environ.get('ALFACRM_EMAIL')
@@ -59,16 +60,38 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
         
         # Формируем данные для создания лида (клиента без статуса студента)
         lead_data = {
-            'name': name,
-            'phone': [phone],  # Телефон как массив
-            'branch_ids': [1],  # Филиалы как массив
+            'name': name,  # ФИО ребенка
+            'phone': [phone],  # Телефон родителя
+            'branch_ids': [1],  # Филиалы
             'is_study': 0,  # 0 = лид (не студент)
             'legal_type': 1  # 1 = физическое лицо
         }
         
-        if email:
-            lead_data['email'] = [email]  # Email как массив
+        # Дата рождения ребенка (формат: YYYY-MM-DD или DD.MM.YYYY)
+        if dob:
+            # Конвертируем DD.MM.YYYY в YYYY-MM-DD
+            if '.' in dob:
+                parts = dob.split('.')
+                if len(parts) == 3:
+                    lead_data['dob'] = f'{parts[2]}-{parts[1]}-{parts[0]}'
+            else:
+                lead_data['dob'] = dob
         
+        # Email родителя
+        if email:
+            lead_data['email'] = [email]
+        
+        # Telegram username
+        if telegram:
+            # Убираем @ если есть
+            clean_telegram = telegram.replace('@', '')
+            lead_data['im'] = [clean_telegram]  # Telegram в контакты
+        
+        # Заказчик (ФИО родителя) - сохраняем в legal_name
+        if parent_name:
+            lead_data['legal_name'] = parent_name
+        
+        # Примечание
         if note:
             lead_data['note'] = note
         
@@ -232,8 +255,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Отправка в AlfaCRM
         print(f'📤 Отправка лида в AlfaCRM')
-        print(f'Lead name: {crm_lead_name}, Note: {crm_note}')
-        crm_result = send_to_alfacrm(crm_lead_name, phone, email, crm_note)
+        print(f'Lead name: {crm_lead_name}, DOB: {child_birth_date}, Telegram: {telegram_username}')
+        crm_result = send_to_alfacrm(
+            name=crm_lead_name,
+            phone=phone,
+            email=email,
+            note=crm_note,
+            dob=child_birth_date,
+            telegram=telegram_username,
+            parent_name=parent_name
+        )
         
         # Отправка в Telegram
         print(f'📨 Отправка уведомления в Telegram')
