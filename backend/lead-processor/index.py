@@ -67,15 +67,9 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '',
             'legal_type': 1  # 1 = физическое лицо
         }
         
-        # Дата рождения ребенка (формат: YYYY-MM-DD или DD.MM.YYYY)
+        # Дата рождения ребенка (оставляем формат DD.MM.YYYY)
         if dob:
-            # Конвертируем DD.MM.YYYY в YYYY-MM-DD
-            if '.' in dob:
-                parts = dob.split('.')
-                if len(parts) == 3:
-                    lead_data['dob'] = f'{parts[2]}-{parts[1]}-{parts[0]}'
-            else:
-                lead_data['dob'] = dob
+            lead_data['dob'] = dob
         
         # Email родителя
         if email:
