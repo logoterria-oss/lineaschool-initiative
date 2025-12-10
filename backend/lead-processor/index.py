@@ -40,19 +40,44 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
             print(f'Auth failed: {auth_response.text}')
             return None
         
-        token = auth_response.json().get('token')
+        auth_result = auth_response.json()
+        token = auth_result.get('token')
+        
         if not token:
             print('No token received from AlfaCRM')
             return None
         
         print(f'Token received successfully')
         
-        # Шаг 2: Создание лида
-        lead_url = f'https://11086.s20.online/v2api/{branch_id}/lead/create'
+        # Шаг 2: Получение списка филиалов для определения правильного ID
+        branches_url = 'https://11086.s20.online/v2api/branch/index'
+        headers = {
+            'X-ALFACRM-TOKEN': token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+        
+        branches_response = requests.get(branches_url, headers=headers, timeout=10)
+        print(f'Branches response: {branches_response.status_code}')
+        
+        if branches_response.status_code == 200:
+            branches = branches_response.json()
+            print(f'Available branches: {branches}')
+            if branches and len(branches) > 0:
+                actual_branch_id = branches[0].get('id', branch_id)
+                print(f'Using branch ID: {actual_branch_id}')
+            else:
+                actual_branch_id = branch_id
+        else:
+            print(f'Failed to get branches, using default: {branch_id}')
+            actual_branch_id = branch_id
+        
+        # Шаг 3: Создание лида
+        lead_url = f'https://11086.s20.online/v2api/{actual_branch_id}/lead/create'
         lead_data = {
             'name': name,
             'phone': phone,
-            'branch_id': int(branch_id),
+            'branch_id': int(actual_branch_id),
             'status_id': 1  # Статус "Основная"
         }
         
@@ -62,25 +87,19 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
         if note:
             lead_data['note'] = note
         
-        headers = {
-            'X-ALFACRM-TOKEN': token,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-        
         print(f'Creating lead: {lead_url}')
         print(f'Lead data: {lead_data}')
         
         lead_response = requests.post(lead_url, json=lead_data, headers=headers, timeout=10)
         print(f'Lead creation response: {lead_response.status_code}')
-        print(f'Response body: {lead_response.text}')
+        print(f'Response body: {lead_response.text[:500]}')
         
-        if lead_response.status_code == 200:
+        if lead_response.status_code in [200, 201]:
             result = lead_response.json()
             print(f'✅ Lead created in AlfaCRM: ID {result.get("id")}')
             return result
         else:
-            print(f'❌ Failed to create lead: {lead_response.text}')
+            print(f'❌ Failed to create lead: {lead_response.text[:200]}')
             return None
             
     except Exception as e:
