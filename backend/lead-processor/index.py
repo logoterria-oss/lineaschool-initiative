@@ -62,7 +62,8 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
             'name': name,
             'phone': [phone],  # Телефон как массив
             'branch_ids': [1],  # Филиалы как массив
-            'is_study': 0  # 0 = лид (не студент)
+            'is_study': 0,  # 0 = лид (не студент)
+            'legal_type': 1  # 1 = физическое лицо
         }
         
         if email:
