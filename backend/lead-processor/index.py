@@ -49,36 +49,20 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
         
         print(f'Token received successfully')
         
-        # Шаг 2: Получение списка филиалов для определения правильного ID
-        branches_url = 'https://11086.s20.online/v2api/branch/index'
+        # Шаг 2: Создание лида (используем формат customer вместо lead)
+        # В AlfaCRM v2api используется customer для создания лидов
+        lead_url = 'https://11086.s20.online/v2api/1/customer/index'
         headers = {
             'X-ALFACRM-TOKEN': token,
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         }
-        
-        branches_response = requests.get(branches_url, headers=headers, timeout=10)
-        print(f'Branches response: {branches_response.status_code}')
-        
-        if branches_response.status_code == 200:
-            branches = branches_response.json()
-            print(f'Available branches: {branches}')
-            if branches and len(branches) > 0:
-                actual_branch_id = branches[0].get('id', branch_id)
-                print(f'Using branch ID: {actual_branch_id}')
-            else:
-                actual_branch_id = branch_id
-        else:
-            print(f'Failed to get branches, using default: {branch_id}')
-            actual_branch_id = branch_id
-        
-        # Шаг 3: Создание лида
-        lead_url = f'https://11086.s20.online/v2api/{actual_branch_id}/lead/create'
         lead_data = {
             'name': name,
             'phone': phone,
-            'branch_id': int(actual_branch_id),
-            'status_id': 1  # Статус "Основная"
+            'branch_id': int(branch_id),
+            'is_study': 0,  # 0 = лид, 1 = студент
+            'legal_type': 0  # 0 = физлицо
         }
         
         if email:
