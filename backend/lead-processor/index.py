@@ -105,7 +105,9 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '') -> O
         print(f'AlfaCRM integration error: {str(e)}')
         return None
 
-def send_telegram_notification(name: str, email: str, phone: str, date: str, time: str):
+def send_telegram_notification(child_name: str, parent_name: str, child_birth_date: str, 
+                               telegram: str, phone: str, email: str = '', 
+                               date: str = '', time: str = ''):
     bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
     chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
     
@@ -121,7 +123,27 @@ def send_telegram_notification(name: str, email: str, phone: str, date: str, tim
         print('No chat_id configured - skipping notification')
         return
     
-    message = f"🎓 Новая запись на диагностику:\n\n👤 Имя: {name}\n📧 E-mail: {email}\n📱 Телефон: {phone}\n📅 Дата: {date}\n🕐 Время: {time}"
+    # Формируем сообщение с полными данными
+    message_parts = ["🎓 Новая запись на диагностику:"]
+    
+    if child_name:
+        message_parts.append(f"\n👶 ФИО ребенка: {child_name}")
+    if child_birth_date:
+        message_parts.append(f"\n🎂 Дата рождения ребенка: {child_birth_date}")
+    if parent_name:
+        message_parts.append(f"\n👤 ФИО родителя: {parent_name}")
+    if email:
+        message_parts.append(f"\n📧 E-mail: {email}")
+    if phone:
+        message_parts.append(f"\n📱 Телефон: {phone}")
+    if telegram:
+        message_parts.append(f"\n✈️ Telegram: {telegram}")
+    if date:
+        message_parts.append(f"\n📅 Дата: {date}")
+    if time:
+        message_parts.append(f"\n🕐 Время: {time}")
+    
+    message = ''.join(message_parts)
     
     try:
         response = requests.post(
@@ -159,28 +181,72 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         body_data = json.loads(event.get('body', '{}'))
-        name = body_data.get('name', '')
+        
+        # Получаем данные из запроса
+        # Поддерживаем оба формата: старый (name) и новый (childName, parentName)
+        child_name = body_data.get('childName', '')
+        parent_name = body_data.get('parentName', body_data.get('name', ''))
+        child_birth_date = body_data.get('childBirthDate', '')
+        telegram_username = body_data.get('telegram', '')
+        
         email = body_data.get('email', '')
         phone = body_data.get('phone', '')
         date = body_data.get('date', '')
         time = body_data.get('time', '')
+        custom_note = body_data.get('note', '')
         
-        if not all([name, phone]):
+        # Проверяем обязательные поля
+        if not phone:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Name and phone are required'}),
+                'body': json.dumps({'error': 'Phone is required'}),
                 'isBase64Encoded': False
             }
         
+        # Определяем, что записывать в имя лида в CRM
+        crm_lead_name = child_name if child_name else parent_name
+        
+        if not crm_lead_name:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Child name or parent name is required'}),
+                'isBase64Encoded': False
+            }
+        
+        # Формируем примечание для CRM
+        note_parts = []
+        if parent_name and child_name:
+            note_parts.append(f'ФИО родителя: {parent_name}')
+        if child_birth_date:
+            note_parts.append(f'Дата рождения ребенка: {child_birth_date}')
+        if telegram_username:
+            note_parts.append(f'Telegram: {telegram_username}')
+        if date and time:
+            note_parts.append(f'Запись на диагностику: {date} в {time}')
+        if custom_note:
+            note_parts.append(custom_note)
+        
+        crm_note = '\n'.join(note_parts) if note_parts else 'Заявка с сайта'
+        
         # Отправка в AlfaCRM
         print(f'📤 Отправка лида в AlfaCRM')
-        note = f'Запись на диагностику: {date} в {time}' if date and time else 'Заявка с сайта'
-        crm_result = send_to_alfacrm(name, phone, email, note)
+        print(f'Lead name: {crm_lead_name}, Note: {crm_note}')
+        crm_result = send_to_alfacrm(crm_lead_name, phone, email, crm_note)
         
         # Отправка в Telegram
         print(f'📨 Отправка уведомления в Telegram')
-        send_telegram_notification(name, email, phone, date, time)
+        send_telegram_notification(
+            child_name=child_name,
+            parent_name=parent_name,
+            child_birth_date=child_birth_date,
+            telegram=telegram_username,
+            phone=phone,
+            email=email,
+            date=date,
+            time=time
+        )
         
         return {
             'statusCode': 200,

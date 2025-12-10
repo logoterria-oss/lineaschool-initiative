@@ -44,21 +44,20 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       // Отправка через backend-функцию (интеграция с AlfaCRM + Telegram)
       const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
       
-      // Формируем примечание с полными данными о ребенке
-      const note = `ФИО ребенка: ${formData.childName}\nДата рождения: ${formData.childBirthDate}\nTelegram: ${formData.telegram}`;
-      
       await fetch(leadProcessorUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.parentName,
+          childName: formData.childName,
+          childBirthDate: formData.childBirthDate,
+          parentName: formData.parentName,
           phone: formData.phone.replace(/\D/g, ''), // Убираем форматирование
-          email: '', // Email не обязателен в этой форме
-          date: '', // Дату записи пользователь выбирает позже
-          time: '',
-          note: note
+          telegram: formData.telegram,
+          email: '',
+          date: '',
+          time: ''
         }),
       });
     } catch (error) {
