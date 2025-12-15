@@ -151,9 +151,12 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 markup_data_raw = body_data.get('markup_data', '')
                 annotated_image_raw = body_data.get('annotated_image', '')
                 
-                print(f'Saving annotation for ID {dictation_id}')
+                print(f'=== SAVE ANNOTATION REQUEST ===')
+                print(f'Dictation ID: {dictation_id}')
                 print(f'markup_data type: {type(markup_data_raw)}')
                 print(f'markup_data length: {len(str(markup_data_raw))}')
+                print(f'annotated_image type: {type(annotated_image_raw)}')
+                print(f'annotated_image length: {len(str(annotated_image_raw)) if annotated_image_raw else 0}')
                 
                 # If it's already a JSON string, keep it as is
                 # If it's a dict/list, convert to JSON string

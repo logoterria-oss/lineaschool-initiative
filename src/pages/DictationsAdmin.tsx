@@ -122,26 +122,37 @@ const DictationsAdmin = () => {
   const handleSaveAnnotation = async (data: { markup: string, imageUrl: string, croppedImageUrl?: string }) => {
     if (!selectedDictation) return;
     
-    console.log('handleSaveAnnotation called');
+    console.log('=== SAVE ANNOTATION START ===');
+    console.log('Selected dictation:', selectedDictation.id, selectedDictation.child_name);
+    console.log('Markup length:', data.markup?.length || 0);
+    console.log('Image URL length:', data.imageUrl?.length || 0);
     
     try {
+      const requestBody = {
+        action: 'save_annotation',
+        id: selectedDictation.id,
+        markup_data: data.markup,
+        annotated_image: data.imageUrl
+      };
+      
+      console.log('Sending request to backend...');
+      
       const response = await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'save_annotation',
-          id: selectedDictation.id,
-          markup_data: data.markup,
-          annotated_image: data.imageUrl
-        })
+        body: JSON.stringify(requestBody)
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Save failed:', errorText);
         throw new Error(`Save failed: ${response.status}`);
       }
       
       const saveResult = await response.json();
-      console.log('Save successful:', saveResult);
+      console.log('✅ Save successful:', saveResult);
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
