@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -21,8 +21,10 @@ const pricingData = [
         totalLessons: 8,
         groupLessons: 4,
         individualLessons: 4,
-        pricePerLesson: "1 370 ₽",
-        totalPrice: "10 960 ₽",
+        pricePerLesson: "1 165 ₽",
+        oldPricePerLesson: "1 370 ₽",
+        totalPrice: "9 316 ₽",
+        oldTotalPrice: "10 960 ₽",
         features: ["Первичная диагностика", "Базовый план занятий"]
       },
       {
@@ -30,11 +32,13 @@ const pricingData = [
         totalLessons: 24,
         groupLessons: 12,
         individualLessons: 12,
-        pricePerLesson: "1 250 ₽",
-        totalPrice: "30 000 ₽",
+        pricePerLesson: "1 063 ₽",
+        oldPricePerLesson: "1 250 ₽",
+        totalPrice: "25 500 ₽",
+        oldTotalPrice: "30 000 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 9%",
+        discount: "🎄 Новогодняя скидка 15%",
         paymentOptions: [
           {
             type: "dolami",
@@ -48,10 +52,12 @@ const pricingData = [
         totalLessons: 48,
         groupLessons: 24,
         individualLessons: 24,
-        pricePerLesson: "1 150 ₽",
-        totalPrice: "55 200 ₽",
+        pricePerLesson: "978 ₽",
+        oldPricePerLesson: "1 150 ₽",
+        totalPrice: "46 920 ₽",
+        oldTotalPrice: "55 200 ₽",
         features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 16%",
+        discount: "🎄 Новогодняя скидка 15%",
         paymentOptions: [
           {
             type: "dolami",
@@ -75,8 +81,10 @@ const pricingData = [
         totalLessons: 12,
         groupLessons: 8,
         individualLessons: 4,
-        pricePerLesson: "1 200 ₽",
-        totalPrice: "14 400 ₽",
+        pricePerLesson: "1 020 ₽",
+        oldPricePerLesson: "1 200 ₽",
+        totalPrice: "12 240 ₽",
+        oldTotalPrice: "14 400 ₽",
         features: ["Первичная диагностика", "Базовый план занятий"]
       },
       {
@@ -84,11 +92,13 @@ const pricingData = [
         totalLessons: 36,
         groupLessons: 24,
         individualLessons: 12,
-        pricePerLesson: "1 100 ₽",
-        totalPrice: "39 600 ₽",
+        pricePerLesson: "935 ₽",
+        oldPricePerLesson: "1 100 ₽",
+        totalPrice: "33 660 ₽",
+        oldTotalPrice: "39 600 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 8%",
+        discount: "🎄 Новогодняя скидка 15%",
         paymentOptions: [
           {
             type: "dolami",
@@ -102,10 +112,12 @@ const pricingData = [
         totalLessons: 72,
         groupLessons: 48,
         individualLessons: 24,
-        pricePerLesson: "1 030 ₽",
-        totalPrice: "74 160 ₽",
+        pricePerLesson: "876 ₽",
+        oldPricePerLesson: "1 030 ₽",
+        totalPrice: "63 036 ₽",
+        oldTotalPrice: "74 160 ₽",
         features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 14%",
+        discount: "🎄 Новогодняя скидка 15%",
         paymentOptions: [
           {
             type: "dolami",
@@ -129,8 +141,10 @@ const pricingData = [
         totalLessons: 16,
         groupLessons: 8,
         individualLessons: 8,
-        pricePerLesson: "1 180 ₽",
-        totalPrice: "18 880 ₽",
+        pricePerLesson: "1 003 ₽",
+        oldPricePerLesson: "1 180 ₽",
+        totalPrice: "16 048 ₽",
+        oldTotalPrice: "18 880 ₽",
         features: ["Первичная диагностика", "Интенсивный план"]
       },
       {
@@ -138,11 +152,13 @@ const pricingData = [
         totalLessons: 48,
         groupLessons: 24,
         individualLessons: 24,
-        pricePerLesson: "1 050 ₽",
-        totalPrice: "50 400 ₽",
+        pricePerLesson: "893 ₽",
+        oldPricePerLesson: "1 050 ₽",
+        totalPrice: "42 840 ₽",
+        oldTotalPrice: "50 400 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 11%",
+        discount: "🎄 Новогодняя скидка 15%",
         paymentOptions: [
           {
             type: "dolami",
@@ -156,10 +172,12 @@ const pricingData = [
         totalLessons: 96,
         groupLessons: 48,
         individualLessons: 48,
-        pricePerLesson: "970 ₽",
-        totalPrice: "93 120 ₽",
+        pricePerLesson: "825 ₽",
+        oldPricePerLesson: "970 ₽",
+        totalPrice: "79 152 ₽",
+        oldTotalPrice: "93 120 ₽",
         features: ["Комплексная диагностика", "Максимальная поддержка"],
-        discount: "Экономия 18%",
+        discount: "🎄 Новогодняя скидка 15%",
         paymentOptions: [
           {
             type: "dolami",
@@ -183,6 +201,31 @@ export default function PricingSection() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedSectionTitle, setSelectedSectionTitle] = useState<string>('');
   const [clientName, setClientName] = useState('');
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const newYear = new Date('2026-01-01T00:00:00').getTime();
+      const now = new Date().getTime();
+      const difference = newYear - now;
+
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000)
+        });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const toggleSection = (index: number) => {
     setOpenSections(prev => 
@@ -267,13 +310,43 @@ export default function PricingSection() {
 
   return (
     <>
-    <section id="pricing" className="py-4 bg-white">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+    <section id="pricing" className="py-4 bg-white relative overflow-hidden">
+      <div className="absolute top-0 left-0 text-8xl opacity-10">🎄</div>
+      <div className="absolute top-20 right-10 text-6xl opacity-10">❄️</div>
+      <div className="absolute bottom-20 left-20 text-7xl opacity-10">🎁</div>
+      <div className="absolute bottom-0 right-0 text-9xl opacity-10">⭐</div>
+      
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-8">
+          <div className="inline-block bg-gradient-to-r from-red-500 via-green-500 to-red-500 text-white px-6 py-2 rounded-full mb-4 font-bold text-lg animate-pulse">
+            🎄 Новогодняя акция -15% 🎄
+          </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Стоимость занятий</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
             Выберите удобный темп обучения для вашего ребёнка
           </p>
+          
+          <div className="bg-gradient-to-r from-green-50 to-red-50 rounded-2xl p-6 max-w-2xl mx-auto border-2 border-green-200 mb-8">
+            <p className="text-lg font-semibold text-gray-800 mb-3">⏰ До конца акции осталось:</p>
+            <div className="flex justify-center gap-4">
+              <div className="bg-white rounded-lg p-3 min-w-[70px] shadow-md">
+                <div className="text-3xl font-bold text-green-600">{timeLeft.days}</div>
+                <div className="text-xs text-gray-600">дней</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 min-w-[70px] shadow-md">
+                <div className="text-3xl font-bold text-green-600">{timeLeft.hours}</div>
+                <div className="text-xs text-gray-600">часов</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 min-w-[70px] shadow-md">
+                <div className="text-3xl font-bold text-green-600">{timeLeft.minutes}</div>
+                <div className="text-xs text-gray-600">минут</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 min-w-[70px] shadow-md">
+                <div className="text-3xl font-bold text-green-600">{timeLeft.seconds}</div>
+                <div className="text-xs text-gray-600">секунд</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-8">
@@ -311,7 +384,7 @@ export default function PricingSection() {
                         )}
                         {plan.discount && (
                           <div className="absolute top-4 right-4">
-                            <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-semibold">
+                            <span className="bg-gradient-to-r from-red-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
                               {plan.discount}
                             </span>
                           </div>
@@ -321,12 +394,24 @@ export default function PricingSection() {
                           <h4 className="text-xl font-bold text-gray-900 mb-1">{plan.title}</h4>
                           
                           <div className="mb-4">
-                            <div className="text-3xl font-bold text-gray-900 mb-2">
-                              {plan.pricePerLesson}
-                              <span className="text-sm font-normal text-gray-600">/урок</span>
+                            <div className="flex flex-col items-center gap-1">
+                              {plan.oldPricePerLesson && (
+                                <div className="text-lg text-gray-400 line-through">
+                                  {plan.oldPricePerLesson}
+                                </div>
+                              )}
+                              <div className="text-3xl font-bold text-green-600 mb-1">
+                                {plan.pricePerLesson}
+                                <span className="text-sm font-normal text-gray-600">/урок</span>
+                              </div>
                             </div>
-                            <div className="text-gray-600">
-                              Всего: <span className="font-semibold">{plan.totalPrice}</span>
+                            <div className="text-gray-600 flex flex-col items-center gap-1">
+                              {plan.oldTotalPrice && (
+                                <span className="text-sm text-gray-400 line-through">{plan.oldTotalPrice}</span>
+                              )}
+                              <div>
+                                Всего: <span className="font-semibold text-green-600 text-lg">{plan.totalPrice}</span>
+                              </div>
                             </div>
                             <div className="text-sm text-gray-500 mt-1">
                               {plan.totalLessons} занятий
