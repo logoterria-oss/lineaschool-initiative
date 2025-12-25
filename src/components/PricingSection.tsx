@@ -310,13 +310,8 @@ export default function PricingSection() {
 
   return (
     <>
-    <section id="pricing" className="py-4 bg-white relative overflow-hidden">
-      <div className="absolute top-0 left-0 text-8xl opacity-10">🎄</div>
-      <div className="absolute top-20 right-10 text-6xl opacity-10">❄️</div>
-      <div className="absolute bottom-20 left-20 text-7xl opacity-10">🎁</div>
-      <div className="absolute bottom-0 right-0 text-9xl opacity-10">⭐</div>
-      
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <section id="pricing" className="py-4 bg-white">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
           <div className="inline-block bg-gradient-to-r from-red-500 via-green-500 to-red-500 text-white px-6 py-2 rounded-full mb-4 font-bold text-lg animate-pulse">
             🎄 Новогодняя акция -15% 🎄
@@ -394,23 +389,33 @@ export default function PricingSection() {
                           <h4 className="text-xl font-bold text-gray-900 mb-1">{plan.title}</h4>
                           
                           <div className="mb-4">
-                            <div className="flex flex-col items-center gap-1">
-                              {plan.oldPricePerLesson && (
-                                <div className="text-lg text-gray-400 line-through">
-                                  {plan.oldPricePerLesson}
+                            <div className="flex flex-col items-center gap-2 mb-2">
+                              <div className="relative inline-block">
+                                <div className="text-3xl font-bold text-orange-500">
+                                  {plan.pricePerLesson}
+                                  <span className="text-sm font-normal text-gray-600">/урок</span>
                                 </div>
-                              )}
-                              <div className="text-3xl font-bold text-green-600 mb-1">
-                                {plan.pricePerLesson}
-                                <span className="text-sm font-normal text-gray-600">/урок</span>
+                                {plan.oldPricePerLesson && (
+                                  <div className="absolute -top-3 left-0 right-0 text-center">
+                                    <span className="text-sm text-gray-400 relative inline-block">
+                                      {plan.oldPricePerLesson}
+                                      <span className="absolute top-1/2 left-0 right-0 h-[2px] bg-red-500 transform -rotate-12"></span>
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="text-gray-600 flex flex-col items-center gap-1">
-                              {plan.oldTotalPrice && (
-                                <span className="text-sm text-gray-400 line-through">{plan.oldTotalPrice}</span>
-                              )}
-                              <div>
-                                Всего: <span className="font-semibold text-green-600 text-lg">{plan.totalPrice}</span>
+                              <div className="relative inline-block">
+                                <span className="font-semibold text-orange-500 text-xl">{plan.totalPrice}</span>
+                                {plan.oldTotalPrice && (
+                                  <div className="text-center mt-1">
+                                    <span className="text-sm text-gray-400 relative inline-block">
+                                      {plan.oldTotalPrice}
+                                      <span className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-red-500 transform -rotate-12"></span>
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="text-sm text-gray-500 mt-1">
