@@ -99,6 +99,9 @@ const DictationsAdmin = () => {
 
   const markAsChecked = async (id: number) => {
     try {
+      // Загружаем свежие данные диктанта перед сохранением
+      const freshDictation = await loadDictationDetails(id);
+      
       await fetch('https://functions.poehali.dev/94ceb881-6ad6-4eff-8d2c-2975261768a0', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +109,7 @@ const DictationsAdmin = () => {
           action: 'mark_checked',
           id,
           notes,
-          annotated_image: selectedDictation?.annotated_image || ''
+          annotated_image: freshDictation?.annotated_image || selectedDictation?.annotated_image || ''
         })
       });
       await loadDictations();
