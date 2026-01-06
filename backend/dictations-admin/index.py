@@ -79,13 +79,18 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                         print(f'Failed to parse markup_data: {e}')
                         pass
                 
+                # Generate photo_url using telegram-photo proxy if not available
+                photo_url = d['photo_url']
+                if not photo_url and d['photo_file_id']:
+                    photo_url = f"https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id={d['photo_file_id']}"
+                
                 result = {
                     'id': d['id'],
                     'telegram_user_id': d['telegram_user_id'],
                     'telegram_username': d['telegram_username'] or '',
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
-                    'photo_url': d['photo_url'],
+                    'photo_url': photo_url,
                     'markup_data': markup_data,
                     'annotated_image': d.get('annotated_image'),
                     'has_annotation': bool(d.get('markup_data')),
@@ -117,13 +122,16 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             
             result = []
             for d in dictations:
+                # Generate photo_url using telegram-photo proxy
+                photo_url = f"https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc?file_id={d['photo_file_id']}"
+                
                 result.append({
                     'id': d['id'],
                     'telegram_user_id': d['telegram_user_id'],
                     'telegram_username': d['telegram_username'] or '',
                     'child_name': d['child_name'],
                     'photo_file_id': d['photo_file_id'],
-                    'photo_url': None,
+                    'photo_url': photo_url,
                     'has_annotation': d['has_annotation'],
                     'status': d['status'],
                     'diagnostician_notes': d['diagnostician_notes'],
