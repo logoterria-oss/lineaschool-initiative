@@ -230,7 +230,7 @@ export default function PricingSection() {
               <p className="text-gray-600 mb-4">Определим проблему и составим индивидуальный план коррекции</p>
               <div className="flex items-center justify-center gap-3 mb-4">
                 <span className="text-3xl font-bold text-green-600">1 290 ₽</span>
-                <span className="text-xl text-gray-400 line-through">2 500 ₽</span>
+                <span className="text-xl text-gray-400 line-through">3 500 ₽</span>
               </div>
             </div>
             <Button 
