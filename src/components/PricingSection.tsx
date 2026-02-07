@@ -215,10 +215,6 @@ export default function PricingSection() {
     <>
     <section id="pricing" className="py-4 bg-white">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">Стоимость занятий</h2>
-        </div>
-
         {/* Диагностика */}
         <div className="max-w-md mx-auto mb-20">
           <Card className="p-6 border-2 border-green-500 shadow-lg">
