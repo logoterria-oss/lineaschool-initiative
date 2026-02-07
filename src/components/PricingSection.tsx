@@ -289,10 +289,13 @@ export default function PricingSection() {
             </div>
             <Button 
               className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white"
-              onClick={() => setIsBookingModalOpen(true)}
+              onClick={() => openPaymentModal({ 
+                title: 'Диагностика + консультация', 
+                totalPrice: '1 290 ₽' 
+              }, 'Диагностика')}
             >
-              <Icon name="Calendar" className="mr-2" size={20} />
-              Записаться на диагностику
+              <Icon name="CreditCard" className="mr-2" size={20} />
+              Оплатить диагностику
             </Button>
           </Card>
         </div>
