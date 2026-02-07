@@ -217,9 +217,6 @@ export default function PricingSection() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Стоимость занятий</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Выберите удобный темп обучения для вашего ребёнка
-          </p>
         </div>
 
         {/* Диагностика */}
@@ -247,7 +244,10 @@ export default function PricingSection() {
         </div>
 
         <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-gray-900">Абонементы на курс занятий</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">Абонементы на курс занятий</h3>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Выберите удобный темп обучения для вашего ребёнка
+          </p>
         </div>
 
         <div className="space-y-8">
