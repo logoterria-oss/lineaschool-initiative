@@ -276,6 +276,31 @@ export default function PricingSection() {
           </p>
         </div>
 
+        {/* Диагностика */}
+        <div className="max-w-md mx-auto mb-12">
+          <Card className="p-6 border-2 border-green-500 shadow-lg">
+            <div className="text-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Диагностика + консультация</h3>
+              <p className="text-gray-600 mb-4">Определим проблему и составим индивидуальный план коррекции</p>
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="text-3xl font-bold text-green-600">1 290 ₽</span>
+                <span className="text-xl text-gray-400 line-through">2 500 ₽</span>
+              </div>
+            </div>
+            <Button 
+              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white"
+              onClick={() => setIsBookingModalOpen(true)}
+            >
+              <Icon name="Calendar" className="mr-2" size={20} />
+              Записаться на диагностику
+            </Button>
+          </Card>
+        </div>
+
+        <div className="text-center mb-8">
+          <h3 className="text-2xl font-bold text-gray-900">Абонементы на курс занятий</h3>
+        </div>
+
         <div className="space-y-8">
           {pricingData.map((section, sectionIndex) => (
             <div key={sectionIndex} className="border border-gray-200 rounded-xl overflow-hidden">
