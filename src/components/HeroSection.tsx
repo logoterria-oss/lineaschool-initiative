@@ -23,7 +23,8 @@ export default function HeroSection() {
                 onClick={() => setIsBookingModalOpen(true)}
               >
                 <Icon name="Calendar" className="mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0 relative z-10" size={14} />
-                <span className="text-center leading-tight relative z-10 flex flex-col items-center"></span>
+                <span className="text-center leading-tight relative z-10 flex flex-col items-center">
+                  <span>Получить БЕСПЛАТНУЮ диагностику</span>
                   <span className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90 mt-0.5">
                     Диагностика + консультация = 1290₽ <span className="line-through ml-1">2500₽</span>
                   </span>
