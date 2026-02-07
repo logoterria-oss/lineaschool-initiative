@@ -220,7 +220,7 @@ export default function PricingSection() {
         </div>
 
         {/* Диагностика */}
-        <div className="max-w-md mx-auto mb-12">
+        <div className="max-w-md mx-auto mb-20">
           <Card className="p-6 border-2 border-green-500 shadow-lg">
             <div className="text-center mb-4">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Диагностика + консультация</h3>
