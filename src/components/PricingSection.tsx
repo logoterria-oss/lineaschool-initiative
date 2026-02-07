@@ -34,14 +34,7 @@ const pricingData = [
         totalPrice: "30 000 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 9%",
-        paymentOptions: [
-          {
-            type: "dolami",
-            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "оплата Долями"
-          }
-        ]
+        discount: "Экономия 9%"
       },
       {
         title: "6 месяцев",
@@ -51,18 +44,7 @@ const pricingData = [
         pricePerLesson: "1 150 ₽",
         totalPrice: "55 200 ₽",
         features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 16%",
-        paymentOptions: [
-          {
-            type: "dolami",
-            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "оплата Долями"
-          },
-          {
-            type: "installment",
-            text: "рассрочка от банков"
-          }
-        ]
+        discount: "Экономия 16%"
       }
     ]
   },
@@ -88,14 +70,7 @@ const pricingData = [
         totalPrice: "39 600 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 8%",
-        paymentOptions: [
-          {
-            type: "dolami",
-            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "оплата Долями"
-          }
-        ]
+        discount: "Экономия 8%"
       },
       {
         title: "6 месяцев",
@@ -105,18 +80,7 @@ const pricingData = [
         pricePerLesson: "1 030 ₽",
         totalPrice: "74 160 ₽",
         features: ["Комплексная диагностика", "Гарантия результата"],
-        discount: "Экономия 14%",
-        paymentOptions: [
-          {
-            type: "dolami",
-            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "оплата Долями"
-          },
-          {
-            type: "installment",
-            text: "рассрочка от банков"
-          }
-        ]
+        discount: "Экономия 14%"
       }
     ]
   },
@@ -142,14 +106,7 @@ const pricingData = [
         totalPrice: "50 400 ₽",
         features: ["Углубленная диагностика", "Персональный куратор"],
         popular: true,
-        discount: "Экономия 11%",
-        paymentOptions: [
-          {
-            type: "dolami",
-            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "оплата Долями"
-          }
-        ]
+        discount: "Экономия 11%"
       },
       {
         title: "6 месяцев",
@@ -159,18 +116,7 @@ const pricingData = [
         pricePerLesson: "970 ₽",
         totalPrice: "93 120 ₽",
         features: ["Комплексная диагностика", "Максимальная поддержка"],
-        discount: "Экономия 18%",
-        paymentOptions: [
-          {
-            type: "dolami",
-            icon: "https://cdn.poehali.dev/files/27ce158f-0959-4d8e-b037-1fef96c64630.png",
-            text: "оплата Долями"
-          },
-          {
-            type: "installment",
-            text: "рассрочка от банков"
-          }
-        ]
+        discount: "Экономия 18%"
       }
     ]
   }
