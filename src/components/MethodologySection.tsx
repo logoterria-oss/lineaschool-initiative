@@ -82,7 +82,7 @@ export default function MethodologySection() {
           
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start lg:items-center">
             {/* Правая колонка - большая схема мозга */}
-            <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 lg:p-8 order-1 lg:order-2">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 order-1 lg:order-2">
               <h4 className="text-base sm:text-lg font-bold text-center mb-4">Карта активности мозга</h4>
               <div className="h-48 sm:h-64 lg:h-96 flex items-center justify-center">
                 <div className="w-full max-w-xs sm:max-w-sm lg:max-w-none">
