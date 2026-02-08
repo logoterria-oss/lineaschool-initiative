@@ -26,7 +26,7 @@ export default function HeroSection() {
                 <span className="text-center leading-tight relative z-10 flex flex-col items-center">
                   <span>ЗАПИШИСЬ НА ДИАГНОСТИКУ</span>
                   <span className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90 mt-0.5">
-                    Диагностика + консультация = 1290₽ <span className="line-through ml-1">3500₽</span>
+                    Диагностика + консультация = 1290₽ <span className="line-through ml-1">4500₽</span>
                   </span>
                 </span>
               </Button>
