@@ -19,8 +19,8 @@ export default function HeroSection() {
             <div className="mb-3 xs:mb-4 sm:mb-6 md:mb-8 w-full">
               <div className="relative">
                 {/* Шильдик акции */}
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                  <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold shadow-lg animate-pulse whitespace-nowrap">
+                <div className="absolute -top-3 right-2 sm:right-4 z-20">
+                  <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold shadow-lg whitespace-nowrap">
                     🔥 Акция до 28 февраля
                   </div>
                 </div>
