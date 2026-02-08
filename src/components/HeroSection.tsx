@@ -17,19 +17,28 @@ export default function HeroSection() {
             </h1>
             
             <div className="mb-3 xs:mb-4 sm:mb-6 md:mb-8 w-full">
-              <Button 
-                size="sm" 
-                className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] lg:button-shine"
-                onClick={() => setIsBookingModalOpen(true)}
-              >
-                <Icon name="Calendar" className="mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0 relative z-10" size={14} />
-                <span className="text-center leading-tight relative z-10 flex flex-col items-center">
-                  <span>ЗАПИШИСЬ НА ДИАГНОСТИКУ</span>
-                  <span className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90 mt-0.5">
-                    Диагностика + консультация = 1290₽ <span className="line-through ml-1">4500₽</span>
+              <div className="relative">
+                {/* Шильдик акции */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                  <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold shadow-lg animate-pulse whitespace-nowrap">
+                    🔥 Акция до 28 февраля
+                  </div>
+                </div>
+                
+                <Button 
+                  size="sm" 
+                  className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] lg:button-shine"
+                  onClick={() => setIsBookingModalOpen(true)}
+                >
+                  <Icon name="Calendar" className="mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0 relative z-10" size={14} />
+                  <span className="text-center leading-tight relative z-10 flex flex-col items-center">
+                    <span>ЗАПИШИСЬ НА ДИАГНОСТИКУ</span>
+                    <span className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90 mt-0.5">
+                      Диагностика + консультация = 1290₽ <span className="line-through ml-1">4500₽</span>
+                    </span>
                   </span>
-                </span>
-              </Button>
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 lg:gap-8 w-full items-center">
