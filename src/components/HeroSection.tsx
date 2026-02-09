@@ -27,11 +27,13 @@ export default function HeroSection() {
                 
                 <Button 
                   size="sm" 
-                  className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] lg:button-shine"
+                  className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] lg:button-shine flex items-center justify-start"
                   onClick={() => setIsBookingModalOpen(true)}
                 >
-                  <Icon name="Calendar" className="mr-2 xs:mr-3 sm:mr-4 flex-shrink-0 relative z-10" size={18} />
-                  <span className="text-center leading-tight relative z-10 flex flex-col items-center gap-0.5">
+                  <div className="absolute left-3 xs:left-4 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 bg-white/20 rounded-lg flex items-center justify-center z-10">
+                    <Icon name="Calendar" className="text-white" size={32} />
+                  </div>
+                  <span className="text-center leading-tight relative z-10 flex flex-col items-center gap-0.5 w-full pl-12 xs:pl-14 sm:pl-16">
                     <span className="font-bold">ЗАПИШИСЬ НА ОБСЛЕДОВАНИЕ</span>
                     <span className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90">комплексное исследование + консультация</span>
                     <span className="text-[12px] xs:text-[14px] sm:text-base md:text-lg font-bold">
