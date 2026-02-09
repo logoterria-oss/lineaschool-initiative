@@ -92,11 +92,21 @@ def handler(event: dict, context) -> dict:
 🕐 Время заполнения: {created_time}
 🆔 ID анкеты: {questionnaire_id}'''
         
+        view_url = f'https://lineaschool.ru/admin/questionnaires?id={questionnaire_id}'
+        
         telegram_url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
         payload = json.dumps({
             'chat_id': admin_chat_id,
             'text': message,
-            'parse_mode': 'HTML'
+            'parse_mode': 'HTML',
+            'reply_markup': {
+                'inline_keyboard': [[
+                    {
+                        'text': '📋 Просмотреть анкету',
+                        'url': view_url
+                    }
+                ]]
+            }
         }).encode('utf-8')
         
         req = Request(
