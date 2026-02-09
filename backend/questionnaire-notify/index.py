@@ -48,7 +48,7 @@ def handler(event: dict, context) -> dict:
         
         db_url = os.environ['DATABASE_URL']
         schema = os.environ['MAIN_DB_SCHEMA']
-        bot_token = os.environ['TELEGRAM_BOT_TOKEN']
+        bot_token = os.environ['TELEGRAM_QUESTIONNAIRE_BOT_TOKEN']
         admin_chat_id = os.environ['TELEGRAM_ADMIN_CHAT_ID']
         
         conn = psycopg2.connect(db_url)
