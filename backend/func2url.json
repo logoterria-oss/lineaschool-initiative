@@ -3,7 +3,6 @@
   "upload-dictation": "https://functions.poehali.dev/93d8070e-4f07-4586-97a9-9c2541aa0185",
   "get-payment-leads": "https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2",
   "save-payment-lead": "https://functions.poehali.dev/99e752b7-e754-4be4-8fe8-1b666731a12c",
-  "bot-messages": "https://functions.poehali.dev/d32d48c4-7302-4db6-a78e-ee12d18d0063",
   "telegram-webhook": "https://functions.poehali.dev/1045ce5a-ff9c-4da4-94f5-bcb075b84ac5",
   "telegram-photo": "https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc",
   "questionnaire": "https://functions.poehali.dev/65751635-528e-4830-bc09-e0b9c5344580",
