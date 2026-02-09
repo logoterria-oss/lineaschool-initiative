@@ -82,6 +82,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.close()
             conn.close()
             
+            try:
+                import urllib.request
+                import urllib.error
+                
+                notify_url = 'https://functions.poehali.dev/957d6d4e-5dc3-4156-a1b0-94574bf07719'
+                notify_data = json.dumps({'questionnaire_id': questionnaire_id}).encode('utf-8')
+                notify_req = urllib.request.Request(
+                    notify_url,
+                    data=notify_data,
+                    headers={'Content-Type': 'application/json'}
+                )
+                
+                with urllib.request.urlopen(notify_req, timeout=5) as response:
+                    pass
+            except Exception:
+                pass
+            
             return {
                 'statusCode': 200,
                 'headers': {
