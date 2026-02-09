@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS request",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test POST without questionnaire_id",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test POST with invalid questionnaire_id",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "questionnaire_id": 999999
+      },
+      "expectedStatus": 404,
+      "expectedBody": {
+        "error": "Questionnaire not found"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
