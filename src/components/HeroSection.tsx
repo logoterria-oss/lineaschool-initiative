@@ -19,9 +19,9 @@ export default function HeroSection() {
             <div className="mb-3 xs:mb-4 sm:mb-6 md:mb-8 w-full">
               <div className="relative">
                 {/* Шильдик акции */}
-                <div className="absolute -top-3 -left-2 sm:-left-4 z-20">
+                <div className="absolute -top-3 right-2 sm:right-4 z-20">
                   <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold shadow-lg whitespace-nowrap">
-                    <span className="drop-shadow-[0_0_2px_white] text-[20px] xs:text-[22px] sm:text-[24px]">🔥</span> Акция до 28 февраля
+                    <span className="drop-shadow-[0_0_2px_white]">🔥</span> Акция до 28 февраля
                   </div>
                 </div>
                 
@@ -30,7 +30,7 @@ export default function HeroSection() {
                   className="relative overflow-hidden bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 text-[12px] xs:text-[14px] sm:text-sm md:text-base lg:text-lg px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-2 xs:py-2.5 sm:py-3 md:py-4 w-full transition-all duration-300 shadow-lg h-auto min-h-[44px] lg:button-shine"
                   onClick={() => setIsBookingModalOpen(true)}
                 >
-                  <Icon name="Calendar" className="mr-2 xs:mr-3 sm:mr-4 flex-shrink-0 relative z-10" size={18} />
+                  <Icon name="Calendar" className="mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0 relative z-10" size={14} />
                   <span className="text-center leading-tight relative z-10 flex flex-col items-center gap-0.5">
                     <span className="font-bold">ЗАПИШИСЬ НА ОБСЛЕДОВАНИЕ</span>
                     <span className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90">комплексное исследование + консультация</span>
