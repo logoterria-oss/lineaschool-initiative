@@ -4,7 +4,6 @@ import secrets
 from typing import Dict, Any
 from datetime import datetime
 import psycopg2
-from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
@@ -70,8 +69,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     # Подключение к базе данных
     try:
-        conn = psycopg2.connect(os.environ['DATABASE_URL'])
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=5)
+        cursor = conn.cursor()
         
         # Вставляем запись в таблицу
         cursor.execute("""
@@ -93,7 +92,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         ))
         
         result = cursor.fetchone()
-        report_id = result['id']
+        report_id = result[0]
         
         conn.commit()
         
