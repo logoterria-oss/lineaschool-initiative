@@ -1,7 +1,6 @@
 {
+  "questionnaire-notify": "https://functions.poehali.dev/957d6d4e-5dc3-4156-a1b0-94574bf07719",
   "lead-processor": "https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094",
-  "upload-dictation": "https://functions.poehali.dev/93d8070e-4f07-4586-97a9-9c2541aa0185",
-  "get-payment-leads": "https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2",
   "save-payment-lead": "https://functions.poehali.dev/99e752b7-e754-4be4-8fe8-1b666731a12c",
   "telegram-webhook": "https://functions.poehali.dev/1045ce5a-ff9c-4da4-94f5-bcb075b84ac5",
   "telegram-photo": "https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc",
