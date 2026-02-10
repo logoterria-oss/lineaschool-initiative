@@ -37,6 +37,14 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
     onInputChange("motorRealization", [value]);
     setShowOtherInput(value === "другое");
     setShowMultipleInput(value === "нарушены 2 и более группы звуков");
+    
+    // Очистка данных при смене варианта
+    if (value !== "нарушены 2 и более группы звуков") {
+      onInputChange("motorRealizationMultiple", "");
+    }
+    if (value !== "другое") {
+      onInputChange("motorRealizationOther", "");
+    }
   };
 
   const handleConnectedSpeechRadio = (value: string) => {
@@ -134,7 +142,7 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
                   <RadioGroupItem value="нарушены 2 и более группы звуков" id="sound-multiple" />
                   <Label htmlFor="sound-multiple" className="text-sm">нарушены 2 и более группы звуков</Label>
                 </div>
-                {formData.motorRealization[0] === "нарушены 2 и более группы звуков" && (
+                {showMultipleInput && (
                   <Input
                     placeholder="Укажите какие группы звуков нарушены"
                     value={formData.motorRealizationMultiple || ""}
