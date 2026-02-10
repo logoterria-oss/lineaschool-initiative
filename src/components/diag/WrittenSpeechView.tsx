@@ -45,6 +45,8 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
         )}
         
         <div><strong>Дисграфические ошибки:</strong> {diagData.dysgraphicErrors || 'Не указано'}</div>
+        <div><strong>Дизорфографические ошибки:</strong> {diagData.dysorthographicErrors || 'Не указано'}</div>
+        <div><strong>Ошибок всего:</strong> {diagData.totalErrors || 'Не указано'}</div>
         <div><strong>Ошибки анализа:</strong> {formatList(diagData.analysisErrors)}</div>
         <div><strong>Акустические ошибки:</strong> {formatList(diagData.acousticErrors)}</div>
         <div><strong>Моторные ошибки:</strong> {formatList(diagData.motorErrors)}</div>
