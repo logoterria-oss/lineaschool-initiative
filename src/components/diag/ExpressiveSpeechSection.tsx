@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ExpressiveSpeechData {
   motorRealization: string[];
@@ -23,6 +23,18 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [showMultipleInput, setShowMultipleInput] = useState(false);
   const [showConnectedSpeechDetails, setShowConnectedSpeechDetails] = useState(false);
+
+  useEffect(() => {
+    if (formData.motorRealization.includes("нарушены 2 и более группы звуков")) {
+      setShowMultipleInput(true);
+    }
+    if (formData.motorRealization.includes("другое")) {
+      setShowOtherInput(true);
+    }
+    if (formData.connectedSpeech.includes("нарушена")) {
+      setShowConnectedSpeechDetails(true);
+    }
+  }, [formData.motorRealization, formData.connectedSpeech]);
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof ExpressiveSpeechData] as string[];
