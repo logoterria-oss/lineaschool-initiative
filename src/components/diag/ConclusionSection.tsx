@@ -26,7 +26,7 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
   );
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
-    const currentValues = formData[field as keyof ConclusionData];
+    const currentValues = (formData[field as keyof ConclusionData] as string[]) || [];
     if (checked) {
       onInputChange(field, [...currentValues, value]);
       if (field === "speechDisorders" && value === "нарушения звукопроизношения") {
