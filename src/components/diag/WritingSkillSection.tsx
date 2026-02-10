@@ -306,7 +306,7 @@ export default function WritingSkillSection({
             </div>
           ))}
           <div className="mt-3">
-            <Label htmlFor="regulation-violations-other" className="text-sm font-medium">Другие нарушения (укажите через запятую)</Label>
+            <Label htmlFor="regulation-violations-other" className="text-sm font-medium">Другие ошибки регуляции (укажите через запятую)</Label>
             <Input
               id="regulation-violations-other"
               placeholder="Укажите другие нарушения регуляции"
