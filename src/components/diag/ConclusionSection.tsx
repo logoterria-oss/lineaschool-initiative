@@ -6,7 +6,7 @@ import { useState } from "react";
 interface ConclusionData {
   speechDisorders: string[];
   soundProductionType?: string;
-  languageAnalysisType?: string;
+  languageAnalysisTypes?: string[];
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
@@ -43,7 +43,7 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
       }
       if (field === "speechDisorders" && value === "нарушения языкового анализа и синтеза") {
         setShowLanguageAnalysisType(false);
-        onInputChange("languageAnalysisType", "");
+        onInputChange("languageAnalysisTypes", []);
       }
     }
   };
@@ -114,24 +114,22 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
               {showLanguageAnalysisType && (
                 <div className="ml-6 mt-2 p-3 bg-white rounded border border-gray-200">
                   <Label className="text-sm font-medium mb-2 block">Уточнение уровня:</Label>
-                  <RadioGroup 
-                    value={formData.languageAnalysisType || ""} 
-                    onValueChange={(value: string) => onInputChange("languageAnalysisType", value)}
-                    className="space-y-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="на уровне звуков" id="lang-analysis-sounds" />
-                      <Label htmlFor="lang-analysis-sounds" className="text-sm cursor-pointer">на уровне звуков</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="на уровне слогов" id="lang-analysis-syllables" />
-                      <Label htmlFor="lang-analysis-syllables" className="text-sm cursor-pointer">на уровне слогов</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="на уровне слов в предложении и предложений в тексте" id="lang-analysis-sentences" />
-                      <Label htmlFor="lang-analysis-sentences" className="text-sm cursor-pointer">на уровне слов в предложении и предложений в тексте</Label>
-                    </div>
-                  </RadioGroup>
+                  <div className="space-y-2">
+                    {[
+                      "на уровне звуков",
+                      "на уровне слогов",
+                      "на уровне слов в предложении и предложений в тексте"
+                    ].map(level => (
+                      <div key={level} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`lang-analysis-${level}`}
+                          checked={(formData.languageAnalysisTypes || []).includes(level)}
+                          onCheckedChange={(checked) => handleCheckboxChange("languageAnalysisTypes", level, !!checked)}
+                        />
+                        <Label htmlFor={`lang-analysis-${level}`} className="text-sm cursor-pointer">{level}</Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

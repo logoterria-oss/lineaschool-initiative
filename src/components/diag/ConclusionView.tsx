@@ -14,8 +14,8 @@ export default function ConclusionView({ diagData }: ConclusionViewProps) {
           if (disorder === "нарушения звукопроизношения" && diagData.soundProductionType) {
             return `${disorder} (${diagData.soundProductionType})`;
           }
-          if (disorder === "нарушения языкового анализа и синтеза" && diagData.languageAnalysisType) {
-            return `${disorder} (${diagData.languageAnalysisType})`;
+          if (disorder === "нарушения языкового анализа и синтеза" && diagData.languageAnalysisTypes && diagData.languageAnalysisTypes.length > 0) {
+            return `${disorder} (${diagData.languageAnalysisTypes.join(', ')})`;
           }
           return disorder;
         }).join(', ');
