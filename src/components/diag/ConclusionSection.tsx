@@ -46,8 +46,40 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
         <div>
           <Label className="text-base font-semibold">Нарушения речи</Label>
           <div className="mt-2 space-y-2">
+            {/* Нарушения звукопроизношения с уточнением */}
+            <div>
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="speech-disorders-нарушения звукопроизношения"
+                  checked={formData.speechDisorders.includes("нарушения звукопроизношения")}
+                  onCheckedChange={(checked) => handleCheckboxChange("speechDisorders", "нарушения звукопроизношения", !!checked)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="speech-disorders-нарушения звукопроизношения" className="text-sm leading-5">нарушения звукопроизношения</Label>
+              </div>
+              {showSoundProductionType && (
+                <div className="ml-6 mt-2 p-3 bg-white rounded border border-gray-200">
+                  <Label className="text-sm font-medium mb-2 block">Уточнение типа нарушения:</Label>
+                  <RadioGroup 
+                    value={formData.soundProductionType || ""} 
+                    onValueChange={(value: string) => onInputChange("soundProductionType", value)}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="дислалия" id="sound-type-dyslalia" />
+                      <Label htmlFor="sound-type-dyslalia" className="text-sm cursor-pointer">дислалия</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="дизартрия" id="sound-type-dysarthria" />
+                      <Label htmlFor="sound-type-dysarthria" className="text-sm cursor-pointer">дизартрия</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+            </div>
+
+            {/* Остальные нарушения речи */}
             {[
-              "нарушения звукопроизношения",
               "нарушение фонематических процессов",
               "лексико-грамматическое недоразвитие речи"
             ].map(option => (
@@ -61,25 +93,6 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
                 <Label htmlFor={`speech-disorders-${option}`} className="text-sm leading-5">{option}</Label>
               </div>
             ))}
-            {showSoundProductionType && (
-              <div className="ml-6 mt-3 p-3 bg-white rounded border border-gray-200">
-                <Label className="text-sm font-medium mb-2 block">Уточнение типа нарушения:</Label>
-                <RadioGroup 
-                  value={formData.soundProductionType || ""} 
-                  onValueChange={(value: string) => onInputChange("soundProductionType", value)}
-                  className="space-y-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="дислалия" id="sound-type-dyslalia" />
-                    <Label htmlFor="sound-type-dyslalia" className="text-sm cursor-pointer">дислалия</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="дизартрия" id="sound-type-dysarthria" />
-                    <Label htmlFor="sound-type-dysarthria" className="text-sm cursor-pointer">дизартрия</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            )}
           </div>
         </div>
 
