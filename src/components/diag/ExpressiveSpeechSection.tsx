@@ -20,20 +20,20 @@ interface ExpressiveSpeechProps {
 }
 
 export default function ExpressiveSpeechSection({ formData, onInputChange }: ExpressiveSpeechProps) {
-  const [showOtherInput, setShowOtherInput] = useState(false);
-  const [showMultipleInput, setShowMultipleInput] = useState(false);
-  const [showConnectedSpeechDetails, setShowConnectedSpeechDetails] = useState(false);
+  const [showOtherInput, setShowOtherInput] = useState(
+    formData.motorRealization.includes("другое")
+  );
+  const [showMultipleInput, setShowMultipleInput] = useState(
+    formData.motorRealization.includes("нарушены 2 и более группы звуков")
+  );
+  const [showConnectedSpeechDetails, setShowConnectedSpeechDetails] = useState(
+    formData.connectedSpeech.includes("нарушена")
+  );
 
   useEffect(() => {
-    if (formData.motorRealization.includes("нарушены 2 и более группы звуков")) {
-      setShowMultipleInput(true);
-    }
-    if (formData.motorRealization.includes("другое")) {
-      setShowOtherInput(true);
-    }
-    if (formData.connectedSpeech.includes("нарушена")) {
-      setShowConnectedSpeechDetails(true);
-    }
+    setShowMultipleInput(formData.motorRealization.includes("нарушены 2 и более группы звуков"));
+    setShowOtherInput(formData.motorRealization.includes("другое"));
+    setShowConnectedSpeechDetails(formData.connectedSpeech.includes("нарушена"));
   }, [formData.motorRealization, formData.connectedSpeech]);
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
