@@ -32,7 +32,7 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
       onInputChange(field, currentValues.filter(item => item !== value));
       if (field === "speechDisorders" && value === "нарушения звукопроизношения") {
         setShowSoundProductionType(false);
-        onInputChange("soundProductionType", []);
+        onInputChange("soundProductionType", "");
       }
     }
   };
@@ -66,16 +66,16 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
                 <Label className="text-sm font-medium mb-2 block">Уточнение типа нарушения:</Label>
                 <RadioGroup 
                   value={formData.soundProductionType || ""} 
-                  onValueChange={(value) => onInputChange("soundProductionType", [value])}
+                  onValueChange={(value: string) => onInputChange("soundProductionType", value)}
                   className="space-y-2"
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="дислалия" id="sound-type-dyslalia" />
-                    <Label htmlFor="sound-type-dyslalia" className="text-sm">дислалия</Label>
+                    <Label htmlFor="sound-type-dyslalia" className="text-sm cursor-pointer">дислалия</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="дизартрия" id="sound-type-dysarthria" />
-                    <Label htmlFor="sound-type-dysarthria" className="text-sm">дизартрия</Label>
+                    <Label htmlFor="sound-type-dysarthria" className="text-sm cursor-pointer">дизартрия</Label>
                   </div>
                 </RadioGroup>
               </div>
