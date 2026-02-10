@@ -109,7 +109,8 @@ const DictationsAdmin = () => {
           action: 'mark_checked',
           id,
           notes,
-          annotated_image: freshDictation?.annotated_image || selectedDictation?.annotated_image || ''
+          annotated_image: freshDictation?.annotated_image || selectedDictation?.annotated_image || '',
+          markup_data: freshDictation?.markup_data || selectedDictation?.markup_data || ''
         })
       });
       await loadDictations();

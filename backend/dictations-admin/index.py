@@ -218,6 +218,7 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 dictation_id = body_data.get('id')
                 notes = str(body_data.get('notes', '')).replace("'", "''")
                 annotated_image_raw = body_data.get('annotated_image', '')
+                markup_data_raw = body_data.get('markup_data', '')
                 
                 # Convert to string if it's a dict/object
                 if isinstance(annotated_image_raw, (dict, list)):
@@ -225,8 +226,22 @@ def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 else:
                     annotated_image = str(annotated_image_raw).replace("'", "''")
                 
+                # Handle markup_data
+                if isinstance(markup_data_raw, str):
+                    markup_data = markup_data_raw.replace("'", "''")
+                elif isinstance(markup_data_raw, (dict, list)):
+                    markup_data = json.dumps(markup_data_raw).replace("'", "''")
+                else:
+                    markup_data = ''
+                
                 dictation_id_int = int(dictation_id)
-                query = "UPDATE t_p93118852_lineaschool_initiati.dictations SET status = 'checked', diagnostician_notes = '" + notes + "', annotated_image = '" + annotated_image + "', checked_at = CURRENT_TIMESTAMP WHERE id = " + str(dictation_id_int)
+                
+                # Update both markup_data and annotated_image if provided
+                if markup_data:
+                    query = "UPDATE t_p93118852_lineaschool_initiati.dictations SET status = 'checked', diagnostician_notes = '" + notes + "', annotated_image = '" + annotated_image + "', markup_data = '" + markup_data + "', checked_at = CURRENT_TIMESTAMP WHERE id = " + str(dictation_id_int)
+                else:
+                    query = "UPDATE t_p93118852_lineaschool_initiati.dictations SET status = 'checked', diagnostician_notes = '" + notes + "', annotated_image = '" + annotated_image + "', checked_at = CURRENT_TIMESTAMP WHERE id = " + str(dictation_id_int)
+                
                 cur.execute(query)
                 conn.commit()
                 cur.close()
