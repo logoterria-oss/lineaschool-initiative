@@ -1,8 +1,11 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useState } from "react";
 
 interface ConclusionData {
   speechDisorders: string[];
+  soundProductionType?: string;
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
@@ -14,12 +17,23 @@ interface ConclusionProps {
 }
 
 export default function ConclusionSection({ formData, onInputChange }: ConclusionProps) {
+  const [showSoundProductionType, setShowSoundProductionType] = useState(
+    formData.speechDisorders.includes("нарушения звукопроизношения")
+  );
+
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof ConclusionData];
     if (checked) {
       onInputChange(field, [...currentValues, value]);
+      if (field === "speechDisorders" && value === "нарушения звукопроизношения") {
+        setShowSoundProductionType(true);
+      }
     } else {
       onInputChange(field, currentValues.filter(item => item !== value));
+      if (field === "speechDisorders" && value === "нарушения звукопроизношения") {
+        setShowSoundProductionType(false);
+        onInputChange("soundProductionType", []);
+      }
     }
   };
 
@@ -47,6 +61,25 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
                 <Label htmlFor={`speech-disorders-${option}`} className="text-sm leading-5">{option}</Label>
               </div>
             ))}
+            {showSoundProductionType && (
+              <div className="ml-6 mt-3 p-3 bg-white rounded border border-gray-200">
+                <Label className="text-sm font-medium mb-2 block">Уточнение типа нарушения:</Label>
+                <RadioGroup 
+                  value={formData.soundProductionType || ""} 
+                  onValueChange={(value) => onInputChange("soundProductionType", [value])}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="дислалия" id="sound-type-dyslalia" />
+                    <Label htmlFor="sound-type-dyslalia" className="text-sm">дислалия</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="дизартрия" id="sound-type-dysarthria" />
+                    <Label htmlFor="sound-type-dysarthria" className="text-sm">дизартрия</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
           </div>
         </div>
 

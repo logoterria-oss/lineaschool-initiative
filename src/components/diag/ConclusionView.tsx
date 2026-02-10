@@ -10,7 +10,13 @@ export default function ConclusionView({ diagData }: ConclusionViewProps) {
       const conclusionParts = [];
       
       if (diagData.speechDisorders && Array.isArray(diagData.speechDisorders) && diagData.speechDisorders.length > 0) {
-        conclusionParts.push(diagData.speechDisorders.join(', '));
+        const speechText = diagData.speechDisorders.map(disorder => {
+          if (disorder === "нарушения звукопроизношения" && diagData.soundProductionType) {
+            return `${disorder} (${diagData.soundProductionType})`;
+          }
+          return disorder;
+        }).join(', ');
+        conclusionParts.push(speechText);
       }
       
       if (diagData.dyslexiaTypes && Array.isArray(diagData.dyslexiaTypes) && diagData.dyslexiaTypes.length > 0) {
