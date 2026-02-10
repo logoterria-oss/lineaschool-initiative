@@ -2,9 +2,9 @@ import { Suspense, lazy } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import SectionLoader from "@/components/SectionLoader";
 import type { DiagFormData } from "@/types/diagFormData";
+import PersonalDataSection from "@/components/diag/PersonalDataSection";
 
 // Ленивая загрузка секций для улучшения производительности
-const PersonalDataSection = lazy(() => import("@/components/diag/PersonalDataSection"));
 const AnamnesticsSection = lazy(() => import("@/components/diag/AnamnesticsSection"));
 const ExpressiveSpeechSection = lazy(() => import("@/components/diag/ExpressiveSpeechSection"));
 const ImpressiveSpeechSection = lazy(() => import("@/components/diag/ImpressiveSpeechSection"));
@@ -22,25 +22,23 @@ const FormSections = ({ formData, onInputChange, onLoadDictation }: FormSections
   return (
     <>
       <ErrorBoundary>
-        <Suspense fallback={<SectionLoader />}>
-          <PersonalDataSection 
-            formData={{
-              childName: formData.childName,
-              birthDate: formData.birthDate,
-              age: formData.age,
-              grade: formData.grade,
-              parentName: formData.parentName,
-              phone: formData.phone,
-              email: formData.email,
-              complaints: formData.complaints,
-              educationType: formData.educationType,
-              aoop: formData.aoop,
-              schoolStartAge: formData.schoolStartAge,
-              kindergarten: formData.kindergarten
-            }}
-            onInputChange={onInputChange}
-          />
-        </Suspense>
+        <PersonalDataSection 
+          formData={{
+            childName: formData.childName,
+            birthDate: formData.birthDate,
+            age: formData.age,
+            grade: formData.grade,
+            parentName: formData.parentName,
+            phone: formData.phone,
+            email: formData.email,
+            complaints: formData.complaints,
+            educationType: formData.educationType,
+            aoop: formData.aoop,
+            schoolStartAge: formData.schoolStartAge,
+            kindergarten: formData.kindergarten
+          }}
+          onInputChange={onInputChange}
+        />
       </ErrorBoundary>
 
       <ErrorBoundary>
