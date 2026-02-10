@@ -16,6 +16,7 @@ interface WritingSkillProps {
   visualSpatialErrors: string[];
   additionalCharacteristics: string[];
   regulationViolations: string[];
+  regulationViolationsOther?: string;
   childName: string;
   onCheckboxChange: (field: string, value: string, checked: boolean) => void;
   onInputChange: (field: string, value: string | string[]) => void;
@@ -35,6 +36,7 @@ export default function WritingSkillSection({
   visualSpatialErrors,
   additionalCharacteristics,
   regulationViolations,
+  regulationViolationsOther,
   childName,
   onCheckboxChange,
   onInputChange,
@@ -303,6 +305,16 @@ export default function WritingSkillSection({
               <Label htmlFor={`regulation-violations-${option}`} className="text-sm leading-5">{option}</Label>
             </div>
           ))}
+          <div className="mt-3">
+            <Label htmlFor="regulation-violations-other" className="text-sm font-medium">Другие нарушения (укажите через запятую)</Label>
+            <Input
+              id="regulation-violations-other"
+              placeholder="Укажите другие нарушения регуляции"
+              value={regulationViolationsOther || ""}
+              onChange={(e) => onInputChange("regulationViolationsOther", e.target.value)}
+              className="mt-2"
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -7,6 +7,16 @@ interface WrittenSpeechViewProps {
 }
 
 export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpeechViewProps) {
+  const formatRegulationViolations = () => {
+    const checkboxItems = formatList(diagData.regulationViolations);
+    const customText = diagData.regulationViolationsOther?.trim();
+    
+    if (checkboxItems && customText) {
+      return `${checkboxItems}, ${customText}`;
+    }
+    return checkboxItems || customText || 'Не указано';
+  };
+
   return (
     <section>
       <h2 className="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">
@@ -53,7 +63,7 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
         <div><strong>Зрительно-моторные ошибки:</strong> {formatList(diagData.visualMotorErrors)}</div>
         <div><strong>Зрительно-пространственные ошибки:</strong> {formatList(diagData.visualSpatialErrors)}</div>
         <div><strong>Дополнительные характеристики:</strong> {formatList(diagData.additionalCharacteristics)}</div>
-        <div><strong>Нарушения регуляции:</strong> {formatList(diagData.regulationViolations)}</div>
+        <div><strong>Нарушения регуляции:</strong> {formatRegulationViolations()}</div>
       </div>
     </section>
   );

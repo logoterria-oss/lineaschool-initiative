@@ -48,6 +48,7 @@ export interface DiagData {
   visualSpatialErrors: string[];
   additionalCharacteristics: string[];
   regulationViolations: string[];
+  regulationViolationsOther?: string;
   speechDisorders: string[];
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
