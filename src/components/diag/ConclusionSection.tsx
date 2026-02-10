@@ -6,6 +6,7 @@ import { useState } from "react";
 interface ConclusionData {
   speechDisorders: string[];
   soundProductionType?: string;
+  languageAnalysisType?: string;
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
@@ -20,6 +21,9 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
   const [showSoundProductionType, setShowSoundProductionType] = useState(
     formData.speechDisorders.includes("нарушения звукопроизношения")
   );
+  const [showLanguageAnalysisType, setShowLanguageAnalysisType] = useState(
+    formData.speechDisorders.includes("нарушения языкового анализа и синтеза")
+  );
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof ConclusionData];
@@ -28,11 +32,18 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
       if (field === "speechDisorders" && value === "нарушения звукопроизношения") {
         setShowSoundProductionType(true);
       }
+      if (field === "speechDisorders" && value === "нарушения языкового анализа и синтеза") {
+        setShowLanguageAnalysisType(true);
+      }
     } else {
       onInputChange(field, currentValues.filter(item => item !== value));
       if (field === "speechDisorders" && value === "нарушения звукопроизношения") {
         setShowSoundProductionType(false);
         onInputChange("soundProductionType", "");
+      }
+      if (field === "speechDisorders" && value === "нарушения языкового анализа и синтеза") {
+        setShowLanguageAnalysisType(false);
+        onInputChange("languageAnalysisType", "");
       }
     }
   };
@@ -78,21 +89,63 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
               )}
             </div>
 
-            {/* Остальные нарушения речи */}
-            {[
-              "нарушение фонематических процессов",
-              "лексико-грамматическое недоразвитие речи"
-            ].map(option => (
-              <div key={option} className="flex items-start space-x-2">
+            {/* Нарушение фонематического восприятия */}
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="speech-disorders-нарушение фонематического восприятия"
+                checked={formData.speechDisorders.includes("нарушение фонематического восприятия")}
+                onCheckedChange={(checked) => handleCheckboxChange("speechDisorders", "нарушение фонематического восприятия", !!checked)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="speech-disorders-нарушение фонематического восприятия" className="text-sm leading-5">нарушение фонематического восприятия</Label>
+            </div>
+
+            {/* Нарушения языкового анализа и синтеза с уточнением */}
+            <div>
+              <div className="flex items-start space-x-2">
                 <Checkbox
-                  id={`speech-disorders-${option}`}
-                  checked={formData.speechDisorders.includes(option)}
-                  onCheckedChange={(checked) => handleCheckboxChange("speechDisorders", option, !!checked)}
+                  id="speech-disorders-нарушения языкового анализа и синтеза"
+                  checked={formData.speechDisorders.includes("нарушения языкового анализа и синтеза")}
+                  onCheckedChange={(checked) => handleCheckboxChange("speechDisorders", "нарушения языкового анализа и синтеза", !!checked)}
                   className="mt-0.5"
                 />
-                <Label htmlFor={`speech-disorders-${option}`} className="text-sm leading-5">{option}</Label>
+                <Label htmlFor="speech-disorders-нарушения языкового анализа и синтеза" className="text-sm leading-5">нарушения языкового анализа и синтеза</Label>
               </div>
-            ))}
+              {showLanguageAnalysisType && (
+                <div className="ml-6 mt-2 p-3 bg-white rounded border border-gray-200">
+                  <Label className="text-sm font-medium mb-2 block">Уточнение уровня:</Label>
+                  <RadioGroup 
+                    value={formData.languageAnalysisType || ""} 
+                    onValueChange={(value: string) => onInputChange("languageAnalysisType", value)}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="на уровне звуков" id="lang-analysis-sounds" />
+                      <Label htmlFor="lang-analysis-sounds" className="text-sm cursor-pointer">на уровне звуков</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="на уровне слогов" id="lang-analysis-syllables" />
+                      <Label htmlFor="lang-analysis-syllables" className="text-sm cursor-pointer">на уровне слогов</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="на уровне слов в предложении и предложений в тексте" id="lang-analysis-sentences" />
+                      <Label htmlFor="lang-analysis-sentences" className="text-sm cursor-pointer">на уровне слов в предложении и предложений в тексте</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+            </div>
+
+            {/* Лексико-грамматическое недоразвитие речи */}
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="speech-disorders-лексико-грамматическое недоразвитие речи"
+                checked={formData.speechDisorders.includes("лексико-грамматическое недоразвитие речи")}
+                onCheckedChange={(checked) => handleCheckboxChange("speechDisorders", "лексико-грамматическое недоразвитие речи", !!checked)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="speech-disorders-лексико-грамматическое недоразвитие речи" className="text-sm leading-5">лексико-грамматическое недоразвитие речи</Label>
+            </div>
           </div>
         </div>
 

@@ -51,6 +51,7 @@ export interface DiagData {
   regulationViolationsOther?: string;
   speechDisorders: string[];
   soundProductionType?: string;
+  languageAnalysisType?: string;
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
