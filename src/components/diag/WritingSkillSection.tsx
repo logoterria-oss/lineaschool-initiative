@@ -3,6 +3,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Icon from '@/components/ui/icon';
+import { useState } from 'react';
+import { useDictationLoader } from '@/hooks/useDictationLoader';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface WritingSkillProps {
   writingSamples: string[];
@@ -43,6 +52,22 @@ export default function WritingSkillSection({
   onFileUpload,
   onLoadDictation
 }: WritingSkillProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { loadCheckedDictations, loadDictationImage, dictations, isLoading } = useDictationLoader();
+
+  const handleOpenDialog = async () => {
+    setIsDialogOpen(true);
+    await loadCheckedDictations();
+  };
+
+  const handleSelectDictation = async (dictationId: number) => {
+    const imageData = await loadDictationImage(dictationId);
+    if (imageData) {
+      onInputChange("writingSamples", [...writingSamples, imageData]);
+      setIsDialogOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Label className="text-lg font-semibold">Навык письма</Label>
@@ -56,18 +81,49 @@ export default function WritingSkillSection({
             multiple
             onChange={(e) => onFileUpload("writingSamples", e.target.files)}
           />
-          {onLoadDictation && childName && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onLoadDictation}
-              className="w-full"
-            >
-              <Icon name="FileCheck" className="mr-2" size={16} />
-              Вставить проверенный диктант
-            </Button>
-          )}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleOpenDialog}
+                className="w-full bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+              >
+                <Icon name="FileCheck" className="mr-2" size={16} />
+                Вставить проверенный диктант
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Выберите проверенный диктант</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2">
+                {isLoading ? (
+                  <div className="text-center py-8 text-gray-500">Загрузка...</div>
+                ) : dictations.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">Нет проверенных диктантов</div>
+                ) : (
+                  dictations.map((dictation) => (
+                    <Button
+                      key={dictation.id}
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start h-auto py-3"
+                      onClick={() => handleSelectDictation(dictation.id)}
+                    >
+                      <div className="text-left">
+                        <div className="font-semibold">{dictation.child_name}</div>
+                        <div className="text-sm text-gray-500">
+                          Проверено: {new Date(dictation.checked_at || dictation.created_at).toLocaleDateString('ru-RU')}
+                        </div>
+                      </div>
+                    </Button>
+                  ))
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
           {writingSamples.length > 0 && (
             <div>
               <div className="text-sm text-gray-600 mb-2">
