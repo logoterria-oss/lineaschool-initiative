@@ -9,9 +9,7 @@ export default function MethodologySection() {
         alt="Анатомическая схема мозга" 
         className="w-full h-full object-contain"
         style={{
-          background: 'transparent',
-          mixBlendMode: 'multiply',
-          filter: 'brightness(1.1) contrast(1.2)'
+          background: 'transparent'
         }}
       />
     </div>
