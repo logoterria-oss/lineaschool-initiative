@@ -5,12 +5,9 @@ export default function MethodologySection() {
   const BrainSVG = ({ activeAreas, className = "" }: { activeAreas: string[], className?: string }) => (
     <div className={`relative w-full h-full ${className}`}>
       <img 
-        src="https://cdn.poehali.dev/files/ad7329c2-cb17-47cb-937a-0c559565286f.jpg" 
+        src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/aa019ad0-e9d4-4dc3-938f-1dd2669fe220.jpg" 
         alt="Анатомическая схема мозга" 
         className="w-full h-full object-contain"
-        style={{
-          background: 'transparent'
-        }}
       />
     </div>
   );
