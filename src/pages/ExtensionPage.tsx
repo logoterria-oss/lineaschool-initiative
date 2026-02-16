@@ -13,7 +13,7 @@ export default function ExtensionPage() {
   return (
     <>
       <SEOHead
-        title="Расширение для Chrome - Помощник для дислексиков | LineaSchool"
+        title="Расширение для Chrome - Помощник для дислексиков | ЛинэяСкул"
         description="Бесплатное расширение для Chrome, которое делает чтение в интернете комфортнее для людей с дислексией. Специальный шрифт, настройка интервалов и цветов."
         keywords="дислексия, расширение chrome, шрифт для дислексии, OpenDyslexic, помощник чтения"
         canonicalUrl="https://lineaschool.ru/extension"
@@ -25,7 +25,7 @@ export default function ExtensionPage() {
         <main className="container mx-auto px-4 py-16 max-w-4xl">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-b from-green-600 to-blue-500 bg-clip-text text-transparent mb-4">Шрифт OpenDyslexic на русском
-(by LineaSchool)</h1>
+(by ЛинэяСкул)</h1>
             <p className="text-xl text-gray-600">Бесплатный помощник для людей с дислексией </p>
           </div>
 

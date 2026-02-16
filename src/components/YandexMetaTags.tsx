@@ -34,8 +34,8 @@ export default function YandexMetaTags() {
       
       {/* Дополнительные Open Graph теги специально для Яндекса */}
       <meta property="ya:ovs:content_rating" content="6+" />
-      <meta property="article:author" content="LineaSchool" />
-      <meta property="article:publisher" content="LineaSchool" />
+      <meta property="article:author" content="ЛинэяСкул" />
+      <meta property="article:publisher" content="ЛинэяСкул" />
     </Helmet>
   );
 }

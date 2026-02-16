@@ -11,7 +11,7 @@ export default function Footer() {
               <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
                 <Icon name="BookOpen" size={20} className="text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">LineaSchool</span>
+              <span className="text-xl font-bold text-gray-900">ЛинэяСкул</span>
             </div>
             
             <div className="space-y-3">
@@ -49,7 +49,7 @@ export default function Footer() {
               <p>ИП Абраменко В. А.</p>
               <p>ИНН 422306309900</p>
             </div>
-            <p className="text-sm text-gray-500">© 2025 LineaSchool. Все права защищены.</p>
+            <p className="text-sm text-gray-500">© 2025 ЛинэяСкул. Все права защищены.</p>
           </div>
         </div>
       </div>

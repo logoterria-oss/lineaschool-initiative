@@ -8,9 +8,9 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>Стоимость занятий - LineaSchool</title>
+        <title>Стоимость занятий - ЛинэяСкул</title>
         <meta name="description" content="Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии." />
-        <meta property="og:title" content="Стоимость занятий - LineaSchool" />
+        <meta property="og:title" content="Стоимость занятий - ЛинэяСкул" />
         <meta property="og:description" content="Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии." />
         <meta property="og:url" content="https://lineaschool.ru/price" />
         <link rel="canonical" href="https://lineaschool.ru/price" />

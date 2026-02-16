@@ -9,7 +9,7 @@ export default function DiagFormNavigation() {
             <div className="w-16 h-16 bg-green-500 rounded-lg flex items-center justify-center">
               <Icon name="BookOpen" size={32} className="text-white" />
             </div>
-            <span className="text-4xl font-bold text-green-600">LineaSchool</span>
+            <span className="text-4xl font-bold text-green-600">ЛинэяСкул</span>
           </a>
           <div className="hidden md:flex items-center space-x-6">
             <button 

@@ -85,7 +85,7 @@ export default function DiagConclusion() {
             <div className="hidden print:block mb-2">
               <img 
                 src="https://cdn.poehali.dev/files/de9188c6-e5b1-4bed-8da4-7cdaf08d2550.png" 
-                alt="LineaSchool" 
+                alt="ЛинэяСкул" 
                 className="h-16 object-contain"
               />
             </div>

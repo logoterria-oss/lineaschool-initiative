@@ -3,7 +3,7 @@
 export const organizationSchema = {
   "@context": "https://schema.org",
   "@type": ["Organization", "EducationalOrganization"],
-  "name": "LineaSchool",
+  "name": "ЛинэяСкул",
   "alternateName": ["Линия Скул", "ЛинияСкул", "LinaeSchool"],
   "description": "Онлайн коррекция дислексии и дисграфии для детей 8-18 лет",
   "url": "https://lineaschool.ru",
@@ -38,7 +38,7 @@ export const serviceSchema = {
   "description": "Онлайн-коррекция дислексии и дисграфии для детей 8-18 лет с использованием нейрологопедического подхода",
   "provider": {
     "@type": "Organization",
-    "name": "LineaSchool"
+    "name": "ЛинэяСкул"
   },
   "areaServed": {
     "@type": "Country",
@@ -101,7 +101,7 @@ export const faqSchema = {
 export const reviewSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "name": "LineaSchool",
+  "name": "ЛинэяСкул",
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "4.9",
@@ -114,12 +114,12 @@ export const reviewSchema = {
 export const webPageSchema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "LineaSchool - Онлайн коррекция дислексии и дисграфии",
+  "name": "ЛинэяСкул - Онлайн коррекция дислексии и дисграфии",
   "description": "Эффективная онлайн-коррекция дислексии и дисграфии для детей 8-18 лет",
   "url": "https://lineaschool.ru",
   "isPartOf": {
     "@type": "WebSite",
-    "name": "LineaSchool",
+    "name": "ЛинэяСкул",
     "url": "https://lineaschool.ru"
   },
   "about": {
@@ -128,6 +128,6 @@ export const webPageSchema = {
   },
   "mainEntity": {
     "@type": "Organization",
-    "name": "LineaSchool"
+    "name": "ЛинэяСкул"
   }
 };

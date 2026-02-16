@@ -327,7 +327,7 @@ async function createPDFContent(diagData: DiagData, serialNumber: string): Promi
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
         </div>
-        <span style="font-size: 28px; font-weight: bold; color: #22c55e; font-family: Arial, sans-serif;">LineaSchool</span>
+        <span style="font-size: 28px; font-weight: bold; color: #22c55e; font-family: Arial, sans-serif;">ЛинэяСкул</span>
       </div>
 
       <!-- Заголовок -->

@@ -6,10 +6,10 @@ export default function AboutSection() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">О LineaSchool</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">О ЛинэяСкул</h2>
             <div className="space-y-4 text-lg text-gray-700">
               <p>
-                LineaSchool — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией.
+                ЛинэяСкул — это команда преданных своему делу специалистов, которые стремятся оказывать индивидуальную поддержку детям с дислексией и дисграфией.
               </p>
               <p>
                 Наш уникальный подход сочетает в себе традиционные логопедические и современные нейропсихологические методики, обеспечивая комплексную коррекцию нарушений процессов чтения и письма.
