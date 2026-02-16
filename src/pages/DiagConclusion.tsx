@@ -84,7 +84,7 @@ export default function DiagConclusion() {
             {/* Логотип школы сверху - только для печати */}
             <div className="hidden print:block mb-2">
               <img 
-                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/files/3325c048-bf23-4190-8f71-18b6ac5f3e8e.jpg" 
+                src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/602a60ff-336d-4e7c-a660-f1e187ebc3cd.png" 
                 alt="ЛинэяСкул" 
                 className="h-16 object-contain"
               />
