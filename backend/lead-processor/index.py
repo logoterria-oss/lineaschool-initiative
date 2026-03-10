@@ -129,7 +129,7 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
     chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
     
     print(f'=== TELEGRAM NOTIFICATION ===')
-    print(f'Bot token exists: {bool(bot_token)}')
+    print(f'Bot token configured: {bool(bot_token)}, length: {len(bot_token) if bot_token else 0}')
     print(f'Chat ID: {chat_id}')
     
     if not bot_token:
