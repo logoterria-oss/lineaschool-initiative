@@ -36,9 +36,11 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPhoneError("");
     
     try {
       const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
@@ -46,7 +48,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       const cleanTelegram = formData.telegram.replace('@', '').trim();
       
       if (cleanPhone.length < 11) {
-        console.error('Номер телефона слишком короткий');
+        setPhoneError("Введите номер телефона полностью");
         return;
       }
       
@@ -183,22 +185,21 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 onChange={(e) => {
                   const formatted = formatPhone(e.target.value);
                   handleInputChange("phone", formatted);
-                }}
-                onFocus={(e) => {
-                  if (!formData.phone) {
-                    handleInputChange("phone", "+7 ");
-                  }
+                  if (phoneError) setPhoneError("");
                 }}
                 placeholder="+7 (___) ___-__-__"
                 required
-                className="mt-1"
+                className={`mt-1 ${phoneError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 maxLength={18}
               />
+              {phoneError && (
+                <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+              )}
             </div>
 
             <div>
               <Label htmlFor="telegram" className="text-sm font-medium text-gray-700">
-                Имя в Telegram *
+                Имя в Telegram
               </Label>
               <Input
                 id="telegram"
@@ -208,13 +209,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                   const formatted = formatTelegram(e.target.value);
                   handleInputChange("telegram", formatted);
                 }}
-                onFocus={(e) => {
-                  if (!formData.telegram) {
-                    handleInputChange("telegram", "@");
-                  }
-                }}
                 placeholder="@username"
-                required
                 className="mt-1"
               />
             </div>
