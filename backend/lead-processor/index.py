@@ -173,6 +173,11 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
         print(f'Telegram notification failed: {str(e)}')
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+    print(f'=== INCOMING REQUEST ===')
+    print(f'Method: {event.get("httpMethod")}')
+    print(f'Body: {event.get("body", "")[:500]}')
+    print(f'Headers: {json.dumps({k: v for k, v in (event.get("headers") or {}).items() if k.lower() in ["content-type", "origin", "referer"]})}')
+    
     method = event.get('httpMethod', 'POST')
     
     if method == 'OPTIONS':

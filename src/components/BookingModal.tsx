@@ -41,27 +41,32 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     e.preventDefault();
     
     try {
-      // Отправка через backend-функцию (интеграция с AlfaCRM + Telegram)
       const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
+      const payload = {
+        childName: formData.childName,
+        childBirthDate: formData.childBirthDate,
+        parentName: formData.parentName,
+        phone: formData.phone.replace(/\D/g, ''),
+        telegram: formData.telegram,
+        email: '',
+        date: '',
+        time: ''
+      };
       
-      await fetch(leadProcessorUrl, {
+      console.log('Отправка заявки:', JSON.stringify(payload));
+      
+      const response = await fetch(leadProcessorUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          childName: formData.childName,
-          childBirthDate: formData.childBirthDate,
-          parentName: formData.parentName,
-          phone: formData.phone.replace(/\D/g, ''), // Убираем форматирование
-          telegram: formData.telegram,
-          email: '',
-          date: '',
-          time: ''
-        }),
+        body: JSON.stringify(payload),
       });
+      
+      const result = await response.json();
+      console.log('Ответ сервера:', response.status, JSON.stringify(result));
     } catch (error) {
-      console.error('Ошибка отправки:', error);
+      console.error('Ошибка отправки заявки:', error);
     }
     
     onClose();
