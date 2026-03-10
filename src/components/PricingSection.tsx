@@ -222,7 +222,7 @@ export default function PricingSection() {
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Диагностика + консультация</h3>
               <p className="text-gray-600 mb-4">Определим проблему и составим индивидуальный план коррекции</p>
               <div className="flex items-center justify-center gap-3 mb-4">
-                <span className="text-3xl font-bold text-green-600">1 990 ₽</span>
+                <span className="text-3xl font-bold text-green-600">1 290 ₽</span>
                 <span className="text-xl text-gray-400 line-through">4 500 ₽</span>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function PricingSection() {
               className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white"
               onClick={() => openPaymentModal({ 
                 title: 'Диагностика + консультация', 
-                totalPrice: '1 990 ₽' 
+                totalPrice: '1 290 ₽' 
               }, 'Диагностика')}
             >
               <Icon name="CreditCard" className="mr-2" size={20} />
