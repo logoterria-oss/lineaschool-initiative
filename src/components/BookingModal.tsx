@@ -31,8 +31,8 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     childName: "",
     childBirthDate: "",
     parentName: "",
-    phone: "",
-    telegram: "",
+    phone: "+7 ",
+    telegram: "@",
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -42,12 +42,20 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     
     try {
       const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
+      const cleanPhone = formData.phone.replace(/\D/g, '');
+      const cleanTelegram = formData.telegram.replace('@', '').trim();
+      
+      if (cleanPhone.length < 11) {
+        console.error('Номер телефона слишком короткий');
+        return;
+      }
+      
       const payload = {
         childName: formData.childName,
         childBirthDate: formData.childBirthDate,
         parentName: formData.parentName,
-        phone: formData.phone.replace(/\D/g, ''),
-        telegram: formData.telegram,
+        phone: cleanPhone,
+        telegram: cleanTelegram ? `@${cleanTelegram}` : '',
         email: '',
         date: '',
         time: ''
@@ -171,7 +179,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               <Input
                 id="phone"
                 type="tel"
-                value={formData.phone || '+7 '}
+                value={formData.phone}
                 onChange={(e) => {
                   const formatted = formatPhone(e.target.value);
                   handleInputChange("phone", formatted);
@@ -195,7 +203,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               <Input
                 id="telegram"
                 type="text"
-                value={formData.telegram || '@'}
+                value={formData.telegram}
                 onChange={(e) => {
                   const formatted = formatTelegram(e.target.value);
                   handleInputChange("telegram", formatted);
