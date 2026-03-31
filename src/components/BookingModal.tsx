@@ -241,7 +241,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                       handleInputChange("messengerMax", checked as boolean ? "true" : "")
                     }
                   />
-                  <span className="text-sm text-gray-700">Max (VK Мессенджер)</span>
+                  <span className="text-sm text-gray-700">Max </span>
                 </label>
               </div>
               {messengerError && (
