@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Icon from "@/components/ui/icon";
+import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import PrivacyModal from "@/components/PrivacyModal";
 
@@ -33,14 +34,18 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     parentName: "",
     phone: "+7 ",
     telegram: "@",
+    messengerTelegram: false,
+    messengerMax: false,
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const [messengerError, setMessengerError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneError("");
+    setMessengerError("");
     
     try {
       const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
@@ -51,13 +56,23 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
         setPhoneError("Введите номер телефона полностью");
         return;
       }
+
+      if (!formData.messengerTelegram && !formData.messengerMax) {
+        setMessengerError("Выберите хотя бы один мессенджер");
+        return;
+      }
       
+      const messengers: string[] = [];
+      if (formData.messengerTelegram) messengers.push('Telegram');
+      if (formData.messengerMax) messengers.push('Max');
+
       const payload = {
         childName: formData.childName,
         childBirthDate: formData.childBirthDate,
         parentName: formData.parentName,
         phone: cleanPhone,
-        telegram: cleanTelegram ? `@${cleanTelegram}` : '',
+        telegram: formData.messengerTelegram && cleanTelegram ? `@${cleanTelegram}` : '',
+        messengers: messengers,
         email: '',
         date: '',
         time: ''
@@ -83,7 +98,15 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     setIsConfirmationOpen(true);
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
+    if (field === "messengerTelegram") {
+      setFormData(prev => ({ ...prev, messengerTelegram: value === "true" || value === true }));
+      return;
+    }
+    if (field === "messengerMax") {
+      setFormData(prev => ({ ...prev, messengerMax: value === "true" || value === true }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -198,20 +221,51 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
             </div>
 
             <div>
-              <Label htmlFor="telegram" className="text-sm font-medium text-gray-700">
-                Имя в Telegram
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                Где с вами удобно связаться? *
               </Label>
-              <Input
-                id="telegram"
-                type="text"
-                value={formData.telegram}
-                onChange={(e) => {
-                  const formatted = formatTelegram(e.target.value);
-                  handleInputChange("telegram", formatted);
-                }}
-                placeholder="@username"
-                className="mt-1"
-              />
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={formData.messengerTelegram}
+                    onCheckedChange={(checked) =>
+                      handleInputChange("messengerTelegram", checked as boolean ? "true" : "")
+                    }
+                  />
+                  <span className="text-sm text-gray-700">Telegram</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={formData.messengerMax}
+                    onCheckedChange={(checked) =>
+                      handleInputChange("messengerMax", checked as boolean ? "true" : "")
+                    }
+                  />
+                  <span className="text-sm text-gray-700">Max (VK Мессенджер)</span>
+                </label>
+              </div>
+              {messengerError && (
+                <p className="text-red-500 text-sm mt-1">{messengerError}</p>
+              )}
+
+              {formData.messengerTelegram && (
+                <div className="mt-3">
+                  <Label htmlFor="telegram" className="text-sm font-medium text-gray-700">
+                    Имя в Telegram
+                  </Label>
+                  <Input
+                    id="telegram"
+                    type="text"
+                    value={formData.telegram}
+                    onChange={(e) => {
+                      const formatted = formatTelegram(e.target.value);
+                      handleInputChange("telegram", formatted);
+                    }}
+                    placeholder="@username"
+                    className="mt-1"
+                  />
+                </div>
+              )}
             </div>
 
 

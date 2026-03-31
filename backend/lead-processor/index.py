@@ -124,7 +124,7 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '',
 
 def send_telegram_notification(child_name: str, parent_name: str, child_birth_date: str, 
                                telegram: str, phone: str, email: str = '', 
-                               date: str = '', time: str = ''):
+                               date: str = '', time: str = '', messengers: list = None):
     bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
     chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
     
@@ -153,6 +153,8 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
         message_parts.append(f"\n📧 E-mail: {email}")
     if phone:
         message_parts.append(f"\n📱 Телефон: {phone}")
+    if messengers:
+        message_parts.append(f"\n💬 Мессенджеры: {', '.join(messengers)}")
     if telegram:
         message_parts.append(f"\n✈️ Telegram: {telegram}")
     if date:
@@ -210,6 +212,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         parent_name = body_data.get('parentName', body_data.get('name', ''))
         child_birth_date = body_data.get('childBirthDate', '')
         telegram_username = body_data.get('telegram', '')
+        messengers = body_data.get('messengers', [])
         
         email = body_data.get('email', '')
         phone = body_data.get('phone', '')
@@ -243,6 +246,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             note_parts.append(f'ФИО родителя: {parent_name}')
         if child_birth_date:
             note_parts.append(f'Дата рождения ребенка: {child_birth_date}')
+        if messengers:
+            note_parts.append(f'Мессенджеры: {", ".join(messengers)}')
         if telegram_username:
             note_parts.append(f'Telegram: {telegram_username}')
         if date and time:
@@ -275,7 +280,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             phone=phone,
             email=email,
             date=date,
-            time=time
+            time=time,
+            messengers=messengers
         )
         
         return {

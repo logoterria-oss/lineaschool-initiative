@@ -7,15 +7,15 @@
       "expectedStatus": 200
     },
     {
-      "name": "POST lead with valid data",
+      "name": "POST lead with valid data and messengers",
       "method": "POST",
       "path": "/",
       "body": {
-        "name": "Тестовый Родитель",
-        "email": "test@example.com",
+        "childName": "Тестовый Ребенок",
+        "parentName": "Тестовый Родитель",
         "phone": "+79236251611",
-        "date": "15.12.2025",
-        "time": "14:00"
+        "messengers": ["Telegram", "Max"],
+        "telegram": "@testuser"
       },
       "expectedStatus": 200,
       "expectedBody": {
