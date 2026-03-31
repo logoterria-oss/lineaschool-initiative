@@ -221,9 +221,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                Где с вами удобно связаться? *
-              </Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Где с вами можно связаться? *</Label>
               <div className="flex flex-col gap-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Checkbox
