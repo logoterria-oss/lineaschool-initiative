@@ -49,28 +49,6 @@ export default function PricingOverview() {
           <p className="text-xl text-gray-600">Прозрачные цены без скрытых платежей</p>
         </div>
 
-        <div className="max-w-md mx-auto mb-12">
-          <Card className="p-6 border-2 border-green-500 shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="text-center mb-4">
-              <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Icon name="Stethoscope" size={28} className="text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Диагностика + консультация</h3>
-              <p className="text-gray-600 mb-4">Определим проблему и составим индивидуальный план коррекции</p>
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <span className="text-3xl font-bold text-green-600">1 290 &#8381;</span>
-                <span className="text-xl text-gray-400 line-through">4 500 &#8381;</span>
-              </div>
-            </div>
-            <Button
-              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white text-base py-5"
-              onClick={() => setIsBookingOpen(true)}
-            >
-              <Icon name="CalendarCheck" className="mr-2" size={20} />
-              Записаться на диагностику
-            </Button>
-          </Card>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           {plans.map((plan) => (
