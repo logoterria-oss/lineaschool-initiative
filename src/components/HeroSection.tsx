@@ -21,7 +21,7 @@ export default function HeroSection() {
                 {/* Шильдик акции */}
                 <div className="absolute -top-3 right-2 sm:right-4 z-20">
                   <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold shadow-lg whitespace-nowrap">
-                    <span className="drop-shadow-[0_0_2px_white]">🔥</span> Акция до 31 марта
+                    <span className="drop-shadow-[0_0_2px_white]">🔥</span> Акция до 30 апреля
                   </div>
                 </div>
                 
