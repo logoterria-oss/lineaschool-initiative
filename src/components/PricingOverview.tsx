@@ -103,7 +103,7 @@ export default function PricingOverview() {
               <Icon name="ArrowRight" size={18} className="ml-2" />
             </Button>
           </Link>
-
+          <p className="text-sm text-gray-500">Возможна оплата в рассрочку через Долями Плюс</p>
         </div>
       </div>
 
