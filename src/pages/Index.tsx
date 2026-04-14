@@ -7,8 +7,6 @@ import MethodologySection from "@/components/MethodologySection";
 import FeaturesSection from "@/components/FeaturesSection";
 import DiagnosticSection from "@/components/DiagnosticSection";
 import WhyNotTeacherSection from "@/components/WhyNotTeacherSection";
-import AboutSection from "@/components/AboutSection";
-import SpecialistsSection from "@/components/SpecialistsSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import PricingOverview from "@/components/PricingOverview";
 import FAQSection from "@/components/FAQSection";
@@ -48,8 +46,7 @@ export default function Index() {
         <FeaturesSection />
         <DiagnosticSection />
         <WhyNotTeacherSection />
-        <AboutSection />
-        <SpecialistsSection />
+
         <TestimonialsSection />
         <PricingOverview />
         <FAQSection />
