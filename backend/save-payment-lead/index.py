@@ -76,21 +76,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if chat_id and bot_token:
             try:
                 message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
-                
-                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-                data = {
-                    'chat_id': chat_id,
-                    'text': message
-                }
-                
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(data).encode('utf-8'),
-                    headers={'Content-Type': 'application/json'}
-                )
-                
-                with urllib.request.urlopen(req) as response:
-                    print(f'Telegram notification sent for order {order_id}')
+                tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                recipient_ids = [chat_id, '976372702']
+                for recipient_id in recipient_ids:
+                    data = {
+                        'chat_id': recipient_id,
+                        'text': message
+                    }
+                    req = urllib.request.Request(
+                        tg_url,
+                        data=json.dumps(data).encode('utf-8'),
+                        headers={'Content-Type': 'application/json'}
+                    )
+                    with urllib.request.urlopen(req) as response:
+                        print(f'Telegram notification sent to {recipient_id} for order {order_id}')
             except Exception as tg_error:
                 print(f'Telegram notification failed: {str(tg_error)}')
         

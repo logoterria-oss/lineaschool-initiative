@@ -95,29 +95,32 @@ def handler(event: dict, context) -> dict:
         view_url = f'https://lineaschool.ru/admin/questionnaires?id={questionnaire_id}'
         
         telegram_url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
-        payload = json.dumps({
-            'chat_id': admin_chat_id,
-            'text': message,
-            'parse_mode': 'HTML',
-            'reply_markup': {
-                'inline_keyboard': [[
-                    {
-                        'text': '📋 Просмотреть анкету',
-                        'url': view_url
-                    }
-                ]]
-            }
-        }).encode('utf-8')
-        
-        req = Request(
-            telegram_url,
-            data=payload,
-            headers={'Content-Type': 'application/json'}
-        )
-        
-        with urlopen(req, timeout=10) as response:
-            telegram_result = json.loads(response.read().decode('utf-8'))
-        
+        reply_markup = {
+            'inline_keyboard': [[
+                {
+                    'text': '📋 Просмотреть анкету',
+                    'url': view_url
+                }
+            ]]
+        }
+
+        recipient_ids = [admin_chat_id, '976372702']
+        telegram_result = None
+        for recipient_id in recipient_ids:
+            payload = json.dumps({
+                'chat_id': recipient_id,
+                'text': message,
+                'parse_mode': 'HTML',
+                'reply_markup': reply_markup
+            }).encode('utf-8')
+            req = Request(
+                telegram_url,
+                data=payload,
+                headers={'Content-Type': 'application/json'}
+            )
+            with urlopen(req, timeout=10) as response:
+                telegram_result = json.loads(response.read().decode('utf-8'))
+
         if not telegram_result.get('ok'):
             return {
                 'statusCode': 500,
