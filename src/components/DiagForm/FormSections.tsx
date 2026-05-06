@@ -15,10 +15,9 @@ const FinalSection = lazy(() => import("@/components/diag/FinalSection"));
 interface FormSectionsProps {
   formData: DiagFormData;
   onInputChange: (field: string, value: string | string[]) => void;
-  onLoadDictation?: () => void;
 }
 
-const FormSections = ({ formData, onInputChange, onLoadDictation }: FormSectionsProps) => {
+const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
   return (
     <>
       <ErrorBoundary>
@@ -120,7 +119,6 @@ const FormSections = ({ formData, onInputChange, onLoadDictation }: FormSections
               childName: formData.childName
             }}
             onInputChange={onInputChange}
-            onLoadDictation={onLoadDictation}
           />
         </Suspense>
       </ErrorBoundary>

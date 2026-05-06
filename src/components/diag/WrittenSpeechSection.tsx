@@ -25,10 +25,9 @@ interface WrittenSpeechData {
 interface WrittenSpeechProps {
   formData: WrittenSpeechData;
   onInputChange: (field: string, value: string | string[]) => void;
-  onLoadDictation?: () => void;
 }
 
-export default function WrittenSpeechSection({ formData, onInputChange, onLoadDictation }: WrittenSpeechProps) {
+export default function WrittenSpeechSection({ formData, onInputChange }: WrittenSpeechProps) {
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof WrittenSpeechData] as string[];
     if (checked) {
@@ -91,7 +90,6 @@ export default function WrittenSpeechSection({ formData, onInputChange, onLoadDi
           onCheckboxChange={handleCheckboxChange}
           onInputChange={onInputChange}
           onFileUpload={handleFileUpload}
-          onLoadDictation={onLoadDictation}
         />
 
       </div>

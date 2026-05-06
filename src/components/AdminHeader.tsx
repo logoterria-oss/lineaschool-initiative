@@ -11,7 +11,6 @@ const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
   const location = useLocation();
 
   const isReportsPage = location.pathname === '/admin/reports';
-  const isDictationsPage = location.pathname === '/admin/dictations';
   const isQuestionnairesPage = location.pathname === '/admin/questionnaires';
   const isDashboard = location.pathname === '/admin';
 
@@ -44,15 +43,6 @@ const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
                   >
                     <Icon name="FileText" className="mr-2" size={16} />
                     Заключения
-                  </Button>
-                  <Button
-                    variant={isDictationsPage ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => navigate('/admin/dictations')}
-                    className={isDictationsPage ? 'bg-green-600 hover:bg-green-700' : ''}
-                  >
-                    <Icon name="PenTool" className="mr-2" size={16} />
-                    Диктанты
                   </Button>
                   <Button
                     variant={isQuestionnairesPage ? 'default' : 'ghost'}

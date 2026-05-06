@@ -17,10 +17,8 @@ import ParentQuestionnaire from "./pages/ParentQuestionnaire";
 import QuestionnaireResponses from "./pages/QuestionnaireResponses";
 import AdminDashboard from "./pages/AdminDashboard";
 import ReportsAdmin from "./components/ReportsAdmin";
-import DictationsAdmin from "./pages/DictationsAdmin";
 import TelegramSetup from "./pages/TelegramSetup";
 import PaymentLeadsPage from "./pages/PaymentLeadsPage";
-import UploadDictation from "./pages/UploadDictation";
 import ExtensionPage from "./pages/ExtensionPage";
 import NotFound from "./pages/NotFound";
 
@@ -44,12 +42,10 @@ const App = () => (
               <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/reports" element={<ReportsAdmin />} />
-              <Route path="/admin/dictations" element={<DictationsAdmin />} />
               <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
               <Route path="/telegram-setup" element={<TelegramSetup />} />
               <Route path="/admin/questionnaires" element={<QuestionnaireResponses />} />
               <Route path="/admin/payment-leads" element={<PaymentLeadsPage />} />
-              <Route path="/upload-dictation" element={<UploadDictation />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
