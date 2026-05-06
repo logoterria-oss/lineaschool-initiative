@@ -34,6 +34,8 @@ export const useFormDataManager = () => {
     additionalInfo: "",
     // Экспрессивная речь
     motorRealization: [] as string[],
+    motorRealizationMultiple: "",
+    motorRealizationOther: "",
     wordFormation: [] as string[],
     grammaticalStructure: "",
     connectedSpeech: [] as string[],

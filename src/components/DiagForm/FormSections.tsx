@@ -85,6 +85,8 @@ const FormSections = ({ formData, onInputChange, onLoadDictation }: FormSections
           <ExpressiveSpeechSection 
             formData={{
               motorRealization: formData.motorRealization,
+              motorRealizationMultiple: formData.motorRealizationMultiple,
+              motorRealizationOther: formData.motorRealizationOther,
               wordFormation: formData.wordFormation,
               grammaticalStructure: formData.grammaticalStructure,
               connectedSpeech: formData.connectedSpeech,
