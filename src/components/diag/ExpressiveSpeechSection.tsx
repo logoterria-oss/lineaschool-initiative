@@ -32,9 +32,11 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
 
   useEffect(() => {
     setShowMultipleInput(formData.motorRealization.includes("нарушены 2 и более группы звуков"));
-    setShowOtherInput(formData.motorRealization.includes("другое"));
+    setShowOtherInput(
+      formData.motorRealization.includes("другое") || !!(formData.motorRealizationOther)
+    );
     setShowConnectedSpeechDetails(formData.connectedSpeech.includes("нарушена"));
-  }, [formData.motorRealization, formData.connectedSpeech]);
+  }, [formData.motorRealization, formData.connectedSpeech, formData.motorRealizationOther]);
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof ExpressiveSpeechData] as string[];
@@ -132,8 +134,12 @@ export default function ExpressiveSpeechSection({ formData, onInputChange }: Exp
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="one-group-other"
-                        checked={showOtherInput}
-                        onCheckedChange={(checked) => setShowOtherInput(!!checked)}
+                        checked={formData.motorRealization.includes("другое")}
+                        onCheckedChange={(checked) => {
+                          handleCheckboxChange("motorRealization", "другое", !!checked);
+                          setShowOtherInput(!!checked);
+                          if (!checked) onInputChange("motorRealizationOther", "");
+                        }}
                       />
                       <Label htmlFor="one-group-other" className="text-sm">другое</Label>
                     </div>
