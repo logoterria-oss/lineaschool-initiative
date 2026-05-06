@@ -1,11 +1,7 @@
 {
-  "send-contact": "https://functions.poehali.dev/a85d19cc-8ed8-40d1-9767-897078e2c234",
-  "notes-bot": "https://functions.poehali.dev/39184ef8-c537-4cfe-983b-38c8af880f83",
   "questionnaire-notify": "https://functions.poehali.dev/957d6d4e-5dc3-4156-a1b0-94574bf07719",
   "lead-processor": "https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094",
   "save-payment-lead": "https://functions.poehali.dev/99e752b7-e754-4be4-8fe8-1b666731a12c",
-  "telegram-webhook": "https://functions.poehali.dev/1045ce5a-ff9c-4da4-94f5-bcb075b84ac5",
-  "telegram-photo": "https://functions.poehali.dev/4851ee2e-1347-4e9e-bc62-d13f2066a8fc",
   "questionnaire": "https://functions.poehali.dev/65751635-528e-4830-bc09-e0b9c5344580",
   "get-diag-report": "https://functions.poehali.dev/ccdf6e9e-8ab6-450b-a327-e0afd0a8a31c",
   "save-diag-report": "https://functions.poehali.dev/7bc33dbc-e8a0-47b4-83cc-d792dc7e1696",
