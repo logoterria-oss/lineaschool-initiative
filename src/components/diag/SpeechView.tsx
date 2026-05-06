@@ -14,7 +14,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
   };
 
   // Функция для форматирования моторной реализации
-  const formatMotorRealization = (data: any) => {
+  const formatMotorRealization = (data: DiagData) => {
     const parts: string[] = [];
     
     // Звукопроизношение
@@ -57,7 +57,7 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
   };
 
   // Функция для форматирования связной речи
-  const formatConnectedSpeech = (data: any) => {
+  const formatConnectedSpeech = (data: DiagData) => {
     if (!data.connectedSpeech || data.connectedSpeech.length === 0) {
       return "не оценивалась";
     }

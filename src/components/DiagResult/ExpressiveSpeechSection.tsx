@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface ExpressiveSpeechSectionProps {
   diagData: {
     motorRealization: string[];
+    motorRealizationMultiple?: string;
+    motorRealizationOther?: string;
     wordFormation: string[];
     grammaticalStructure: string;
     connectedSpeech: string[];
@@ -11,7 +13,7 @@ interface ExpressiveSpeechSectionProps {
 }
 
 const ExpressiveSpeechSection = ({ diagData }: ExpressiveSpeechSectionProps) => {
-  const formatMotorRealization = (data: any) => {
+  const formatMotorRealization = (data: ExpressiveSpeechSectionProps['diagData']) => {
     const parts: string[] = [];
     
     // Звукопроизношение

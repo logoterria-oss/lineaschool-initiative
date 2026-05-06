@@ -28,6 +28,8 @@ export interface DiagData {
 
   // Экспрессивная речь
   motorRealization: string[];
+  motorRealizationMultiple?: string;
+  motorRealizationOther?: string;
   wordFormation: string[];
   grammaticalStructure: string;
   connectedSpeech: string[];
