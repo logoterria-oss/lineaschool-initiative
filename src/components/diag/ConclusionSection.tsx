@@ -10,11 +10,12 @@ interface ConclusionData {
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
+  normaDevelopment?: boolean;
 }
 
 interface ConclusionProps {
   formData: ConclusionData;
-  onInputChange: (field: string, value: string[]) => void;
+  onInputChange: (field: string, value: string[] | string | boolean) => void;
 }
 
 export default function ConclusionSection({ formData, onInputChange }: ConclusionProps) {
@@ -24,6 +25,12 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
   const [showLanguageAnalysisType, setShowLanguageAnalysisType] = useState(
     formData.speechDisorders.includes("нарушения языкового анализа и синтеза")
   );
+
+  const hasAnyDisorder =
+    formData.speechDisorders.length > 0 ||
+    formData.dyslexiaTypes.length > 0 ||
+    formData.dysgraphiaTypes.length > 0 ||
+    formData.brainSyndromes.length > 0;
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = (formData[field as keyof ConclusionData] as string[]) || [];
@@ -215,6 +222,30 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
                 <Label htmlFor={`brain-syndromes-${option}`} className="text-sm leading-5">{option}</Label>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Норма развития */}
+        <div className="pt-2 border-t border-gray-200">
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="norma-development"
+              checked={!!formData.normaDevelopment}
+              disabled={hasAnyDisorder}
+              onCheckedChange={(checked) => onInputChange("normaDevelopment", !!checked)}
+              className="mt-0.5"
+            />
+            <div>
+              <Label
+                htmlFor="norma-development"
+                className={`text-sm font-semibold leading-5 ${hasAnyDisorder ? "text-gray-400 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                Норма развития
+              </Label>
+              {hasAnyDisorder && (
+                <p className="text-xs text-gray-400 mt-0.5">Недоступно при выбранных нарушениях</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

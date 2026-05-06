@@ -134,7 +134,8 @@ const FormSections = ({ formData, onInputChange, onLoadDictation }: FormSections
               languageAnalysisTypes: formData.languageAnalysisTypes,
               dyslexiaTypes: formData.dyslexiaTypes,
               dysgraphiaTypes: formData.dysgraphiaTypes,
-              brainSyndromes: formData.brainSyndromes
+              brainSyndromes: formData.brainSyndromes,
+              normaDevelopment: formData.normaDevelopment
             }}
             onInputChange={onInputChange}
           />

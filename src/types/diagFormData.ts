@@ -62,6 +62,7 @@ export interface DiagFormData {
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
+  normaDevelopment: boolean;
   // Финальные поля
   recommendations: string[];
   workDirections: string[];

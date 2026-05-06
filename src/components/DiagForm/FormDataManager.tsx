@@ -66,6 +66,7 @@ export const useFormDataManager = () => {
     dyslexiaTypes: [] as string[],
     dysgraphiaTypes: [] as string[],
     brainSyndromes: [] as string[],
+    normaDevelopment: false,
     // Финальные поля
     recommendations: [] as string[],
     workDirections: [] as string[],

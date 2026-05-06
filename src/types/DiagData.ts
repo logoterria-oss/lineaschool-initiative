@@ -59,6 +59,7 @@ export interface DiagData {
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
+  normaDevelopment?: boolean;
   recommendations: string[];
   workDirections: string[];
   diagnosisDate: string;

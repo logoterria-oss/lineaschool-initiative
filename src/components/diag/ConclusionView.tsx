@@ -34,6 +34,10 @@ export default function ConclusionView({ diagData }: ConclusionViewProps) {
         conclusionParts.push(diagData.brainSyndromes.join(', '));
       }
       
+      if (conclusionParts.length === 0 && diagData.normaDevelopment) {
+        return 'Норма развития.';
+      }
+
       return conclusionParts.length > 0 
         ? conclusionParts.join('. ') + '.'
         : 'Заключение не сформировано.';
