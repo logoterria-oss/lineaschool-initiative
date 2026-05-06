@@ -5,6 +5,10 @@ interface RecommendationsViewProps {
 }
 
 export default function RecommendationsView({ diagData }: RecommendationsViewProps) {
+  if (diagData.normaDevelopment) {
+    return null;
+  }
+
   return (
     <section>
       <h2 className="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">
