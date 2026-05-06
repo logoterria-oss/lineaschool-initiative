@@ -60,6 +60,7 @@ export const useFormDataManager = () => {
     visualSpatialErrors: [] as string[],
     additionalCharacteristics: [] as string[],
     regulationViolations: [] as string[],
+    regulationViolationsOther: "",
     // Заключение
     speechDisorders: [] as string[],
     dyslexiaTypes: [] as string[],

@@ -56,6 +56,7 @@ export interface DiagFormData {
   visualSpatialErrors: string[];
   additionalCharacteristics: string[];
   regulationViolations: string[];
+  regulationViolationsOther: string;
   // Заключение
   speechDisorders: string[];
   dyslexiaTypes: string[];

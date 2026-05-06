@@ -116,6 +116,7 @@ const FormSections = ({ formData, onInputChange, onLoadDictation }: FormSections
               visualSpatialErrors: formData.visualSpatialErrors,
               additionalCharacteristics: formData.additionalCharacteristics,
               regulationViolations: formData.regulationViolations,
+              regulationViolationsOther: formData.regulationViolationsOther,
               childName: formData.childName
             }}
             onInputChange={onInputChange}
