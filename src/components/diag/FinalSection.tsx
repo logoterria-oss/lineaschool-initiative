@@ -106,9 +106,7 @@ export default function FinalSection({ formData, onInputChange }: FinalProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Абраменко Виктория">Абраменко Виктория</SelectItem>
-              <SelectItem value="Найденова Анастасия">Найденова Анастасия</SelectItem>
-              <SelectItem value="Еремина Дарья">Еремина Дарья</SelectItem>
-              <SelectItem value="Яновець Мила">Яновець Мила</SelectItem>
+              <SelectItem value="Зинченко Ирина">Зинченко Ирина</SelectItem>
             </SelectContent>
           </Select>
         </div>
