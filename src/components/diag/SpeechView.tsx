@@ -144,9 +144,14 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
         </h2>
         <div className="space-y-3 text-sm">
           <div><strong>Моторная реализация высказывания:</strong> {formatMotorRealization(diagData)}</div>
+          {diagData.wordFormation && diagData.wordFormation.length > 0 && (
+            <div><strong>Словообразовательные процессы:</strong> {diagData.wordFormation.join(', ')}</div>
+          )}
           <div><strong>Грамматический строй речи:</strong> {diagData.grammaticalStructure}</div>
           <div><strong>Связная речь:</strong> {formatConnectedSpeech(diagData)}</div>
-
+          {diagData.nominativeFunction && diagData.nominativeFunction.length > 0 && (
+            <div><strong>Номинативная функция речи:</strong> {diagData.nominativeFunction.join(', ')}</div>
+          )}
         </div>
       </section>
     </>
