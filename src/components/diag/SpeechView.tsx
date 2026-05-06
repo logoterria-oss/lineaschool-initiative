@@ -74,36 +74,36 @@ export default function SpeechView({ diagData }: SpeechViewProps) {
       
       // Проблемы со словарем
       if (connectedSpeech.some((item: string) => item === "бедность активного словаря")) {
-        details.push("Объем активного словаря не соответствует возрастной норме");
-      }
-      if (connectedSpeech.some((item: string) => item === "объем активного словаря не соответствует возрастной норме")) {
-        details.push("Объем активного словаря не соответствует возрастной норме");
-      }
-      
-      // Вербальные парафазии
-      if (connectedSpeech.some((item: string) => item === "наблюдаются вербальные парафазии")) {
-        details.push("наблюдаются вербальные парафазии");
+        if (!connectedSpeech.includes("номинативная функция сохранна")) {
+          const vocabularyParts = ["Объем активного словаря не соответствует возрастной норме"];
+          const paraphasiaTypes: string[] = [];
+          if (connectedSpeech.includes("вербальные парафазии")) paraphasiaTypes.push("вербальные парафазии");
+          if (connectedSpeech.includes("латеральные парафазии")) paraphasiaTypes.push("латеральные парафазии");
+          if (connectedSpeech.includes("вербальные и латеральные парафазии")) paraphasiaTypes.push("вербальные и латеральные парафазии");
+          if (paraphasiaTypes.length > 0) vocabularyParts.push(`наблюдаются ${paraphasiaTypes.join(", ")}`);
+          details.push(vocabularyParts.join(", "));
+        }
       }
       
       // Нарушения при составлении рассказа
       const storyProblems: string[] = [];
-      if (connectedSpeech.some((item: string) => item === "смысловая неадекватность")) {
+      if (connectedSpeech.includes("смысловая неадекватность")) {
         storyProblems.push("нарушение логики передачи замысла");
       }
-      if (connectedSpeech.some((item: string) => item === "нарушение логики передачи замысла")) {
-        storyProblems.push("нарушение логики передачи замысла");
+      if (connectedSpeech.includes("смысловая неточность")) {
+        storyProblems.push("смысловая неточность");
       }
-      if (connectedSpeech.some((item: string) => item.includes("пропуск"))) {
+      if (connectedSpeech.some((item: string) => item.includes("пропуск отдельных смысловых звеньев"))) {
         storyProblems.push("пропуск смысловых звеньев и связующих элементов");
       }
-      if (connectedSpeech.some((item: string) => item === "неоднократные необоснованные повторы")) {
+      if (connectedSpeech.some((item: string) => item.includes("неоднократные необоснованные повторы"))) {
         storyProblems.push("неоднократные необоснованные повторы");
       }
-      if (connectedSpeech.some((item: string) => item === "малая длина синтагм")) {
+      if (connectedSpeech.includes("малая длина синтагм")) {
         storyProblems.push("малая длина синтагм, которая указывает на синтагматические трудности, т.е. функциональную недостаточность передних отделов коры");
       }
-      if (connectedSpeech.some((item: string) => item === "малая длина текста")) {
-        storyProblems.push("малая длина текста, которая указывает на трудности программирования и структурирования");
+      if (connectedSpeech.includes("малая длина текста")) {
+        storyProblems.push("малая длина текста, которая свидетельствует о трудностях смыслового программирования и грамматического структурирования");
       }
       
       if (storyProblems.length > 0) {
