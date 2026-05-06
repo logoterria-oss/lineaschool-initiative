@@ -7,6 +7,8 @@ interface WrittenSpeechSectionProps {
     readingSpeed: string;
     readingComprehension: string;
     dysgraphicErrors: string;
+    dysorthographicErrors: string;
+    totalErrors: string;
     analysisErrors: string[];
     acousticErrors: string[];
     motorErrors: string[];
@@ -54,6 +56,12 @@ const WrittenSpeechSection = ({ diagData }: WrittenSpeechSectionProps) => {
         )}
         {diagData.dysgraphicErrors && (
           <p><strong>Количество дисграфических ошибок:</strong> {diagData.dysgraphicErrors}</p>
+        )}
+        {diagData.dysorthographicErrors && (
+          <p><strong>Количество дизорфографических ошибок:</strong> {diagData.dysorthographicErrors}</p>
+        )}
+        {diagData.totalErrors && (
+          <p><strong>Ошибок всего:</strong> {diagData.totalErrors}</p>
         )}
         {diagData.analysisErrors.length > 0 && (
           <p><strong>Ошибки языкового анализа:</strong> {diagData.analysisErrors.join(', ')}</p>
