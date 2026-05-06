@@ -14,8 +14,10 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
     if (checkboxItems && customText) {
       return `${checkboxItems}, ${customText}`;
     }
-    return checkboxItems || customText || 'Не указано';
+    return checkboxItems || customText || '';
   };
+
+  const regulationText = formatRegulationViolations();
 
   return (
     <section>
@@ -63,7 +65,7 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
         <div><strong>Зрительно-моторные ошибки:</strong> {formatList(diagData.visualMotorErrors)}</div>
         <div><strong>Зрительно-пространственные ошибки:</strong> {formatList(diagData.visualSpatialErrors)}</div>
         <div><strong>Дополнительные характеристики:</strong> {formatList(diagData.additionalCharacteristics)}</div>
-        <div><strong>Нарушения регуляции:</strong> {formatRegulationViolations()}</div>
+        {regulationText && <div><strong>Нарушения регуляции письменной деятельности:</strong> {regulationText}</div>}
       </div>
     </section>
   );

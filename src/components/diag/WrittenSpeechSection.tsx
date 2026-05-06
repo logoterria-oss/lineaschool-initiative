@@ -18,6 +18,7 @@ interface WrittenSpeechData {
   visualSpatialErrors: string[];
   additionalCharacteristics: string[];
   regulationViolations: string[];
+  regulationViolationsOther: string;
   childName: string;
 }
 
@@ -85,6 +86,7 @@ export default function WrittenSpeechSection({ formData, onInputChange, onLoadDi
           visualSpatialErrors={formData.visualSpatialErrors}
           additionalCharacteristics={formData.additionalCharacteristics}
           regulationViolations={formData.regulationViolations}
+          regulationViolationsOther={formData.regulationViolationsOther}
           childName={formData.childName}
           onCheckboxChange={handleCheckboxChange}
           onInputChange={onInputChange}
