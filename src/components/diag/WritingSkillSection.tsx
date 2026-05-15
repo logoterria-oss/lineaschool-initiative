@@ -19,7 +19,6 @@ interface WritingSkillProps {
   onCheckboxChange: (field: string, value: string, checked: boolean) => void;
   onInputChange: (field: string, value: string | string[]) => void;
   onFileUpload: (field: string, files: FileList | null) => void;
-  onLoadDictation?: () => void;
 }
 
 export default function WritingSkillSection({
