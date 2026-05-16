@@ -1,5 +1,4 @@
 
-import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,34 +24,32 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/price" element={<Pricing />} />
-              <Route path="/oferta_2025" element={<OfferPage />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/extension" element={<ExtensionPage />} />
-              <Route path="/anketa" element={<ParentQuestionnaire />} />
-              <Route path="/diag_form" element={<DiagForm />} />
-              <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/reports" element={<ReportsAdmin />} />
-              <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
-              <Route path="/telegram-setup" element={<TelegramSetup />} />
-              <Route path="/admin/questionnaires" element={<QuestionnaireResponses />} />
-              <Route path="/admin/payment-leads" element={<PaymentLeadsPage />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/price" element={<Pricing />} />
+            <Route path="/oferta_2025" element={<OfferPage />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/extension" element={<ExtensionPage />} />
+            <Route path="/anketa" element={<ParentQuestionnaire />} />
+            <Route path="/diag_form" element={<DiagForm />} />
+            <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/reports" element={<ReportsAdmin />} />
+            <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
+            <Route path="/telegram-setup" element={<TelegramSetup />} />
+            <Route path="/admin/questionnaires" element={<QuestionnaireResponses />} />
+            <Route path="/admin/payment-leads" element={<PaymentLeadsPage />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;

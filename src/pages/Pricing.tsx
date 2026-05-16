@@ -1,26 +1,42 @@
-import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import PricingSection from "@/components/PricingSection";
 
 export default function Pricing() {
+  useEffect(() => {
+    document.title = 'Стоимость занятий - ЛинэяСкул';
+
+    const setMeta = (attr: string, value: string, content: string) => {
+      let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, value);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+
+    setMeta('name', 'description', 'Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии.');
+    setMeta('property', 'og:title', 'Стоимость занятий - ЛинэяСкул');
+    setMeta('property', 'og:description', 'Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии.');
+    setMeta('property', 'og:url', 'https://lineaschool.ru/price');
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = 'https://lineaschool.ru/price';
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
-      <Helmet>
-        <title>Стоимость занятий - ЛинэяСкул</title>
-        <meta name="description" content="Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии." />
-        <meta property="og:title" content="Стоимость занятий - ЛинэяСкул" />
-        <meta property="og:description" content="Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии." />
-        <meta property="og:url" content="https://lineaschool.ru/price" />
-        <link rel="canonical" href="https://lineaschool.ru/price" />
-      </Helmet>
-      
       <Navigation />
       
       <main className="pt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-16">
-
           <PricingSection />
         </div>
       </main>

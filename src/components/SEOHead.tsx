@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 
 interface SEOHeadProps {
   title?: string;
@@ -17,62 +17,72 @@ export default function SEOHead({
   canonicalUrl = "https://lineaschool.ru",
   structuredData
 }: SEOHeadProps) {
-  return (
-    <Helmet>
-      {/* Основные мета-теги */}
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <meta name="keywords" content={keywords} />
-      <meta name="author" content="ЛинэяСкул" />
-      <meta name="robots" content="index, follow" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta httpEquiv="Content-Language" content="ru" />
-      
-      {/* Canonical URL */}
-      <link rel="canonical" href={canonicalUrl} />
-      
-      {/* Favicon и иконки */}
-      <link rel="icon" type="image/png" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" sizes="16x16" />
-      <link rel="icon" type="image/png" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" sizes="32x32" />
-      <link rel="icon" type="image/png" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" sizes="512x512" />
-      <link rel="apple-touch-icon" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" />
-      <link rel="shortcut icon" href="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png" />
-      
-      {/* Open Graph для соцсетей */}
-      <meta property="og:type" content="website" />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:site_name" content="ЛинэяСкул" />
-      <meta property="og:locale" content="ru_RU" />
-      
-      {/* Twitter Cards */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
-      
-      {/* Специальные теги для Яндекса */}
-      <meta name="yandex-verification" content="" />
-      <meta name="format-detection" content="telephone=no" />
-      <meta property="ya:ovs:adult" content="false" />
-      <meta property="ya:ovs:upload_date" content="2024-01-01" />
-      <meta name="yandex-zen-verification" content="" />
-      
-      {/* Дополнительные теги для поисковиков */}
-      <meta name="theme-color" content="#10b981" />
-      <meta name="msapplication-TileColor" content="#10b981" />
-      <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      <meta name="apple-mobile-web-app-title" content="ЛинэяСкул" />
-      
-      {/* Структурированные данные */}
-      {structuredData && (
-        <script type="application/ld+json">
-          {JSON.stringify(structuredData)}
-        </script>
-      )}
-    </Helmet>
-  );
+  useEffect(() => {
+    document.title = title;
+
+    const setMeta = (attr: string, value: string, content: string) => {
+      let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, value);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+
+    const setLink = (rel: string, href: string, extra?: Record<string, string>) => {
+      let el = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+      if (!el) {
+        el = document.createElement('link');
+        el.rel = rel;
+        document.head.appendChild(el);
+      }
+      el.href = href;
+      if (extra) Object.entries(extra).forEach(([k, v]) => el!.setAttribute(k, v));
+    };
+
+    setMeta('name', 'description', description);
+    setMeta('name', 'keywords', keywords);
+    setMeta('name', 'author', 'ЛинэяСкул');
+    setMeta('name', 'robots', 'index, follow');
+    setMeta('http-equiv', 'Content-Language', 'ru');
+    setMeta('name', 'format-detection', 'telephone=no');
+    setMeta('name', 'theme-color', '#10b981');
+    setMeta('name', 'msapplication-TileColor', '#10b981');
+    setMeta('name', 'apple-mobile-web-app-capable', 'yes');
+    setMeta('name', 'apple-mobile-web-app-status-bar-style', 'default');
+    setMeta('name', 'apple-mobile-web-app-title', 'ЛинэяСкул');
+
+    setMeta('property', 'og:type', 'website');
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', description);
+    setMeta('property', 'og:image', ogImage);
+    setMeta('property', 'og:url', canonicalUrl);
+    setMeta('property', 'og:site_name', 'ЛинэяСкул');
+    setMeta('property', 'og:locale', 'ru_RU');
+
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', description);
+    setMeta('name', 'twitter:image', ogImage);
+
+    setLink('canonical', canonicalUrl);
+
+    const iconUrl = 'https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png';
+    setLink('icon', iconUrl, { type: 'image/png' });
+    setLink('apple-touch-icon', iconUrl);
+    setLink('shortcut icon', iconUrl);
+
+    if (structuredData) {
+      let script = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement('script');
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
+      }
+      script.textContent = JSON.stringify(structuredData);
+    }
+  }, [title, description, keywords, ogImage, canonicalUrl, structuredData]);
+
+  return null;
 }

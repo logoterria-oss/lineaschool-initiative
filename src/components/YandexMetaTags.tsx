@@ -1,41 +1,33 @@
-import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 
 export default function YandexMetaTags() {
-  return (
-    <Helmet>
-      {/* Яндекс.Вебмастер теги */}
-      <meta name="yandex-verification" content="" />
-      
-      {/* Яндекс.Дзен */}
-      <meta name="yandex-zen-verification" content="" />
-      
-      {/* Яндекс.Турбо страницы */}
-      <link rel="yandex-tableau-widget" href="/turbo.xml" />
-      
-      {/* Микроразметка для Яндекса */}
-      <meta property="ya:ovs:adult" content="false" />
-      <meta property="ya:ovs:upload_date" content="2024-01-01" />
-      
-      {/* Дополнительные мета-теги для лучшей индексации */}
-      <meta name="document-state" content="dynamic" />
-      <meta name="revisit-after" content="1 days" />
-      
-      {/* Яндекс.Каталог */}
-      <meta name="category" content="education" />
-      <meta name="subcategory" content="online-education" />
-      
-      {/* Локализация для Яндекса */}
-      <meta name="geo.region" content="RU" />
-      <meta name="geo.placename" content="Россия" />
-      
-      {/* Контентные теги */}
-      <meta name="rating" content="general" />
-      <meta name="distribution" content="global" />
-      
-      {/* Дополнительные Open Graph теги специально для Яндекса */}
-      <meta property="ya:ovs:content_rating" content="6+" />
-      <meta property="article:author" content="ЛинэяСкул" />
-      <meta property="article:publisher" content="ЛинэяСкул" />
-    </Helmet>
-  );
+  useEffect(() => {
+    const setMeta = (attr: string, value: string, content: string) => {
+      let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, value);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+
+    setMeta('name', 'yandex-verification', '');
+    setMeta('name', 'yandex-zen-verification', '');
+    setMeta('property', 'ya:ovs:adult', 'false');
+    setMeta('property', 'ya:ovs:upload_date', '2024-01-01');
+    setMeta('name', 'document-state', 'dynamic');
+    setMeta('name', 'revisit-after', '1 days');
+    setMeta('name', 'category', 'education');
+    setMeta('name', 'subcategory', 'online-education');
+    setMeta('name', 'geo.region', 'RU');
+    setMeta('name', 'geo.placename', 'Россия');
+    setMeta('name', 'rating', 'general');
+    setMeta('name', 'distribution', 'global');
+    setMeta('property', 'ya:ovs:content_rating', '6+');
+    setMeta('property', 'article:author', 'ЛинэяСкул');
+    setMeta('property', 'article:publisher', 'ЛинэяСкул');
+  }, []);
+
+  return null;
 }
