@@ -163,7 +163,8 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
               "аграмматическая дислексия",
               "семантическая дислексия",
               "мнестическая дислексия",
-              "оптическая дислексия"
+              "оптическая дислексия",
+              "регуляторная дислексия"
             ].map(option => (
               <div key={option} className="flex items-start space-x-2">
                 <Checkbox
