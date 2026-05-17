@@ -102,13 +102,19 @@ export const useConclusionLogic = () => {
         conclusionParts.push(diagData.dysgraphiaTypes.join(', '));
       }
       
-      if (diagData.brainSyndromes && Array.isArray(diagData.brainSyndromes) && diagData.brainSyndromes.length > 0) {
-        conclusionParts.push(diagData.brainSyndromes.join(', '));
-      }
-      
-      const diagnosis = conclusionParts.length > 0 
-        ? conclusionParts.join('. ')
+      const brainSyndromesPart = diagData.brainSyndromes && Array.isArray(diagData.brainSyndromes) && diagData.brainSyndromes.length > 0
+        ? diagData.brainSyndromes.join(', ')
+        : null;
+
+      let diagnosis = conclusionParts.length > 0
+        ? conclusionParts.join(', ')
         : 'Нарушения речевого развития';
+
+      if (brainSyndromesPart) {
+        diagnosis = diagnosis ? diagnosis + ' — ' + brainSyndromesPart : brainSyndromesPart;
+      }
+
+      diagnosis = diagnosis.charAt(0).toUpperCase() + diagnosis.slice(1) + '.';
       
       // Формируем рекомендации
       const recommendationsList = diagData.recommendations && diagData.recommendations.length > 0
