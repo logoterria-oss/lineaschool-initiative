@@ -30,17 +30,24 @@ export default function ConclusionView({ diagData }: ConclusionViewProps) {
         conclusionParts.push(diagData.dysgraphiaTypes.join(', '));
       }
       
-      if (diagData.brainSyndromes && Array.isArray(diagData.brainSyndromes) && diagData.brainSyndromes.length > 0) {
-        conclusionParts.push(diagData.brainSyndromes.join(', '));
-      }
+      const brainSyndromesPart = diagData.brainSyndromes && Array.isArray(diagData.brainSyndromes) && diagData.brainSyndromes.length > 0
+        ? diagData.brainSyndromes.join(', ')
+        : null;
       
       if (conclusionParts.length === 0 && diagData.normaDevelopment) {
         return 'Норма развития.';
       }
 
-      return conclusionParts.length > 0 
-        ? conclusionParts.join('. ') + '.'
-        : 'Заключение не сформировано.';
+      if (conclusionParts.length === 0 && !brainSyndromesPart) {
+        return 'Заключение не сформировано.';
+      }
+
+      let result = conclusionParts.join(', ');
+      if (brainSyndromesPart) {
+        result = result ? result + ' — ' + brainSyndromesPart : brainSyndromesPart;
+      }
+      result = result.charAt(0).toUpperCase() + result.slice(1);
+      return result + '.';
     } catch (error) {
       console.error('Ошибка формирования заключения:', error);
       return 'Ошибка при формировании заключения.';
