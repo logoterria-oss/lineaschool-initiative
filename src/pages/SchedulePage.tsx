@@ -105,7 +105,8 @@ const SchedulePage = () => {
     try {
       const resp = await fetch(`${S20_URL}?mode=free_slots`);
       const data = await resp.json();
-      setDays(data.slots_by_weekday || []);
+      const slots = data.slots_by_weekday;
+      setDays(Array.isArray(slots) ? slots : []);
     } catch {
       setSlotsError('Не удалось загрузить свободные окна');
     } finally {
@@ -122,7 +123,12 @@ const SchedulePage = () => {
       const resp = await fetch(`${S20_URL}?mode=groups_week&date_from=${df}&date_to=${dt}`);
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
-      setGroupsData(data as GroupsWeekResponse);
+      setGroupsData({
+        max_size: data.max_size ?? 6,
+        date_from: data.date_from ?? df,
+        date_to: data.date_to ?? dt,
+        rows: Array.isArray(data.rows) ? data.rows : [],
+      });
     } catch {
       setGroupsError('Не удалось загрузить группы');
       setGroupsData(null);
