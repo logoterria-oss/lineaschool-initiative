@@ -99,17 +99,23 @@ const buildGroupRowsFromLessons = (
 
   const weekStartTs = weekStart.getTime();
   const weekEndTs = addDays(weekStart, 6).getTime();
+  const todayTs = (() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t.getTime();
+  })();
 
   const rows: Record<string, GroupRow> = {};
   for (const lesson of lessons) {
     if (lesson.lesson_type_id === 1) continue; // индивидуальные мимо
-    // только запланированные (status=1). status=2 — отменён, status=3 — проведён
-    if (lesson.status !== 1) continue;
+    if (lesson.status === 2) continue; // отменённые мимо
     const dateStr = (lesson.date || '').slice(0, 10);
     if (!dateStr) continue;
     const d = new Date(`${dateStr}T00:00:00`);
     const ts = d.getTime();
     if (ts < weekStartTs || ts >= weekEndTs) continue;
+    // только будущие/сегодняшние уроки — в прошедшие записаться нельзя
+    if (ts < todayTs) continue;
 
     let weekday = d.getDay() - 1; // JS: 0=Вс, нам нужно 0=Пн
     if (weekday < 0) weekday = 6;
@@ -214,12 +220,33 @@ const SchedulePage = () => {
     }
   };
 
-  const loadGroups = async () => {
+  const loadGroups = async (autoJump = false) => {
     setGroupsLoading(true);
     setGroupsError('');
     try {
-      const df = fmtDate(weekStart);
-      const dt = fmtDate(addDays(weekStart, 5));
+      let df = fmtDate(weekStart);
+      let dt = fmtDate(addDays(weekStart, 5));
+
+      // первое открытие — спросим у бэкенда ближайшую неделю с групповыми уроками
+      if (autoJump) {
+        try {
+          const nresp = await fetch(`${S20_URL}?mode=next_group_week&date_from=${df}`);
+          const ndata = await nresp.json();
+          if (ndata?.date_from && ndata?.date_to) {
+            df = ndata.date_from;
+            dt = ndata.date_to;
+            const newMonday = new Date(`${df}T00:00:00`);
+            if (newMonday.getTime() !== weekStart.getTime()) {
+              setWeekStart(newMonday);
+              setGroupsLoading(false);
+              return; // useEffect перезапустит loadGroups уже без autoJump
+            }
+          }
+        } catch {
+          // не критично — продолжим с текущей недели
+        }
+      }
+
       const resp = await fetch(`${S20_URL}?mode=lessons&date_from=${df}&date_to=${dt}`);
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
@@ -254,9 +281,17 @@ const SchedulePage = () => {
     }
   };
 
+  const [groupsAutoJumped, setGroupsAutoJumped] = useState(false);
+
   useEffect(() => {
-    if (tab === 'individual') loadSlots();
-    else loadGroups();
+    if (tab === 'individual') {
+      loadSlots();
+    } else {
+      // при первом открытии вкладки «Группы» — ищем ближайшую неделю с уроками
+      const needAutoJump = !groupsAutoJumped;
+      if (needAutoJump) setGroupsAutoJumped(true);
+      loadGroups(needAutoJump);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, weekStart]);
 

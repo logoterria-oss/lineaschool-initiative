@@ -302,6 +302,48 @@ def handler(event: dict, context) -> dict:
             "body": json.dumps({"groups": groups}, ensure_ascii=False),
         }
 
+    if mode == "next_group_week":
+        # Найти ближайшую (от date_from) неделю Пн-Сб, где есть хотя бы один групповой урок
+        # status != 2 (не отменён). Возвращаем {date_from, date_to, has_lessons}
+        try:
+            start_dt = datetime.strptime(date_from, "%Y-%m-%d").date()
+        except Exception:
+            start_dt = today.date()
+        # выровнять на понедельник
+        monday = start_dt - timedelta(days=start_dt.weekday())
+        found = None
+        for week_offset in range(0, 12):
+            wk_from = monday + timedelta(days=week_offset * 7)
+            wk_to = wk_from + timedelta(days=5)
+            try:
+                lessons = get_lessons(token, wk_from.strftime("%Y-%m-%d"), wk_to.strftime("%Y-%m-%d"))
+            except Exception:
+                lessons = []
+            has = False
+            for ls in lessons:
+                if ls.get("lesson_type_id") == 1:
+                    continue
+                if ls.get("status") == 2:
+                    continue
+                has = True
+                break
+            if has:
+                found = (wk_from, wk_to)
+                break
+        if found is None:
+            wk_from = monday
+            wk_to = monday + timedelta(days=5)
+            found = (wk_from, wk_to)
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps({
+                "date_from": found[0].strftime("%Y-%m-%d"),
+                "date_to": found[1].strftime("%Y-%m-%d"),
+                "has_lessons": found is not None,
+            }, ensure_ascii=False),
+        }
+
     if mode == "groups_week":
         # Таблица групповых занятий за неделю
         # Строки: (time_from + teacher_id), колонки: дни недели (0..5 Пн..Сб)
