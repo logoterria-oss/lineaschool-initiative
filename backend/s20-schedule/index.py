@@ -539,8 +539,6 @@ def handler(event: dict, context) -> dict:
         }
 
     if mode == "probe_session":
-        # Пробуем залогиниться как браузер (сессионная авторизация)
-        # и дёрнуть страницу педагога — там должны быть данные графика
         teacher_id = int(params.get("teacher_id", 2))
         email = os.environ.get("S20_ADMIN_EMAIL", S20_EMAIL)
         password = os.environ.get("S20_ADMIN_PASSWORD", "")
@@ -554,54 +552,116 @@ def handler(event: dict, context) -> dict:
             }
 
         session = requests.Session()
-        # 1. Получить страницу логина (csrf)
-        login_page = session.get(f"{S20_HOST}/login", timeout=5)
-        results["login_page_status"] = login_page.status_code
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.8",
+        })
 
-        # Попробуем разные пути логина
-        login_attempts = [
-            ("POST", f"{S20_HOST}/login", {"email": email, "password": password}),
-            ("POST", f"{S20_HOST}/site/login", {"LoginForm[email]": email, "LoginForm[password]": password}),
-            ("POST", f"{S20_HOST}/login/index", {"email": email, "password": password}),
-        ]
-        login_ok = False
-        for method, url, data in login_attempts:
-            try:
-                r = session.post(url, data=data, timeout=5, allow_redirects=True)
-                if r.status_code == 200 and "login" not in r.url.lower():
-                    results[f"login_{url}"] = "OK"
-                    login_ok = True
-                    break
-                else:
-                    results[f"login_{url}"] = f"status={r.status_code}, final_url={r.url}"
-            except Exception as e:
-                results[f"login_{url}"] = str(e)
+        # 1. Получаем CSRF + cookies
+        login_page = session.get(f"{S20_HOST}/login", timeout=8, allow_redirects=True)
+        results["login_page"] = {"status": login_page.status_code, "url": login_page.url,
+                                  "cookies": dict(session.cookies)}
 
-        if login_ok:
-            # 2. Попробуем дёрнуть страницу педагога и API графика
-            test_urls = [
-                f"{S20_HOST}/1/teacher/view/id/{teacher_id}",
-                f"{S20_HOST}/1/teacher/update/id/{teacher_id}",
-                f"{S20_HOST}/1/cgraph/get/teacher_id/{teacher_id}",
-                f"{S20_HOST}/1/teacher-graph/get/teacher_id/{teacher_id}",
-                f"{S20_HOST}/1/teacher-graph/index?teacher_id={teacher_id}",
-                f"{S20_HOST}/1/teacher/graph/id/{teacher_id}",
+        import re
+        csrf_match = re.search(r'name="csrf-token" content="([^"]+)"', login_page.text)
+        csrf_param_match = re.search(r'name="csrf-param" content="([^"]+)"', login_page.text)
+        csrf = csrf_match.group(1) if csrf_match else None
+        csrf_param = csrf_param_match.group(1) if csrf_param_match else "_csrf"
+        results["csrf_param"] = csrf_param
+        results["csrf_len"] = len(csrf) if csrf else 0
+
+        # Ищем форму логина в HTML
+        form_action = re.search(r'<form[^>]+action="([^"]*login[^"]*)"', login_page.text)
+        form_inputs = re.findall(r'<input[^>]+name="([^"]+)"', login_page.text)
+        results["form_action"] = form_action.group(1) if form_action else None
+        results["form_inputs"] = form_inputs
+
+        # 2. Логин — правильное поле LoginForm[username]
+        login_data = {csrf_param: csrf,
+                      "LoginForm[username]": email,
+                      "LoginForm[password]": password,
+                      "LoginForm[rememberMe]": "1"}
+        r = session.post(f"{S20_HOST}/login", data=login_data, timeout=8, allow_redirects=False,
+                         headers={"Referer": f"{S20_HOST}/login",
+                                  "X-CSRF-Token": csrf or "",
+                                  "Origin": S20_HOST})
+        # Ищем ошибки в HTML ответе
+        err_match = re.search(r'class="[^"]*help-block[^"]*"[^>]*>([^<]+)<', r.text)
+        alert_match = re.search(r'class="[^"]*alert[^"]*"[^>]*>(.{1,300}?)<', r.text, re.DOTALL)
+        results["login_response"] = {
+            "status": r.status_code,
+            "location": r.headers.get("Location", ""),
+            "set_cookie_has_id": "PHPSESSID" in r.headers.get("Set-Cookie", ""),
+            "cookies_after": dict(session.cookies),
+            "html_length": len(r.text),
+            "error_text": err_match.group(1).strip() if err_match else None,
+            "alert_text": alert_match.group(1).strip() if alert_match else None,
+            "email_used": email,
+            "password_len": len(password),
+        }
+        # Выделим всё что после формы (там обычно ошибки и тексты)
+        body_start = r.text.find("<body")
+        body_text = r.text[body_start:body_start+5000] if body_start > 0 else ""
+        # Чистим теги
+        clean = re.sub(r'<script[^>]*>.*?</script>', '', body_text, flags=re.DOTALL)
+        clean = re.sub(r'<style[^>]*>.*?</style>', '', clean, flags=re.DOTALL)
+        clean = re.sub(r'<[^>]+>', ' ', clean)
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        results["visible_text"] = clean[:2000]
+        # Ищем ключевые слова
+        results["has_keywords"] = {
+            "неправ": "неправ" in r.text.lower(),
+            "ошиб": "ошиб" in r.text.lower(),
+            "invalid": "invalid" in r.text.lower(),
+            "captcha": "captcha" in r.text.lower(),
+            "verifyCode": "verifycode" in r.text.lower(),
+            "блокир": "блокир" in r.text.lower(),
+        }
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+        # 3. Если залогинились — пробуем endpoint'ы для графика
+        if "login" not in r.url.lower() or r.status_code == 200:
+            test_paths = [
+                f"/1/teacher/view/id/{teacher_id}",
+                f"/1/teacher/update/id/{teacher_id}",
+                f"/1/teacher-graph?teacher_id={teacher_id}",
+                f"/1/teacher-graph/index?teacher_id={teacher_id}",
+                f"/1/cgraph?teacher_id={teacher_id}",
+                f"/1/cgraph/index?teacher_id={teacher_id}",
+                f"/1/cgraph/list?teacher_id={teacher_id}",
+                f"/1/teacher-to-graph?teacher_id={teacher_id}",
+                f"/1/graph/index?teacher_id={teacher_id}",
+                f"/1/graph?teacher_id={teacher_id}",
+                f"/1/teacher/graph?id={teacher_id}",
+                f"/1/teacher-time?teacher_id={teacher_id}",
+                f"/1/teacher-work-time?teacher_id={teacher_id}",
+                f"/1/teacher-work-graph?teacher_id={teacher_id}",
+                f"/1/teacher-graphic?teacher_id={teacher_id}",
             ]
-            for url in test_urls:
+            for path in test_paths:
+                url = f"{S20_HOST}{path}"
                 try:
-                    r = session.get(url, timeout=5)
-                    if r.status_code == 200:
-                        # Сохраняем только заголовок и первые байты
-                        results[url] = {
-                            "status": 200,
-                            "preview": r.text[:500],
-                            "is_json": "application/json" in r.headers.get("Content-Type", ""),
-                        }
-                    else:
-                        results[url] = r.status_code
+                    rr = session.get(url, timeout=5, headers={
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Accept": "application/json, text/html",
+                    })
+                    if rr.status_code != 404:
+                        ct = rr.headers.get("Content-Type", "")
+                        is_html = "html" in ct
+                        # Если HTML — ищем упоминания графика
+                        preview = rr.text[:600] if not is_html else (
+                            "HTML, has_graph=" + str("graph" in rr.text.lower() or "график" in rr.text.lower())
+                            + "; has_input=" + str("input" in rr.text.lower())
+                            + "; length=" + str(len(rr.text))
+                        )
+                        results[path] = {"status": rr.status_code, "ct": ct[:60], "preview": preview}
                 except Exception as e:
-                    results[url] = str(e)
-
+                    results[path] = str(e)
         return {
             "statusCode": 200,
             "headers": {**cors_headers, "Content-Type": "application/json"},
