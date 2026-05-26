@@ -103,6 +103,8 @@ const buildGroupRowsFromLessons = (
   const rows: Record<string, GroupRow> = {};
   for (const lesson of lessons) {
     if (lesson.lesson_type_id === 1) continue; // индивидуальные мимо
+    // только запланированные (status=1). status=2 — отменён, status=3 — проведён
+    if (lesson.status !== 1) continue;
     const dateStr = (lesson.date || '').slice(0, 10);
     if (!dateStr) continue;
     const d = new Date(`${dateStr}T00:00:00`);
