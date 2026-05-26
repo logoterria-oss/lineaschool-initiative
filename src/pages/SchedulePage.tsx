@@ -127,10 +127,7 @@ const SchedulePage = () => {
               variant={tab === 'lessons' ? 'default' : 'outline'}
               onClick={() => setTab('lessons')}
               className="gap-2"
-            >
-              <Icon name="Calendar" size={16} />
-              Занятия
-            </Button>
+            >Индивидуальные</Button>
             <Button
               variant={tab === 'groups' ? 'default' : 'outline'}
               onClick={() => setTab('groups')}
