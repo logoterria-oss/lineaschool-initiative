@@ -249,6 +249,53 @@ def handler(event: dict, context) -> dict:
             "body": json.dumps({"groups": groups}, ensure_ascii=False),
         }
 
+    if mode == "debug_regular":
+        teacher_id = int(params.get("teacher_id", 11))
+        url = f"{S20_HOST}/v2api/1/regular-lesson/index"
+        resp = requests.post(url, json={"teacher_id": teacher_id, "page": 0, "pageSize": 200},
+                             headers=get_headers(token))
+        data = resp.json()
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps({"total": data.get("total"), "items": data.get("items", [])},
+                               ensure_ascii=False),
+        }
+
+    if mode == "probe_work":
+        # Ищем эндпоинт с рабочим графиком педагога (working hours)
+        teacher_id = int(params.get("teacher_id", 11))
+        results = {}
+        candidates = [
+            "cteacher", "teacher-work", "teacher_work_time", "work", "work_time",
+            "cwork", "teacher_timetable", "staffschedule", "staff_schedule",
+            "teacher_hour", "teacher_hours", "workhour", "work_hour",
+        ]
+        for endpoint in candidates:
+            url = f"{S20_HOST}/v2api/1/{endpoint}/index"
+            try:
+                r = requests.post(url, json={"teacher_id": teacher_id, "page": 0, "pageSize": 5},
+                                  headers=get_headers(token), timeout=5)
+                results[endpoint] = r.status_code
+                if r.status_code == 200:
+                    results[f"{endpoint}_body"] = r.json()
+            except Exception as e:
+                results[endpoint] = str(e)
+        # Также попробуем regular-lesson без teacher_id — посмотрим есть ли is_public=1
+        url2 = f"{S20_HOST}/v2api/1/regular-lesson/index"
+        r2 = requests.post(url2, json={"is_public": 1, "page": 0, "pageSize": 50},
+                           headers=get_headers(token), timeout=5)
+        results["regular_public"] = {"status": r2.status_code, "body": r2.json() if r2.status_code == 200 else r2.text[:200]}
+        # И без привязки к ученику
+        r3 = requests.post(url2, json={"related_class": None, "page": 0, "pageSize": 10},
+                           headers=get_headers(token), timeout=5)
+        results["regular_no_customer"] = {"status": r3.status_code, "body": r3.json() if r3.status_code == 200 else r3.text[:200]}
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
     if mode == "teachers":
         teachers = get_teachers(token)
         return {
