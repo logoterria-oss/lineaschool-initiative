@@ -99,23 +99,17 @@ const buildGroupRowsFromLessons = (
 
   const weekStartTs = weekStart.getTime();
   const weekEndTs = addDays(weekStart, 6).getTime();
-  const todayTs = (() => {
-    const t = new Date();
-    t.setHours(0, 0, 0, 0);
-    return t.getTime();
-  })();
 
   const rows: Record<string, GroupRow> = {};
   for (const lesson of lessons) {
     if (lesson.lesson_type_id === 1) continue; // индивидуальные мимо
-    if (lesson.status === 2) continue; // отменённые мимо
+    // Только запланированные уроки (status=1). 2 — отменённые, 3 — проведённые.
+    if (lesson.status !== 1) continue;
     const dateStr = (lesson.date || '').slice(0, 10);
     if (!dateStr) continue;
     const d = new Date(`${dateStr}T00:00:00`);
     const ts = d.getTime();
     if (ts < weekStartTs || ts >= weekEndTs) continue;
-    // только будущие/сегодняшние уроки — в прошедшие записаться нельзя
-    if (ts < todayTs) continue;
 
     let weekday = d.getDay() - 1; // JS: 0=Вс, нам нужно 0=Пн
     if (weekday < 0) weekday = 6;
