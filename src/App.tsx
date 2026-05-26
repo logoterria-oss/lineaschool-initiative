@@ -19,6 +19,7 @@ import ReportsAdmin from "./components/ReportsAdmin";
 import TelegramSetup from "./pages/TelegramSetup";
 import PaymentLeadsPage from "./pages/PaymentLeadsPage";
 import ExtensionPage from "./pages/ExtensionPage";
+import SchedulePage from "./pages/SchedulePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/telegram-setup" element={<TelegramSetup />} />
             <Route path="/admin/questionnaires" element={<QuestionnaireResponses />} />
             <Route path="/admin/payment-leads" element={<PaymentLeadsPage />} />
+            <Route path="/admin/schedule" element={<SchedulePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

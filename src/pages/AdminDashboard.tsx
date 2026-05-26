@@ -120,6 +120,39 @@ const AdminDashboard = () => {
                 </ul>
               </CardContent>
             </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-teal-500"
+              onClick={() => navigate('/admin/schedule')}
+            >
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex items-center gap-2 md:gap-3 mb-2">
+                  <div className="p-2 md:p-3 bg-teal-100 rounded-lg">
+                    <Icon name="CalendarDays" className="text-teal-600" size={24} />
+                  </div>
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Расписание занятий</CardTitle>
+                </div>
+                <CardDescription className="text-sm md:text-base">
+                  Занятия и группы из S20 CRM
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-teal-600" size={16} />
+                    <span>Актуальное расписание групп</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-teal-600" size={16} />
+                    <span>Индивидуальные занятия</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" className="text-teal-600" size={16} />
+                    <span>Данные напрямую из S20</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="mt-8 text-center">
