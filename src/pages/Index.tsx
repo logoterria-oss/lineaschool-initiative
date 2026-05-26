@@ -9,6 +9,7 @@ import DiagnosticSection from "@/components/DiagnosticSection";
 import WhyNotTeacherSection from "@/components/WhyNotTeacherSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import PricingOverview from "@/components/PricingOverview";
+import IndividualSlotsSection from "@/components/IndividualSlotsSection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
@@ -49,6 +50,7 @@ export default function Index() {
 
         <TestimonialsSection />
         <PricingOverview />
+        <IndividualSlotsSection />
         <FAQSection />
         <CTASection />
         <Footer />
