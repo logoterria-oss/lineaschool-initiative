@@ -11,7 +11,7 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"windows": []},
+      "expectedBody": {"teachers": {}},
       "bodyMatcher": "partial"
     },
     {
