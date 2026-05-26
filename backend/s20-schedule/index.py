@@ -263,33 +263,36 @@ def handler(event: dict, context) -> dict:
         }
 
     if mode == "probe_work":
-        # Ищем эндпоинт с рабочим графиком педагога (working hours)
-        teacher_id = int(params.get("teacher_id", 11))
+        # Финальная попытка — перебираем все возможные пути
+        teacher_id = int(params.get("teacher_id", 2))
         results = {}
-        candidates = [
-            "cteacher", "teacher-work", "teacher_work_time", "work", "work_time",
-            "cwork", "teacher_timetable", "staffschedule", "staff_schedule",
-            "teacher_hour", "teacher_hours", "workhour", "work_hour",
+        all_candidates = []
+        prefixes = [f"/v2api/1/", f"/v2api/"]
+        names = [
+            "cgraph", "cteacher-graph", "teacher-graph",
+            "graph", "ctgraph", "teacher_graph",
+            "cwork-time", "work-time", "teacher-work-time",
+            "time-sheet", "timesheet", "ctime-sheet",
+            "shift", "cshift", "teacher-shift",
+            "busy-time", "busy_time",
+            "teacher-busy", "teacher_busy",
         ]
-        for endpoint in candidates:
-            url = f"{S20_HOST}/v2api/1/{endpoint}/index"
+        for prefix in prefixes:
+            for name in names:
+                all_candidates.append(f"{prefix}{name}/index")
+        for path in all_candidates:
+            url = f"{S20_HOST}{path}"
             try:
                 r = requests.post(url, json={"teacher_id": teacher_id, "page": 0, "pageSize": 5},
-                                  headers=get_headers(token), timeout=5)
-                results[endpoint] = r.status_code
+                                  headers=get_headers(token), timeout=3)
                 if r.status_code == 200:
-                    results[f"{endpoint}_body"] = r.json()
-            except Exception as e:
-                results[endpoint] = str(e)
-        # Также попробуем regular-lesson без teacher_id — посмотрим есть ли is_public=1
-        url2 = f"{S20_HOST}/v2api/1/regular-lesson/index"
-        r2 = requests.post(url2, json={"is_public": 1, "page": 0, "pageSize": 50},
-                           headers=get_headers(token), timeout=5)
-        results["regular_public"] = {"status": r2.status_code, "body": r2.json() if r2.status_code == 200 else r2.text[:200]}
-        # И без привязки к ученику
-        r3 = requests.post(url2, json={"related_class": None, "page": 0, "pageSize": 10},
-                           headers=get_headers(token), timeout=5)
-        results["regular_no_customer"] = {"status": r3.status_code, "body": r3.json() if r3.status_code == 200 else r3.text[:200]}
+                    results[path] = {"status": 200, "body": r.json()}
+                elif r.status_code not in [404, 405]:
+                    results[path] = r.status_code
+            except Exception:
+                pass
+        results["total_checked"] = len(all_candidates)
+        results["found_200"] = [k for k in results if isinstance(results[k], dict) and results[k].get("status") == 200]
         return {
             "statusCode": 200,
             "headers": {**cors_headers, "Content-Type": "application/json"},
