@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET all windows",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"windows": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST without API key returns 401",
+      "method": "POST",
+      "path": "/",
+      "body": {"teacher_name": "Тест Тестов", "windows": []},
+      "expectedStatus": 401
+    }
+  ]
+}
