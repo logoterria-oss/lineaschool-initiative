@@ -268,7 +268,7 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
 
 
 def handler(event: dict, context) -> dict:
-    """Расписание S20: занятия, группы, педагоги, свободные слоты для записи"""
+    """Расписание S20: занятия, группы (групповые слоты по неделям), педагоги, свободные слоты для записи"""
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -300,6 +300,118 @@ def handler(event: dict, context) -> dict:
             "statusCode": 200,
             "headers": {**cors_headers, "Content-Type": "application/json"},
             "body": json.dumps({"groups": groups}, ensure_ascii=False),
+        }
+
+    if mode == "groups_week":
+        # Таблица групповых занятий за неделю
+        # Строки: (time_from + teacher_id), колонки: дни недели (0..5 Пн..Сб)
+        # Ячейка: свободные места = MAX_GROUP_SIZE - уникальных учеников на этом lesson
+        MAX_GROUP_SIZE = 6
+        try:
+            lessons = get_lessons(token, date_from, date_to)
+            teachers = get_teachers(token)
+        except Exception as e:
+            return {
+                "statusCode": 502,
+                "headers": {**cors_headers, "Content-Type": "application/json"},
+                "body": json.dumps({"error": f"S20 fetch failed: {str(e)}"}, ensure_ascii=False),
+            }
+
+        # teacher_id -> "Фамилия И."
+        teacher_short = {}
+        for t in teachers:
+            tid = t.get("id")
+            full = (t.get("name") or "").strip()
+            parts = full.split()
+            if not parts:
+                teacher_short[tid] = f"#{tid}"
+            elif len(parts) == 1:
+                teacher_short[tid] = parts[0]
+            else:
+                teacher_short[tid] = f"{parts[0]} {parts[1][0]}."
+
+        # Группировка занятий: key = (time_from, teacher_id) -> {weekday: {"date","enrolled","lesson_id"}}
+        rows: dict = {}
+        for lesson in lessons:
+            # только групповые: lesson_type_id == 2 (group) или 3
+            ltype = lesson.get("lesson_type_id")
+            if ltype == 1:
+                continue
+            if lesson.get("status") == 3:
+                continue
+
+            lesson_date = (lesson.get("date") or "")[:10]
+            if not lesson_date:
+                continue
+            try:
+                d = datetime.strptime(lesson_date, "%Y-%m-%d").date()
+            except Exception:
+                continue
+            weekday = d.weekday()
+            if weekday > 5:
+                continue  # пропускаем воскресенье
+
+            time_from = lesson.get("time_from") or ""
+            if " " in time_from:
+                time_from = time_from.split(" ")[-1]
+            time_from = time_from[:5]
+            if not time_from:
+                continue
+
+            tids = lesson.get("teacher_ids") or []
+            if not tids:
+                continue
+            teacher_id = int(tids[0])
+
+            # уникальные ученики (поля customer_ids / client_ids / details)
+            students = set()
+            for key in ("customer_ids", "client_ids", "student_ids"):
+                for sid in lesson.get(key) or []:
+                    students.add(sid)
+            details = lesson.get("details") or []
+            if isinstance(details, list):
+                for d_item in details:
+                    if isinstance(d_item, dict):
+                        cid = d_item.get("customer_id") or d_item.get("client_id")
+                        if cid is not None:
+                            students.add(cid)
+            enrolled = len(students)
+            group_id = lesson.get("group_ids")
+            if isinstance(group_id, list):
+                group_id = group_id[0] if group_id else None
+
+            row_key = (time_from, teacher_id)
+            if row_key not in rows:
+                rows[row_key] = {
+                    "time": time_from,
+                    "teacher_id": teacher_id,
+                    "teacher_name": teacher_short.get(teacher_id, f"#{teacher_id}"),
+                    "cells": {},
+                    "group_id": group_id,
+                }
+            cell = rows[row_key]["cells"].get(weekday)
+            if cell is None or enrolled > cell["enrolled"]:
+                rows[row_key]["cells"][weekday] = {
+                    "date": lesson_date,
+                    "enrolled": enrolled,
+                    "free": max(0, MAX_GROUP_SIZE - enrolled),
+                    "lesson_id": lesson.get("id"),
+                }
+
+        # сортируем строки: по времени, потом по педагогу
+        out_rows = []
+        for (time_from, teacher_id), data in sorted(rows.items(), key=lambda kv: (kv[0][0], kv[1]["teacher_name"])):
+            out_rows.append(data)
+
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps({
+                "max_size": MAX_GROUP_SIZE,
+                "date_from": date_from,
+                "date_to": date_to,
+                "rows": out_rows,
+            }, ensure_ascii=False),
         }
 
     if mode == "debug_regular":

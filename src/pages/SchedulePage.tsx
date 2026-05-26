@@ -41,13 +41,46 @@ const TEACHER_COLOR: Record<number, string> = {
 
 // ── Группы ────────────────────────────────────────────────────────────────────
 
-interface Group {
-  id: number;
-  name: string;
-  teacher_ids?: string[];
-  b_date?: string;
-  e_date?: string;
+interface GroupCell {
+  date: string;
+  enrolled: number;
+  free: number;
+  lesson_id?: number;
 }
+
+interface GroupRow {
+  time: string;
+  teacher_id: number;
+  teacher_name: string;
+  cells: Record<string, GroupCell>;
+  group_id?: number | null;
+}
+
+interface GroupsWeekResponse {
+  max_size: number;
+  date_from: string;
+  date_to: string;
+  rows: GroupRow[];
+}
+
+const WEEKDAY_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+
+const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+const getMonday = (d: Date) => {
+  const x = new Date(d);
+  const day = x.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  x.setDate(x.getDate() + diff);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+const addDays = (d: Date, n: number) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+const fmtRu = (d: Date) =>
+  d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -60,8 +93,9 @@ const SchedulePage = () => {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState('');
 
-  // Группы
-  const [groups, setGroups] = useState<Group[]>([]);
+  // Группы (таблица по неделе)
+  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+  const [groupsData, setGroupsData] = useState<GroupsWeekResponse | null>(null);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
 
@@ -83,11 +117,15 @@ const SchedulePage = () => {
     setGroupsLoading(true);
     setGroupsError('');
     try {
-      const resp = await fetch(`${S20_URL}?mode=groups`);
+      const df = fmtDate(weekStart);
+      const dt = fmtDate(addDays(weekStart, 5));
+      const resp = await fetch(`${S20_URL}?mode=groups_week&date_from=${df}&date_to=${dt}`);
       const data = await resp.json();
-      setGroups(data.groups || []);
+      if (data.error) throw new Error(data.error);
+      setGroupsData(data as GroupsWeekResponse);
     } catch {
       setGroupsError('Не удалось загрузить группы');
+      setGroupsData(null);
     } finally {
       setGroupsLoading(false);
     }
@@ -96,13 +134,14 @@ const SchedulePage = () => {
   useEffect(() => {
     if (tab === 'individual') loadSlots();
     else loadGroups();
-  }, [tab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, weekStart]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       <AdminHeader showOnlyHome />
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className={tab === 'groups' ? 'max-w-7xl mx-auto' : 'max-w-4xl mx-auto'}>
 
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => navigate('/admin')} className="text-gray-500 hover:text-gray-800">
@@ -236,6 +275,45 @@ const SchedulePage = () => {
           {/* ── Таб: Группы ── */}
           {tab === 'groups' && (
             <>
+              {/* Навигация по неделе */}
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWeekStart(addDays(weekStart, -7))}
+                    className="gap-1"
+                  >
+                    <Icon name="ChevronLeft" size={14} />
+                    Неделя
+                  </Button>
+                  <div className="text-sm font-medium text-gray-700 px-2">
+                    {fmtRu(weekStart)} — {fmtRu(addDays(weekStart, 5))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWeekStart(addDays(weekStart, 7))}
+                    className="gap-1"
+                  >
+                    Неделя
+                    <Icon name="ChevronRight" size={14} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setWeekStart(getMonday(new Date()))}
+                    className="text-xs"
+                  >
+                    Эта неделя
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" onClick={loadGroups} className="gap-1.5">
+                  <Icon name="RefreshCw" size={14} />
+                  Обновить
+                </Button>
+              </div>
+
               {groupsLoading && (
                 <div className="text-center py-12 text-gray-500">
                   <Icon name="Loader2" size={32} className="animate-spin mx-auto mb-3" />
@@ -247,33 +325,95 @@ const SchedulePage = () => {
                   {groupsError}
                 </div>
               )}
-              {!groupsLoading && groups.length === 0 && !groupsError && (
-                <div className="text-center py-12 text-gray-400">Групп не найдено</div>
+              {!groupsLoading && !groupsError && groupsData && groupsData.rows.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  <Icon name="CalendarOff" size={36} className="mx-auto mb-3" />
+                  На этой неделе нет групповых занятий
+                </div>
               )}
-              <div className="space-y-3">
-                {groups.map(group => (
-                  <Card key={group.id} className="border border-gray-200">
-                    <CardContent className="py-3 px-4 flex items-center gap-4">
-                      <div className="p-2 bg-green-100 rounded-lg shrink-0">
-                        <Icon name="Users" size={18} className="text-green-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-800">{group.name}</div>
-                        {group.teacher_ids && group.teacher_ids.length > 0 && (
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {group.teacher_ids.join(', ')}
-                          </div>
-                        )}
-                      </div>
-                      {group.b_date && group.e_date && (
-                        <div className="text-xs text-gray-400 shrink-0 text-right">
-                          {group.b_date} — {group.e_date}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+
+              {!groupsLoading && !groupsError && groupsData && groupsData.rows.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+                    <span>Цифра в ячейке = свободных мест из {groupsData.max_size}.</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="inline-block w-3 h-3 rounded bg-green-100 border border-green-300" />
+                      есть места
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="inline-block w-3 h-3 rounded bg-red-100 border border-red-300" />
+                      заполнено
+                    </span>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                    <table className="w-full text-sm border-collapse min-w-[900px]">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th colSpan={3} className="border border-gray-200 px-3 py-2 font-medium text-gray-700">
+                            I половина недели
+                          </th>
+                          <th colSpan={3} className="border border-gray-200 px-3 py-2 font-medium text-gray-700">
+                            II половина недели
+                          </th>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          {WEEKDAY_SHORT.map((wd, i) => (
+                            <th
+                              key={wd}
+                              className="border border-gray-200 px-2 py-2 font-semibold text-gray-700 w-[16.66%]"
+                            >
+                              <div>{wd}</div>
+                              <div className="text-[10px] font-normal text-gray-400">
+                                {fmtRu(addDays(weekStart, i))}
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupsData.rows.map((row, rIdx) => (
+                          <tr key={`${row.time}-${row.teacher_id}-${rIdx}`}>
+                            {WEEKDAY_SHORT.map((_, day) => {
+                              const cell = row.cells[String(day)];
+                              if (!cell) {
+                                return (
+                                  <td
+                                    key={day}
+                                    className="border border-gray-200 px-2 py-1.5 align-top h-12 text-gray-300 text-center"
+                                  >
+                                    —
+                                  </td>
+                                );
+                              }
+                              const isFull = cell.free === 0;
+                              return (
+                                <td
+                                  key={day}
+                                  className={`border border-gray-200 px-2 py-1.5 align-top ${
+                                    isFull ? 'bg-red-50' : 'bg-green-50'
+                                  }`}
+                                >
+                                  <div className="text-[11px] font-medium text-gray-600 mb-0.5">
+                                    {row.time} ({row.teacher_name})
+                                  </div>
+                                  <div
+                                    className={`text-lg font-bold text-center ${
+                                      isFull ? 'text-red-600' : 'text-green-700'
+                                    }`}
+                                  >
+                                    {cell.free}
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </>
           )}
 
