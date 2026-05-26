@@ -263,36 +263,345 @@ def handler(event: dict, context) -> dict:
         }
 
     if mode == "probe_work":
-        # Финальная попытка — перебираем все возможные пути
+        # Большой брутфорс
         teacher_id = int(params.get("teacher_id", 2))
         results = {}
-        all_candidates = []
-        prefixes = [f"/v2api/1/", f"/v2api/"]
         names = [
-            "cgraph", "cteacher-graph", "teacher-graph",
-            "graph", "ctgraph", "teacher_graph",
-            "cwork-time", "work-time", "teacher-work-time",
-            "time-sheet", "timesheet", "ctime-sheet",
-            "shift", "cshift", "teacher-shift",
-            "busy-time", "busy_time",
-            "teacher-busy", "teacher_busy",
+            "teacher-schedule", "schedule", "teacher-calendar", "calendar",
+            "teacher-work", "teacher-working", "working-hours", "work-hours",
+            "teacher-hour", "teacher-hours", "teacher-time", "teacher-times",
+            "grafik", "graphic", "tgrafik",
+            "work-day", "work-days", "workday", "workdays",
+            "teacher-day", "teacher-days",
+            "available-time", "available", "availability",
+            "teacher-availability", "teacher-free",
+            "free-slot", "free-slots", "freeslot",
+            "ctgraph", "ct-graph", "ctt-graph",
+            "tgraph", "wgraph",
+            "teacher-grafik", "teacher_grafik",
+            "settings", "calendar-settings", "branch-settings",
+            "config", "calendar-config",
+            "shift", "shifts", "duty", "roster",
+            "rabochee-vremya", "rabochee_vremya",
         ]
+        prefixes = ["/v2api/1/", "/v2api/"]
         for prefix in prefixes:
             for name in names:
-                all_candidates.append(f"{prefix}{name}/index")
-        for path in all_candidates:
-            url = f"{S20_HOST}{path}"
+                path = f"{prefix}{name}/index"
+                url = f"{S20_HOST}{path}"
+                try:
+                    r = requests.post(url, json={"teacher_id": teacher_id, "page": 0, "pageSize": 5},
+                                      headers=get_headers(token), timeout=3)
+                    if r.status_code == 200:
+                        results[path] = {"status": 200, "body": r.json()}
+                    elif r.status_code not in [404, 405]:
+                        results[path] = r.status_code
+                except Exception:
+                    pass
+        results["total_checked"] = len(prefixes) * len(names)
+        results["found_200"] = [k for k in results if isinstance(results.get(k), dict) and results[k].get("status") == 200]
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+    if mode == "probe_v1":
+        # Кабинет педагога / web routes
+        teacher_id = int(params.get("teacher_id", 2))
+        results = {}
+        urls_to_try = [
+            f"{S20_HOST}/v2api/1/teacher/{teacher_id}/graph",
+            f"{S20_HOST}/v2api/1/teacher/{teacher_id}/schedule",
+            f"{S20_HOST}/v2api/1/teacher/{teacher_id}/work-time",
+            f"{S20_HOST}/v2api/1/teacher/graph/index",
+            f"{S20_HOST}/v2api/1/teacher/schedule/index",
+            f"{S20_HOST}/v2api/1/teacher/work-time/index",
+            f"{S20_HOST}/v2api/1/teacher-to-graph/index",
+            f"{S20_HOST}/v2api/1/teacher-to-schedule/index",
+            f"{S20_HOST}/v2api/1/teacher-to-work-time/index",
+            f"{S20_HOST}/v2api/1/teacher-to-skill/index",
+            f"{S20_HOST}/v2api/1/teacher/view?id={teacher_id}",
+            f"{S20_HOST}/v2api/1/teacher/{teacher_id}",
+        ]
+        for url in urls_to_try:
+            for method in ["GET", "POST"]:
+                try:
+                    if method == "GET":
+                        r = requests.get(url, headers=get_headers(token), timeout=3)
+                    else:
+                        r = requests.post(url, json={"teacher_id": teacher_id},
+                                          headers=get_headers(token), timeout=3)
+                    key = f"{method} {url.replace(S20_HOST, '')}"
+                    if r.status_code == 200:
+                        try:
+                            results[key] = {"status": 200, "body": r.json()}
+                        except Exception:
+                            results[key] = {"status": 200, "text": r.text[:300]}
+                    elif r.status_code not in [404, 405]:
+                        results[key] = r.status_code
+                except Exception:
+                    pass
+        results["found_200"] = [k for k in results if isinstance(results.get(k), dict) and results[k].get("status") == 200]
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+    if mode == "probe_settings":
+        results = {}
+        endpoints = ["branch", "company", "settings", "config",
+                     "calendar-settings", "calendar-config",
+                     "lesson-type", "subject", "room"]
+        for ep in endpoints:
+            url = f"{S20_HOST}/v2api/1/{ep}/index"
             try:
-                r = requests.post(url, json={"teacher_id": teacher_id, "page": 0, "pageSize": 5},
+                r = requests.post(url, json={"page": 0, "pageSize": 50},
                                   headers=get_headers(token), timeout=3)
                 if r.status_code == 200:
-                    results[path] = {"status": 200, "body": r.json()}
-                elif r.status_code not in [404, 405]:
-                    results[path] = r.status_code
+                    results[ep] = r.json()
+                else:
+                    results[ep] = r.status_code
+            except Exception as e:
+                results[ep] = str(e)
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+    if mode == "explore_cgi":
+        teacher_id = int(params.get("teacher_id", 2))
+        results = {}
+        # cgi вернул 405 — попробуем разные методы и пути
+        for method in ["GET", "POST", "PUT", "PATCH"]:
+            url = f"{S20_HOST}/v2api/1/cgi/index"
+            try:
+                r = requests.request(method, url,
+                                     json={"teacher_id": teacher_id, "page": 0, "pageSize": 100} if method != "GET" else None,
+                                     headers=get_headers(token), timeout=4)
+                results[f"index_{method}"] = {"status": r.status_code, "text": r.text[:800]}
+            except Exception as e:
+                results[f"index_{method}"] = str(e)
+
+        # Возможно нужно cgi/list или cgi/get
+        actions = ["list", "get", "view", "search", "all", "create", "find"]
+        for action in actions:
+            url = f"{S20_HOST}/v2api/1/cgi/{action}"
+            try:
+                r = requests.post(url, json={"teacher_id": teacher_id}, headers=get_headers(token), timeout=3)
+                if r.status_code != 404:
+                    results[f"cgi_{action}"] = {"status": r.status_code, "text": r.text[:500]}
+            except Exception as e:
+                pass
+
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+    if mode == "explore_cabinet":
+        # Глубокая разведка cabinet и cgi endpoints
+        teacher_id = int(params.get("teacher_id", 2))
+        results = {}
+
+        # 1. Полный HTML и заголовки cabinet/teacher/graph
+        url1 = f"{S20_HOST}/cabinet/teacher/graph?teacher_id={teacher_id}"
+        r1 = requests.get(url1, headers=get_headers(token), timeout=5)
+        results["cabinet_graph_full"] = {
+            "status": r1.status_code,
+            "content_type": r1.headers.get("Content-Type"),
+            "length": len(r1.text),
+            "preview_5k": r1.text[:5000],
+        }
+
+        # 2. Cabinet с другими параметрами
+        url2 = f"{S20_HOST}/cabinet/api/teacher-graph?teacher_id={teacher_id}"
+        r2 = requests.get(url2, headers={**get_headers(token), "Accept": "application/json"}, timeout=5)
+        results["cabinet_api_graph"] = {
+            "status": r2.status_code,
+            "content_type": r2.headers.get("Content-Type"),
+            "preview": r2.text[:2000],
+        }
+
+        # 3. cgi с разными методами
+        for method in ["GET", "POST", "PUT"]:
+            url = f"{S20_HOST}/v2api/1/cgi/index"
+            try:
+                if method == "GET":
+                    r = requests.get(url, headers=get_headers(token), timeout=3)
+                else:
+                    r = requests.request(method, url, json={"teacher_id": teacher_id},
+                                         headers=get_headers(token), timeout=3)
+                results[f"cgi_{method}"] = {
+                    "status": r.status_code,
+                    "preview": r.text[:1000],
+                }
+            except Exception as e:
+                results[f"cgi_{method}"] = str(e)
+
+        # 4. Cabinet endpoints variations
+        cabinet_paths = [
+            f"/cabinet/api/teacher-graph/index?teacher_id={teacher_id}",
+            f"/cabinet/api/graph?teacher_id={teacher_id}",
+            f"/cabinet/api/schedule?teacher_id={teacher_id}",
+            f"/cabinet/teacher/index?teacher_id={teacher_id}",
+            f"/cabinet/teacher/{teacher_id}/graph",
+            f"/cabinet/teacher-graph/index?teacher_id={teacher_id}",
+            f"/cabinet/teacher-graph/get?teacher_id={teacher_id}",
+            f"/cabinet/teacher-graph/list?teacher_id={teacher_id}",
+        ]
+        for path in cabinet_paths:
+            url = f"{S20_HOST}{path}"
+            try:
+                r = requests.get(url, headers={**get_headers(token), "Accept": "application/json",
+                                                "X-Requested-With": "XMLHttpRequest"}, timeout=3)
+                results[path] = {
+                    "status": r.status_code,
+                    "ct": r.headers.get("Content-Type"),
+                    "preview": r.text[:500],
+                }
+            except Exception as e:
+                results[path] = str(e)
+
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+    if mode == "probe_final":
+        # Точечная проверка наиболее вероятных имён + типичные паттерны Yii2
+        teacher_id = int(params.get("teacher_id", 2))
+        results = {}
+        # На основе кода yii2/alfacrm модели обычно называются camelCase
+        # но URL — kebab-case. Контроллер действия — action<Name>
+        candidates = [
+            "cteacher", "c-teacher",
+            "teacher-to-time", "teacher_time", "teacher-time-table",
+            "time-table", "timetable",
+            "graphic", "graphics", "rgraph",
+            # У alfacrm есть отдельная "регулярная" таблица для часов работы
+            "cteacher-time", "cteacher-graphic", "cteacher-schedule",
+            "teacher-grapheme", "teacher-graf",
+            # Из Yii2 пути обычно через /<controller>/<action>
+            # А мы ищем модель — это другой path: /v2api/<resource>/<action>
+            "cgraf", "cgrafic", "tt", "rt",
+            # Calendar-related
+            "wcalendar", "tcalendar", "scalendar",
+        ]
+        results_status = {}
+        for name in candidates:
+            for prefix in ["/v2api/1/", "/v2api/"]:
+                url = f"{S20_HOST}{prefix}{name}/index"
+                try:
+                    r = requests.post(url, json={"teacher_id": teacher_id},
+                                      headers=get_headers(token), timeout=3)
+                    if r.status_code == 200:
+                        results[f"{prefix}{name}"] = {"status": 200, "body": r.json()}
+                    elif r.status_code != 404:
+                        results_status[f"{prefix}{name}"] = r.status_code
+                except Exception:
+                    pass
+
+        # Дополнительно: попробуем GET к URL аналогичному кабинету
+        # У S20 есть портал педагога: /cabinet/teacher/...
+        cabinet_urls = [
+            f"{S20_HOST}/cabinet/api/teacher-graph?teacher_id={teacher_id}",
+            f"{S20_HOST}/cabinet/teacher/graph?teacher_id={teacher_id}",
+            f"{S20_HOST}/api/cabinet/graph?teacher_id={teacher_id}",
+            # Возможно есть webhook/integration endpoint
+            f"{S20_HOST}/v2api/1/cgi/index",
+            f"{S20_HOST}/v2api/1/cti/index",
+            f"{S20_HOST}/v2api/1/customer-to-tariff/index",
+        ]
+        for url in cabinet_urls:
+            try:
+                r = requests.get(url, headers=get_headers(token), timeout=3)
+                if r.status_code == 200:
+                    try:
+                        results[url] = {"status": 200, "body": r.json()}
+                    except Exception:
+                        results[url] = {"status": 200, "text": r.text[:200]}
+                elif r.status_code != 404:
+                    results_status[url] = r.status_code
             except Exception:
                 pass
-        results["total_checked"] = len(all_candidates)
-        results["found_200"] = [k for k in results if isinstance(results[k], dict) and results[k].get("status") == 200]
+
+        results["__non404_status"] = results_status
+        results["__found_200"] = [k for k in results if isinstance(results.get(k), dict) and results[k].get("status") == 200]
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+    if mode == "probe_session":
+        # Пробуем залогиниться как браузер (сессионная авторизация)
+        # и дёрнуть страницу педагога — там должны быть данные графика
+        teacher_id = int(params.get("teacher_id", 2))
+        email = os.environ.get("S20_ADMIN_EMAIL", S20_EMAIL)
+        password = os.environ.get("S20_ADMIN_PASSWORD", "")
+        results = {}
+
+        if not password:
+            return {
+                "statusCode": 200,
+                "headers": {**cors_headers, "Content-Type": "application/json"},
+                "body": json.dumps({"error": "Need S20_ADMIN_PASSWORD secret"}),
+            }
+
+        session = requests.Session()
+        # 1. Получить страницу логина (csrf)
+        login_page = session.get(f"{S20_HOST}/login", timeout=5)
+        results["login_page_status"] = login_page.status_code
+
+        # Попробуем разные пути логина
+        login_attempts = [
+            ("POST", f"{S20_HOST}/login", {"email": email, "password": password}),
+            ("POST", f"{S20_HOST}/site/login", {"LoginForm[email]": email, "LoginForm[password]": password}),
+            ("POST", f"{S20_HOST}/login/index", {"email": email, "password": password}),
+        ]
+        login_ok = False
+        for method, url, data in login_attempts:
+            try:
+                r = session.post(url, data=data, timeout=5, allow_redirects=True)
+                if r.status_code == 200 and "login" not in r.url.lower():
+                    results[f"login_{url}"] = "OK"
+                    login_ok = True
+                    break
+                else:
+                    results[f"login_{url}"] = f"status={r.status_code}, final_url={r.url}"
+            except Exception as e:
+                results[f"login_{url}"] = str(e)
+
+        if login_ok:
+            # 2. Попробуем дёрнуть страницу педагога и API графика
+            test_urls = [
+                f"{S20_HOST}/1/teacher/view/id/{teacher_id}",
+                f"{S20_HOST}/1/teacher/update/id/{teacher_id}",
+                f"{S20_HOST}/1/cgraph/get/teacher_id/{teacher_id}",
+                f"{S20_HOST}/1/teacher-graph/get/teacher_id/{teacher_id}",
+                f"{S20_HOST}/1/teacher-graph/index?teacher_id={teacher_id}",
+                f"{S20_HOST}/1/teacher/graph/id/{teacher_id}",
+            ]
+            for url in test_urls:
+                try:
+                    r = session.get(url, timeout=5)
+                    if r.status_code == 200:
+                        # Сохраняем только заголовок и первые байты
+                        results[url] = {
+                            "status": 200,
+                            "preview": r.text[:500],
+                            "is_json": "application/json" in r.headers.get("Content-Type", ""),
+                        }
+                    else:
+                        results[url] = r.status_code
+                except Exception as e:
+                    results[url] = str(e)
+
         return {
             "statusCode": 200,
             "headers": {**cors_headers, "Content-Type": "application/json"},
