@@ -268,7 +268,7 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
 
 
 def handler(event: dict, context) -> dict:
-    """Расписание S20: занятия, группы (групповые слоты по неделям), педагоги, свободные слоты для записи"""
+    """Расписание S20: занятия, группы (групповые слоты по неделям v2), педагоги, свободные слоты для записи"""
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -337,8 +337,7 @@ def handler(event: dict, context) -> dict:
             ltype = lesson.get("lesson_type_id")
             if ltype == 1:
                 continue
-            if lesson.get("status") == 3:
-                continue
+            # status: 1=запланирован, 2=отменён, 3=проведён — все три показываем
 
             lesson_date = (lesson.get("date") or "")[:10]
             if not lesson_date:

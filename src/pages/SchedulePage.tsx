@@ -63,6 +63,104 @@ interface GroupsWeekResponse {
   rows: GroupRow[];
 }
 
+interface RawLesson {
+  id: number;
+  date: string;
+  time_from: string;
+  lesson_type_id: number;
+  status: number;
+  teacher_ids: number[];
+  customer_ids?: number[];
+  group_ids?: number[];
+  details?: Array<{ customer_id?: number }>;
+}
+
+interface RawTeacher {
+  id: number;
+  name?: string;
+}
+
+const MAX_GROUP_SIZE = 6;
+
+// Строим таблицу из сырого массива lessons на стороне фронта
+const buildGroupRowsFromLessons = (
+  lessons: RawLesson[],
+  teachers: RawTeacher[],
+  weekStart: Date,
+): GroupRow[] => {
+  const teacherShort: Record<number, string> = {};
+  for (const t of teachers) {
+    const full = (t.name || '').trim();
+    const parts = full.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) teacherShort[t.id] = `#${t.id}`;
+    else if (parts.length === 1) teacherShort[t.id] = parts[0];
+    else teacherShort[t.id] = `${parts[0]} ${parts[1][0]}.`;
+  }
+
+  const weekStartTs = weekStart.getTime();
+  const weekEndTs = addDays(weekStart, 6).getTime();
+
+  const rows: Record<string, GroupRow> = {};
+  for (const lesson of lessons) {
+    if (lesson.lesson_type_id === 1) continue; // индивидуальные мимо
+    const dateStr = (lesson.date || '').slice(0, 10);
+    if (!dateStr) continue;
+    const d = new Date(`${dateStr}T00:00:00`);
+    const ts = d.getTime();
+    if (ts < weekStartTs || ts >= weekEndTs) continue;
+
+    let weekday = d.getDay() - 1; // JS: 0=Вс, нам нужно 0=Пн
+    if (weekday < 0) weekday = 6;
+    if (weekday > 5) continue; // воскресенье пропускаем
+
+    let timeFrom = lesson.time_from || '';
+    if (timeFrom.includes(' ')) timeFrom = timeFrom.split(' ').pop() || '';
+    timeFrom = timeFrom.slice(0, 5);
+    if (!timeFrom) continue;
+
+    const tids = lesson.teacher_ids || [];
+    if (!tids.length) continue;
+    const teacherId = Number(tids[0]);
+
+    const students = new Set<number>();
+    for (const sid of lesson.customer_ids || []) students.add(sid);
+    for (const det of lesson.details || []) {
+      if (det && det.customer_id != null) students.add(det.customer_id);
+    }
+    const enrolled = students.size;
+
+    const groupId =
+      Array.isArray(lesson.group_ids) && lesson.group_ids.length
+        ? lesson.group_ids[0]
+        : null;
+
+    const key = `${timeFrom}__${teacherId}`;
+    if (!rows[key]) {
+      rows[key] = {
+        time: timeFrom,
+        teacher_id: teacherId,
+        teacher_name: teacherShort[teacherId] || `#${teacherId}`,
+        cells: {},
+        group_id: groupId,
+      };
+    }
+    const prev = rows[key].cells[String(weekday)];
+    if (!prev || enrolled > prev.enrolled) {
+      rows[key].cells[String(weekday)] = {
+        date: dateStr,
+        enrolled,
+        free: Math.max(0, MAX_GROUP_SIZE - enrolled),
+        lesson_id: lesson.id,
+      };
+    }
+  }
+
+  return Object.values(rows).sort((a, b) => {
+    if (a.time !== b.time) return a.time.localeCompare(b.time);
+    return a.teacher_name.localeCompare(b.teacher_name);
+  });
+};
+
 const WEEKDAY_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 
 const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
@@ -120,14 +218,31 @@ const SchedulePage = () => {
     try {
       const df = fmtDate(weekStart);
       const dt = fmtDate(addDays(weekStart, 5));
-      const resp = await fetch(`${S20_URL}?mode=groups_week&date_from=${df}&date_to=${dt}`);
+      const resp = await fetch(`${S20_URL}?mode=lessons&date_from=${df}&date_to=${dt}`);
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
+
+      // Бэкенд возвращает {lessons:[...]} — собираем таблицу на фронте
+      const lessons: RawLesson[] = Array.isArray(data.lessons) ? data.lessons : [];
+
+      // Подтягиваем фамилии педагогов отдельным запросом (mode=teachers, если есть)
+      let teachers: RawTeacher[] = [];
+      try {
+        const tresp = await fetch(`${S20_URL}?mode=teachers`);
+        const tdata = await tresp.json();
+        if (Array.isArray(tdata.teachers)) teachers = tdata.teachers;
+        else if (Array.isArray(tdata.items)) teachers = tdata.items;
+      } catch {
+        // не критично — покажем teacher_id
+      }
+
+      const rows = buildGroupRowsFromLessons(lessons, teachers, weekStart);
+
       setGroupsData({
-        max_size: data.max_size ?? 6,
-        date_from: data.date_from ?? df,
-        date_to: data.date_to ?? dt,
-        rows: Array.isArray(data.rows) ? data.rows : [],
+        max_size: MAX_GROUP_SIZE,
+        date_from: df,
+        date_to: dt,
+        rows,
       });
     } catch {
       setGroupsError('Не удалось загрузить группы');
