@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "GET список графиков всех педагогов",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET график одного педагога",
+      "method": "GET",
+      "path": "/?teacher_id=2",
+      "expectedStatus": 200
+    },
+    {
+      "name": "OPTIONS — CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

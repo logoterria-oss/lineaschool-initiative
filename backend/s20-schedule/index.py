@@ -1,7 +1,35 @@
 import os
 import json
 import requests
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta, date
+
+
+def get_work_schedule_from_db() -> dict:
+    """Получить график работы педагогов из нашей БД.
+    Возвращает: {teacher_id: [{"weekday": int, "time_from": "HH:MM", "time_to": "HH:MM"}, ...]}
+    """
+    result = {}
+    try:
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT teacher_id, weekday, time_from, time_to "
+                "FROM teacher_work_schedule "
+                "ORDER BY teacher_id, weekday, time_from"
+            )
+            for row in cur.fetchall():
+                tid = row["teacher_id"]
+                result.setdefault(tid, []).append({
+                    "weekday": row["weekday"],
+                    "time_from": row["time_from"],
+                    "time_to": row["time_to"],
+                })
+        conn.close()
+    except Exception as e:
+        print(f"DB error: {e}")
+    return result
 
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
@@ -103,106 +131,142 @@ def get_regular_lessons(token: str, teacher_ids: list) -> list:
     return all_items
 
 
+def _time_in_range(t: str, t_from: str, t_to: str) -> bool:
+    """Проверка попадает ли время t (HH:MM) в полуинтервал [t_from, t_to)"""
+    return t_from <= t < t_to
+
+
 def compute_free_slots(regular_lessons: list, booked_lessons: list,
                        date_from_str: str, date_to_str: str) -> list:
     """
-    Вычислить свободные слоты: регулярное расписание минус забронированные уроки.
-    Возвращает список слотов, сгруппированных по дням недели.
+    Вычислить свободные слоты:
+    - База — график работы из БД (teacher_work_schedule)
+    - Минус регулярные уроки из S20 (regular-lesson) — постоянные занятия
+    - Минус разовые занятия (lesson) из S20 на конкретные даты
     """
     dt_from = datetime.strptime(date_from_str, "%Y-%m-%d").date()
     dt_to = datetime.strptime(date_to_str, "%Y-%m-%d").date()
     today = date.today()
 
-    # Собираем занятые слоты: (дата, время_начала, teacher_id)
-    booked = set()
+    # 1. График работы из нашей БД
+    work_schedule = get_work_schedule_from_db()  # {teacher_id: [{weekday, time_from, time_to}]}
+
+    # 2. Регулярные занятия из S20: (weekday, teacher_id) -> set of "HH:MM" (час начала занятий)
+    regular_busy_by_weekday = {}  # (weekday, teacher_id) -> [(time_from, time_to)]
+    for rl in regular_lessons:
+        teacher_id = (rl.get("teacher_ids") or [None])[0]
+        if teacher_id not in INDIVIDUAL_TEACHERS:
+            continue
+        if rl.get("lesson_type_id") != 1:
+            continue
+        time_from = rl.get("time_from_v", "")
+        time_to = rl.get("time_to_v", "")
+        b_date = rl.get("b_date", "")
+        e_date = rl.get("e_date", "")
+
+        weekdays = []
+        s20_day = rl.get("day")
+        if s20_day is not None:
+            wd = S20_DAY_TO_WEEKDAY.get(s20_day)
+            if wd is not None:
+                weekdays.append(wd)
+        elif rl.get("days"):
+            for d in rl["days"]:
+                wd = S20_DAY_TO_WEEKDAY.get(d)
+                if wd is not None:
+                    weekdays.append(wd)
+
+        for wd in weekdays:
+            regular_busy_by_weekday.setdefault((wd, int(teacher_id)), []).append({
+                "time_from": time_from, "time_to": time_to,
+                "b_date": b_date, "e_date": e_date,
+            })
+
+    # 3. Разовые занятия из S20: (date, teacher_id) -> [(time_from, time_to)]
+    booked_by_date = {}
     for lesson in booked_lessons:
         if lesson.get("lesson_type_id") != 1:
-            continue  # только индивидуальные
+            continue
         if lesson.get("status") == 3:
-            continue  # отменённые не считаем занятыми
+            continue
         lesson_date = lesson.get("date", "")[:10]
         time_from = lesson.get("time_from", "")
-        if "T" in time_from or " " in time_from:
-            time_from = time_from.split(" ")[-1][:5] if " " in time_from else time_from.split("T")[-1][:5]
+        time_to = lesson.get("time_to", "")
+        if " " in time_from:
+            time_from = time_from.split(" ")[-1][:5]
+        if " " in time_to:
+            time_to = time_to.split(" ")[-1][:5]
         for tid in lesson.get("teacher_ids", []):
-            booked.add((lesson_date, time_from, int(tid)))
+            booked_by_date.setdefault((lesson_date, int(tid)), []).append({
+                "time_from": time_from, "time_to": time_to,
+            })
 
-    # Строим свободные слоты по датам в диапазоне
-    slots_by_weekday = {}  # weekday -> list of slot dicts
-
+    # 4. Строим свободные слоты, проходя по дням
+    slots_by_weekday = {}
     current = dt_from
     while current <= dt_to:
         if current < today:
             current += timedelta(days=1)
             continue
-        weekday = current.weekday()  # 0=Пн ... 6=Вс
+        weekday = current.weekday()
         date_str = current.strftime("%Y-%m-%d")
 
-        for rl in regular_lessons:
-            teacher_id = (rl.get("teacher_ids") or [None])[0]
+        for teacher_id, schedule in work_schedule.items():
             if teacher_id not in INDIVIDUAL_TEACHERS:
                 continue
-            if rl.get("lesson_type_id") != 1:
-                continue  # только индивидуальные
-
-            # Проверяем период действия регулярного занятия
-            b_date = rl.get("b_date", "")
-            e_date = rl.get("e_date", "")
-            if b_date and date_str < b_date:
-                continue
-            if e_date and date_str > e_date:
-                continue
-
-            # Проверяем день недели
-            s20_day = rl.get("day")
-            if s20_day is not None:
-                rl_weekday = S20_DAY_TO_WEEKDAY.get(s20_day)
-                if rl_weekday != weekday:
+            for slot in schedule:
+                if slot["weekday"] != weekday:
                     continue
-            elif rl.get("days"):
-                rl_weekdays = [S20_DAY_TO_WEEKDAY.get(d) for d in rl["days"]]
-                if weekday not in rl_weekdays:
+                tf = slot["time_from"]
+                tt = slot["time_to"]
+
+                # Проверяем регулярные занятия педагога в этот день недели
+                is_busy = False
+                for busy in regular_busy_by_weekday.get((weekday, teacher_id), []):
+                    if busy.get("b_date") and date_str < busy["b_date"]:
+                        continue
+                    if busy.get("e_date") and date_str > busy["e_date"]:
+                        continue
+                    # Пересечение интервалов: занят, если start_busy < tt и end_busy > tf
+                    if busy["time_from"] < tt and busy["time_to"] > tf:
+                        is_busy = True
+                        break
+                if is_busy:
                     continue
-            else:
-                continue
 
-            time_from = rl.get("time_from_v", "")
-            time_to = rl.get("time_to_v", "")
+                # Проверяем разовые занятия на эту дату
+                for booked in booked_by_date.get((date_str, teacher_id), []):
+                    if booked["time_from"] < tt and booked["time_to"] > tf:
+                        is_busy = True
+                        break
+                if is_busy:
+                    continue
 
-            # Проверяем не занят ли слот
-            if (date_str, time_from, int(teacher_id)) in booked:
-                continue
-
-            slot = {
-                "date": date_str,
-                "weekday": weekday,
-                "weekday_name": WEEKDAY_NAMES[weekday],
-                "time_from": time_from,
-                "time_to": time_to,
-                "teacher_id": int(teacher_id),
-                "teacher_name": INDIVIDUAL_TEACHERS.get(int(teacher_id), ""),
-            }
-
-            if weekday not in slots_by_weekday:
-                slots_by_weekday[weekday] = []
-            slots_by_weekday[weekday].append(slot)
+                free_slot = {
+                    "date": date_str,
+                    "weekday": weekday,
+                    "weekday_name": WEEKDAY_NAMES[weekday],
+                    "time_from": tf,
+                    "time_to": tt,
+                    "teacher_id": int(teacher_id),
+                    "teacher_name": INDIVIDUAL_TEACHERS.get(int(teacher_id), ""),
+                }
+                slots_by_weekday.setdefault(weekday, []).append(free_slot)
 
         current += timedelta(days=1)
 
-    # Дедупликация по (weekday, time_from, teacher_id) — показываем уникальные слоты недели
-    # Для публичного показа группируем: один слот = этот день недели доступен в это время
+    # Дедупликация по (weekday, time_from, teacher_id) — уникальные окна по дню недели
     unique_by_weekday = {}
     for weekday, slots in slots_by_weekday.items():
         seen = set()
         unique = []
-        for s in sorted(slots, key=lambda x: x["time_from"]):
+        for s in sorted(slots, key=lambda x: (x["time_from"], x["teacher_name"])):
             key = (s["weekday"], s["time_from"], s["teacher_id"])
             if key not in seen:
                 seen.add(key)
                 unique.append(s)
         unique_by_weekday[weekday] = unique
 
-    # Сортируем по дням недели
     result = []
     for wd in sorted(unique_by_weekday.keys()):
         result.append({
@@ -210,7 +274,6 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
             "weekday_name": WEEKDAY_NAMES[wd],
             "slots": unique_by_weekday[wd],
         })
-
     return result
 
 
