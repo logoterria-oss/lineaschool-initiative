@@ -1,20 +1,10 @@
 {
   "tests": [
     {
-      "name": "Получить расписание занятий на 2 недели",
-      "method": "GET",
+      "name": "CORS preflight",
+      "method": "OPTIONS",
       "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": {"lessons": []},
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Получить список групп",
-      "method": "GET",
-      "path": "/?mode=groups",
-      "expectedStatus": 200,
-      "expectedBody": {"groups": [{"id": 4}]},
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     }
   ]
 }

@@ -1,32 +1,22 @@
 import os
 import json
 import requests
-import psycopg2
-from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta, date
 
 
 def get_work_schedule_from_db() -> dict:
-    """Получить график работы педагогов из нашей БД.
-    Возвращает: {teacher_id: [{"weekday": int, "time_from": "HH:MM", "time_to": "HH:MM"}, ...]}
-    """
+    """График работы педагогов из БД — через HTTP к функции teacher-schedule."""
     result = {}
     try:
-        conn = psycopg2.connect(os.environ["DATABASE_URL"])
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                "SELECT teacher_id, weekday, time_from, time_to "
-                "FROM teacher_work_schedule "
-                "ORDER BY teacher_id, weekday, time_from"
-            )
-            for row in cur.fetchall():
-                tid = row["teacher_id"]
-                result.setdefault(tid, []).append({
-                    "weekday": row["weekday"],
-                    "time_from": row["time_from"],
-                    "time_to": row["time_to"],
-                })
-        conn.close()
+        url = "https://functions.poehali.dev/6dcf4744-e843-45cf-9614-9afe432b92f5"
+        r = requests.get(url, timeout=8)
+        for row in r.json().get("schedule", []):
+            tid = row["teacher_id"]
+            result.setdefault(tid, []).append({
+                "weekday": row["weekday"],
+                "time_from": row["time_from"],
+                "time_to": row["time_to"],
+            })
     except Exception as e:
         print(f"DB error: {e}")
     return result
@@ -600,6 +590,193 @@ def handler(event: dict, context) -> dict:
             "headers": {**cors_headers, "Content-Type": "application/json"},
             "body": json.dumps(results, ensure_ascii=False),
         }
+
+    if mode == "_disabled_login_step1":
+        # v3: Шаг 1 — логин/пароль, сервер шлёт код на почту.
+        email = os.environ.get("S20_ADMIN_EMAIL", S20_EMAIL)
+        password = os.environ.get("S20_ADMIN_PASSWORD", "")
+        if not password:
+            return {"statusCode": 400, "headers": cors_headers,
+                    "body": json.dumps({"error": "no password"})}
+
+        import re
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+            "Accept-Language": "ru-RU,ru;q=0.9",
+        })
+        page = session.get(f"{S20_HOST}/login", timeout=8)
+        csrf_m = re.search(r'name="csrf-token" content="([^"]+)"', page.text)
+        csrf = csrf_m.group(1) if csrf_m else ""
+
+        r = session.post(f"{S20_HOST}/login", data={
+            "_csrf": csrf,
+            "LoginForm[username]": email,
+            "LoginForm[password]": password,
+            "LoginForm[rememberMe]": "1",
+        }, headers={"Referer": f"{S20_HOST}/login", "X-CSRF-Token": csrf, "Origin": S20_HOST},
+            timeout=8, allow_redirects=True)
+
+        body = r.text
+        new_csrf_m = re.search(r'name="csrf-token" content="([^"]+)"', body)
+        new_csrf = new_csrf_m.group(1) if new_csrf_m else csrf
+        inputs = re.findall(r'<input[^>]+name="([^"]+)"', body)
+        has_2fa = "Login2FAForm[code]" in inputs
+
+        # Сохраняем сессию в БД
+        cookies_json = json.dumps(dict(session.cookies))
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM s20_session")
+            cur.execute(
+                "INSERT INTO s20_session (cookies, csrf, is_authenticated) VALUES (%s, %s, %s)",
+                (cookies_json, new_csrf, False)
+            )
+            conn.commit()
+        conn.close()
+
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps({
+                "ok": True,
+                "step": 1,
+                "needs_2fa": has_2fa,
+                "msg": "Код отправлен тебе на почту. Сохрани его в секрет S20_AUTH_CODE и вызови mode=login_step2",
+            }, ensure_ascii=False),
+        }
+
+    if mode == "login_step2":
+        # Шаг 2: подставляем код 2FA, используя cookies из БД
+        code = os.environ.get("S20_AUTH_CODE", "").strip()
+        if not code:
+            return {"statusCode": 400, "headers": cors_headers,
+                    "body": json.dumps({"error": "Нужен секрет S20_AUTH_CODE с кодом из письма"})}
+
+        import re
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT cookies, csrf FROM s20_session ORDER BY id DESC LIMIT 1")
+            row = cur.fetchone()
+        conn.close()
+        if not row:
+            return {"statusCode": 400, "headers": cors_headers,
+                    "body": json.dumps({"error": "Сначала вызови login_step1"})}
+
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+            "Accept-Language": "ru-RU,ru;q=0.9",
+        })
+        for k, v in json.loads(row["cookies"]).items():
+            session.cookies.set(k, v)
+        csrf = row["csrf"]
+
+        r = session.post(f"{S20_HOST}/login", data={
+            "_csrf": csrf,
+            "Login2FAForm[code]": code,
+            "Login2FAForm[rememberMe]": "1",
+        }, headers={"Referer": f"{S20_HOST}/login", "X-CSRF-Token": csrf, "Origin": S20_HOST},
+            timeout=8, allow_redirects=True)
+
+        body = r.text
+        inputs = re.findall(r'<input[^>]+name="([^"]+)"', body)
+        is_login_page = "LoginForm[username]" in inputs or "Login2FAForm[code]" in inputs
+
+        # Чистим текст для ошибок
+        text_body = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', body, flags=re.DOTALL)
+        text_body = re.sub(r'<[^>]+>', ' ', text_body)
+        text_body = re.sub(r'\s+', ' ', text_body).strip()
+
+        if not is_login_page:
+            # Успех! Сохраняем авторизованную сессию
+            cookies_json = json.dumps(dict(session.cookies))
+            conn = psycopg2.connect(os.environ["DATABASE_URL"])
+            with conn.cursor() as cur:
+                cur.execute("UPDATE s20_session SET cookies = %s, is_authenticated = TRUE, updated_at = NOW()",
+                            (cookies_json,))
+                conn.commit()
+            conn.close()
+            return {
+                "statusCode": 200,
+                "headers": {**cors_headers, "Content-Type": "application/json"},
+                "body": json.dumps({
+                    "ok": True, "step": 2, "authenticated": True,
+                    "final_url": r.url,
+                    "msg": "Сессия сохранена! Теперь можно дёргать mode=fetch_graph для получения графика педагогов",
+                }, ensure_ascii=False),
+            }
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps({
+                "ok": False, "step": 2, "authenticated": False,
+                "final_url": r.url,
+                "preview": text_body[:600],
+                "msg": "Код не подошёл или истёк. Повтори login_step1 и сразу обнови S20_AUTH_CODE.",
+            }, ensure_ascii=False),
+        }
+
+    if mode == "fetch_graph":
+        # Используем авторизованную сессию из БД, пробуем достать график педагога
+        teacher_id = int(params.get("teacher_id", 2))
+        import re
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT cookies, is_authenticated FROM s20_session ORDER BY id DESC LIMIT 1")
+            row = cur.fetchone()
+        conn.close()
+        if not row or not row["is_authenticated"]:
+            return {"statusCode": 400, "headers": cors_headers,
+                    "body": json.dumps({"error": "Нет авторизованной сессии. Сделай login_step1 и login_step2"})}
+
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+        })
+        for k, v in json.loads(row["cookies"]).items():
+            session.cookies.set(k, v)
+
+        # Дёргаем страницу редактирования педагога (там в HTML обычно зашит график)
+        urls = [
+            f"{S20_HOST}/1/teacher/update/id/{teacher_id}",
+            f"{S20_HOST}/1/teacher/view/id/{teacher_id}",
+            f"{S20_HOST}/1/cgraph/index?teacher_id={teacher_id}",
+            f"{S20_HOST}/1/teacher-graph/index?teacher_id={teacher_id}",
+            f"{S20_HOST}/1/teacher/graph/id/{teacher_id}",
+            f"{S20_HOST}/1/teacher/graph?id={teacher_id}",
+        ]
+        results = {}
+        for url in urls:
+            try:
+                r = session.get(url, timeout=6, headers={"X-Requested-With": "XMLHttpRequest"})
+                ct = r.headers.get("Content-Type", "")
+                # Если HTML — ищем упоминания графика, дни недели, часы
+                text_clean = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', r.text, flags=re.DOTALL)
+                text_clean = re.sub(r'<[^>]+>', ' ', text_clean)
+                text_clean = re.sub(r'\s+', ' ', text_clean).strip()
+                key = url.replace(S20_HOST, "")
+                results[key] = {
+                    "status": r.status_code,
+                    "ct": ct[:50],
+                    "length": len(r.text),
+                    "has_login_form": "LoginForm" in r.text,
+                    "has_graph_word": "график" in r.text.lower() or "graph" in r.text.lower(),
+                    "has_time_inputs": bool(re.search(r'\d{1,2}:\d{2}', r.text)),
+                    "preview_text": text_clean[:800],
+                }
+            except Exception as e:
+                results[url.replace(S20_HOST, "")] = str(e)
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps(results, ensure_ascii=False),
+        }
+
+    if mode == "probe_session":
 
     if mode == "probe_session":
         teacher_id = int(params.get("teacher_id", 2))
