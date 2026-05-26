@@ -52,6 +52,8 @@ def handler(event: dict, context) -> dict:
             return fetch_graph(int(params.get("teacher_id", 2)))
         if mode == "status":
             return status()
+        if mode == "atomic":
+            return atomic_login()
         return {"statusCode": 400, "headers": CORS,
                 "body": json.dumps({"error": "unknown mode"})}
     except Exception as e:
@@ -202,6 +204,92 @@ def fetch_graph(teacher_id: int) -> dict:
         except Exception as e:
             results[url.replace(S20_HOST, "")] = str(e)
     return _json(results)
+
+
+def atomic_login() -> dict:
+    """Полный логин в одном запросе:
+    1) GET /login → csrf
+    2) POST /login (логин+пароль) → редирект на форму 2FA, новые cookies+csrf
+    3) Сохраняем сессию И ждём, что пользователь уже подставил код в S20_AUTH_CODE.
+       Но т.к. код приходит ТОЛЬКО после шага 2 — атомарно невозможно.
+       Вместо этого: делаем step1, ждём 60 сек (пользователь смотрит код), потом step2.
+       НЕТ — лучше: делаем step1 и сразу пробуем step2 с текущим S20_AUTH_CODE.
+       Это работает если код уже есть от предыдущей попытки и ещё активен.
+    """
+    debug = {}
+    email = os.environ.get("S20_ADMIN_EMAIL", S20_EMAIL)
+    password = os.environ.get("S20_ADMIN_PASSWORD", "")
+    code = os.environ.get("S20_AUTH_CODE", "").strip()
+    if not password or not code:
+        return _json({"error": "Нужны S20_ADMIN_PASSWORD и S20_AUTH_CODE"}, 400)
+
+    s = make_session()
+    # Шаг 1
+    page = s.get(f"{S20_HOST}/login", timeout=10)
+    csrf_m = re.search(r'name="csrf-token" content="([^"]+)"', page.text)
+    csrf = csrf_m.group(1) if csrf_m else ""
+    debug["step1_csrf"] = csrf[:20]
+    debug["step1_cookies"] = list(s.cookies.keys())
+
+    r1 = s.post(f"{S20_HOST}/login", data={
+        "_csrf": csrf,
+        "LoginForm[username]": email,
+        "LoginForm[password]": password,
+        "LoginForm[rememberMe]": "1",
+    }, headers={"Referer": f"{S20_HOST}/login", "X-CSRF-Token": csrf,
+                "Origin": S20_HOST}, timeout=10, allow_redirects=True)
+
+    body1 = r1.text
+    new_csrf_m = re.search(r'name="csrf-token" content="([^"]+)"', body1)
+    csrf2 = new_csrf_m.group(1) if new_csrf_m else csrf
+    inputs1 = re.findall(r'<input[^>]+name="([^"]+)"', body1)
+    debug["after_step1_inputs"] = inputs1
+    debug["after_step1_url"] = r1.url
+    debug["after_step1_cookies"] = list(s.cookies.keys())
+    debug["step2_csrf"] = csrf2[:20]
+
+    has_2fa = "Login2FAForm[code]" in inputs1
+    if not has_2fa:
+        return _json({"error": "Сервер не показал форму 2FA", "debug": debug}, 500)
+
+    # Шаг 2 — сразу
+    r2 = s.post(f"{S20_HOST}/login", data={
+        "_csrf": csrf2,
+        "Login2FAForm[code]": code,
+        "Login2FAForm[rememberMe]": "1",
+    }, headers={"Referer": f"{S20_HOST}/login", "X-CSRF-Token": csrf2,
+                "Origin": S20_HOST}, timeout=10, allow_redirects=True)
+
+    body2 = r2.text
+    inputs2 = re.findall(r'<input[^>]+name="([^"]+)"', body2)
+    still_login = "LoginForm[username]" in inputs2 or "Login2FAForm[code]" in inputs2
+    text2 = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', body2, flags=re.DOTALL)
+    text2 = re.sub(r'<[^>]+>', ' ', text2)
+    text2 = re.sub(r'\s+', ' ', text2).strip()
+    debug["after_step2_url"] = r2.url
+    debug["after_step2_status"] = r2.status_code
+    debug["after_step2_inputs"] = inputs2[:10]
+    debug["after_step2_preview"] = text2[:400]
+    debug["after_step2_cookies"] = list(s.cookies.keys())
+
+    if not still_login:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM s20_session")
+            cur.execute(
+                "INSERT INTO s20_session (cookies, csrf, is_authenticated) VALUES (%s, %s, TRUE)",
+                (json.dumps(dict(s.cookies)), csrf2))
+            conn.commit()
+        conn.close()
+        return _json({
+            "ok": True, "authenticated": True, "final_url": r2.url,
+            "debug": debug,
+            "msg": "Сессия сохранена! Дёргай fetch_graph",
+        })
+    return _json({
+        "ok": False, "authenticated": False, "debug": debug,
+        "msg": "Код не подошёл/истёк. Получи новый и повтори.",
+    }, 200)
 
 
 def _json(payload: dict, code: int = 200) -> dict:
