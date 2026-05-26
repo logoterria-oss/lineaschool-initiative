@@ -54,6 +54,8 @@ def handler(event: dict, context) -> dict:
             return status()
         if mode == "atomic":
             return atomic_login()
+        if mode == "use_browser_cookie":
+            return use_browser_cookie()
         return {"statusCode": 400, "headers": CORS,
                 "body": json.dumps({"error": "unknown mode"})}
     except Exception as e:
@@ -290,6 +292,55 @@ def atomic_login() -> dict:
         "ok": False, "authenticated": False, "debug": debug,
         "msg": "Код не подошёл/истёк. Получи новый и повтори.",
     }, 200)
+
+
+def use_browser_cookie() -> dict:
+    """Берёт PHPSESSID из секрета S20_BROWSER_PHPSESSID,
+    проверяет что это активная сессия (GET /), сохраняет в БД."""
+    phpsessid = os.environ.get("S20_BROWSER_PHPSESSID", "").strip()
+    if not phpsessid:
+        return _json({"error": "S20_BROWSER_PHPSESSID не задан"}, 400)
+
+    s = make_session({"PHPSESSID": phpsessid})
+    r = s.get(f"{S20_HOST}/", timeout=10, allow_redirects=True)
+    body = r.text
+
+    text = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', body, flags=re.DOTALL)
+    text = re.sub(r'<[^>]+>', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    has_login_form = "LoginForm[username]" in body
+    has_2fa_form = "Login2FAForm[code]" in body
+    final_url = r.url
+    is_logged_in = not has_login_form and not has_2fa_form and r.status_code == 200
+
+    csrf_m = re.search(r'name="csrf-token" content="([^"]+)"', body)
+    csrf = csrf_m.group(1) if csrf_m else ""
+
+    debug = {
+        "final_url": final_url,
+        "status": r.status_code,
+        "has_login_form": has_login_form,
+        "has_2fa_form": has_2fa_form,
+        "cookies_after": list(s.cookies.keys()),
+        "preview": text[:400],
+        "csrf_len": len(csrf),
+    }
+
+    if is_logged_in:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM s20_session")
+            cur.execute(
+                "INSERT INTO s20_session (cookies, csrf, is_authenticated) VALUES (%s, %s, TRUE)",
+                (json.dumps(dict(s.cookies) or {"PHPSESSID": phpsessid}), csrf))
+            conn.commit()
+        conn.close()
+        return _json({"ok": True, "authenticated": True, "msg": "Сессия из браузера сохранена!", "debug": debug})
+
+    return _json({"ok": False, "authenticated": False,
+                  "msg": "Кука не рабочая или истекла. Перелогинься в браузере и скопируй PHPSESSID заново.",
+                  "debug": debug}, 200)
 
 
 def _json(payload: dict, code: int = 200) -> dict:
