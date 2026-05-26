@@ -184,7 +184,7 @@ const fmtRu = (d: Date) =>
 
 const SchedulePage = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'individual' | 'groups' | 'online'>('individual');
+  const [tab, setTab] = useState<'individual' | 'groups'>('individual');
 
   // Индивидуальные — свободные слоты
   const [days, setDays] = useState<DayGroup[]>([]);
@@ -262,7 +262,7 @@ const SchedulePage = () => {
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       <AdminHeader showOnlyHome />
       <div className="container mx-auto px-4 py-8">
-        <div className={tab === 'individual' ? 'max-w-4xl mx-auto' : 'max-w-7xl mx-auto'}>
+        <div className={tab === 'groups' ? 'max-w-7xl mx-auto' : 'max-w-4xl mx-auto'}>
 
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => navigate('/admin')} className="text-gray-500 hover:text-gray-800">
@@ -288,14 +288,6 @@ const SchedulePage = () => {
             >
               <Icon name="Users" size={16} />
               Группы
-            </Button>
-            <Button
-              variant={tab === 'online' ? 'default' : 'outline'}
-              onClick={() => setTab('online')}
-              className="gap-2"
-            >
-              <Icon name="Globe" size={16} />
-              Онлайн-расписание
             </Button>
           </div>
 
@@ -543,35 +535,6 @@ const SchedulePage = () => {
                   </div>
                 </>
               )}
-            </>
-          )}
-
-          {/* ── Таб: Онлайн-расписание (виджет S20) ── */}
-          {tab === 'online' && (
-            <>
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <p className="text-sm text-gray-500">
-                  Публичное расписание из AlfaCRM (S20) — то, что видят клиенты
-                </p>
-                <a
-                  href="https://11086.s20.online/common/1/online-schedule/embed?data_pc=28ae61&data_locale=ru"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-teal-600 hover:text-teal-700 inline-flex items-center gap-1.5"
-                >
-                  <Icon name="ExternalLink" size={14} />
-                  Открыть в новой вкладке
-                </a>
-              </div>
-
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <iframe
-                  title="Онлайн-расписание S20"
-                  src="https://11086.s20.online/common/1/online-schedule/embed?data_pc=28ae61&data_locale=ru"
-                  style={{ width: '100%', height: '80vh', border: 0 }}
-                  loading="lazy"
-                />
-              </div>
             </>
           )}
 
