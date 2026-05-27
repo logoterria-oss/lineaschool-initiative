@@ -86,7 +86,14 @@ export const MAX_GROUP_SIZE = 6;
 
 export const WEEKDAY_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 
-export const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+// ВАЖНО: возвращаем дату в ЛОКАЛЬНОМ часовом поясе, а не UTC.
+// toISOString() даёт UTC и в МСК (+3) сдвигает дату на сутки назад.
+export const fmtDate = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 export const getMonday = (d: Date) => {
   const x = new Date(d);
   const day = x.getDay();
@@ -118,8 +125,12 @@ export const buildGroupRowsFromLessons = (
     else teacherShort[t.id] = `${parts[0]} ${parts[1][0]}.`;
   }
 
-  const weekStartTs = weekStart.getTime();
-  const weekEndTs = addDays(weekStart, 6).getTime();
+  // Сравниваем по ISO-датам (строкой) — это безопаснее, чем по timestamp,
+  // т.к. избегаем любых нюансов часового пояса.
+  const weekDateMap: Record<string, number> = {};
+  for (let i = 0; i < 6; i++) {
+    weekDateMap[fmtDate(addDays(weekStart, i))] = i; // ISO -> индекс дня недели (0=ПН..5=СБ)
+  }
 
   const rows: Record<string, GroupRow> = {};
   for (const lesson of lessons) {
@@ -130,13 +141,8 @@ export const buildGroupRowsFromLessons = (
     if (lesson.status !== 1 && lesson.status !== 3) continue;
     const dateStr = (lesson.date || '').slice(0, 10);
     if (!dateStr) continue;
-    const d = new Date(`${dateStr}T00:00:00`);
-    const ts = d.getTime();
-    if (ts < weekStartTs || ts >= weekEndTs) continue;
-
-    let weekday = d.getDay() - 1; // JS: 0=Вс, нам нужно 0=Пн
-    if (weekday < 0) weekday = 6;
-    if (weekday > 5) continue; // воскресенье пропускаем
+    const weekday = weekDateMap[dateStr];
+    if (weekday === undefined) continue; // не в текущей неделе (включая воскресенье)
 
     let timeFrom = lesson.time_from || '';
     if (timeFrom.includes(' ')) timeFrom = timeFrom.split(' ').pop() || '';
