@@ -75,7 +75,7 @@ export interface RawLesson {
   teacher_ids: number[];
   customer_ids?: number[];
   group_ids?: number[];
-  details?: Array<{ customer_id?: number }>;
+  details?: Array<{ customer_id?: number; is_attend?: number | null }>;
 }
 
 export interface RawTeacher {
@@ -154,10 +154,19 @@ export const buildGroupRowsFromLessons = (
     if (!tids.length) continue;
     const teacherId = Number(tids[0]);
 
-    const students = new Set<number>();
-    for (const sid of lesson.customer_ids || []) students.add(sid);
+    // Собираем absent-список из details (is_attend === 0 = отсутствует/приостановлен)
+    const absentIds = new Set<number>();
     for (const det of lesson.details || []) {
-      if (det && det.customer_id != null) students.add(det.customer_id);
+      if (det && det.customer_id != null && det.is_attend === 0) {
+        absentIds.add(det.customer_id);
+      }
+    }
+    const students = new Set<number>();
+    for (const sid of lesson.customer_ids || []) {
+      if (!absentIds.has(sid)) students.add(sid);
+    }
+    for (const det of lesson.details || []) {
+      if (det && det.customer_id != null && det.is_attend !== 0) students.add(det.customer_id);
     }
     const enrolled = students.size;
 

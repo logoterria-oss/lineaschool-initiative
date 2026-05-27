@@ -456,14 +456,22 @@ def handler(event: dict, context) -> dict:
                 continue
             teacher_id = int(tids[0])
 
+            details = lesson.get("details") or []
+            absent_ids = set()
+            if isinstance(details, list):
+                for d_item in details:
+                    if isinstance(d_item, dict) and d_item.get("is_attend") == 0:
+                        cid = d_item.get("customer_id") or d_item.get("client_id")
+                        if cid is not None:
+                            absent_ids.add(cid)
             students = set()
             for key in ("customer_ids", "client_ids", "student_ids"):
                 for sid in lesson.get(key) or []:
-                    students.add(sid)
-            details = lesson.get("details") or []
+                    if sid not in absent_ids:
+                        students.add(sid)
             if isinstance(details, list):
                 for d_item in details:
-                    if isinstance(d_item, dict):
+                    if isinstance(d_item, dict) and d_item.get("is_attend") != 0:
                         cid = d_item.get("customer_id") or d_item.get("client_id")
                         if cid is not None:
                             students.add(cid)
