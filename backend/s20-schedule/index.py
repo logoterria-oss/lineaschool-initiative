@@ -119,9 +119,10 @@ def get_teachers(token: str) -> list:
     return resp.json().get("items", [])
 
 
-def _fetch_customers_raw(token: str, is_study=None) -> list:
+def _fetch_customers_raw(token: str, is_study=None, removed=None) -> list:
     """Получить полные карточки клиентов из S20.
-    is_study: None — все, 0 — только лиды, 1 — только учащиеся."""
+    is_study: None — без фильтра, 0 — лиды, 1 — учащиеся.
+    removed: None — без фильтра, 0 — активные, 1 — в архиве (ушедшие)."""
     url = f"{S20_HOST}/v2api/1/customer/index"
     all_items = []
     page = 0
@@ -129,6 +130,8 @@ def _fetch_customers_raw(token: str, is_study=None) -> list:
         payload = {"page": page, "pageSize": 200}
         if is_study is not None:
             payload["is_study"] = is_study
+        if removed is not None:
+            payload["removed"] = removed
         resp = requests.post(url, json=payload, headers=get_headers(token))
         resp.raise_for_status()
         data = resp.json()
@@ -141,22 +144,23 @@ def _fetch_customers_raw(token: str, is_study=None) -> list:
 
 
 def get_customers(token: str) -> list:
-    """Лёгкий список клиентов: id, name, dob, is_study.
-    Берём ВСЕХ — и лидов (is_study=0), и учеников (is_study=1) —
-    чтобы в расписании отображать имена и для них тоже.
-    Лидов на фронте подсветим зелёным."""
+    """Лёгкий список клиентов: id, name, dob, is_study, study_status_id.
+    Берём ВСЕХ — учеников (is_study=1), лидов (is_study=0) и ушедших (removed=1) —
+    чтобы в расписании отображать имена для каждого id."""
     seen = set()
     merged = []
-    for flag in (1, 0):
+    # 4 прохода: активные ученики, активные лиды, ушедшие ученики, ушедшие лиды.
+    # S20 по умолчанию отдаёт только активных, поэтому removed=1 обязательно.
+    for is_study_flag, removed_flag in ((1, 0), (0, 0), (1, 1), (0, 1)):
         try:
-            for it in _fetch_customers_raw(token, is_study=flag):
+            for it in _fetch_customers_raw(token, is_study=is_study_flag, removed=removed_flag):
                 cid = it.get("id")
                 if cid in seen:
                     continue
                 seen.add(cid)
                 merged.append(it)
         except Exception as e:
-            print(f"customers fetch is_study={flag} failed: {e}")
+            print(f"customers fetch is_study={is_study_flag} removed={removed_flag} failed: {e}")
     light = []
     for it in merged:
         dob = it.get("dob") or it.get("birthday") or it.get("birth_date")
@@ -166,6 +170,8 @@ def get_customers(token: str) -> list:
             "dob": dob,
             "b_date": it.get("b_date"),
             "is_study": it.get("is_study"),
+            "study_status_id": it.get("study_status_id"),
+            "removed": it.get("removed"),
         })
     return light
 
