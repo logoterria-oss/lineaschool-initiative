@@ -123,7 +123,9 @@ export const buildGroupRowsFromLessons = (
 
   const rows: Record<string, GroupRow> = {};
   for (const lesson of lessons) {
-    if (lesson.lesson_type_id === 1) continue; // индивидуальные мимо
+    // Берём только групповые занятия. lesson_type_id:
+    //   1 — индивидуальный, 2 — групповой, 3 — диагностика, 4 — пробный и т.п.
+    if (lesson.lesson_type_id !== 2) continue;
     // Берём запланированные (1) и проведённые (3). Отменённые (2) — пропускаем.
     if (lesson.status !== 1 && lesson.status !== 3) continue;
     const dateStr = (lesson.date || '').slice(0, 10);
