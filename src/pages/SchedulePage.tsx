@@ -8,7 +8,7 @@ import GroupsTab from '@/components/schedule/GroupsTab';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'individual' | 'groups'>('individual');
+  const [tab, setTab] = useState<'individual' | 'groups'>('groups');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
