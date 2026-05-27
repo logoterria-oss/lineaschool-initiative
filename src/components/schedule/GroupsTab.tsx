@@ -256,12 +256,25 @@ const GroupsTab = () => {
                             )}
                           </div>
                           <ol className="space-y-0.5 px-2 py-1.5">
-                            {Array.from({ length: MAX_GROUP_SIZE }).map((_, i) => {
+                            {Array.from({
+                              length: Math.max(MAX_GROUP_SIZE, cell.student_ids.length),
+                            }).map((_, i) => {
                               const sid = cell.student_ids[i];
+                              const overflow = i >= MAX_GROUP_SIZE;
+                              const numNode = overflow ? (
+                                <span
+                                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-semibold mr-1 align-middle"
+                                  title="Сверх лимита группы"
+                                >
+                                  {i + 1}
+                                </span>
+                              ) : (
+                                <>{i + 1}. </>
+                              );
                               if (sid == null) {
                                 return (
                                   <li key={i} className="text-gray-400">
-                                    {i + 1}.
+                                    {numNode}
                                   </li>
                                 );
                               }
@@ -275,7 +288,8 @@ const GroupsTab = () => {
                                   className={isLead ? 'text-green-600' : 'text-gray-800'}
                                   title={isLead ? 'Лид' : undefined}
                                 >
-                                  {i + 1}. {name}
+                                  {numNode}
+                                  {name}
                                   {age != null && (
                                     <span className={isLead ? 'text-green-500' : 'text-gray-500'}>
                                       {' '}
