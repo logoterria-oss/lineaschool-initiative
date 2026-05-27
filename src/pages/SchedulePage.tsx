@@ -26,20 +26,20 @@ const SchedulePage = () => {
           {/* Табы */}
           <div className="flex gap-2 mb-6">
             <Button
-              variant={tab === 'individual' ? 'default' : 'outline'}
-              onClick={() => setTab('individual')}
-              className="gap-2"
-            >
-              <Icon name="User" size={16} />
-              Индивидуальные
-            </Button>
-            <Button
               variant={tab === 'groups' ? 'default' : 'outline'}
               onClick={() => setTab('groups')}
               className="gap-2"
             >
               <Icon name="Users" size={16} />
               Группы
+            </Button>
+            <Button
+              variant={tab === 'individual' ? 'default' : 'outline'}
+              onClick={() => setTab('individual')}
+              className="gap-2"
+            >
+              <Icon name="User" size={16} />
+              Индивидуальные
             </Button>
           </div>
 
