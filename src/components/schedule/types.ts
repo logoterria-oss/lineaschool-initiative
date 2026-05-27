@@ -240,7 +240,7 @@ const MANUAL_AGE: Record<string, number> = {
 
 // Имена, у которых S20 возвращает некорректный возраст (0 или мусор) —
 // для них всегда берём ручное значение вместо вычисленного.
-const FORCE_MANUAL_AGE = new Set(['Сеня Константинов', 'Рита Алексеева']);
+const FORCE_MANUAL_AGE = new Set(['Сеня Константинов', 'Рита Алексеева', 'Ксюша Моисеева']);
 
 export const manualAge = (formattedName: string): number | null =>
   MANUAL_AGE[formattedName] ?? null;
