@@ -17,6 +17,7 @@ import {
   calcAge,
   formatStudentName,
   manualAge,
+  shouldForceManualAge,
 } from './types';
 
 const GroupsTab = () => {
@@ -282,7 +283,9 @@ const GroupsTab = () => {
                               const c = customers[sid];
                               const name = formatStudentName(c?.name) || `id ${sid}`;
                               const rawAge = calcAge(c?.dob || c?.b_date);
-                              const age = (rawAge != null && rawAge > 0) ? rawAge : manualAge(name);
+                              const age = shouldForceManualAge(name)
+                                ? manualAge(name)
+                                : rawAge ?? manualAge(name);
                               const isLead = c?.is_study === 0;
                               return (
                                 <li

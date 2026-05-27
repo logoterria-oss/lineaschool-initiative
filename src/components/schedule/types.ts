@@ -235,10 +235,18 @@ export const calcAge = (bDate?: string, onDate?: Date): number | null => {
 const MANUAL_AGE: Record<string, number> = {
   'Сеня Константинов': 17,
   'Рита Алексеева': 17,
+  'Ксюша Моисеева': 8,
 };
+
+// Имена, у которых S20 возвращает некорректный возраст (0 или мусор) —
+// для них всегда берём ручное значение вместо вычисленного.
+const FORCE_MANUAL_AGE = new Set(['Сеня Константинов', 'Рита Алексеева']);
 
 export const manualAge = (formattedName: string): number | null =>
   MANUAL_AGE[formattedName] ?? null;
+
+export const shouldForceManualAge = (formattedName: string): boolean =>
+  FORCE_MANUAL_AGE.has(formattedName);
 
 export const formatStudentName = (full?: string): string => {
   const s = (full || '').trim().replace(/\s+/g, ' ');
