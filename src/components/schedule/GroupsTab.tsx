@@ -255,7 +255,7 @@ const GroupsTab = () => {
                               }
                               const c = customers[sid];
                               const name = formatStudentName(c?.name) || `id ${sid}`;
-                              const age = calcAge(c?.b_date);
+                              const age = calcAge(c?.dob || c?.b_date);
                               return (
                                 <li key={i} className="text-gray-800">
                                   {i + 1}. {name}

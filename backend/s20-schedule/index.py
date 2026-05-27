@@ -119,8 +119,8 @@ def get_teachers(token: str) -> list:
     return resp.json().get("items", [])
 
 
-def get_customers(token: str) -> list:
-    """Получить список клиентов (учеников) S20: id, name, b_date (для возраста)."""
+def _fetch_customers_raw(token: str) -> list:
+    """Получить полные карточки клиентов из S20."""
     url = f"{S20_HOST}/v2api/1/customer/index"
     all_items = []
     page = 0
@@ -137,12 +137,23 @@ def get_customers(token: str) -> list:
         if len(all_items) >= data.get("total", 0) or not items:
             break
         page += 1
-    # оставим только нужные поля для лёгкого ответа
+    return all_items
+
+
+def get_customers(token: str) -> list:
+    """Получить лёгкий список клиентов: id, name, dob (дата рождения).
+    В S20 есть и `b_date` (служебная — дата заведения), и `dob` (день рождения).
+    Берём dob — это реальная дата рождения, отображаемая в карточке клиента."""
+    all_items = _fetch_customers_raw(token)
     light = []
     for it in all_items:
+        # Пробуем несколько вариантов имени поля даты рождения
+        dob = it.get("dob") or it.get("birthday") or it.get("birth_date")
         light.append({
             "id": it.get("id"),
             "name": it.get("name"),
+            "dob": dob,
+            # b_date оставляем для обратной совместимости (это НЕ день рождения)
             "b_date": it.get("b_date"),
         })
     return light
@@ -496,6 +507,8 @@ def handler(event: dict, context) -> dict:
             "headers": {**cors_headers, "Content-Type": "application/json"},
             "body": json.dumps({"customers": customers}, ensure_ascii=False),
         }
+
+
 
     if mode == "free_slots":
         date_to_slots = (today + timedelta(days=27)).strftime("%Y-%m-%d")

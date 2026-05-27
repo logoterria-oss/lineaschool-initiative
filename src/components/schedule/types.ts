@@ -45,7 +45,8 @@ export interface GroupCell {
 export interface Customer {
   id: number;
   name?: string;
-  b_date?: string;
+  dob?: string; // дата рождения, формат "DD.MM.YYYY" из S20
+  b_date?: string; // служебная дата заведения карточки (НЕ день рождения)
 }
 
 export interface GroupRow {
@@ -183,14 +184,27 @@ export const buildGroupRowsFromLessons = (
   });
 };
 
-// Возраст по дате рождения "YYYY-MM-DD" на указанную дату (или сегодня)
+// Возраст по дате рождения. Понимаем оба формата:
+//   "YYYY-MM-DD..." (ISO) и "DD.MM.YYYY" (как отдаёт S20 в поле dob).
 export const calcAge = (bDate?: string, onDate?: Date): number | null => {
   if (!bDate) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(bDate);
-  if (!m) return null;
-  const by = Number(m[1]);
-  const bm = Number(m[2]);
-  const bd = Number(m[3]);
+  let by: number | null = null;
+  let bm: number | null = null;
+  let bd: number | null = null;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(bDate);
+  if (iso) {
+    by = Number(iso[1]);
+    bm = Number(iso[2]);
+    bd = Number(iso[3]);
+  } else {
+    const ru = /^(\d{2})\.(\d{2})\.(\d{4})/.exec(bDate);
+    if (ru) {
+      bd = Number(ru[1]);
+      bm = Number(ru[2]);
+      by = Number(ru[3]);
+    }
+  }
+  if (by == null || bm == null || bd == null) return null;
   const ref = onDate || new Date();
   let age = ref.getFullYear() - by;
   const mNow = ref.getMonth() + 1;
