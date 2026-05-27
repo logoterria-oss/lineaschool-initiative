@@ -123,7 +123,7 @@ export const buildGroupRowsFromLessons = (
     const parts = full.split(/\s+/).filter(Boolean);
     if (parts.length === 0) teacherShort[t.id] = `#${t.id}`;
     else if (parts.length === 1) teacherShort[t.id] = parts[0];
-    else teacherShort[t.id] = `${parts[0]} ${parts[1][0]}.`;
+    else teacherShort[t.id] = `${parts[1]} ${parts[0][0]}.`;
   }
 
   // Сравниваем по ISO-датам (строкой) — это безопаснее, чем по timestamp,
