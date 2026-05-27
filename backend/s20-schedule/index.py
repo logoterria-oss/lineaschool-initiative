@@ -119,6 +119,35 @@ def get_teachers(token: str) -> list:
     return resp.json().get("items", [])
 
 
+def get_customers(token: str) -> list:
+    """Получить список клиентов (учеников) S20: id, name, b_date (для возраста)."""
+    url = f"{S20_HOST}/v2api/1/customer/index"
+    all_items = []
+    page = 0
+    while True:
+        resp = requests.post(url, json={
+            "page": page,
+            "pageSize": 200,
+            "is_study": 1,
+        }, headers=get_headers(token))
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("items", [])
+        all_items.extend(items)
+        if len(all_items) >= data.get("total", 0) or not items:
+            break
+        page += 1
+    # оставим только нужные поля для лёгкого ответа
+    light = []
+    for it in all_items:
+        light.append({
+            "id": it.get("id"),
+            "name": it.get("name"),
+            "b_date": it.get("b_date"),
+        })
+    return light
+
+
 def get_regular_lessons(token: str, teacher_ids: list) -> list:
     url = f"{S20_HOST}/v2api/1/regular-lesson/index"
     all_items = []
@@ -451,6 +480,21 @@ def handler(event: dict, context) -> dict:
             "statusCode": 200,
             "headers": {**cors_headers, "Content-Type": "application/json"},
             "body": json.dumps({"teachers": teachers}, ensure_ascii=False),
+        }
+
+    if mode == "customers":
+        try:
+            customers = get_customers(token)
+        except Exception as e:
+            return {
+                "statusCode": 502,
+                "headers": {**cors_headers, "Content-Type": "application/json"},
+                "body": json.dumps({"error": f"S20 customers failed: {str(e)}"}, ensure_ascii=False),
+            }
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps({"customers": customers}, ensure_ascii=False),
         }
 
     if mode == "free_slots":

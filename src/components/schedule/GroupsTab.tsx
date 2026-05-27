@@ -6,6 +6,7 @@ import {
   GroupsWeekResponse,
   RawLesson,
   RawTeacher,
+  Customer,
   MAX_GROUP_SIZE,
   WEEKDAY_SHORT,
   fmtDate,
@@ -13,6 +14,8 @@ import {
   addDays,
   fmtRu,
   buildGroupRowsFromLessons,
+  calcAge,
+  formatStudentName,
 } from './types';
 
 const GroupsTab = () => {
@@ -21,6 +24,7 @@ const GroupsTab = () => {
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
   const [groupsAutoJumped, setGroupsAutoJumped] = useState(false);
+  const [customers, setCustomers] = useState<Record<number, Customer>>({});
 
   const loadGroups = async (autoJump = false) => {
     setGroupsLoading(true);
@@ -83,6 +87,21 @@ const GroupsTab = () => {
     }
   };
 
+  const loadCustomers = async () => {
+    try {
+      const resp = await fetch(`${S20_URL}?mode=customers`);
+      const data = await resp.json();
+      const items: Customer[] = Array.isArray(data.customers) ? data.customers : [];
+      const map: Record<number, Customer> = {};
+      for (const c of items) {
+        if (c && c.id != null) map[c.id] = c;
+      }
+      setCustomers(map);
+    } catch {
+      // не критично — покажем id вместо имён
+    }
+  };
+
   useEffect(() => {
     // при первом открытии вкладки «Группы» — ищем ближайшую неделю с уроками
     const needAutoJump = !groupsAutoJumped;
@@ -90,6 +109,10 @@ const GroupsTab = () => {
     loadGroups(needAutoJump);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
 
   return (
     <>
@@ -152,20 +175,20 @@ const GroupsTab = () => {
 
       {!groupsLoading && !groupsError && groupsData && groupsData.rows.length > 0 && (
         <>
-          <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-            <span>Цифра в ячейке = свободных мест из {groupsData.max_size}.</span>
+          <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 flex-wrap">
+            <span>В ячейке — список учеников (до {groupsData.max_size}). В скобках возраст.</span>
             <span className="inline-flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded bg-green-100 border border-green-300" />
+              <span className="inline-block w-3 h-3 rounded bg-green-50 border border-green-300" />
               есть места
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded bg-red-100 border border-red-300" />
+              <span className="inline-block w-3 h-3 rounded bg-red-50 border border-red-300" />
               заполнено
             </span>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-            <table className="w-full text-sm border-collapse min-w-[900px]">
+            <table className="w-full text-sm border-collapse min-w-[1100px]">
               <thead>
                 <tr className="bg-gray-50">
                   <th colSpan={3} className="border border-gray-200 px-3 py-2 font-medium text-gray-700">
@@ -195,12 +218,17 @@ const GroupsTab = () => {
                     {WEEKDAY_SHORT.map((_, day) => {
                       const cell = row.cells[String(day)];
                       if (!cell) {
+                        // Пустая ячейка — но всё равно с нумерацией 1..6 (как на образце)
                         return (
                           <td
                             key={day}
-                            className="border border-gray-200 px-2 py-1.5 align-top h-12 text-gray-300 text-center"
+                            className="border border-gray-200 px-2 py-1.5 align-top text-[12px] text-gray-300"
                           >
-                            —
+                            <ol className="space-y-0.5">
+                              {Array.from({ length: MAX_GROUP_SIZE }).map((_, i) => (
+                                <li key={i}>{i + 1}.</li>
+                              ))}
+                            </ol>
                           </td>
                         );
                       }
@@ -208,20 +236,36 @@ const GroupsTab = () => {
                       return (
                         <td
                           key={day}
-                          className={`border border-gray-200 px-2 py-1.5 align-top ${
+                          className={`border border-gray-200 px-2 py-1.5 align-top text-[12px] ${
                             isFull ? 'bg-red-50' : 'bg-green-50'
                           }`}
                         >
-                          <div className="text-[11px] font-medium text-gray-600 mb-0.5">
+                          <div className="text-center text-[11px] font-semibold text-gray-700 mb-1 bg-amber-50 -mx-2 -mt-1.5 px-2 py-1 border-b border-gray-200">
                             {row.time} ({row.teacher_name})
                           </div>
-                          <div
-                            className={`text-lg font-bold text-center ${
-                              isFull ? 'text-red-600' : 'text-green-700'
-                            }`}
-                          >
-                            {cell.free}
-                          </div>
+                          <ol className="space-y-0.5">
+                            {Array.from({ length: MAX_GROUP_SIZE }).map((_, i) => {
+                              const sid = cell.student_ids[i];
+                              if (sid == null) {
+                                return (
+                                  <li key={i} className="text-gray-400">
+                                    {i + 1}.
+                                  </li>
+                                );
+                              }
+                              const c = customers[sid];
+                              const name = formatStudentName(c?.name) || `id ${sid}`;
+                              const age = calcAge(c?.b_date);
+                              return (
+                                <li key={i} className="text-gray-800">
+                                  {i + 1}. {name}
+                                  {age != null && (
+                                    <span className="text-gray-500"> ({age})</span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ol>
                         </td>
                       );
                     })}

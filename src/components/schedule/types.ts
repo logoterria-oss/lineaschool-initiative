@@ -39,6 +39,13 @@ export interface GroupCell {
   enrolled: number;
   free: number;
   lesson_id?: number;
+  student_ids: number[];
+}
+
+export interface Customer {
+  id: number;
+  name?: string;
+  b_date?: string;
 }
 
 export interface GroupRow {
@@ -165,6 +172,7 @@ export const buildGroupRowsFromLessons = (
         enrolled,
         free: Math.max(0, MAX_GROUP_SIZE - enrolled),
         lesson_id: lesson.id,
+        student_ids: Array.from(students),
       };
     }
   }
@@ -173,4 +181,26 @@ export const buildGroupRowsFromLessons = (
     if (a.time !== b.time) return a.time.localeCompare(b.time);
     return a.teacher_name.localeCompare(b.teacher_name);
   });
+};
+
+// Возраст по дате рождения "YYYY-MM-DD" на указанную дату (или сегодня)
+export const calcAge = (bDate?: string, onDate?: Date): number | null => {
+  if (!bDate) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(bDate);
+  if (!m) return null;
+  const by = Number(m[1]);
+  const bm = Number(m[2]);
+  const bd = Number(m[3]);
+  const ref = onDate || new Date();
+  let age = ref.getFullYear() - by;
+  const mNow = ref.getMonth() + 1;
+  const dNow = ref.getDate();
+  if (mNow < bm || (mNow === bm && dNow < bd)) age -= 1;
+  if (age < 0 || age > 120) return null;
+  return age;
+};
+
+// В S20 поле name уже в формате "Имя Фамилия" — оставляем как есть, только trim.
+export const formatStudentName = (full?: string): string => {
+  return (full || '').trim();
 };
