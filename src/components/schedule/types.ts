@@ -48,6 +48,7 @@ export interface Customer {
   name?: string;
   dob?: string; // дата рождения, формат "DD.MM.YYYY" из S20
   b_date?: string; // служебная дата заведения карточки (НЕ день рождения)
+  is_study?: number; // 0 — лид, 1 — учится
 }
 
 export interface GroupRow {

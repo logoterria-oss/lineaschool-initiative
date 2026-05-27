@@ -119,17 +119,17 @@ def get_teachers(token: str) -> list:
     return resp.json().get("items", [])
 
 
-def _fetch_customers_raw(token: str) -> list:
-    """Получить полные карточки клиентов из S20."""
+def _fetch_customers_raw(token: str, is_study=None) -> list:
+    """Получить полные карточки клиентов из S20.
+    is_study: None — все, 0 — только лиды, 1 — только учащиеся."""
     url = f"{S20_HOST}/v2api/1/customer/index"
     all_items = []
     page = 0
     while True:
-        resp = requests.post(url, json={
-            "page": page,
-            "pageSize": 200,
-            "is_study": 1,
-        }, headers=get_headers(token))
+        payload = {"page": page, "pageSize": 200}
+        if is_study is not None:
+            payload["is_study"] = is_study
+        resp = requests.post(url, json=payload, headers=get_headers(token))
         resp.raise_for_status()
         data = resp.json()
         items = data.get("items", [])
@@ -141,20 +141,31 @@ def _fetch_customers_raw(token: str) -> list:
 
 
 def get_customers(token: str) -> list:
-    """Получить лёгкий список клиентов: id, name, dob (дата рождения).
-    В S20 есть и `b_date` (служебная — дата заведения), и `dob` (день рождения).
-    Берём dob — это реальная дата рождения, отображаемая в карточке клиента."""
-    all_items = _fetch_customers_raw(token)
+    """Лёгкий список клиентов: id, name, dob, is_study.
+    Берём ВСЕХ — и лидов (is_study=0), и учеников (is_study=1) —
+    чтобы в расписании отображать имена и для них тоже.
+    Лидов на фронте подсветим зелёным."""
+    seen = set()
+    merged = []
+    for flag in (1, 0):
+        try:
+            for it in _fetch_customers_raw(token, is_study=flag):
+                cid = it.get("id")
+                if cid in seen:
+                    continue
+                seen.add(cid)
+                merged.append(it)
+        except Exception as e:
+            print(f"customers fetch is_study={flag} failed: {e}")
     light = []
-    for it in all_items:
-        # Пробуем несколько вариантов имени поля даты рождения
+    for it in merged:
         dob = it.get("dob") or it.get("birthday") or it.get("birth_date")
         light.append({
             "id": it.get("id"),
             "name": it.get("name"),
             "dob": dob,
-            # b_date оставляем для обратной совместимости (это НЕ день рождения)
             "b_date": it.get("b_date"),
+            "is_study": it.get("is_study"),
         })
     return light
 

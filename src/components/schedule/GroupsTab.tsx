@@ -268,11 +268,19 @@ const GroupsTab = () => {
                               const c = customers[sid];
                               const name = formatStudentName(c?.name) || `id ${sid}`;
                               const age = calcAge(c?.dob || c?.b_date);
+                              const isLead = c?.is_study === 0;
                               return (
-                                <li key={i} className="text-gray-800">
+                                <li
+                                  key={i}
+                                  className={isLead ? 'text-green-600' : 'text-gray-800'}
+                                  title={isLead ? 'Лид' : undefined}
+                                >
                                   {i + 1}. {name}
                                   {age != null && (
-                                    <span className="text-gray-500"> ({age})</span>
+                                    <span className={isLead ? 'text-green-500' : 'text-gray-500'}>
+                                      {' '}
+                                      ({age})
+                                    </span>
                                   )}
                                 </li>
                               );
