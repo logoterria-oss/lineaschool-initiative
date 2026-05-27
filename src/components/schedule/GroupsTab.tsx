@@ -185,65 +185,77 @@ const GroupsTab = () => {
               <span className="inline-block w-3 h-3 rounded bg-red-50 border border-red-300" />
               заполнено
             </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500 text-white">
+                <Icon name="Check" size={9} />
+              </span>
+              проведено
+            </span>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-            <table className="w-full text-sm border-collapse min-w-[1100px]">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th colSpan={3} className="border border-gray-200 px-3 py-2 font-medium text-gray-700">
-                    I половина недели
-                  </th>
-                  <th colSpan={3} className="border border-gray-200 px-3 py-2 font-medium text-gray-700">
-                    II половина недели
-                  </th>
-                </tr>
-                <tr className="bg-gray-50">
-                  {WEEKDAY_SHORT.map((wd, i) => (
-                    <th
-                      key={wd}
-                      className="border border-gray-200 px-2 py-2 font-semibold text-gray-700 w-[16.66%]"
-                    >
-                      <div>{wd}</div>
-                      <div className="text-[10px] font-normal text-gray-400">
-                        {fmtRu(addDays(weekStart, i))}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {groupsData.rows.map((row, rIdx) => (
-                  <tr key={`${row.time}-${row.teacher_id}-${rIdx}`}>
-                    {WEEKDAY_SHORT.map((_, day) => {
-                      const cell = row.cells[String(day)];
-                      if (!cell) {
-                        // Пустая ячейка — но всё равно с нумерацией 1..6 (как на образце)
-                        return (
-                          <td
-                            key={day}
-                            className="border border-gray-200 px-2 py-1.5 align-top text-[12px] text-gray-300"
-                          >
-                            <ol className="space-y-0.5">
-                              {Array.from({ length: MAX_GROUP_SIZE }).map((_, i) => (
-                                <li key={i}>{i + 1}.</li>
-                              ))}
-                            </ol>
-                          </td>
-                        );
-                      }
+            <div className="grid grid-cols-6 min-w-[1100px]">
+              {/* Шапка: I и II половина недели */}
+              <div className="col-span-3 bg-gray-50 border-b border-r border-gray-200 px-3 py-2 text-center font-medium text-gray-700 text-sm">
+                I половина недели
+              </div>
+              <div className="col-span-3 bg-gray-50 border-b border-gray-200 px-3 py-2 text-center font-medium text-gray-700 text-sm">
+                II половина недели
+              </div>
+              {/* Шапка: дни недели + даты */}
+              {WEEKDAY_SHORT.map((wd, i) => (
+                <div
+                  key={wd}
+                  className={`bg-gray-50 border-b border-gray-200 px-2 py-2 text-center font-semibold text-gray-700 text-sm ${
+                    i < 5 ? 'border-r' : ''
+                  }`}
+                >
+                  <div>{wd}</div>
+                  <div className="text-[10px] font-normal text-gray-400">
+                    {fmtRu(addDays(weekStart, i))}
+                  </div>
+                </div>
+              ))}
+              {/* Колонки занятий */}
+              {WEEKDAY_SHORT.map((_, day) => {
+                // собрать все занятия этого дня недели из всех row, отсортировать по времени
+                const items = groupsData.rows
+                  .map((row) => ({ row, cell: row.cells[String(day)] }))
+                  .filter((x) => !!x.cell)
+                  .sort((a, b) => a.row.time.localeCompare(b.row.time));
+                return (
+                  <div
+                    key={day}
+                    className={`border-gray-200 p-1.5 flex flex-col gap-1.5 ${
+                      day < 5 ? 'border-r' : ''
+                    }`}
+                  >
+                    {items.length === 0 && (
+                      <div className="text-[11px] text-gray-300 text-center py-4">—</div>
+                    )}
+                    {items.map(({ row, cell }) => {
+                      if (!cell) return null;
                       const isFull = cell.free === 0;
+                      const isDone = cell.status === 3;
                       return (
-                        <td
-                          key={day}
-                          className={`border border-gray-200 px-2 py-1.5 align-top text-[12px] ${
-                            isFull ? 'bg-red-50' : 'bg-green-50'
+                        <div
+                          key={`${row.time}-${row.teacher_id}`}
+                          className={`rounded border text-[12px] overflow-hidden ${
+                            isFull ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
                           }`}
                         >
-                          <div className="text-center text-[11px] font-semibold text-gray-700 mb-1 bg-amber-50 -mx-2 -mt-1.5 px-2 py-1 border-b border-gray-200">
+                          <div className="relative text-center text-[11px] font-semibold text-gray-700 bg-amber-50 px-2 py-1 border-b border-gray-200">
                             {row.time} ({row.teacher_name})
+                            {isDone && (
+                              <span
+                                className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white"
+                                title="Занятие проведено"
+                              >
+                                <Icon name="Check" size={10} />
+                              </span>
+                            )}
                           </div>
-                          <ol className="space-y-0.5">
+                          <ol className="space-y-0.5 px-2 py-1.5">
                             {Array.from({ length: MAX_GROUP_SIZE }).map((_, i) => {
                               const sid = cell.student_ids[i];
                               if (sid == null) {
@@ -266,13 +278,13 @@ const GroupsTab = () => {
                               );
                             })}
                           </ol>
-                        </td>
+                        </div>
                       );
                     })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </>
       )}

@@ -40,6 +40,7 @@ export interface GroupCell {
   free: number;
   lesson_id?: number;
   student_ids: number[];
+  status?: number; // 1 — запланировано, 3 — проведено
 }
 
 export interface Customer {
@@ -174,6 +175,7 @@ export const buildGroupRowsFromLessons = (
         free: Math.max(0, MAX_GROUP_SIZE - enrolled),
         lesson_id: lesson.id,
         student_ids: Array.from(students),
+        status: lesson.status,
       };
     }
   }
