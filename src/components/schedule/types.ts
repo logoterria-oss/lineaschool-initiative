@@ -225,7 +225,15 @@ export const calcAge = (bDate?: string, onDate?: Date): number | null => {
   return age;
 };
 
-// В S20 поле name уже в формате "Имя Фамилия" — оставляем как есть, только trim.
+// В S20 у учеников name = "Имя Фамилия", у лидов часто полное ФИО
+// ("Фамилия Имя Отчество"). Для расписания нам нужны только Имя и Фамилия.
+// Эвристика: если 3+ слов и первое похоже на фамилию (заканчивается на типичные
+// окончания) — берём «Имя Фамилия» в порядке Имя+Фамилия. Иначе — первые 2 слова.
 export const formatStudentName = (full?: string): string => {
-  return (full || '').trim();
+  const s = (full || '').trim().replace(/\s+/g, ' ');
+  if (!s) return '';
+  const parts = s.split(' ');
+  if (parts.length <= 2) return s;
+  // 3+ слов — считаем что это "Фамилия Имя Отчество" (как обычно вводят лидов в S20)
+  return `${parts[1]} ${parts[0]}`;
 };
