@@ -180,6 +180,129 @@ def get_regular_lessons(token: str, teacher_ids: list) -> list:
     return all_items
 
 
+def get_all_regular_lessons(token: str) -> list:
+    """Все регулярные занятия (без фильтра по педагогу) — нужно для групп."""
+    url = f"{S20_HOST}/v2api/1/regular-lesson/index"
+    out = []
+    page = 0
+    while True:
+        resp = requests.post(url, json={
+            "page": page,
+            "pageSize": 200,
+        }, headers=get_headers(token))
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("items", [])
+        out.extend(items)
+        if len(items) < 200 or not items:
+            break
+        page += 1
+    return out
+
+
+def synthesize_group_lessons_from_regular(
+    regular_lessons: list, real_lessons: list,
+    date_from_str: str, date_to_str: str,
+) -> list:
+    """Для будущих дат, на которые в S20 ещё не сгенерированы реальные `lesson`,
+    создаём «виртуальные» групповые занятия из шаблонов regular-lesson.
+    Виртуальный урок: lesson_type_id=2, status=1, отрицательный id, без details/customer_ids
+    (контингент позже отдельно подтянем при необходимости).
+    """
+    from datetime import datetime as _dt, date as _date, timedelta as _td
+
+    df = _dt.strptime(date_from_str, "%Y-%m-%d").date()
+    dt = _dt.strptime(date_to_str, "%Y-%m-%d").date()
+    today = _date.today()
+
+    # Множество (date, time_from "HH:MM", teacher_id) уже существующих реальных уроков —
+    # чтобы не дублировать.
+    real_keys = set()
+    for ls in real_lessons:
+        d = (ls.get("date") or "")[:10]
+        tf = (ls.get("time_from") or "")
+        if " " in tf:
+            tf = tf.split(" ")[-1]
+        tf = tf[:5]
+        for tid in (ls.get("teacher_ids") or []):
+            real_keys.add((d, tf, int(tid)))
+
+    out = []
+    fake_id = -1
+    for rl in regular_lessons:
+        # только групповые шаблоны
+        if rl.get("lesson_type_id") != 2:
+            continue
+        time_from_v = (rl.get("time_from_v") or "")[:5]
+        time_to_v = (rl.get("time_to_v") or "")[:5]
+        if not time_from_v:
+            continue
+        b_date_s = (rl.get("b_date") or "")[:10]
+        e_date_s = (rl.get("e_date") or "")[:10]
+        try:
+            b_date = _dt.strptime(b_date_s, "%Y-%m-%d").date() if b_date_s else None
+        except ValueError:
+            b_date = None
+        try:
+            e_date = _dt.strptime(e_date_s, "%Y-%m-%d").date() if e_date_s else None
+        except ValueError:
+            e_date = None
+
+        weekdays = []
+        s20_day = rl.get("day")
+        if s20_day is not None:
+            wd = S20_DAY_TO_WEEKDAY.get(s20_day)
+            if wd is not None:
+                weekdays.append(wd)
+        elif rl.get("days"):
+            for d in rl["days"]:
+                wd = S20_DAY_TO_WEEKDAY.get(d)
+                if wd is not None:
+                    weekdays.append(wd)
+        if not weekdays:
+            continue
+
+        teacher_ids = rl.get("teacher_ids") or []
+        if not teacher_ids:
+            continue
+        group_ids = rl.get("group_ids") or []
+        customer_ids = rl.get("customer_ids") or []
+
+        # перебираем дни в диапазоне
+        cur = df
+        while cur <= dt:
+            cur_wd = cur.weekday()  # 0=Пн..6=Вс
+            if cur_wd in weekdays:
+                ok = True
+                if b_date and cur < b_date:
+                    ok = False
+                if e_date and cur > e_date:
+                    ok = False
+                # генерируем только начиная с сегодня — прошлые даты не интересны (там реальные lesson)
+                if ok and cur >= today:
+                    for tid in teacher_ids:
+                        key = (cur.strftime("%Y-%m-%d"), time_from_v, int(tid))
+                        if key in real_keys:
+                            continue
+                        out.append({
+                            "id": fake_id,
+                            "date": cur.strftime("%Y-%m-%d"),
+                            "time_from": f"{cur.strftime('%Y-%m-%d')} {time_from_v}:00",
+                            "time_to": f"{cur.strftime('%Y-%m-%d')} {time_to_v or time_from_v}:00",
+                            "lesson_type_id": 2,
+                            "lesson_type_name": "Групповой",
+                            "status": 1,
+                            "teacher_ids": [int(tid)],
+                            "customer_ids": list(customer_ids),
+                            "group_ids": list(group_ids),
+                            "details": [],
+                            "is_virtual": True,
+                        })
+                        fake_id -= 1
+            cur += _td(days=1)
+    return out
+
+
 def compute_free_slots(regular_lessons: list, booked_lessons: list,
                        date_from_str: str, date_to_str: str) -> list:
     dt_from = datetime.strptime(date_from_str, "%Y-%m-%d").date()
@@ -528,8 +651,16 @@ def handler(event: dict, context) -> dict:
             }, ensure_ascii=False),
         }
 
-    # default: mode=lessons — все статусы за период
+    # default: mode=lessons — все статусы за период.
+    # Для групп: достраиваем «виртуальные» уроки на будущие даты из regular-lesson,
+    # т.к. на дальние даты S20 ещё не сгенерировал реальные lesson.
     lessons = get_lessons_all_statuses(token, date_from, date_to)
+    try:
+        regs = get_all_regular_lessons(token)
+        virtuals = synthesize_group_lessons_from_regular(regs, lessons, date_from, date_to)
+        lessons = lessons + virtuals
+    except Exception as e:
+        print(f"regular_lessons synth failed: {e}")
     return {
         "statusCode": 200,
         "headers": {**cors_headers, "Content-Type": "application/json"},
