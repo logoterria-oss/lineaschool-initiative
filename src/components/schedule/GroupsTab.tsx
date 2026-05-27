@@ -16,6 +16,7 @@ import {
   buildGroupRowsFromLessons,
   calcAge,
   formatStudentName,
+  manualAge,
 } from './types';
 
 const GroupsTab = () => {
@@ -280,7 +281,7 @@ const GroupsTab = () => {
                               }
                               const c = customers[sid];
                               const name = formatStudentName(c?.name) || `id ${sid}`;
-                              const age = calcAge(c?.dob || c?.b_date);
+                              const age = calcAge(c?.dob || c?.b_date) ?? manualAge(name);
                               const isLead = c?.is_study === 0;
                               return (
                                 <li

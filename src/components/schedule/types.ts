@@ -229,6 +229,17 @@ export const calcAge = (bDate?: string, onDate?: Date): number | null => {
 // ("Фамилия Имя Отчество"). У сиблингов одна карточка вида
 // "Имя1 и Имя2 Фамилия" (или "Имя1, Имя2 Фамилия"). Для расписания нужно
 // показывать только «Имя Фамилия».
+// Ручной маппинг возраста для случаев, когда в S20 дата рождения не указана
+// (например, у "склеенных" карточек сиблингов). Ключ — отформатированное
+// имя из formatStudentName, значение — возраст в годах.
+const MANUAL_AGE: Record<string, number> = {
+  'Сеня Константинов': 17,
+  'Рита Алексеева': 17,
+};
+
+export const manualAge = (formattedName: string): number | null =>
+  MANUAL_AGE[formattedName] ?? null;
+
 export const formatStudentName = (full?: string): string => {
   const s = (full || '').trim().replace(/\s+/g, ' ');
   if (!s) return '';
