@@ -20,7 +20,7 @@ const SchedulePage = () => {
             <button onClick={() => navigate('/admin')} className="text-gray-500 hover:text-gray-800">
               <Icon name="ArrowLeft" size={20} />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Расписание (S20)</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Расписание</h1>
           </div>
 
           {/* Табы */}
