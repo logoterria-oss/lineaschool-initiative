@@ -15,6 +15,9 @@ import DiagConclusion from "./pages/DiagConclusion";
 import ParentQuestionnaire from "./pages/ParentQuestionnaire";
 import QuestionnaireResponses from "./pages/QuestionnaireResponses";
 import AdminDashboard from "./pages/AdminDashboard";
+import RoleSelectPage from "./pages/RoleSelectPage";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import ReportsAdmin from "./components/ReportsAdmin";
 import TelegramSetup from "./pages/TelegramSetup";
 import PaymentLeadsPage from "./pages/PaymentLeadsPage";
@@ -39,7 +42,11 @@ const App = () => (
             <Route path="/anketa" element={<ParentQuestionnaire />} />
             <Route path="/diag_form" element={<DiagForm />} />
             <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<RoleSelectPage />} />
+            <Route path="/admin/role-select" element={<RoleSelectPage />} />
+            <Route path="/admin/diag" element={<AdminDashboard />} />
+            <Route path="/admin/teacher" element={<TeacherDashboard />} />
+            <Route path="/admin/manager" element={<ManagerDashboard />} />
             <Route path="/admin/reports" element={<ReportsAdmin />} />
             <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
             <Route path="/telegram-setup" element={<TelegramSetup />} />

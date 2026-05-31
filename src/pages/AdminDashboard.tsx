@@ -13,9 +13,17 @@ const AdminDashboard = () => {
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8 md:mb-12">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
-              Панель администратора
-            </h1>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <button onClick={() => navigate('/admin/role-select')} className="text-gray-400 hover:text-gray-700 transition-colors">
+                <Icon name="ArrowLeft" size={20} />
+              </button>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Icon name="Stethoscope" size={24} className="text-green-600" />
+              </div>
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
+                Кабинет диагноста
+              </h1>
+            </div>
             <p className="text-base md:text-lg text-gray-600">
               Выберите раздел для работы
             </p>
@@ -157,11 +165,11 @@ const AdminDashboard = () => {
 
           <div className="mt-8 text-center">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/admin/role-select')}
               className="text-gray-600 hover:text-gray-900 flex items-center gap-2 mx-auto"
             >
               <Icon name="ArrowLeft" size={16} />
-              <span>Вернуться на главную</span>
+              <span>К выбору роли</span>
             </button>
           </div>
         </div>

@@ -34,9 +34,9 @@ export default function Navigation() {
               Записаться
             </Button>
             <a
-              href="/admin/reports"
+              href="/admin/role-select"
               className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200 rounded-lg hover:bg-green-50 flex-shrink-0"
-              title="Админ-панель"
+              title="Войти в систему"
             >
               <Icon name="Settings" size={20} />
             </a>
