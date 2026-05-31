@@ -538,6 +538,95 @@ def handler(event: dict, context) -> dict:
 
 
 
+    if mode == "ind_week":
+        """Рабочие окна индивидуальных педагогов за конкретную неделю минус запланированные уроки.
+        Возвращает: { days: [ { date, weekday, weekday_name, slots: [ { time_from, time_to, teacher_id, teacher_name, busy: bool, lesson_id? } ] } ] }
+        """
+        try:
+            dt_from = datetime.strptime(date_from, "%Y-%m-%d").date()
+            dt_to = datetime.strptime(date_to, "%Y-%m-%d").date()
+        except Exception:
+            dt_from = today.date()
+            dt_to = dt_from + timedelta(days=5)
+
+        work_schedule = get_work_schedule_from_db()
+
+        # Берём все индивидуальные запланированные уроки за неделю
+        try:
+            booked_lessons = get_lessons(token, date_from, date_to, status=1)
+        except Exception:
+            booked_lessons = []
+
+        # booked_by_date[(date_str, teacher_id)] = [{time_from, time_to, lesson_id}]
+        booked_by_date = {}
+        for lesson in booked_lessons:
+            if lesson.get("lesson_type_id") != 1:
+                continue
+            lesson_date = (lesson.get("date") or "")[:10]
+            tf = lesson.get("time_from", "")
+            tt = lesson.get("time_to", "")
+            if " " in tf:
+                tf = tf.split(" ")[-1][:5]
+            if " " in tt:
+                tt = tt.split(" ")[-1][:5]
+            tf = tf[:5]
+            tt = tt[:5]
+            for tid in lesson.get("teacher_ids", []):
+                key = (lesson_date, int(tid))
+                booked_by_date.setdefault(key, []).append({
+                    "time_from": tf, "time_to": tt, "lesson_id": lesson.get("id"),
+                })
+
+        days_out = []
+        current = dt_from
+        while current <= dt_to:
+            weekday = current.weekday()
+            if weekday <= 5:  # пн-сб
+                date_str = current.strftime("%Y-%m-%d")
+                slots_for_day = []
+                for teacher_id, schedule in work_schedule.items():
+                    if teacher_id not in INDIVIDUAL_TEACHERS:
+                        continue
+                    for slot in schedule:
+                        if slot["weekday"] != weekday:
+                            continue
+                        tf = slot["time_from"][:5]
+                        tt = slot["time_to"][:5]
+                        # Проверяем: занят ли этот слот
+                        busy = False
+                        booked_lesson_id = None
+                        for booked in booked_by_date.get((date_str, int(teacher_id)), []):
+                            if booked["time_from"] < tt and booked["time_to"] > tf:
+                                busy = True
+                                booked_lesson_id = booked.get("lesson_id")
+                                break
+                        entry = {
+                            "time_from": tf,
+                            "time_to": tt,
+                            "teacher_id": int(teacher_id),
+                            "teacher_name": INDIVIDUAL_TEACHERS.get(int(teacher_id), ""),
+                            "busy": busy,
+                        }
+                        if booked_lesson_id:
+                            entry["lesson_id"] = booked_lesson_id
+                        slots_for_day.append(entry)
+
+                slots_for_day.sort(key=lambda s: (s["time_from"], s["teacher_name"]))
+                if slots_for_day:
+                    days_out.append({
+                        "date": date_str,
+                        "weekday": weekday,
+                        "weekday_name": WEEKDAY_NAMES[weekday],
+                        "slots": slots_for_day,
+                    })
+            current += timedelta(days=1)
+
+        return {
+            "statusCode": 200,
+            "headers": {**cors_headers, "Content-Type": "application/json"},
+            "body": json.dumps({"days": days_out, "date_from": date_from, "date_to": date_to}, ensure_ascii=False),
+        }
+
     if mode == "free_slots":
         date_to_slots = (today + timedelta(days=27)).strftime("%Y-%m-%d")
         teacher_ids = list(INDIVIDUAL_TEACHERS.keys())
