@@ -23,7 +23,11 @@ export default function PaymentLeadsPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
 
-  useEffect(() => { fetchLeads(); }, []);
+  useEffect(() => {
+    // При открытии страницы — сначала тихо синхронизируем, потом загружаем список
+    fetch(SYNC_URL).catch(() => {});
+    fetchLeads();
+  }, []);
 
   const fetchLeads = async () => {
     setLoading(true);
