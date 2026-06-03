@@ -93,9 +93,11 @@ def sync_payments(debug=False):
             order_id = _find_order_id(clean)
 
         if not order_id:
-            print(f"No OrderId in email dated {date_str}, subject: {subject}")
+            # Логируем всегда — чтобы понять что именно не парсится
+            clean_for_log = _html_to_text(body_html) or body_text or ""
+            print(f"No OrderId | date={date_str} | subject={subject} | body_snippet={clean_for_log[:400]!r}")
             if debug:
-                debug_info.append({"subject": subject, "date": date_str, "body_snippet": (body_text or body_html)[:300]})
+                debug_info.append({"subject": subject, "date": date_str, "body_snippet": clean_for_log[:400]})
             continue
 
         tx_match = re.search(r"ID\s*транзакции[:\s]+(\d+)", body_text or "")
