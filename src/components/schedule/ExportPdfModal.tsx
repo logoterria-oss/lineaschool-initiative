@@ -394,7 +394,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                         return (
                           <div key={day.date} style={{ marginBottom: 16 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                              {WEEKDAY_FULL[day.weekday]} {fmtRu(new Date(`${day.date}T00:00:00`))}
+                              {WEEKDAY_FULL[day.weekday]}
                             </div>
                             {Object.entries(byTime)
                               .sort(([a], [b]) => a.localeCompare(b))
@@ -429,7 +429,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                         return (
                           <div key={day} style={{ marginBottom: 16 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                              {WEEKDAY_FULL[day]} {fmtRu(addDays(weekStart, day))}
+                              {WEEKDAY_FULL[day]}
                             </div>
                             {items.map((x, i) => (
                               <div key={i} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
