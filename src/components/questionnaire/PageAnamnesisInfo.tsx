@@ -228,7 +228,7 @@ export default function PageAnamnesisInfo({
               checked={formData.speechTherapistCurrent}
               onCheckedChange={(checked) => handleInputChange("speechTherapistCurrent", !!checked)}
             />
-            <Label htmlFor="speech-therapist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+            <Label htmlFor="speech-therapist-current" className="font-normal cursor-pointer">Занимается сейчас</Label>
           </div>
         </div>
       )}
@@ -251,7 +251,7 @@ export default function PageAnamnesisInfo({
               checked={formData.defectologistCurrent}
               onCheckedChange={(checked) => handleInputChange("defectologistCurrent", !!checked)}
             />
-            <Label htmlFor="defectologist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+            <Label htmlFor="defectologist-current" className="font-normal cursor-pointer">Занимается сейчас</Label>
           </div>
         </div>
       )}
@@ -274,7 +274,7 @@ export default function PageAnamnesisInfo({
               checked={formData.neuropsychologistCurrent}
               onCheckedChange={(checked) => handleInputChange("neuropsychologistCurrent", !!checked)}
             />
-            <Label htmlFor="neuropsychologist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+            <Label htmlFor="neuropsychologist-current" className="font-normal cursor-pointer">Занимается сейчас</Label>
           </div>
         </div>
       )}
@@ -298,7 +298,7 @@ export default function PageAnamnesisInfo({
               checked={formData.otherSpecialistCurrent}
               onCheckedChange={(checked) => handleInputChange("otherSpecialistCurrent", !!checked)}
             />
-            <Label htmlFor="other-specialist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+            <Label htmlFor="other-specialist-current" className="font-normal cursor-pointer">Занимается сейчас</Label>
           </div>
         </div>
       )}

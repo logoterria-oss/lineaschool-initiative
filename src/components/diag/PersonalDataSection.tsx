@@ -171,21 +171,21 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
               // Fill conclusion fields if they exist
               if (data.speechTherapistConclusion && data.speechTherapistConclusion.trim()) {
                 const val = data.speechTherapistCurrent
-                  ? `${data.speechTherapistConclusion.trim()} (занимаемся сейчас)`
+                  ? `${data.speechTherapistConclusion.trim()} (занимается сейчас)`
                   : data.speechTherapistConclusion;
                 onInputChange('speechTherapistConclusion', val);
               }
               
               if (data.neuropsychologistConclusion && data.neuropsychologistConclusion.trim()) {
                 const val = data.neuropsychologistCurrent
-                  ? `${data.neuropsychologistConclusion.trim()} (занимаемся сейчас)`
+                  ? `${data.neuropsychologistConclusion.trim()} (занимается сейчас)`
                   : data.neuropsychologistConclusion;
                 onInputChange('neuropsychologistConclusion', val);
               }
               
               if (data.defectologistConclusion && data.defectologistConclusion.trim()) {
                 const val = data.defectologistCurrent
-                  ? `${data.defectologistConclusion.trim()} (занимаемся сейчас)`
+                  ? `${data.defectologistConclusion.trim()} (занимается сейчас)`
                   : data.defectologistConclusion;
                 onInputChange('defectologistConclusion', val);
               }
@@ -203,7 +203,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
           // Other specialist name — add to additionalInfo
           if (data.otherSpecialistName && data.otherSpecialistName.trim()) {
-            const suffix = data.otherSpecialistCurrent ? ' (занимаемся сейчас)' : '';
+            const suffix = data.otherSpecialistCurrent ? ' (занимается сейчас)' : '';
             onInputChange('additionalInfo', `Другой специалист: ${data.otherSpecialistName.trim()}${suffix}`);
           }
         }
