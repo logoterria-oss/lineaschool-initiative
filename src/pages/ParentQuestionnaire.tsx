@@ -37,6 +37,9 @@ export default function ParentQuestionnaire() {
 
   const [prenatalNoFeatures, setPrenatalNoFeatures] = useState(false);
   const [earlyDevNoFeatures, setEarlyDevNoFeatures] = useState(false);
+  const [neurologicalNone, setNeurologicalNone] = useState(false);
+  const [hearingVisionNone, setHearingVisionNone] = useState(false);
+  const [chronicNone, setChronicNone] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -58,7 +61,7 @@ export default function ParentQuestionnaire() {
       const response = await fetch('https://functions.poehali.dev/65751635-528e-4830-bc09-e0b9c5344580', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, prenatalNoFeatures, earlyDevNoFeatures })
+        body: JSON.stringify({ ...formData, prenatalNoFeatures, earlyDevNoFeatures, neurologicalNone, hearingVisionNone, chronicNone })
       });
 
       if (response.ok) {
@@ -108,6 +111,12 @@ export default function ParentQuestionnaire() {
                 setPrenatalNoFeatures={setPrenatalNoFeatures}
                 earlyDevNoFeatures={earlyDevNoFeatures}
                 setEarlyDevNoFeatures={setEarlyDevNoFeatures}
+                neurologicalNone={neurologicalNone}
+                setNeurologicalNone={setNeurologicalNone}
+                hearingVisionNone={hearingVisionNone}
+                setHearingVisionNone={setHearingVisionNone}
+                chronicNone={chronicNone}
+                setChronicNone={setChronicNone}
               />
             )}
 

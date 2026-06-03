@@ -13,6 +13,12 @@ interface Props {
   setPrenatalNoFeatures: (v: boolean) => void;
   earlyDevNoFeatures: boolean;
   setEarlyDevNoFeatures: (v: boolean) => void;
+  neurologicalNone: boolean;
+  setNeurologicalNone: (v: boolean) => void;
+  hearingVisionNone: boolean;
+  setHearingVisionNone: (v: boolean) => void;
+  chronicNone: boolean;
+  setChronicNone: (v: boolean) => void;
 }
 
 export default function PageAnamnesisInfo({
@@ -23,6 +29,12 @@ export default function PageAnamnesisInfo({
   setPrenatalNoFeatures,
   earlyDevNoFeatures,
   setEarlyDevNoFeatures,
+  neurologicalNone,
+  setNeurologicalNone,
+  hearingVisionNone,
+  setHearingVisionNone,
+  chronicNone,
+  setChronicNone,
 }: Props) {
   return (
     <div className="space-y-6">
@@ -72,7 +84,7 @@ export default function PageAnamnesisInfo({
 
       <div>
         <Label htmlFor="neurological">
-          Диагностированные неврологические заболевания и/или психические расстройства
+          Диагностированные неврологические заболевания и/или психические расстройства *
         </Label>
         <Input
           id="neurological"
@@ -80,26 +92,50 @@ export default function PageAnamnesisInfo({
           onChange={(e) => handleInputChange("neurologicalDisorders", e.target.value)}
           className="mt-2"
         />
+        <div className="flex items-center gap-2 mt-2">
+          <Checkbox
+            id="neurological-none"
+            checked={neurologicalNone}
+            onCheckedChange={(checked) => setNeurologicalNone(!!checked)}
+          />
+          <Label htmlFor="neurological-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+        </div>
       </div>
 
       <div>
-        <Label htmlFor="hearing-vision">Нарушения слуха и/или зрения</Label>
+        <Label htmlFor="hearing-vision">Нарушения слуха и/или зрения *</Label>
         <Input
           id="hearing-vision"
           value={formData.hearingVisionDisorders}
           onChange={(e) => handleInputChange("hearingVisionDisorders", e.target.value)}
           className="mt-2"
         />
+        <div className="flex items-center gap-2 mt-2">
+          <Checkbox
+            id="hearing-vision-none"
+            checked={hearingVisionNone}
+            onCheckedChange={(checked) => setHearingVisionNone(!!checked)}
+          />
+          <Label htmlFor="hearing-vision-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+        </div>
       </div>
 
       <div>
-        <Label htmlFor="chronic">Другие хронические заболевания</Label>
+        <Label htmlFor="chronic">Другие хронические заболевания *</Label>
         <Input
           id="chronic"
           value={formData.chronicDiseases}
           onChange={(e) => handleInputChange("chronicDiseases", e.target.value)}
           className="mt-2"
         />
+        <div className="flex items-center gap-2 mt-2">
+          <Checkbox
+            id="chronic-none"
+            checked={chronicNone}
+            onCheckedChange={(checked) => setChronicNone(!!checked)}
+          />
+          <Label htmlFor="chronic-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+        </div>
       </div>
 
       <div>
