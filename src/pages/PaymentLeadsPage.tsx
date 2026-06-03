@@ -70,14 +70,36 @@ export default function PaymentLeadsPage() {
       hour: '2-digit', minute: '2-digit',
     });
 
-  const filtered = leads.filter((l) => {
+  // Дедупликация: группируем по имени+тарифу+дате заявки (с точностью до минуты)
+  // Из группы берём оплаченную, если есть, иначе последнюю по id
+  const deduplicated = (() => {
+    const groups = new Map<string, PaymentLead>();
+    for (const l of leads) {
+      const dateMinute = l.created_at?.slice(0, 16) ?? '';
+      const key = `${l.name}__${l.plan}__${dateMinute}`;
+      const existing = groups.get(key);
+      if (!existing) {
+        groups.set(key, l);
+      } else {
+        // Предпочитаем оплаченную, при равенстве — с большим id (новее)
+        const existingPaid = !!existing.paid_at;
+        const newPaid = !!l.paid_at;
+        if ((!existingPaid && newPaid) || (existingPaid === newPaid && l.id > existing.id)) {
+          groups.set(key, l);
+        }
+      }
+    }
+    return Array.from(groups.values());
+  })();
+
+  const filtered = deduplicated.filter((l) => {
     if (filter === 'paid') return !!l.paid_at;
     if (filter === 'unpaid') return !l.paid_at;
     return true;
   });
 
-  const paidCount = leads.filter((l) => !!l.paid_at).length;
-  const unpaidCount = leads.filter((l) => !l.paid_at).length;
+  const paidCount = deduplicated.filter((l) => !!l.paid_at).length;
+  const unpaidCount = deduplicated.filter((l) => !l.paid_at).length;
 
   if (loading) {
     return (
@@ -96,7 +118,7 @@ export default function PaymentLeadsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Заявки на оплату</h1>
             <p className="text-gray-500 mt-1 text-sm">
-              Всего: {leads.length} · Оплачено: {paidCount} · Ожидают: {unpaidCount}
+              Всего: {deduplicated.length} · Оплачено: {paidCount} · Ожидают: {unpaidCount}
             </p>
           </div>
           <div className="flex items-center gap-3">
