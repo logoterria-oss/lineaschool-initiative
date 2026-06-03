@@ -19,7 +19,7 @@ const roles = [
   {
     key: 'teacher',
     label: 'Педагог',
-    description: 'Личный кабинет педагога',
+    description: 'График работы',
     icon: 'GraduationCap',
     color: 'border-blue-300 hover:border-blue-500',
     iconBg: 'bg-blue-100',
