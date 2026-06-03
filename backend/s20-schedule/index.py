@@ -441,8 +441,6 @@ def handler(event: dict, context) -> dict:
             except Exception:
                 continue
             weekday = d.weekday()
-            if weekday > 5:
-                continue
 
             time_from = lesson.get("time_from") or ""
             if " " in time_from:

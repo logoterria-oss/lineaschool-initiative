@@ -85,7 +85,7 @@ export interface RawTeacher {
 
 export const MAX_GROUP_SIZE = 6;
 
-export const WEEKDAY_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+export const WEEKDAY_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 // ВАЖНО: возвращаем дату в ЛОКАЛЬНОМ часовом поясе, а не UTC.
 // toISOString() даёт UTC и в МСК (+3) сдвигает дату на сутки назад.
@@ -129,8 +129,8 @@ export const buildGroupRowsFromLessons = (
   // Сравниваем по ISO-датам (строкой) — это безопаснее, чем по timestamp,
   // т.к. избегаем любых нюансов часового пояса.
   const weekDateMap: Record<string, number> = {};
-  for (let i = 0; i < 6; i++) {
-    weekDateMap[fmtDate(addDays(weekStart, i))] = i; // ISO -> индекс дня недели (0=ПН..5=СБ)
+  for (let i = 0; i < 7; i++) {
+    weekDateMap[fmtDate(addDays(weekStart, i))] = i; // ISO -> индекс дня недели (0=ПН..6=ВС)
   }
 
   const rows: Record<string, GroupRow> = {};

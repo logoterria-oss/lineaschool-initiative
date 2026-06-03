@@ -33,7 +33,7 @@ const GroupsTab = () => {
     setGroupsError('');
     try {
       let df = fmtDate(weekStart);
-      let dt = fmtDate(addDays(weekStart, 5));
+      let dt = fmtDate(addDays(weekStart, 6));
 
       // первое открытие — спросим у бэкенда ближайшую неделю с групповыми уроками
       if (autoJump) {
@@ -131,7 +131,7 @@ const GroupsTab = () => {
             Неделя
           </Button>
           <div className="text-sm font-medium text-gray-700 px-2">
-            {fmtRu(weekStart)} — {fmtRu(addDays(weekStart, 5))}
+            {fmtRu(weekStart)} — {fmtRu(addDays(weekStart, 6))}
           </div>
           <Button
             variant="outline"
@@ -196,9 +196,9 @@ const GroupsTab = () => {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-            <div className="grid grid-cols-6 min-w-[1100px]">
+            <div className="grid grid-cols-7 min-w-[1280px]">
               {/* Шапка: I и II половина недели */}
-              <div className="col-span-3 bg-gray-50 border-b border-r border-gray-200 px-3 py-2 text-center font-medium text-gray-700 text-sm">
+              <div className="col-span-4 bg-gray-50 border-b border-r border-gray-200 px-3 py-2 text-center font-medium text-gray-700 text-sm">
                 I половина недели
               </div>
               <div className="col-span-3 bg-gray-50 border-b border-gray-200 px-3 py-2 text-center font-medium text-gray-700 text-sm">
@@ -209,7 +209,7 @@ const GroupsTab = () => {
                 <div
                   key={wd}
                   className={`bg-gray-50 border-b border-gray-200 px-2 py-2 text-center font-semibold text-gray-700 text-sm ${
-                    i < 5 ? 'border-r' : ''
+                    i < 6 ? 'border-r' : ''
                   }`}
                 >
                   <div>{wd}</div>
@@ -229,7 +229,7 @@ const GroupsTab = () => {
                   <div
                     key={day}
                     className={`border-gray-200 p-1.5 flex flex-col gap-1.5 ${
-                      day < 5 ? 'border-r' : ''
+                      day < 6 ? 'border-r' : ''
                     }`}
                   >
                     {items.length === 0 && (
