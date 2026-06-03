@@ -304,13 +304,24 @@ export default function ParentQuestionnaire() {
 
                 <div>
                   <Label htmlFor="prenatal">Особенности перинатального развития</Label>
+                  <div className="flex items-center gap-2 mt-2 mb-2">
+                    <Checkbox
+                      id="prenatal-no-features"
+                      checked={formData.prenatalDevelopment === 'Без особенностей'}
+                      onCheckedChange={(checked) => {
+                        handleInputChange("prenatalDevelopment", checked ? 'Без особенностей' : '');
+                      }}
+                    />
+                    <Label htmlFor="prenatal-no-features" className="font-normal cursor-pointer">Без особенностей</Label>
+                  </div>
                   <Textarea
                     id="prenatal"
-                    value={formData.prenatalDevelopment}
+                    value={formData.prenatalDevelopment === 'Без особенностей' ? '' : formData.prenatalDevelopment}
                     onChange={(e) => handleInputChange("prenatalDevelopment", e.target.value)}
-                    className="mt-2"
+                    className="mt-1"
                     placeholder="Болезни мамы во время беременности, патологии плода, угроза выкидыша, недоношенность, затяжные/стремительные роды, родовые травмы и т.п."
                     rows={4}
+                    disabled={formData.prenatalDevelopment === 'Без особенностей'}
                   />
                 </div>
 
