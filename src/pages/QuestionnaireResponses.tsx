@@ -248,12 +248,12 @@ function DetailedView({ responseId }: { responseId: number }) {
       </Section>
 
       <Section title="Анамнез">
-        <Field label="Перинатальное развитие" value={str(details.prenatal_development)} />
-        <Field label="Развитие в первые 3 года" value={str(details.early_development)} />
-        <Field label="Неврологические заболевания" value={str(details.neurological_disorders)} />
-        <Field label="Нарушения слуха/зрения" value={str(details.hearing_vision_disorders)} />
-        <Field label="Хронические заболевания" value={str(details.chronic_diseases)} />
-        <Field label="Речевые нарушения в семье" value={str(details.speech_environment)} />
+        <Field label="Перинатальное развитие" value={str(details.prenatal_development) || (details.prenatal_no_features ? 'Без особенностей' : undefined)} />
+        <Field label="Развитие в первые 3 года" value={str(details.early_development) || (details.early_dev_no_features ? 'Без особенностей' : undefined)} />
+        <Field label="Неврологические заболевания" value={str(details.neurological_disorders) || (details.neurological_none ? 'Нет / не диагностировано' : undefined)} />
+        <Field label="Нарушения слуха/зрения" value={str(details.hearing_vision_disorders) || (details.hearing_vision_none ? 'Нет / не диагностировано' : undefined)} />
+        <Field label="Хронические заболевания" value={str(details.chronic_diseases) || (details.chronic_none ? 'Нет / не диагностировано' : undefined)} />
+        <Field label="Речевые нарушения в семье" value={str(details.speech_environment) || (details.speech_env_none ? 'Нет / не диагностировано' : undefined)} />
       </Section>
 
       <Section title="Специалисты">

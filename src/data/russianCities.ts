@@ -470,7 +470,21 @@ export function getTimezoneLabel(offset: number): string {
 }
 
 export function getCityTimezone(cityName: string): string | null {
-  const city = RUSSIAN_CITIES.find(c => c.name === cityName);
+  if (!cityName) return null;
+  // Exact match first
+  let city = RUSSIAN_CITIES.find(c => c.name === cityName);
+  // Fuzzy: strip type prefix (г, пгт, село, деревня, посёлок, etc.) and try again
+  if (!city) {
+    const stripped = cityName.replace(/^(г|гор|пгт|рп|с|д|пос|посёлок|деревня|село|станица|хутор|аул)\s+/i, '').trim();
+    city = RUSSIAN_CITIES.find(c => c.name.toLowerCase() === stripped.toLowerCase());
+  }
+  // Partial: check if any city name is contained in the input or vice versa
+  if (!city) {
+    const lower = cityName.toLowerCase();
+    city = RUSSIAN_CITIES.find(c =>
+      lower.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(lower)
+    );
+  }
   if (!city) return null;
   return getTimezoneLabel(city.timezone);
 }
