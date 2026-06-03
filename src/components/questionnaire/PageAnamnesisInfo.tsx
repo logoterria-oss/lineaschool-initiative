@@ -1,9 +1,37 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FormData, HandleInputChange, HandleCheckboxChange } from "./types";
+
+function AmbiTooltip() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative inline-flex items-center">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-5 h-5 rounded-full border border-gray-400 text-gray-400 text-xs flex items-center justify-center hover:border-gray-600 hover:text-gray-600 flex-shrink-0"
+      >
+        ?
+      </button>
+      {open && (
+        <div className="absolute left-7 top-0 z-10 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-600">
+          Амбидекстр — это человек, который одинаково хорошо владеет обеими руками (нет ярко выраженного доминирования одной из них).
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   formData: FormData;
@@ -287,6 +315,11 @@ export default function PageAnamnesisInfo({
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="retrained" id="hand-retrained" />
             <Label htmlFor="hand-retrained">Правша (переученный левша)</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="ambidextrous" id="hand-ambidextrous" />
+            <Label htmlFor="hand-ambidextrous">Амбидекстр</Label>
+            <AmbiTooltip />
           </div>
         </RadioGroup>
       </div>
