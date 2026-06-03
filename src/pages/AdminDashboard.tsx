@@ -107,9 +107,7 @@ const AdminDashboard = () => {
                   </div>
                   <CardTitle className="text-lg md:text-xl lg:text-2xl">Оплаты</CardTitle>
                 </div>
-                <CardDescription className="text-sm md:text-base">
-                  Контакты клиентов, которые начали оплату
-                </CardDescription>
+                <CardDescription className="text-sm md:text-base">Статус оплаты диагностик и абонементов</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
