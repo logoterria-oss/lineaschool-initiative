@@ -259,7 +259,7 @@ export default function ParentQuestionnaire() {
                 )}
 
                 <div>
-                  <Label htmlFor="school-start-age">Возраст начала школьного обучения</Label>
+                  <Label htmlFor="school-start-age">Возраст начала школьного обучения *</Label>
                   <Select
                     value={formData.schoolStartAge}
                     onValueChange={(val) => handleInputChange("schoolStartAge", val)}
