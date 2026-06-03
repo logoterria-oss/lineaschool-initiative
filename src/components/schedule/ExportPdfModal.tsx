@@ -293,14 +293,13 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
           {ready && (
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div ref={printRef} className="bg-white p-6" style={{ width: 720 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #e5e7eb' }}>
                   <img
-                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/602a60ff-336d-4e7c-a660-f1e187ebc3cd.png"
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/428f7606-17b9-4503-b110-711536d2f8b2.png"
                     alt="ЛинэяСкул"
                     crossOrigin="anonymous"
                     style={{ height: 56, objectFit: 'contain' }}
                   />
-                  <span style={{ fontSize: 22, fontWeight: 700, color: '#0f766e' }}>ЛинэяСкул</span>
                 </div>
                 <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>
                   Свободные слоты для записи
