@@ -49,16 +49,26 @@ const WEEKDAY_FULL = [
 const LOGO_URL =
   'https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/428f7606-17b9-4503-b110-711536d2f8b2.png';
 
-const loadImageAsDataUrl = async (url: string): Promise<string> => {
-  const resp = await fetch(url, { mode: 'cors' });
-  const blob = await resp.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+const loadImageAsDataUrl = (url: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext('2d');
+        if (!ctx) return reject(new Error('no ctx'));
+        ctx.drawImage(img, 0, 0);
+        resolve(c.toDataURL('image/png'));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = reject;
+    img.src = url;
   });
-};
 
 const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
@@ -151,6 +161,16 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     if (!printRef.current) return;
     setBuilding(true);
     try {
+      // Убеждаемся, что логотип загружен и попал в DOM перед снимком
+      if (!logoData) {
+        try {
+          const data = await loadImageAsDataUrl(LOGO_URL);
+          setLogoData(data);
+          await new Promise((r) => setTimeout(r, 100));
+        } catch {
+          /* не критично */
+        }
+      }
       const canvas = await html2canvas(printRef.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
       const pdf = new jsPDF('p', 'mm', 'a4');
       const margin = 10;
@@ -162,10 +182,33 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
       // Сколько пикселей исходного canvas помещается на одну страницу по высоте
       const pxPerPage = Math.floor((canvas.width * contentH) / contentW);
 
+      const srcCtx = canvas.getContext('2d');
+
+      // Проверяет, является ли строка пикселей полностью белой (можно резать здесь)
+      const isRowBlank = (y: number): boolean => {
+        if (!srcCtx || y < 0 || y >= canvas.height) return false;
+        const data = srcCtx.getImageData(0, y, canvas.width, 1).data;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] < 250 || data[i + 1] < 250 || data[i + 2] < 250) return false;
+        }
+        return true;
+      };
+
       let renderedPx = 0;
       let firstPage = true;
       while (renderedPx < canvas.height) {
-        const sliceH = Math.min(pxPerPage, canvas.height - renderedPx);
+        let sliceH = Math.min(pxPerPage, canvas.height - renderedPx);
+
+        // Если режем не до конца — ищем ближайшую пустую строку выше границы,
+        // чтобы не разрезать текст пополам
+        if (renderedPx + sliceH < canvas.height) {
+          const minSlice = Math.floor(pxPerPage * 0.5);
+          let cut = sliceH;
+          while (cut > minSlice && !isRowBlank(renderedPx + cut)) {
+            cut -= 1;
+          }
+          if (cut > minSlice) sliceH = cut;
+        }
 
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = canvas.width;
@@ -355,7 +398,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                           );
                         }
                         return (
-                          <div key={day.date} style={{ marginBottom: 8 }}>
+                          <div key={day.date} style={{ marginBottom: 16 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
                               {WEEKDAY_FULL[day.weekday]} {fmtRu(new Date(`${day.date}T00:00:00`))}
                             </div>
@@ -390,7 +433,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                       return daysWithFree.map((day) => {
                         const items = (byDay[day] || []).filter((x) => x.free > 0);
                         return (
-                          <div key={day} style={{ marginBottom: 8 }}>
+                          <div key={day} style={{ marginBottom: 16 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
                               {WEEKDAY_FULL[day]} {fmtRu(addDays(weekStart, day))}
                             </div>
