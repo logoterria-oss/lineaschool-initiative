@@ -14,6 +14,8 @@ export default function AnamnesticsView({ diagData }: AnamnesticsViewProps) {
       <div className="space-y-3 text-sm">
         <div><strong>Пренатальное развитие:</strong> {formatAnamnesticsValue(diagData.prenatalDevelopment, diagData.prenatalDevelopment === "custom", diagData.prenatalDevelopmentCustom, "prenatal")}</div>
         
+        <div><strong>Развитие в первые 3 года жизни:</strong> {formatAnamnesticsValue(diagData.earlyDevelopment, diagData.earlyDevelopment === "custom", diagData.earlyDevelopmentCustom, "prenatal")}</div>
+        
         <div><strong>Неврологические нарушения:</strong> {formatAnamnesticsValue(diagData.neurologicalDisorders, diagData.neurologicalDisorders === "custom", diagData.neurologicalDisordersCustom, "neurological")}</div>
         
         <div><strong>Нарушения слуха/зрения:</strong> {formatAnamnesticsValue(diagData.hearingVisionDisorders, diagData.hearingVisionDisorders === "custom", diagData.hearingVisionDisordersCustom, "hearing")}</div>

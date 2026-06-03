@@ -12,6 +12,7 @@ interface QuestionnaireData {
   schoolStartAge: string;
   kindergarten: string;
   prenatalDevelopment: string;
+  earlyDevelopment: string;
   neurologicalDisorders: string;
   hearingVisionDisorders: string;
   chronicDiseases: string;
@@ -21,6 +22,7 @@ interface QuestionnaireData {
   neuropsychologistConclusion: string;
   defectologistConclusion: string;
   dominantHand: string;
+  otherSpecialistName: string;
 }
 
 export function useQuestionnaireSearch() {
@@ -70,6 +72,7 @@ export function useQuestionnaireSearch() {
         schoolStartAge: data.school_start_age || '',
         kindergarten: data.kindergarten || '',
         prenatalDevelopment: data.prenatal_development || '',
+        earlyDevelopment: data.early_development || '',
         neurologicalDisorders: data.neurological_disorders || '',
         hearingVisionDisorders: data.hearing_vision_disorders || '',
         chronicDiseases: data.chronic_diseases || '',
@@ -78,7 +81,8 @@ export function useQuestionnaireSearch() {
         speechTherapistConclusion: data.speech_therapist_conclusion || '',
         neuropsychologistConclusion: data.neuropsychologist_conclusion || '',
         defectologistConclusion: data.defectologist_conclusion || '',
-        dominantHand: data.dominant_hand || ''
+        dominantHand: data.dominant_hand || '',
+        otherSpecialistName: data.other_specialist_name || ''
       };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка поиска');

@@ -13,6 +13,8 @@ export interface DiagData {
   kindergarten: string;
   prenatalDevelopment: string;
   prenatalDevelopmentCustom: string;
+  earlyDevelopment: string;
+  earlyDevelopmentCustom: string;
   neurologicalDisorders: string;
   neurologicalDisordersCustom: string;
   hearingVisionDisorders: string;

@@ -6,6 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 interface AnamnesticsData {
   prenatalDevelopment: string;
   prenatalDevelopmentCustom: string;
+  earlyDevelopment: string;
+  earlyDevelopmentCustom: string;
   neurologicalDisorders: string;
   neurologicalDisordersCustom: string;
   hearingVisionDisorders: string;
@@ -64,6 +66,45 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
               <Textarea
                 value={formData.prenatalDevelopmentCustom}
                 onChange={(e) => onInputChange("prenatalDevelopmentCustom", e.target.value)}
+                placeholder="Опишите особенности..."
+                className="mt-2"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Развитие в первые 3 года */}
+        <div>
+          <Label>Особенности развития в первые 3 года жизни</Label>
+          <div className="mt-2 space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="earlydev-normal"
+                name="earlyDevelopment"
+                value="нет"
+                checked={formData.earlyDevelopment === "нет"}
+                onChange={(e) => onInputChange("earlyDevelopment", e.target.value)}
+                className="rounded"
+              />
+              <Label htmlFor="earlydev-normal">нет</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="earlydev-custom"
+                name="earlyDevelopment"
+                value="custom"
+                checked={formData.earlyDevelopment === "custom"}
+                onChange={(e) => onInputChange("earlyDevelopment", e.target.value)}
+                className="rounded"
+              />
+              <Label htmlFor="earlydev-custom">есть:</Label>
+            </div>
+            {formData.earlyDevelopment === "custom" && (
+              <Textarea
+                value={formData.earlyDevelopmentCustom}
+                onChange={(e) => onInputChange("earlyDevelopmentCustom", e.target.value)}
                 placeholder="Опишите особенности..."
                 className="mt-2"
               />
@@ -296,6 +337,7 @@ export default function AnamnesticsSection({ formData, onInputChange }: Anamnest
               <SelectItem value="right">правша</SelectItem>
               <SelectItem value="left">левша</SelectItem>
               <SelectItem value="retrained">правша (переученный левша)</SelectItem>
+              <SelectItem value="ambidextrous">амбидекстр</SelectItem>
             </SelectContent>
           </Select>
         </div>

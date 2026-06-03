@@ -14,6 +14,8 @@ export interface DiagFormData {
   // Анамнестические данные
   prenatalDevelopment: string;
   prenatalDevelopmentCustom: string;
+  earlyDevelopment: string;
+  earlyDevelopmentCustom: string;
   neurologicalDisorders: string;
   neurologicalDisordersCustom: string;
   hearingVisionDisorders: string;

@@ -18,6 +18,8 @@ export const useFormDataManager = () => {
     // Анамнестические данные
     prenatalDevelopment: "нет",
     prenatalDevelopmentCustom: "",
+    earlyDevelopment: "нет",
+    earlyDevelopmentCustom: "",
     neurologicalDisorders: "нет",
     neurologicalDisordersCustom: "",
     hearingVisionDisorders: "нет",

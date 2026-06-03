@@ -98,12 +98,22 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           // Otherwise -> select "custom" radio and fill text
           const trimmedPrenatal = data.prenatalDevelopment?.trim() || '';
           if (trimmedPrenatal && trimmedPrenatal !== 'нет' && trimmedPrenatal !== 'Нет' && 
-              trimmedPrenatal !== 'no' && trimmedPrenatal !== 'другое') {
+              trimmedPrenatal !== 'no' && trimmedPrenatal !== 'другое' && trimmedPrenatal !== 'Без особенностей') {
             onInputChange('prenatalDevelopment', 'custom');
             onInputChange('prenatalDevelopmentCustom', data.prenatalDevelopment);
           } else {
             onInputChange('prenatalDevelopment', 'нет');
             onInputChange('prenatalDevelopmentCustom', '');
+          }
+
+          const trimmedEarlyDev = data.earlyDevelopment?.trim() || '';
+          if (trimmedEarlyDev && trimmedEarlyDev !== 'нет' && trimmedEarlyDev !== 'Нет' && 
+              trimmedEarlyDev !== 'no' && trimmedEarlyDev !== 'другое' && trimmedEarlyDev !== 'Без особенностей') {
+            onInputChange('earlyDevelopment', 'custom');
+            onInputChange('earlyDevelopmentCustom', data.earlyDevelopment);
+          } else {
+            onInputChange('earlyDevelopment', 'нет');
+            onInputChange('earlyDevelopmentCustom', '');
           }
           
           const trimmedNeuro = data.neurologicalDisorders?.trim() || '';
@@ -175,8 +185,13 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           }
           
           // Dominant hand
-          if (data.dominantHand && ['right', 'left', 'retrained'].includes(data.dominantHand)) {
+          if (data.dominantHand && ['right', 'left', 'retrained', 'ambidextrous'].includes(data.dominantHand)) {
             onInputChange('dominantHand', data.dominantHand);
+          }
+
+          // Other specialist name — add to additionalInfo
+          if (data.otherSpecialistName && data.otherSpecialistName.trim()) {
+            onInputChange('additionalInfo', `Другой специалист: ${data.otherSpecialistName.trim()}`);
           }
         }
       }, 500);
