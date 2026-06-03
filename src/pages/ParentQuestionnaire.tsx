@@ -276,7 +276,7 @@ export default function ParentQuestionnaire() {
                 </div>
 
                 <div>
-                  <Label>Посещал ли ребёнок детский сад?</Label>
+                  <Label>Посещал ли ребёнок детский сад? *</Label>
                   <RadioGroup
                     value={formData.kindergarten}
                     onValueChange={(value) => handleInputChange("kindergarten", value)}
