@@ -228,7 +228,7 @@ export default function ParentQuestionnaire() {
                 </div>
 
                 <div>
-                  <Label>Реализуется ли АООП (адаптированная образовательная программа)?</Label>
+                  <Label>Реализуется ли АООП (адаптированная образовательная программа)? *</Label>
                   <RadioGroup
                     value={formData.aoopRequired}
                     onValueChange={(value) => handleInputChange("aoopRequired", value)}
