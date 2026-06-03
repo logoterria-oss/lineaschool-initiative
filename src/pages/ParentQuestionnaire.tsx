@@ -54,6 +54,40 @@ export default function ParentQuestionnaire() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const isPageValid = (page: number): boolean => {
+    if (page === 1) {
+      return !!(
+        formData.parentName.trim() &&
+        formData.parentPhone.trim() &&
+        formData.parentEmail.trim() &&
+        formData.city.trim()
+      );
+    }
+    if (page === 2) {
+      return !!(
+        formData.childName.trim() &&
+        formData.birthDate.trim() &&
+        formData.grade &&
+        formData.educationType &&
+        formData.aoopRequired &&
+        formData.schoolStartAge &&
+        formData.kindergarten
+      );
+    }
+    if (page === 3) {
+      const prenatalOk = prenatalNoFeatures || formData.prenatalDevelopment.trim() !== '';
+      const earlyDevOk = earlyDevNoFeatures || formData.earlyDevelopment.trim() !== '';
+      const neurologicalOk = neurologicalNone || formData.neurologicalDisorders.trim() !== '';
+      const hearingOk = hearingVisionNone || formData.hearingVisionDisorders.trim() !== '';
+      const chronicOk = chronicNone || formData.chronicDiseases.trim() !== '';
+      const speechEnvOk = speechEnvNone || formData.speechEnvironment.trim() !== '';
+      const specialistsOk = formData.previousSpecialists.length > 0;
+      const handOk = !!formData.dominantHand;
+      return prenatalOk && earlyDevOk && neurologicalOk && hearingOk && chronicOk && speechEnvOk && specialistsOk && handOk;
+    }
+    return true;
+  };
+
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof FormData] as string[];
     if (checked) {
@@ -146,14 +180,15 @@ export default function ParentQuestionnaire() {
               {currentPage < 3 ? (
                 <button
                   onClick={() => setCurrentPage(prev => prev + 1)}
-                  className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                  disabled={!isPageValid(currentPage)}
+                  className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Далее
                 </button>
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !privacyConsent}
+                  disabled={isSubmitting || !privacyConsent || !isPageValid(3)}
                   className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Отправка..." : "Отправить"}
