@@ -92,8 +92,10 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onInputChange('schoolStartAge', data.schoolStartAge);
           }
           
-          if (data.kindergarten && data.kindergarten !== 'Нет' && data.kindergarten !== 'no' && data.kindergarten === 'yes') {
-            onInputChange('kindergarten', data.kindergarten);
+          if (data.kindergarten === 'yes' || data.kindergarten === 'Да') {
+            onInputChange('kindergarten', 'attended');
+          } else if (data.kindergarten === 'no' || data.kindergarten === 'Нет') {
+            onInputChange('kindergarten', 'not_attended');
           }
           
           // Anamnesis data - fill radio buttons and custom text fields
