@@ -21,7 +21,8 @@ export default function PaymentLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
+  const [dateFilter, setDateFilter] = useState<'day' | 'month'>('month');
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 7));
 
   useEffect(() => {
     // При открытии страницы — сначала тихо синхронизируем, потом загружаем список
@@ -93,13 +94,13 @@ export default function PaymentLeadsPage() {
   })();
 
   const filtered = deduplicated.filter((l) => {
-    if (filter === 'paid') return !!l.paid_at;
-    if (filter === 'unpaid') return !l.paid_at;
-    return true;
+    if (!l.created_at) return false;
+    const prefix = dateFilter === 'month' ? l.created_at.slice(0, 7) : l.created_at.slice(0, 10);
+    return prefix === selectedDate;
   });
 
-  const paidCount = deduplicated.filter((l) => !!l.paid_at).length;
-  const unpaidCount = deduplicated.filter((l) => !l.paid_at).length;
+  const paidCount = filtered.filter((l) => !!l.paid_at).length;
+  const unpaidCount = filtered.filter((l) => !l.paid_at).length;
 
   if (loading) {
     return (
@@ -118,7 +119,7 @@ export default function PaymentLeadsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Заявки на оплату</h1>
             <p className="text-gray-500 mt-1 text-sm">
-              Всего: {deduplicated.length} · Оплачено: {paidCount} · Ожидают: {unpaidCount}
+              Всего заявок: {deduplicated.length}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -138,23 +139,31 @@ export default function PaymentLeadsPage() {
           </div>
         </div>
 
-        {/* Фильтр */}
-        <div className="flex gap-2 mb-5">
-          {(['all', 'unpaid', 'paid'] as const).map((f) => (
+        {/* Фильтр по дате */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                filter === f
-                  ? f === 'paid' ? 'bg-green-500 text-white border-green-500'
-                    : f === 'unpaid' ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
-              }`}
+              onClick={() => { setDateFilter('month'); setSelectedDate(new Date().toISOString().slice(0, 7)); }}
+              className={`px-4 py-1.5 font-medium transition-colors ${dateFilter === 'month' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
             >
-              {f === 'all' ? `Все (${leads.length})` : f === 'paid' ? `Оплачено (${paidCount})` : `Ожидают (${unpaidCount})`}
+              Месяц
             </button>
-          ))}
+            <button
+              onClick={() => { setDateFilter('day'); setSelectedDate(new Date().toISOString().slice(0, 10)); }}
+              className={`px-4 py-1.5 font-medium transition-colors ${dateFilter === 'day' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              День
+            </button>
+          </div>
+          <input
+            type={dateFilter === 'month' ? 'month' : 'date'}
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 bg-white"
+          />
+          <span className="text-sm text-gray-500">
+            {filtered.length} заявок · {paidCount} оплачено · {unpaidCount} ожидают
+          </span>
         </div>
 
         {/* Список */}
