@@ -50,10 +50,10 @@ const IndividualTab = () => {
   const weekEnd = addDays(weekStart, 5);
   const weekLabel = `${fmtRu(weekStart)} – ${fmtRu(weekEnd)}`;
 
-  // Группируем слоты по времени внутри каждого дня
+  // Группируем свободные слоты по времени внутри каждого дня
   const groupByTime = (slots: IndSlot[]) => {
     const map: Record<string, IndSlot[]> = {};
-    for (const s of slots) {
+    for (const s of slots.filter((s) => !s.busy)) {
       if (!map[s.time_from]) map[s.time_from] = [];
       map[s.time_from].push(s);
     }
@@ -94,10 +94,7 @@ const IndividualTab = () => {
             {name}
           </span>
         ))}
-        <span className="text-xs font-medium px-3 py-1 rounded-full border bg-gray-100 text-gray-500 border-gray-200 flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-gray-400 inline-block" />
-          занято
-        </span>
+
       </div>
 
       {loading && (
@@ -123,7 +120,7 @@ const IndividualTab = () => {
           {days.map((day) => {
             const timeGroups = groupByTime(day.slots);
             const freeCount = day.slots.filter((s) => !s.busy).length;
-            const busyCount = day.slots.filter((s) => s.busy).length;
+            if (freeCount === 0) return null;
 
             return (
               <div key={day.date} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -134,9 +131,7 @@ const IndividualTab = () => {
                     {WEEKDAY_SHORT[day.weekday]} {fmtRu(new Date(`${day.date}T00:00:00`))}
                   </span>
                   <span className="ml-auto text-teal-200 text-xs">
-                    {freeCount > 0 && <span className="text-teal-100">{freeCount} св.</span>}
-                    {freeCount > 0 && busyCount > 0 && ' / '}
-                    {busyCount > 0 && <span>{busyCount} зан.</span>}
+                    {freeCount} окн.
                   </span>
                 </div>
 
