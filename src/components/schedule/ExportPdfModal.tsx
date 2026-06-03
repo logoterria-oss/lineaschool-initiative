@@ -49,26 +49,20 @@ const WEEKDAY_FULL = [
 const LOGO_URL =
   'https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/428f7606-17b9-4503-b110-711536d2f8b2.png';
 
-const loadImageAsDataUrl = (url: string): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth;
-        c.height = img.naturalHeight;
-        const ctx = c.getContext('2d');
-        if (!ctx) return reject(new Error('no ctx'));
-        ctx.drawImage(img, 0, 0);
-        resolve(c.toDataURL('image/png'));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    img.onerror = reject;
-    img.src = url;
+const IMAGE_PROXY_URL = 'https://functions.poehali.dev/4e7a1ed9-4e38-45c8-804c-decf67141ce5';
+
+// Грузим картинку через image-proxy (отдаёт корректные CORS-заголовки),
+// чтобы html2canvas мог отрисовать её без «загрязнения» canvas.
+const loadImageAsDataUrl = async (url: string): Promise<string> => {
+  const resp = await fetch(`${IMAGE_PROXY_URL}?url=${encodeURIComponent(url)}`);
+  const blob = await resp.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
+};
 
 const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
