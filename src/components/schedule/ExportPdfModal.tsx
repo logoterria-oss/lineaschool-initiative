@@ -9,12 +9,17 @@ import {
   WEEKDAY_SHORT,
   RawLesson,
   RawTeacher,
+  Customer,
   MAX_GROUP_SIZE,
   fmtDate,
   getMonday,
   addDays,
   fmtRu,
   buildGroupRowsFromLessons,
+  calcAge,
+  formatStudentName,
+  manualAge,
+  shouldForceManualAge,
 } from './types';
 
 type ScheduleType = 'individual' | 'groups' | 'both';
@@ -50,6 +55,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
 
   const [indDays, setIndDays] = useState<IndDay[] | null>(null);
   const [groupRows, setGroupRows] = useState<ReturnType<typeof buildGroupRowsFromLessons> | null>(null);
+  const [customers, setCustomers] = useState<Record<number, Customer>>({});
   const [ready, setReady] = useState(false);
 
   const onDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,8 +97,22 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
           /* не критично */
         }
         setGroupRows(buildGroupRowsFromLessons(lessons, teachers, weekStart));
+
+        try {
+          const cresp = await fetch(`${S20_URL}?mode=customers`);
+          const cdata = await cresp.json();
+          const items: Customer[] = Array.isArray(cdata.customers) ? cdata.customers : [];
+          const map: Record<number, Customer> = {};
+          for (const c of items) {
+            if (c && c.id != null) map[c.id] = c;
+          }
+          setCustomers(map);
+        } catch {
+          /* не критично — без возраста не будет пометки */
+        }
       } else {
         setGroupRows(null);
+        setCustomers({});
       }
 
       setReady(true);
@@ -158,8 +178,30 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
   const actualNote = `Свободные слоты актуальны на ${now.toLocaleDateString('ru-RU')} - ${now
     .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
 
+  // Средний возраст учеников группы по их student_ids
+  const groupAgeLabel = (studentIds: number[]): string => {
+    const ages: number[] = [];
+    for (const sid of studentIds) {
+      const c = customers[sid];
+      if (!c) continue;
+      const name = formatStudentName(c.name);
+      let age: number | null;
+      if (shouldForceManualAge(name)) {
+        age = manualAge(name);
+      } else {
+        age = calcAge(c.dob) ?? manualAge(name);
+      }
+      if (age != null) ages.push(age);
+    }
+    if (ages.length === 0) return '';
+    const avg = ages.reduce((a, b) => a + b, 0) / ages.length;
+    if (avg > 11 && avg < 14) return 'средняя группа (12–15 лет)';
+    if (avg >= 14) return 'старшая группа (14–18 лет)';
+    return '';
+  };
+
   const groupTimeDays = (rows: ReturnType<typeof buildGroupRowsFromLessons>) => {
-    const byDay: Record<number, { time: string; teacher: string; free: number; enrolled: number }[]> = {};
+    const byDay: Record<number, { time: string; teacher: string; free: number; enrolled: number; ageLabel: string }[]> = {};
     for (const row of rows) {
       for (const [dayStr, cell] of Object.entries(row.cells)) {
         const day = Number(dayStr);
@@ -169,6 +211,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
           teacher: row.teacher_name,
           free: cell.free,
           enrolled: cell.enrolled,
+          ageLabel: groupAgeLabel(cell.student_ids || []),
         });
       }
     }
@@ -330,6 +373,9 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                             {items.map((x, i) => (
                               <div key={i} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
                                 {x.time} — {x.teacher} (свободно {x.free} из {MAX_GROUP_SIZE})
+                                {x.ageLabel && (
+                                  <span style={{ color: '#0f766e', fontWeight: 600 }}> — {x.ageLabel}</span>
+                                )}
                               </div>
                             ))}
                           </div>
