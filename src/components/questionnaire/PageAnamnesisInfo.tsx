@@ -246,15 +246,26 @@ export default function PageAnamnesisInfo({
       )}
 
       {formData.previousSpecialists.includes("Другое") && (
-        <div className="pl-4 border-l-2 border-green-200">
-          <Label htmlFor="other-specialist">Укажите специалиста</Label>
-          <Input
-            id="other-specialist"
-            value={formData.otherSpecialistName}
-            onChange={(e) => handleInputChange("otherSpecialistName", e.target.value)}
-            className="mt-2"
-            placeholder="Например: психолог, нарколог..."
-          />
+        <div className="pl-4 border-l-2 border-green-200 space-y-3">
+          <Label className="font-medium">Другое</Label>
+          <div>
+            <Label htmlFor="other-specialist">Укажите специалиста</Label>
+            <Input
+              id="other-specialist"
+              value={formData.otherSpecialistName}
+              onChange={(e) => handleInputChange("otherSpecialistName", e.target.value)}
+              className="mt-2"
+              placeholder="Детский психолог, ABA-терапевт, сурдопедагог, тифлопедагог..."
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="other-specialist-current"
+              checked={formData.otherSpecialistCurrent}
+              onCheckedChange={(checked) => handleInputChange("otherSpecialistCurrent", !!checked)}
+            />
+            <Label htmlFor="other-specialist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+          </div>
         </div>
       )}
 

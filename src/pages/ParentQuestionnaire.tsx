@@ -36,6 +36,7 @@ export default function ParentQuestionnaire() {
     defectologistConclusion: "",
     defectologistCurrent: false,
     otherSpecialistName: "",
+    otherSpecialistCurrent: false,
     dominantHand: ""
   });
 

@@ -24,6 +24,7 @@ export interface FormData {
   defectologistConclusion: string;
   defectologistCurrent: boolean;
   otherSpecialistName: string;
+  otherSpecialistCurrent: boolean;
   dominantHand: string;
 }
 
