@@ -46,6 +46,7 @@ export default function ParentQuestionnaire() {
   const [hearingVisionNone, setHearingVisionNone] = useState(false);
   const [chronicNone, setChronicNone] = useState(false);
   const [speechEnvNone, setSpeechEnvNone] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: string, value: string | string[] | boolean) => {
@@ -125,6 +126,8 @@ export default function ParentQuestionnaire() {
                 setChronicNone={setChronicNone}
                 speechEnvNone={speechEnvNone}
                 setSpeechEnvNone={setSpeechEnvNone}
+                privacyConsent={privacyConsent}
+                setPrivacyConsent={setPrivacyConsent}
               />
             )}
 
@@ -149,8 +152,8 @@ export default function ParentQuestionnaire() {
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50"
+                  disabled={isSubmitting || !privacyConsent}
+                  className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Отправка..." : "Отправить"}
                 </button>

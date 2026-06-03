@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FormData, HandleInputChange, HandleCheckboxChange } from "./types";
+import PrivacyModal from "@/components/PrivacyModal";
 
 function AmbiTooltip() {
   const [open, setOpen] = useState(false);
@@ -49,6 +50,8 @@ interface Props {
   setChronicNone: (v: boolean) => void;
   speechEnvNone: boolean;
   setSpeechEnvNone: (v: boolean) => void;
+  privacyConsent: boolean;
+  setPrivacyConsent: (v: boolean) => void;
 }
 
 export default function PageAnamnesisInfo({
@@ -67,7 +70,10 @@ export default function PageAnamnesisInfo({
   setChronicNone,
   speechEnvNone,
   setSpeechEnvNone,
+  privacyConsent,
+  setPrivacyConsent,
 }: Props) {
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -323,6 +329,30 @@ export default function PageAnamnesisInfo({
           </div>
         </RadioGroup>
       </div>
+
+      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="privacy-consent"
+            checked={privacyConsent}
+            onCheckedChange={(checked) => setPrivacyConsent(!!checked)}
+            className="mt-0.5"
+          />
+          <Label htmlFor="privacy-consent" className="font-normal cursor-pointer text-sm text-gray-700 leading-5">
+            Я даю согласие на{" "}
+            <button
+              type="button"
+              onClick={() => setIsPrivacyOpen(true)}
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              обработку персональных данных
+            </button>
+            {" "}моего ребёнка и моих персональных данных в соответствии с Федеральным законом №152-ФЗ. *
+          </Label>
+        </div>
+      </div>
+
+      <PrivacyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
     </div>
   );
 }
