@@ -67,7 +67,7 @@ export default function PageAnamnesisInfo({
       </div>
 
       <div>
-        <Label htmlFor="early-development">Особенности развития в первые 3 года жизни</Label>
+        <Label htmlFor="early-development">Особенности развития в первые 3 года жизни *</Label>
         <Textarea
           id="early-development"
           value={formData.earlyDevelopment}
