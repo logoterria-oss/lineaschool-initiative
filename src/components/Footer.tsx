@@ -42,6 +42,17 @@ export default function Footer() {
 
         </div>
         
+        {/* Вход в систему — для мобильных (на десктопе есть в шапке) */}
+        <div className="md:hidden mb-6">
+          <a
+            href="/admin/role-select"
+            className="inline-flex items-center space-x-2 text-gray-500 hover:text-green-600 text-sm"
+          >
+            <Icon name="Settings" size={16} />
+            <span>Войти в систему</span>
+          </a>
+        </div>
+
         {/* Разделительная линия */}
         <div className="border-t border-gray-200 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
