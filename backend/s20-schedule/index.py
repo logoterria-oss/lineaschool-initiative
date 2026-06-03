@@ -551,9 +551,11 @@ def handler(event: dict, context) -> dict:
 
         work_schedule = get_work_schedule_from_db()
 
-        # Берём все индивидуальные запланированные уроки за неделю
+        # Берём запланированные (1) и проведённые (3) уроки — оба считаются занятыми
         try:
-            booked_lessons = get_lessons(token, date_from, date_to, status=1)
+            booked_lessons = get_lessons_all_statuses(token, date_from, date_to)
+            # Оставляем только status=1 и status=3 (отменённые status=2 не считаем занятыми)
+            booked_lessons = [l for l in booked_lessons if l.get("status") in (1, 3)]
         except Exception:
             booked_lessons = []
 
