@@ -207,7 +207,7 @@ export default function ParentQuestionnaire() {
                   <Label>Форма получения образования *</Label>
                   <div className="mt-2 space-y-2">
                     {[
-                      { value: "school", label: "Общеобразовательная школа (лицей, гимназия)" },
+                      { value: "school", label: "Общеобразовательная школа / лицей / гимназия" },
                       { value: "correctional", label: "В образовательной организации (коррекционная школа)" },
                       { value: "family", label: "Семейное образование" }
                     ].map(option => (
