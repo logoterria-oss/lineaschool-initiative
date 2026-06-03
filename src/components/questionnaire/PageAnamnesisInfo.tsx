@@ -255,7 +255,7 @@ export default function PageAnamnesisInfo({
               value={formData.otherSpecialistName}
               onChange={(e) => handleInputChange("otherSpecialistName", e.target.value)}
               className="mt-2"
-              placeholder="Детский психолог, ABA-терапевт, сурдопедагог, тифлопедагог..."
+              placeholder="Например, детский психолог, ABA-терапевт, сурдопедагог..."
             />
           </div>
           <div className="flex items-center gap-2">
