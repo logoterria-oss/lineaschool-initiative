@@ -303,9 +303,7 @@ export default function ParentQuestionnaire() {
                 </h2>
 
                 <div>
-                  <Label htmlFor="prenatal">
-                    Особенности пренатального развития
-                  </Label>
+                  <Label htmlFor="prenatal">Особенности перинатального развития</Label>
                   <Textarea
                     id="prenatal"
                     value={formData.prenatalDevelopment}
