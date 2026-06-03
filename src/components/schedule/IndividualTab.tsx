@@ -30,7 +30,7 @@ const IndividualTab = () => {
     setError('');
     try {
       const df = fmtDate(ws);
-      const dt = fmtDate(addDays(ws, 5));
+      const dt = fmtDate(addDays(ws, 6));
       const resp = await fetch(`${S20_URL}?mode=ind_week&date_from=${df}&date_to=${dt}`);
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
@@ -47,7 +47,7 @@ const IndividualTab = () => {
   const prevWeek = () => setWeekStart((w) => addDays(w, -7));
   const nextWeek = () => setWeekStart((w) => addDays(w, 7));
 
-  const weekEnd = addDays(weekStart, 5);
+  const weekEnd = addDays(weekStart, 6);
   const weekLabel = `${fmtRu(weekStart)} – ${fmtRu(weekEnd)}`;
 
   // Группируем свободные слоты по времени внутри каждого дня
