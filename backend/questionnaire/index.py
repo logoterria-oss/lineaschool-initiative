@@ -42,14 +42,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     child_name, birth_date, grade,
                     education_type, aoop_required, aoop_variant,
                     school_start_age, kindergarten,
-                    prenatal_development, neurological_disorders,
+                    prenatal_development, early_development,
+                    neurological_disorders,
                     hearing_vision_disorders, chronic_diseases,
                     speech_environment, previous_specialists,
-                    speech_therapist_conclusion, neuropsychologist_conclusion,
-                    defectologist_conclusion, dominant_hand
+                    speech_therapist_conclusion, speech_therapist_current,
+                    neuropsychologist_conclusion, neuropsychologist_current,
+                    defectologist_conclusion, defectologist_current,
+                    other_specialist_name, other_specialist_current,
+                    dominant_hand
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s
                 )
                 RETURNING id
             """, (
@@ -65,14 +70,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 body_data.get('schoolStartAge'),
                 body_data.get('kindergarten'),
                 body_data.get('prenatalDevelopment'),
+                body_data.get('earlyDevelopment'),
                 body_data.get('neurologicalDisorders'),
                 body_data.get('hearingVisionDisorders'),
                 body_data.get('chronicDiseases'),
                 body_data.get('speechEnvironment'),
                 json.dumps(body_data.get('previousSpecialists', [])),
                 body_data.get('speechTherapistConclusion'),
+                body_data.get('speechTherapistCurrent', False),
                 body_data.get('neuropsychologistConclusion'),
+                body_data.get('neuropsychologistCurrent', False),
                 body_data.get('defectologistConclusion'),
+                body_data.get('defectologistCurrent', False),
+                body_data.get('otherSpecialistName'),
+                body_data.get('otherSpecialistCurrent', False),
                 body_data.get('dominantHand')
             ))
             
