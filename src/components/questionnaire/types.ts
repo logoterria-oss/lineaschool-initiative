@@ -18,10 +18,14 @@ export interface FormData {
   speechEnvironment: string;
   previousSpecialists: string[];
   speechTherapistConclusion: string;
+  speechTherapistCurrent: boolean;
   neuropsychologistConclusion: string;
+  neuropsychologistCurrent: boolean;
   defectologistConclusion: string;
+  defectologistCurrent: boolean;
+  otherSpecialistName: string;
   dominantHand: string;
 }
 
-export type HandleInputChange = (field: string, value: string | string[]) => void;
+export type HandleInputChange = (field: string, value: string | string[] | boolean) => void;
 export type HandleCheckboxChange = (field: string, value: string, checked: boolean) => void;

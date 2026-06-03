@@ -30,8 +30,12 @@ export default function ParentQuestionnaire() {
     speechEnvironment: "",
     previousSpecialists: [],
     speechTherapistConclusion: "",
+    speechTherapistCurrent: false,
     neuropsychologistConclusion: "",
+    neuropsychologistCurrent: false,
     defectologistConclusion: "",
+    defectologistCurrent: false,
+    otherSpecialistName: "",
     dominantHand: ""
   });
 
@@ -43,7 +47,7 @@ export default function ParentQuestionnaire() {
   const [speechEnvNone, setSpeechEnvNone] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (field: string, value: string | string[]) => {
+  const handleInputChange = (field: string, value: string | string[] | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

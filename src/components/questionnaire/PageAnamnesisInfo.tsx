@@ -161,9 +161,9 @@ export default function PageAnamnesisInfo({
       </div>
 
       <div>
-        <Label>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами?</Label>
+        <Label>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами? *</Label>
         <div className="mt-2 space-y-2">
-          {["Логопед", "Дефектолог", "Нейропсихолог", "Другое"].map(specialist => (
+          {["Нет", "Логопед", "Дефектолог", "Нейропсихолог", "Другое"].map(specialist => (
             <div key={specialist} className="flex items-center space-x-2">
               <Checkbox
                 id={`specialist-${specialist}`}
@@ -177,37 +177,83 @@ export default function PageAnamnesisInfo({
       </div>
 
       {formData.previousSpecialists.includes("Логопед") && (
-        <div>
-          <Label htmlFor="speech-therapist">Заключение логопеда (при наличии)</Label>
-          <Input
-            id="speech-therapist"
-            value={formData.speechTherapistConclusion}
-            onChange={(e) => handleInputChange("speechTherapistConclusion", e.target.value)}
-            className="mt-2"
-          />
-        </div>
-      )}
-
-      {formData.previousSpecialists.includes("Нейропсихолог") && (
-        <div>
-          <Label htmlFor="neuropsychologist">Заключение нейропсихолога (при наличии)</Label>
-          <Input
-            id="neuropsychologist"
-            value={formData.neuropsychologistConclusion}
-            onChange={(e) => handleInputChange("neuropsychologistConclusion", e.target.value)}
-            className="mt-2"
-          />
+        <div className="pl-4 border-l-2 border-green-200 space-y-3">
+          <Label className="font-medium">Логопед</Label>
+          <div>
+            <Label htmlFor="speech-therapist">Заключение (при наличии)</Label>
+            <Input
+              id="speech-therapist"
+              value={formData.speechTherapistConclusion}
+              onChange={(e) => handleInputChange("speechTherapistConclusion", e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="speech-therapist-current"
+              checked={formData.speechTherapistCurrent}
+              onCheckedChange={(checked) => handleInputChange("speechTherapistCurrent", !!checked)}
+            />
+            <Label htmlFor="speech-therapist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+          </div>
         </div>
       )}
 
       {formData.previousSpecialists.includes("Дефектолог") && (
-        <div>
-          <Label htmlFor="defectologist">Заключение дефектолога (при наличии)</Label>
+        <div className="pl-4 border-l-2 border-green-200 space-y-3">
+          <Label className="font-medium">Дефектолог</Label>
+          <div>
+            <Label htmlFor="defectologist">Заключение (при наличии)</Label>
+            <Input
+              id="defectologist"
+              value={formData.defectologistConclusion}
+              onChange={(e) => handleInputChange("defectologistConclusion", e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="defectologist-current"
+              checked={formData.defectologistCurrent}
+              onCheckedChange={(checked) => handleInputChange("defectologistCurrent", !!checked)}
+            />
+            <Label htmlFor="defectologist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+          </div>
+        </div>
+      )}
+
+      {formData.previousSpecialists.includes("Нейропсихолог") && (
+        <div className="pl-4 border-l-2 border-green-200 space-y-3">
+          <Label className="font-medium">Нейропсихолог</Label>
+          <div>
+            <Label htmlFor="neuropsychologist">Заключение (при наличии)</Label>
+            <Input
+              id="neuropsychologist"
+              value={formData.neuropsychologistConclusion}
+              onChange={(e) => handleInputChange("neuropsychologistConclusion", e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="neuropsychologist-current"
+              checked={formData.neuropsychologistCurrent}
+              onCheckedChange={(checked) => handleInputChange("neuropsychologistCurrent", !!checked)}
+            />
+            <Label htmlFor="neuropsychologist-current" className="font-normal cursor-pointer">Занимаемся сейчас</Label>
+          </div>
+        </div>
+      )}
+
+      {formData.previousSpecialists.includes("Другое") && (
+        <div className="pl-4 border-l-2 border-green-200">
+          <Label htmlFor="other-specialist">Укажите специалиста</Label>
           <Input
-            id="defectologist"
-            value={formData.defectologistConclusion}
-            onChange={(e) => handleInputChange("defectologistConclusion", e.target.value)}
+            id="other-specialist"
+            value={formData.otherSpecialistName}
+            onChange={(e) => handleInputChange("otherSpecialistName", e.target.value)}
             className="mt-2"
+            placeholder="Например: психолог, нарколог..."
           />
         </div>
       )}
