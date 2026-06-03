@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Search city Москва",
+      "method": "GET",
+      "path": "/?q=Москва",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Search settlement",
+      "method": "GET",
+      "path": "/?q=Мытищи",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Empty query returns empty array",
+      "method": "GET",
+      "path": "/?q=а",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
