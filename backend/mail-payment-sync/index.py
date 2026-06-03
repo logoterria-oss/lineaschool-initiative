@@ -17,20 +17,17 @@ CORS = {
 MAIL_HOST = "imap.mail.ru"
 MAIL_USER = "abram.viktoriya.00@mail.ru"
 SENDER_FILTER = "oplata@tbank.ru"
-SUBJECT_FILTER = "оплате заказа"
+FOLDERS_TO_CHECK = ["INBOX", "INBOX/Receipts", "Receipts"]
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
 
 
 def handler(event: dict, context) -> dict:
-    """Читает письма Т-Банка об оплатах, сопоставляет по OrderId с заявками в БД и помечает оплаченными"""
+    """Читает письма Т-Банка об оплатах, сопоставляет по OrderId и помечает заявки оплаченными"""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
-    params = event.get("queryStringParameters") or {}
-    debug = params.get("debug") == "1"
-
     try:
-        result = sync_payments(debug=debug)
+        result = sync_payments()
         return {
             "statusCode": 200,
             "headers": {**CORS, "Content-Type": "application/json"},
@@ -46,120 +43,106 @@ def handler(event: dict, context) -> dict:
         }
 
 
-def sync_payments(debug=False):
+def sync_payments():
     mail_password = os.environ["MAIL_PASSWORD"]
     dsn = os.environ["DATABASE_URL"]
 
-    # 1. Подключаемся к почте по IMAP
-    imap = imaplib.IMAP4_SSL(MAIL_HOST)
-    imap.login(MAIL_USER, mail_password)
-    imap.select("INBOX")
+    # Берём только незакрытые заявки — только их ищем в почте
+    conn = psycopg2.connect(dsn)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT order_id FROM {SCHEMA}.payment_leads WHERE paid_at IS NULL")
+            unpaid_orders = {row[0] for row in cur.fetchall()}
+    finally:
+        conn.close()
 
-    # 2. Ищем письма от Т-Банка
-    status, message_ids = imap.search(None, f'FROM "{SENDER_FILTER}"')
-    if status != "OK" or not message_ids[0]:
-        imap.logout()
+    print(f"Unpaid orders to match: {len(unpaid_orders)}")
+    if not unpaid_orders:
         return {"ok": True, "matched": 0, "already_paid": 0, "not_found": 0}
 
-    ids = message_ids[0].split()
-    ids = ids[-500:]  # последние 500 писем
+    imap = imaplib.IMAP4_SSL(MAIL_HOST)
+    imap.login(MAIL_USER, mail_password)
 
-    print(f"Found {len(ids)} emails from {SENDER_FILTER}")
-
-    # 3. Парсим письма
+    # Для каждой незакрытой заявки ищем письмо через IMAP SEARCH BODY — только нужные
     payments = []
-    debug_info = []
-    for msg_id in ids:
-        _, msg_data = imap.fetch(msg_id, "(RFC822)")
-        raw = msg_data[0][1]
-        msg = email.message_from_bytes(raw)
+    found_orders = set()
 
-        subject_raw = msg.get("Subject", "")
-        subject = _decode_header_str(subject_raw)
-        if SUBJECT_FILTER.lower() not in subject.lower():
-            continue
+    for folder in FOLDERS_TO_CHECK:
+        if not (unpaid_orders - found_orders):
+            break
+        try:
+            status, _ = imap.select(f'"{folder}"', readonly=True)
+            if status != "OK":
+                continue
+            print(f"Searching in {folder!r}...")
 
-        date_str = msg.get("Date", "")
-        paid_at = _parse_email_date(date_str)
+            for order_id in list(unpaid_orders - found_orders):
+                try:
+                    status2, message_ids = imap.search(
+                        None, f'FROM "{SENDER_FILTER}" BODY "{order_id}"'
+                    )
+                    if status2 != "OK" or not message_ids[0]:
+                        continue
+                    fids = message_ids[0].split()
+                    if not fids:
+                        continue
 
-        body_html = _get_body(msg, prefer="html")
-        body_text = _get_body(msg, prefer="text")
+                    msg_id = fids[-1]
+                    _, data = imap.fetch(msg_id, "(BODY.PEEK[])")
+                    if not data or not data[0]:
+                        continue
 
-        # Сначала пробуем найти ORDER_ в plain text
-        order_id = _find_order_id(body_text)
-        # Если не нашли — чистим HTML и ищем в нём
-        if not order_id:
-            clean = _html_to_text(body_html)
-            order_id = _find_order_id(clean)
+                    msg = email.message_from_bytes(data[0][1])
+                    date_str = msg.get("Date", "")
+                    paid_at = _parse_email_date(date_str)
 
-        if not order_id:
-            # Логируем всегда — чтобы понять что именно не парсится
-            clean_for_log = _html_to_text(body_html) or body_text or ""
-            print(f"No OrderId | date={date_str} | subject={subject} | body_snippet={clean_for_log[:400]!r}")
-            if debug:
-                debug_info.append({"subject": subject, "date": date_str, "body_snippet": clean_for_log[:400]})
-            continue
+                    body_html = _get_body(msg, prefer="html")
+                    body_text = _get_body(msg, prefer="text")
+                    combined = body_text + _html_to_text(body_html)
 
-        tx_match = re.search(r"ID\s*транзакции[:\s]+(\d+)", body_text or "")
-        if not tx_match:
-            clean = _html_to_text(body_html)
-            tx_match = re.search(r"ID\s*транзакции[:\s]+(\d+)", clean)
-        transaction_id = tx_match.group(1) if tx_match else None
+                    if order_id not in combined:
+                        continue
 
-        print(f"Parsed: order_id={order_id} tx={transaction_id} date={paid_at}")
-        payments.append({"order_id": order_id, "transaction_id": transaction_id, "paid_at": paid_at})
+                    tx_match = re.search(r"ID\s*транзакции[:\s]+(\d+)", combined)
+                    transaction_id = tx_match.group(1) if tx_match else None
+
+                    print(f"Found: {order_id} tx={transaction_id} folder={folder}")
+                    payments.append({"order_id": order_id, "transaction_id": transaction_id, "paid_at": paid_at})
+                    found_orders.add(order_id)
+
+                except Exception as e:
+                    print(f"Search error {order_id} in {folder}: {e}")
+
+        except Exception as e:
+            print(f"Folder {folder!r} error: {e}")
 
     imap.logout()
+    print(f"Found: {len(payments)}")
 
-    # 4. Обновляем БД
+    if not payments:
+        return {"ok": True, "matched": 0, "already_paid": 0, "not_found": len(unpaid_orders)}
+
     conn = psycopg2.connect(dsn)
     matched = 0
-    already_paid = 0
     not_found = 0
     try:
         with conn.cursor() as cur:
             for p in payments:
                 cur.execute(
-                    f"SELECT id, paid_at FROM {SCHEMA}.payment_leads WHERE order_id = %s",
-                    (p["order_id"],)
-                )
-                row = cur.fetchone()
-                if not row:
-                    print(f"Not found in DB: {p['order_id']}")
-                    not_found += 1
-                    continue
-                if row[1] is not None:
-                    already_paid += 1
-                    continue
-                cur.execute(
-                    f"UPDATE {SCHEMA}.payment_leads SET paid_at = %s, transaction_id = %s WHERE order_id = %s",
+                    f"UPDATE {SCHEMA}.payment_leads SET paid_at = %s, transaction_id = %s "
+                    f"WHERE order_id = %s AND paid_at IS NULL",
                     (p["paid_at"], p["transaction_id"], p["order_id"])
                 )
-                print(f"Marked paid: {p['order_id']}")
-                matched += 1
+                if cur.rowcount > 0:
+                    print(f"Marked paid: {p['order_id']}")
+                    matched += 1
+                else:
+                    not_found += 1
         conn.commit()
     finally:
         conn.close()
 
-    result = {"ok": True, "matched": matched, "already_paid": already_paid, "not_found": not_found}
-    if debug:
-        result["debug"] = debug_info
-        result["payments_parsed"] = payments
-    return result
-
-
-def _find_order_id(text: str) -> str | None:
-    if not text:
-        return None
-    # Ищем "OrderId ORDER_XXXXXXXXX" или просто "ORDER_XXXXXXXXX" рядом с "OrderId"
-    m = re.search(r"OrderId[\s:]+([A-Z_0-9]+)", text)
-    if m:
-        return m.group(1)
-    # Fallback: любой ORDER_ с числами
-    m = re.search(r"\b(ORDER_\d{10,})\b", text)
-    if m:
-        return m.group(1)
-    return None
+    return {"ok": True, "matched": matched, "already_paid": 0, "not_found": not_found}
 
 
 class _HTMLTextExtractor(HTMLParser):
@@ -179,9 +162,12 @@ class _HTMLTextExtractor(HTMLParser):
 def _html_to_text(html: str) -> str:
     if not html:
         return ""
-    parser = _HTMLTextExtractor()
-    parser.feed(html)
-    return parser.get_text()
+    try:
+        parser = _HTMLTextExtractor()
+        parser.feed(html)
+        return parser.get_text()
+    except Exception:
+        return re.sub(r"<[^>]+>", " ", html)
 
 
 def _decode_header_str(raw: str) -> str:
@@ -196,7 +182,6 @@ def _decode_header_str(raw: str) -> str:
 
 
 def _get_body(msg, prefer="text") -> str:
-    """Возвращает тело письма нужного типа. prefer='text' или 'html'."""
     primary_type = f"text/{prefer}"
     secondary_type = "text/html" if prefer == "text" else "text/plain"
     primary_body = ""
