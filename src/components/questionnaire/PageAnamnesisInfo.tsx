@@ -304,7 +304,7 @@ export default function PageAnamnesisInfo({
       )}
 
       <div>
-        <Label>Ведущая рука</Label>
+        <Label>Ведущая рука *</Label>
         <RadioGroup
           value={formData.dominantHand}
           onValueChange={(value) => handleInputChange("dominantHand", value)}
