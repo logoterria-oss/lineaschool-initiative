@@ -13,6 +13,7 @@ interface QuestionnaireResponse {
   parent_email: string;
   birth_date: string;
   grade: string;
+  city?: string;
   created_at: string;
 }
 
@@ -137,6 +138,12 @@ export default function QuestionnaireResponses() {
                             <Icon name="GraduationCap" size={16} className="inline mr-2" />
                             Класс: {response.grade}
                           </div>
+                          {response.city && (
+                            <div>
+                              <Icon name="MapPin" size={16} className="inline mr-2" />
+                              {response.city}
+                            </div>
+                          )}
                           <div>
                             <Icon name="Clock" size={16} className="inline mr-2" />
                             Заполнена: {formatDate(response.created_at)}
@@ -174,26 +181,25 @@ export default function QuestionnaireResponses() {
 }
 
 function DetailedView({ responseId }: { responseId: number }) {
-  const [details, setDetails] = useState<any>(null);
+  const [details, setDetails] = useState<Record<string, unknown>>({});  
   const [isLoading, setIsLoading] = useState(true);
 
   const translateValue = (value: string | undefined): string => {
     if (!value) return '';
-    
     const translations: Record<string, string> = {
       'yes': 'Да',
       'no': 'Нет',
-      'school': 'Школа',
-      'homeschool': 'Домашнее обучение',
+      'school': 'Общеобразовательная школа / лицей / гимназия',
+      'special': 'Коррекционная школа',
+      'correctional': 'Коррекционная школа',
+      'homeschool': 'Семейное образование',
+      'family': 'Семейное образование',
       'other': 'Другое',
       'right': 'Правша',
       'left': 'Левша',
-      'retrained': 'Переученный левша',
-      'Логопед': 'Логопед',
-      'Дефектолог': 'Дефектолог',
-      'Нейропсихолог': 'Нейропсихолог'
+      'retrained': 'Правша (переученный левша)',
+      'ambidextrous': 'Амбидекстр',
     };
-    
     return translations[value] || value;
   };
 
@@ -224,41 +230,58 @@ function DetailedView({ responseId }: { responseId: number }) {
     return <div className="text-center py-4 text-gray-600">Данные не найдены</div>;
   }
 
+  const str = (v: unknown) => (v ? String(v) : undefined);
+  const specialists = (details.previous_specialists as string[] | undefined) || [];
+
   return (
     <div className="space-y-6">
+      <Section title="Контактные данные">
+        <Field label="Населённый пункт" value={str(details.city)} />
+        <Field label="E-mail" value={str(details.parent_email)} />
+      </Section>
+
       <Section title="Образование">
-        <Field label="Тип образования" value={translateValue(details.education_type)} />
-        <Field label="АООП" value={translateValue(details.aoop_required)} />
-        {(details.aoop_required === 'yes' || details.aoop_required === 'Да') && (
-          <Field label="Вариант АООП" value={details.aoop_variant} />
-        )}
-        <Field label="Возраст поступления в школу" value={details.school_start_age} />
-        <Field label="Детский сад" value={translateValue(details.kindergarten)} />
+        <Field label="Форма обучения" value={translateValue(str(details.education_type))} />
+        <Field label="АООП" value={translateValue(str(details.aoop_required))} />
+        {details.aoop_required === 'yes' && <Field label="Вариант АООП" value={str(details.aoop_variant)} />}
+        <Field label="Возраст поступления в школу" value={str(details.school_start_age) ? `${str(details.school_start_age)} лет` : undefined} />
+        <Field label="Детский сад" value={translateValue(str(details.kindergarten))} />
       </Section>
 
       <Section title="Анамнез">
-        <Field label="Пренатальное развитие" value={translateValue(details.prenatal_development)} />
-        <Field label="Неврологические нарушения" value={translateValue(details.neurological_disorders)} />
-        <Field label="Нарушения слуха/зрения" value={translateValue(details.hearing_vision_disorders)} />
-        <Field label="Хронические заболевания" value={translateValue(details.chronic_diseases)} />
-        <Field label="Речевая среда" value={translateValue(details.speech_environment)} />
+        <Field label="Перинатальное развитие" value={str(details.prenatal_development)} />
+        <Field label="Развитие в первые 3 года" value={str(details.early_development)} />
+        <Field label="Неврологические заболевания" value={str(details.neurological_disorders)} />
+        <Field label="Нарушения слуха/зрения" value={str(details.hearing_vision_disorders)} />
+        <Field label="Хронические заболевания" value={str(details.chronic_diseases)} />
+        <Field label="Речевые нарушения в семье" value={str(details.speech_environment)} />
       </Section>
 
-      <Section title="Предыдущие специалисты">
-        <Field label="Посещали" value={details.previous_specialists?.map(translateValue).join(', ') || 'Нет'} />
-        {details.speech_therapist_conclusion && (
-          <Field label="Заключение логопеда" value={details.speech_therapist_conclusion} />
-        )}
-        {details.neuropsychologist_conclusion && (
-          <Field label="Заключение нейропсихолога" value={details.neuropsychologist_conclusion} />
-        )}
-        {details.defectologist_conclusion && (
-          <Field label="Заключение дефектолога" value={details.defectologist_conclusion} />
-        )}
+      <Section title="Специалисты">
+        {specialists.length > 0
+          ? <Field label="Занимался с" value={specialists.join(', ')} />
+          : <Field label="Занимался с" value="Нет" />
+        }
+        {specialists.includes('Логопед') && <>
+          <Field label="Заключение логопеда" value={str(details.speech_therapist_conclusion)} />
+          {details.speech_therapist_current && <Field label="Статус" value="Занимается сейчас" />}
+        </>}
+        {specialists.includes('Дефектолог') && <>
+          <Field label="Заключение дефектолога" value={str(details.defectologist_conclusion)} />
+          {details.defectologist_current && <Field label="Статус" value="Занимается сейчас" />}
+        </>}
+        {specialists.includes('Нейропсихолог') && <>
+          <Field label="Заключение нейропсихолога" value={str(details.neuropsychologist_conclusion)} />
+          {details.neuropsychologist_current && <Field label="Статус" value="Занимается сейчас" />}
+        </>}
+        {specialists.includes('Другое') && <>
+          <Field label="Другой специалист" value={str(details.other_specialist_name)} />
+          {details.other_specialist_current && <Field label="Статус" value="Занимается сейчас" />}
+        </>}
       </Section>
 
       <Section title="Дополнительно">
-        <Field label="Доминантная рука" value={translateValue(details.dominant_hand)} />
+        <Field label="Ведущая рука" value={translateValue(str(details.dominant_hand))} />
       </Section>
     </div>
   );
