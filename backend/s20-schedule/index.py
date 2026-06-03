@@ -579,11 +579,12 @@ def handler(event: dict, context) -> dict:
                     "time_from": tf, "time_to": tt, "lesson_id": lesson.get("id"),
                 })
 
+        tomorrow = today.date() + timedelta(days=1)
         days_out = []
         current = dt_from
         while current <= dt_to:
             weekday = current.weekday()
-            if weekday <= 5:  # пн-сб
+            if weekday <= 5 and current >= tomorrow:  # пн-сб, только будущие дни
                 date_str = current.strftime("%Y-%m-%d")
                 slots_for_day = []
                 for teacher_id, schedule in work_schedule.items():
