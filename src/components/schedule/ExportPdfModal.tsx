@@ -108,22 +108,41 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     setBuilding(true);
     try {
       const canvas = await html2canvas(printRef.current, { scale: 2, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const margin = 10;
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW - 20;
-      const imgH = (canvas.height * imgW) / canvas.width;
+      const contentW = pageW - margin * 2;
+      const contentH = pageH - margin * 2;
 
-      let heightLeft = imgH;
-      let position = 10;
-      pdf.addImage(imgData, 'PNG', 10, position, imgW, imgH);
-      heightLeft -= pageH - 20;
-      while (heightLeft > 0) {
-        position = heightLeft - imgH + 10;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgW, imgH);
-        heightLeft -= pageH - 20;
+      // Сколько пикселей исходного canvas помещается на одну страницу по высоте
+      const pxPerPage = Math.floor((canvas.width * contentH) / contentW);
+
+      let renderedPx = 0;
+      let firstPage = true;
+      while (renderedPx < canvas.height) {
+        const sliceH = Math.min(pxPerPage, canvas.height - renderedPx);
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceH;
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(
+            canvas,
+            0, renderedPx, canvas.width, sliceH,
+            0, 0, canvas.width, sliceH,
+          );
+        }
+
+        const sliceImgH = (sliceH * contentW) / canvas.width;
+        if (!firstPage) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', margin, margin, contentW, sliceImgH);
+
+        renderedPx += sliceH;
+        firstPage = false;
       }
 
       const fileDate = fmtDate(weekStart);
