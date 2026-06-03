@@ -19,6 +19,8 @@ interface Props {
   setHearingVisionNone: (v: boolean) => void;
   chronicNone: boolean;
   setChronicNone: (v: boolean) => void;
+  speechEnvNone: boolean;
+  setSpeechEnvNone: (v: boolean) => void;
 }
 
 export default function PageAnamnesisInfo({
@@ -35,6 +37,8 @@ export default function PageAnamnesisInfo({
   setHearingVisionNone,
   chronicNone,
   setChronicNone,
+  speechEnvNone,
+  setSpeechEnvNone,
 }: Props) {
   return (
     <div className="space-y-6">
@@ -139,13 +143,21 @@ export default function PageAnamnesisInfo({
       </div>
 
       <div>
-        <Label htmlFor="speech-env">Случаи речевых нарушений в семье?</Label>
+        <Label htmlFor="speech-env">Случаи речевых нарушений в семье? *</Label>
         <Input
           id="speech-env"
           value={formData.speechEnvironment}
           onChange={(e) => handleInputChange("speechEnvironment", e.target.value)}
           className="mt-2"
         />
+        <div className="flex items-center gap-2 mt-2">
+          <Checkbox
+            id="speech-env-none"
+            checked={speechEnvNone}
+            onCheckedChange={(checked) => setSpeechEnvNone(!!checked)}
+          />
+          <Label htmlFor="speech-env-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+        </div>
       </div>
 
       <div>
