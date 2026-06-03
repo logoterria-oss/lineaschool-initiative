@@ -43,6 +43,7 @@ export default function ParentQuestionnaire() {
     dominantHand: ""
   });
 
+  const [prenatalNoFeatures, setPrenatalNoFeatures] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -64,7 +65,7 @@ export default function ParentQuestionnaire() {
       const response = await fetch('https://functions.poehali.dev/65751635-528e-4830-bc09-e0b9c5344580', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ ...formData, prenatalNoFeatures })
       });
 
       if (response.ok) {
@@ -304,25 +305,22 @@ export default function ParentQuestionnaire() {
 
                 <div>
                   <Label htmlFor="prenatal">Особенности перинатального развития</Label>
-                  <div className="flex items-center gap-2 mt-2 mb-2">
+                  <Textarea
+                    id="prenatal"
+                    value={formData.prenatalDevelopment}
+                    onChange={(e) => handleInputChange("prenatalDevelopment", e.target.value)}
+                    className="mt-2"
+                    placeholder="Болезни мамы во время беременности, патологии плода, угроза выкидыша, недоношенность, затяжные/стремительные роды, родовые травмы и т.п."
+                    rows={4}
+                  />
+                  <div className="flex items-center gap-2 mt-2">
                     <Checkbox
                       id="prenatal-no-features"
-                      checked={formData.prenatalDevelopment === 'Без особенностей'}
-                      onCheckedChange={(checked) => {
-                        handleInputChange("prenatalDevelopment", checked ? 'Без особенностей' : '');
-                      }}
+                      checked={prenatalNoFeatures}
+                      onCheckedChange={(checked) => setPrenatalNoFeatures(!!checked)}
                     />
                     <Label htmlFor="prenatal-no-features" className="font-normal cursor-pointer">Без особенностей</Label>
                   </div>
-                  <Textarea
-                    id="prenatal"
-                    value={formData.prenatalDevelopment === 'Без особенностей' ? '' : formData.prenatalDevelopment}
-                    onChange={(e) => handleInputChange("prenatalDevelopment", e.target.value)}
-                    className="mt-1"
-                    placeholder="Болезни мамы во время беременности, патологии плода, угроза выкидыша, недоношенность, затяжные/стремительные роды, родовые травмы и т.п."
-                    rows={4}
-                    disabled={formData.prenatalDevelopment === 'Без особенностей'}
-                  />
                 </div>
 
                 <div>
