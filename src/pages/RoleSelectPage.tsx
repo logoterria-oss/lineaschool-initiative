@@ -9,7 +9,7 @@ const roles = [
   {
     key: 'diag',
     label: 'Диагност',
-    description: 'Заключения, анкеты, расписание, заявки',
+    description: 'Заключения, анкеты, расписание, оплаты',
     icon: 'Stethoscope',
     color: 'border-green-300 hover:border-green-500',
     iconBg: 'bg-green-100',
