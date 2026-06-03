@@ -260,13 +260,19 @@ export default function ParentQuestionnaire() {
 
                 <div>
                   <Label htmlFor="school-start-age">Возраст начала школьного обучения</Label>
-                  <Input
-                    id="school-start-age"
+                  <Select
                     value={formData.schoolStartAge}
-                    onChange={(e) => handleInputChange("schoolStartAge", e.target.value)}
-                    className="mt-2"
-                    placeholder="Например: 7 лет"
-                  />
+                    onValueChange={(val) => handleInputChange("schoolStartAge", val)}
+                  >
+                    <SelectTrigger id="school-start-age" className="mt-2">
+                      <SelectValue placeholder="Выберите возраст" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }, (_, i) => String(i + 5)).map((age) => (
+                        <SelectItem key={age} value={age}>{age} лет</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
