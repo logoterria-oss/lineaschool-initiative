@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import AdminHeader from '@/components/AdminHeader';
 
 const GET_LEADS_URL = 'https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2';
 const SYNC_URL = 'https://functions.poehali.dev/af003b32-0a7b-432b-a657-9e8c28bfe436';
@@ -17,6 +19,7 @@ interface PaymentLead {
 }
 
 export default function PaymentLeadsPage() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<PaymentLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -111,16 +114,22 @@ export default function PaymentLeadsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader showOnlyHome />
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Заголовок */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Оплаты</h1>
-            <p className="text-gray-500 mt-1 text-sm">
-              Всего заявок: {deduplicated.length}
-            </p>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-700 transition-colors">
+              <Icon name="ArrowLeft" size={20} />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Оплаты</h1>
+              <p className="text-gray-500 mt-1 text-sm">
+                Всего заявок: {deduplicated.length}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {syncResult && (
