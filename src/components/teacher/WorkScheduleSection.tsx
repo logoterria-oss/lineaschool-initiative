@@ -22,7 +22,6 @@ const WEEKDAYS = ['Понедельник', 'Вторник', 'Среда', 'Ч�
 const TIME_OPTIONS: string[] = [];
 for (let h = 8; h <= 21; h++) {
   TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:00`);
-  if (h < 21) TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:30`);
 }
 
 interface ScheduleRow { id?: number; weekday: number; time_from: string; time_to: string; }
