@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import { getCityTimezone } from '@/data/russianCities';
 
 interface QuestionnaireResponse {
   id: number;
@@ -123,14 +124,6 @@ export default function QuestionnaireResponses() {
                             Родитель: {response.parent_name}
                           </div>
                           <div>
-                            <Icon name="Phone" size={16} className="inline mr-2" />
-                            {response.parent_phone}
-                          </div>
-                          <div>
-                            <Icon name="Mail" size={16} className="inline mr-2" />
-                            {response.parent_email}
-                          </div>
-                          <div>
                             <Icon name="Calendar" size={16} className="inline mr-2" />
                             Дата рождения: {response.birth_date}
                           </div>
@@ -236,8 +229,14 @@ function DetailedView({ responseId }: { responseId: number }) {
   return (
     <div className="space-y-6">
       <Section title="Контактные данные">
-        <Field label="Населённый пункт" value={str(details.city)} />
+        <Field label="Телефон" value={str(details.parent_phone)} />
         <Field label="E-mail" value={str(details.parent_email)} />
+        {details.city ? (
+          <Field
+            label="Населённый пункт"
+            value={`${str(details.city)}${getCityTimezone(str(details.city)!) ? ` (${getCityTimezone(str(details.city)!)})` : ''}`}
+          />
+        ) : null}
       </Section>
 
       <Section title="Образование">
