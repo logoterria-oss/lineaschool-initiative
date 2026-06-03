@@ -19,10 +19,10 @@ export interface DayGroup {
 }
 
 export const TEACHER_SHORT: Record<number, string> = {
-  2: 'Анастасия',
-  18: 'Анна',
-  11: 'Валерия',
-  4: 'Дарья',
+  2: 'Шишаева Анастасия',
+  18: 'Карамова Анна',
+  11: 'Камнева Валерия',
+  4: 'Еремина Дарья',
 };
 
 export const TEACHER_COLOR: Record<number, string> = {
