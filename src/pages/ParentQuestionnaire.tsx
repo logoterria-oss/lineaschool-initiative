@@ -208,7 +208,7 @@ export default function ParentQuestionnaire() {
                   <div className="mt-2 space-y-2">
                     {[
                       { value: "school", label: "Общеобразовательная школа / лицей / гимназия" },
-                      { value: "correctional", label: "В образовательной организации (коррекционная школа)" },
+                      { value: "correctional", label: "Коррекционная школа" },
                       { value: "family", label: "Семейное образование" }
                     ].map(option => (
                       <div key={option.value} className="flex items-start space-x-2">
