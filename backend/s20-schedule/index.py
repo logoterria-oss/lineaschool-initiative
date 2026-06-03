@@ -584,7 +584,7 @@ def handler(event: dict, context) -> dict:
         current = dt_from
         while current <= dt_to:
             weekday = current.weekday()
-            if weekday <= 5 and current >= tomorrow:  # пн-сб, только будущие дни
+            if weekday <= 6 and current >= tomorrow:  # пн-вс, только будущие дни
                 date_str = current.strftime("%Y-%m-%d")
                 slots_for_day = []
                 for teacher_id, schedule in work_schedule.items():
