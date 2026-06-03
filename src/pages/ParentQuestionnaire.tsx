@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -172,14 +173,20 @@ export default function ParentQuestionnaire() {
 
                 <div>
                   <Label htmlFor="grade">Класс *</Label>
-                  <Input
-                    id="grade"
+                  <Select
                     value={formData.grade}
-                    onChange={(e) => handleInputChange("grade", e.target.value)}
-                    className="mt-2"
-                    placeholder="Например: 3"
+                    onValueChange={(val) => handleInputChange("grade", val)}
                     required
-                  />
+                  >
+                    <SelectTrigger id="grade" className="mt-2">
+                      <SelectValue placeholder="Выберите класс" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 11 }, (_, i) => String(i + 1)).map((g) => (
+                        <SelectItem key={g} value={g}>{g} класс</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
