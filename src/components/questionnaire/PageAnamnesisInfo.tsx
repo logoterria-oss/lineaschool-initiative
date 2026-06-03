@@ -52,6 +52,7 @@ interface Props {
   setSpeechEnvNone: (v: boolean) => void;
   privacyConsent: boolean;
   setPrivacyConsent: (v: boolean) => void;
+  errors?: string[];
 }
 
 export default function PageAnamnesisInfo({
@@ -72,21 +73,24 @@ export default function PageAnamnesisInfo({
   setSpeechEnvNone,
   privacyConsent,
   setPrivacyConsent,
+  errors,
 }: Props) {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const err = (field: string) => errors?.includes(field);
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">
         Анамнестические данные
       </h2>
 
-      <div>
-        <Label htmlFor="prenatal">Особенности перинатального развития *</Label>
+      <div data-error={err('prenatalDevelopment') || undefined}>
+        <Label htmlFor="prenatal" className={err('prenatalDevelopment') ? 'text-red-500' : ''}>Особенности перинатального развития *</Label>
+        {err('prenatalDevelopment') && <p className="text-red-500 text-xs mt-1">Заполните поле или отметьте «Без особенностей»</p>}
         <Textarea
           id="prenatal"
           value={formData.prenatalDevelopment}
           onChange={(e) => handleInputChange("prenatalDevelopment", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err('prenatalDevelopment') ? 'border-red-400' : ''}`}
           placeholder="Болезни мамы во время беременности, патологии плода, угроза выкидыша, недоношенность, затяжные/стремительные роды, родовые травмы и т.п."
           rows={4}
         />
@@ -100,13 +104,14 @@ export default function PageAnamnesisInfo({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="early-development">Особенности развития в первые 3 года жизни *</Label>
+      <div data-error={err('earlyDevelopment') || undefined}>
+        <Label htmlFor="early-development" className={err('earlyDevelopment') ? 'text-red-500' : ''}>Особенности развития в первые 3 года жизни *</Label>
+        {err('earlyDevelopment') && <p className="text-red-500 text-xs mt-1">Заполните поле или отметьте «Без особенностей»</p>}
         <Textarea
           id="early-development"
           value={formData.earlyDevelopment}
           onChange={(e) => handleInputChange("earlyDevelopment", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err('earlyDevelopment') ? 'border-red-400' : ''}`}
           placeholder="Особенности моторного, речевого, психического развития в первые 3 года жизни"
           rows={4}
         />
@@ -120,15 +125,16 @@ export default function PageAnamnesisInfo({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="neurological">
+      <div data-error={err('neurologicalDisorders') || undefined}>
+        <Label htmlFor="neurological" className={err('neurologicalDisorders') ? 'text-red-500' : ''}>
           Диагностированные неврологические заболевания и/или психические расстройства *
         </Label>
+        {err('neurologicalDisorders') && <p className="text-red-500 text-xs mt-1">Заполните поле или отметьте «Нет / не диагностировано»</p>}
         <Input
           id="neurological"
           value={formData.neurologicalDisorders}
           onChange={(e) => handleInputChange("neurologicalDisorders", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err('neurologicalDisorders') ? 'border-red-400' : ''}`}
         />
         <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
@@ -140,13 +146,14 @@ export default function PageAnamnesisInfo({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="hearing-vision">Нарушения слуха и/или зрения *</Label>
+      <div data-error={err('hearingVisionDisorders') || undefined}>
+        <Label htmlFor="hearing-vision" className={err('hearingVisionDisorders') ? 'text-red-500' : ''}>Нарушения слуха и/или зрения *</Label>
+        {err('hearingVisionDisorders') && <p className="text-red-500 text-xs mt-1">Заполните поле или отметьте «Нет / не диагностировано»</p>}
         <Input
           id="hearing-vision"
           value={formData.hearingVisionDisorders}
           onChange={(e) => handleInputChange("hearingVisionDisorders", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err('hearingVisionDisorders') ? 'border-red-400' : ''}`}
         />
         <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
@@ -158,13 +165,14 @@ export default function PageAnamnesisInfo({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="chronic">Другие хронические заболевания *</Label>
+      <div data-error={err('chronicDiseases') || undefined}>
+        <Label htmlFor="chronic" className={err('chronicDiseases') ? 'text-red-500' : ''}>Другие хронические заболевания *</Label>
+        {err('chronicDiseases') && <p className="text-red-500 text-xs mt-1">Заполните поле или отметьте «Нет / не диагностировано»</p>}
         <Input
           id="chronic"
           value={formData.chronicDiseases}
           onChange={(e) => handleInputChange("chronicDiseases", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err('chronicDiseases') ? 'border-red-400' : ''}`}
         />
         <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
@@ -176,13 +184,14 @@ export default function PageAnamnesisInfo({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="speech-env">Случаи речевых нарушений в семье? *</Label>
+      <div data-error={err('speechEnvironment') || undefined}>
+        <Label htmlFor="speech-env" className={err('speechEnvironment') ? 'text-red-500' : ''}>Случаи речевых нарушений в семье? *</Label>
+        {err('speechEnvironment') && <p className="text-red-500 text-xs mt-1">Заполните поле или отметьте «Нет / не диагностировано»</p>}
         <Input
           id="speech-env"
           value={formData.speechEnvironment}
           onChange={(e) => handleInputChange("speechEnvironment", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err('speechEnvironment') ? 'border-red-400' : ''}`}
         />
         <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
@@ -194,8 +203,9 @@ export default function PageAnamnesisInfo({
         </div>
       </div>
 
-      <div>
-        <Label>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами? *</Label>
+      <div data-error={err('previousSpecialists') || undefined}>
+        <Label className={err('previousSpecialists') ? 'text-red-500' : ''}>Занимался ли ребёнок ранее с коррекционными педагогами и/или психологами? *</Label>
+        {err('previousSpecialists') && <p className="text-red-500 text-xs mt-1">Выберите хотя бы один вариант</p>}
         <div className="mt-2 space-y-2">
           {["Нет", "Логопед", "Дефектолог", "Нейропсихолог", "Другое"].map(specialist => (
             <div key={specialist} className="flex items-center space-x-2">
@@ -303,8 +313,9 @@ export default function PageAnamnesisInfo({
         </div>
       )}
 
-      <div>
-        <Label>Ведущая рука *</Label>
+      <div data-error={err('dominantHand') || undefined}>
+        <Label className={err('dominantHand') ? 'text-red-500' : ''}>Ведущая рука *</Label>
+        {err('dominantHand') && <p className="text-red-500 text-xs mt-1">Выберите вариант</p>}
         <RadioGroup
           value={formData.dominantHand}
           onValueChange={(value) => handleInputChange("dominantHand", value)}

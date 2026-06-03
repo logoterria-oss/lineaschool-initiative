@@ -6,28 +6,36 @@ import { FormData, HandleInputChange } from "./types";
 interface Props {
   formData: FormData;
   handleInputChange: HandleInputChange;
+  errors?: string[];
 }
 
-export default function PageContactInfo({ formData, handleInputChange }: Props) {
+const err = (errors: string[] | undefined, field: string) => errors?.includes(field);
+
+export default function PageContactInfo({ formData, handleInputChange, errors }: Props) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">
         Контактные данные родителя
       </h2>
 
-      <div>
-        <Label htmlFor="parent-name">ФИО родителя (законного представителя) *</Label>
+      <div data-error={err(errors, 'parentName') || undefined}>
+        <Label htmlFor="parent-name" className={err(errors, 'parentName') ? 'text-red-500' : ''}>
+          ФИО родителя (законного представителя) *
+        </Label>
         <Input
           id="parent-name"
           value={formData.parentName}
           onChange={(e) => handleInputChange("parentName", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err(errors, 'parentName') ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
           required
         />
+        {err(errors, 'parentName') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
-      <div>
-        <Label htmlFor="parent-phone">Номер телефона родителя (законного представителя) *</Label>
+      <div data-error={err(errors, 'parentPhone') || undefined}>
+        <Label htmlFor="parent-phone" className={err(errors, 'parentPhone') ? 'text-red-500' : ''}>
+          Номер телефона родителя (законного представителя) *
+        </Label>
         <Input
           id="parent-phone"
           type="tel"
@@ -47,32 +55,39 @@ export default function PageContactInfo({ formData, handleInputChange }: Props) 
             }
             handleInputChange("parentPhone", masked);
           }}
-          className="mt-2"
+          className={`mt-2 ${err(errors, 'parentPhone') ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
           placeholder="+7 (900) 123-45-67"
           required
         />
+        {err(errors, 'parentPhone') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
-      <div>
-        <Label htmlFor="parent-email">Электронная почта родителя (законного представителя) *</Label>
+      <div data-error={err(errors, 'parentEmail') || undefined}>
+        <Label htmlFor="parent-email" className={err(errors, 'parentEmail') ? 'text-red-500' : ''}>
+          Электронная почта родителя (законного представителя) *
+        </Label>
         <Input
           id="parent-email"
           type="email"
           value={formData.parentEmail}
           onChange={(e) => handleInputChange("parentEmail", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err(errors, 'parentEmail') ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
         />
+        {err(errors, 'parentEmail') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
-      <div>
-        <Label htmlFor="city">Населённый пункт *</Label>
-        <div className="mt-2">
+      <div data-error={err(errors, 'city') || undefined}>
+        <Label htmlFor="city" className={err(errors, 'city') ? 'text-red-500' : ''}>
+          Населённый пункт *
+        </Label>
+        <div className={`mt-2 ${err(errors, 'city') ? 'ring-1 ring-red-400 rounded-md' : ''}`}>
           <CitySelect
             id="city"
             value={formData.city}
             onChange={(val) => handleInputChange("city", val)}
           />
         </div>
+        {err(errors, 'city') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
     </div>
   );

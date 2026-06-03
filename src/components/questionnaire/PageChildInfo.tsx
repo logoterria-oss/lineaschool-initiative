@@ -36,46 +36,51 @@ function Tooltip({ text }: { text: string }) {
 interface Props {
   formData: FormData;
   handleInputChange: HandleInputChange;
+  errors?: string[];
 }
 
-export default function PageChildInfo({ formData, handleInputChange }: Props) {
+const err = (errors: string[] | undefined, field: string) => errors?.includes(field);
+
+export default function PageChildInfo({ formData, handleInputChange, errors }: Props) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">
         Данные ребёнка
       </h2>
 
-      <div>
-        <Label htmlFor="child-name">ФИО ребёнка *</Label>
+      <div data-error={err(errors, 'childName') || undefined}>
+        <Label htmlFor="child-name" className={err(errors, 'childName') ? 'text-red-500' : ''}>ФИО ребёнка *</Label>
         <Input
           id="child-name"
           value={formData.childName}
           onChange={(e) => handleInputChange("childName", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err(errors, 'childName') ? 'border-red-400' : ''}`}
           required
         />
+        {err(errors, 'childName') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
-      <div>
-        <Label htmlFor="birth-date">Дата рождения *</Label>
+      <div data-error={err(errors, 'birthDate') || undefined}>
+        <Label htmlFor="birth-date" className={err(errors, 'birthDate') ? 'text-red-500' : ''}>Дата рождения *</Label>
         <Input
           id="birth-date"
           type="date"
           value={formData.birthDate}
           onChange={(e) => handleInputChange("birthDate", e.target.value)}
-          className="mt-2"
+          className={`mt-2 ${err(errors, 'birthDate') ? 'border-red-400' : ''}`}
           required
         />
+        {err(errors, 'birthDate') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
-      <div>
-        <Label htmlFor="grade">Класс *</Label>
+      <div data-error={err(errors, 'grade') || undefined}>
+        <Label htmlFor="grade" className={err(errors, 'grade') ? 'text-red-500' : ''}>Класс *</Label>
         <Select
           value={formData.grade}
           onValueChange={(val) => handleInputChange("grade", val)}
           required
         >
-          <SelectTrigger id="grade" className="mt-2">
+          <SelectTrigger id="grade" className={`mt-2 ${err(errors, 'grade') ? 'border-red-400' : ''}`}>
             <SelectValue placeholder="Выберите класс" />
           </SelectTrigger>
           <SelectContent>
@@ -84,10 +89,11 @@ export default function PageChildInfo({ formData, handleInputChange }: Props) {
             ))}
           </SelectContent>
         </Select>
+        {err(errors, 'grade') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
-      <div>
-        <Label>Форма получения образования *</Label>
+      <div data-error={err(errors, 'educationType') || undefined}>
+        <Label className={err(errors, 'educationType') ? 'text-red-500' : ''}>Форма получения образования *</Label>
         <div className="mt-2 space-y-2">
           {[
             { value: "school", label: "Общеобразовательная школа / лицей / гимназия" },
@@ -108,11 +114,12 @@ export default function PageChildInfo({ formData, handleInputChange }: Props) {
             </div>
           ))}
         </div>
+        {err(errors, 'educationType') && <p className="text-red-500 text-xs mt-1">Выберите форму обучения</p>}
       </div>
 
-      <div>
+      <div data-error={err(errors, 'aoopRequired') || undefined}>
         <div className="flex items-center gap-2">
-          <Label>Реализуется ли АООП? *</Label>
+          <Label className={err(errors, 'aoopRequired') ? 'text-red-500' : ''}>Реализуется ли АООП? *</Label>
           <Tooltip text="АООП (адаптированная основная образовательная программа) — это специальная образовательная программа, адаптированная для обучения детей с ограниченными возможностями здоровья (ОВЗ) и назначаемая психолого-медико-педагогической комиссией (ПМПК)." />
         </div>
         <RadioGroup
@@ -129,6 +136,7 @@ export default function PageChildInfo({ formData, handleInputChange }: Props) {
             <Label htmlFor="aoop-no">Нет</Label>
           </div>
         </RadioGroup>
+        {err(errors, 'aoopRequired') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
       {formData.aoopRequired === "yes" && (
@@ -144,13 +152,13 @@ export default function PageChildInfo({ formData, handleInputChange }: Props) {
         </div>
       )}
 
-      <div>
-        <Label htmlFor="school-start-age">Возраст начала школьного обучения *</Label>
+      <div data-error={err(errors, 'schoolStartAge') || undefined}>
+        <Label htmlFor="school-start-age" className={err(errors, 'schoolStartAge') ? 'text-red-500' : ''}>Возраст начала школьного обучения *</Label>
         <Select
           value={formData.schoolStartAge}
           onValueChange={(val) => handleInputChange("schoolStartAge", val)}
         >
-          <SelectTrigger id="school-start-age" className="mt-2">
+          <SelectTrigger id="school-start-age" className={`mt-2 ${err(errors, 'schoolStartAge') ? 'border-red-400' : ''}`}>
             <SelectValue placeholder="Выберите возраст" />
           </SelectTrigger>
           <SelectContent>
@@ -159,10 +167,11 @@ export default function PageChildInfo({ formData, handleInputChange }: Props) {
             ))}
           </SelectContent>
         </Select>
+        {err(errors, 'schoolStartAge') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
 
-      <div>
-        <Label>Посещал ли ребёнок детский сад? *</Label>
+      <div data-error={err(errors, 'kindergarten') || undefined}>
+        <Label className={err(errors, 'kindergarten') ? 'text-red-500' : ''}>Посещал ли ребёнок детский сад? *</Label>
         <RadioGroup
           value={formData.kindergarten}
           onValueChange={(value) => handleInputChange("kindergarten", value)}
@@ -177,6 +186,7 @@ export default function PageChildInfo({ formData, handleInputChange }: Props) {
             <Label htmlFor="kindergarten-no">Нет</Label>
           </div>
         </RadioGroup>
+        {err(errors, 'kindergarten') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}
       </div>
     </div>
   );

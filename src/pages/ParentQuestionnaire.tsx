@@ -41,51 +41,72 @@ export default function ParentQuestionnaire() {
     dominantHand: ""
   });
 
-  const [prenatalNoFeatures, setPrenatalNoFeatures] = useState(false);
-  const [earlyDevNoFeatures, setEarlyDevNoFeatures] = useState(false);
-  const [neurologicalNone, setNeurologicalNone] = useState(false);
-  const [hearingVisionNone, setHearingVisionNone] = useState(false);
-  const [chronicNone, setChronicNone] = useState(false);
-  const [speechEnvNone, setSpeechEnvNone] = useState(false);
+  const [prenatalNoFeatures, setPrenatalNoFeaturesRaw] = useState(false);
+  const [earlyDevNoFeatures, setEarlyDevNoFeaturesRaw] = useState(false);
+  const [neurologicalNone, setNeurologicalNoneRaw] = useState(false);
+  const [hearingVisionNone, setHearingVisionNoneRaw] = useState(false);
+  const [chronicNone, setChronicNoneRaw] = useState(false);
+  const [speechEnvNone, setSpeechEnvNoneRaw] = useState(false);
+
+  const setPrenatalNoFeatures = (v: boolean) => { setPrenatalNoFeaturesRaw(v); if (v) setErrors(p => p.filter(e => e !== 'prenatalDevelopment')); };
+  const setEarlyDevNoFeatures = (v: boolean) => { setEarlyDevNoFeaturesRaw(v); if (v) setErrors(p => p.filter(e => e !== 'earlyDevelopment')); };
+  const setNeurologicalNone = (v: boolean) => { setNeurologicalNoneRaw(v); if (v) setErrors(p => p.filter(e => e !== 'neurologicalDisorders')); };
+  const setHearingVisionNone = (v: boolean) => { setHearingVisionNoneRaw(v); if (v) setErrors(p => p.filter(e => e !== 'hearingVisionDisorders')); };
+  const setChronicNone = (v: boolean) => { setChronicNoneRaw(v); if (v) setErrors(p => p.filter(e => e !== 'chronicDiseases')); };
+  const setSpeechEnvNone = (v: boolean) => { setSpeechEnvNoneRaw(v); if (v) setErrors(p => p.filter(e => e !== 'speechEnvironment')); };
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: string, value: string | string[] | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => prev.filter(e => e !== field));
   };
 
-  const isPageValid = (page: number): boolean => {
+  const [errors, setErrors] = useState<string[]>([]);
+
+  const getPageErrors = (page: number): string[] => {
+    const errs: string[] = [];
     if (page === 1) {
-      return !!(
-        formData.parentName.trim() &&
-        formData.parentPhone.trim() &&
-        formData.parentEmail.trim() &&
-        formData.city.trim()
-      );
+      if (!formData.parentName.trim()) errs.push('parentName');
+      if (!formData.parentPhone.trim()) errs.push('parentPhone');
+      if (!formData.parentEmail.trim()) errs.push('parentEmail');
+      if (!formData.city.trim()) errs.push('city');
     }
     if (page === 2) {
-      return !!(
-        formData.childName.trim() &&
-        formData.birthDate.trim() &&
-        formData.grade &&
-        formData.educationType &&
-        formData.aoopRequired &&
-        formData.schoolStartAge &&
-        formData.kindergarten
-      );
+      if (!formData.childName.trim()) errs.push('childName');
+      if (!formData.birthDate.trim()) errs.push('birthDate');
+      if (!formData.grade) errs.push('grade');
+      if (!formData.educationType) errs.push('educationType');
+      if (!formData.aoopRequired) errs.push('aoopRequired');
+      if (!formData.schoolStartAge) errs.push('schoolStartAge');
+      if (!formData.kindergarten) errs.push('kindergarten');
     }
     if (page === 3) {
-      const prenatalOk = prenatalNoFeatures || formData.prenatalDevelopment.trim() !== '';
-      const earlyDevOk = earlyDevNoFeatures || formData.earlyDevelopment.trim() !== '';
-      const neurologicalOk = neurologicalNone || formData.neurologicalDisorders.trim() !== '';
-      const hearingOk = hearingVisionNone || formData.hearingVisionDisorders.trim() !== '';
-      const chronicOk = chronicNone || formData.chronicDiseases.trim() !== '';
-      const speechEnvOk = speechEnvNone || formData.speechEnvironment.trim() !== '';
-      const specialistsOk = formData.previousSpecialists.length > 0;
-      const handOk = !!formData.dominantHand;
-      return prenatalOk && earlyDevOk && neurologicalOk && hearingOk && chronicOk && speechEnvOk && specialistsOk && handOk;
+      if (!prenatalNoFeatures && !formData.prenatalDevelopment.trim()) errs.push('prenatalDevelopment');
+      if (!earlyDevNoFeatures && !formData.earlyDevelopment.trim()) errs.push('earlyDevelopment');
+      if (!neurologicalNone && !formData.neurologicalDisorders.trim()) errs.push('neurologicalDisorders');
+      if (!hearingVisionNone && !formData.hearingVisionDisorders.trim()) errs.push('hearingVisionDisorders');
+      if (!chronicNone && !formData.chronicDiseases.trim()) errs.push('chronicDiseases');
+      if (!speechEnvNone && !formData.speechEnvironment.trim()) errs.push('speechEnvironment');
+      if (formData.previousSpecialists.length === 0) errs.push('previousSpecialists');
+      if (!formData.dominantHand) errs.push('dominantHand');
     }
-    return true;
+    return errs;
+  };
+
+  const handleNext = () => {
+    const errs = getPageErrors(currentPage);
+    if (errs.length > 0) {
+      setErrors(errs);
+      // Scroll to first error
+      setTimeout(() => {
+        const el = document.querySelector('[data-error="true"]');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+      return;
+    }
+    setErrors([]);
+    setCurrentPage(prev => prev + 1);
   };
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
@@ -137,11 +158,11 @@ export default function ParentQuestionnaire() {
 
           <div className="bg-white border border-gray-200 rounded-lg p-8">
             {currentPage === 1 && (
-              <PageContactInfo formData={formData} handleInputChange={handleInputChange} />
+              <PageContactInfo formData={formData} handleInputChange={handleInputChange} errors={errors} />
             )}
 
             {currentPage === 2 && (
-              <PageChildInfo formData={formData} handleInputChange={handleInputChange} />
+              <PageChildInfo formData={formData} handleInputChange={handleInputChange} errors={errors} />
             )}
 
             {currentPage === 3 && (
@@ -163,6 +184,7 @@ export default function ParentQuestionnaire() {
                 setSpeechEnvNone={setSpeechEnvNone}
                 privacyConsent={privacyConsent}
                 setPrivacyConsent={setPrivacyConsent}
+                errors={errors}
               />
             )}
 
@@ -179,16 +201,15 @@ export default function ParentQuestionnaire() {
 
               {currentPage < 3 ? (
                 <button
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                  disabled={!isPageValid(currentPage)}
-                  className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleNext}
+                  className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
                 >
                   Далее
                 </button>
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !privacyConsent || !isPageValid(3)}
+                  disabled={isSubmitting || !privacyConsent}
                   className="ml-auto px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Отправка..." : "Отправить"}
