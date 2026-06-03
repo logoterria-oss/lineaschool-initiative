@@ -115,7 +115,7 @@ export default function ParentQuestionnaire() {
                 </div>
 
                 <div>
-                  <Label htmlFor="parent-phone">Номер телефона родителя *</Label>
+                  <Label htmlFor="parent-phone">Номер телефона родителя (законного представителя) *</Label>
                   <Input
                     id="parent-phone"
                     type="tel"
@@ -128,7 +128,7 @@ export default function ParentQuestionnaire() {
                 </div>
 
                 <div>
-                  <Label htmlFor="parent-email">Электронная почта родителя</Label>
+                  <Label htmlFor="parent-email">Электронная почта родителя (законного представителя) *</Label>
                   <Input
                     id="parent-email"
                     type="email"
