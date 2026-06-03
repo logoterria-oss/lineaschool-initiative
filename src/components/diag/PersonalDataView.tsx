@@ -24,14 +24,16 @@ export default function PersonalDataView({ diagData }: PersonalDataViewProps) {
           <div>
             <strong>Населённый пункт:</strong> {diagData.city}
             {getCityTimezone(diagData.city) && (
-              <span className="text-gray-400 text-xs ml-1">({getCityTimezone(diagData.city)})</span>
+              <span className="text-gray-500 text-xs ml-1 print:text-gray-700">({getCityTimezone(diagData.city)})</span>
             )}
           </div>
         )}
         <div><strong>Тип образования:</strong> {formatValue(diagData.educationType)}</div>
         <div><strong>АООП:</strong> {formatValue(diagData.aoop)}</div>
         <div><strong>Возраст поступления в школу:</strong> {diagData.schoolStartAge}</div>
-        <div><strong>Детский сад:</strong> {formatValue(diagData.kindergarten)}</div>
+        {diagData.kindergarten && (
+          <div><strong>Детский сад:</strong> {formatValue(diagData.kindergarten)}</div>
+        )}
       </div>
       {diagData.complaints && (
         <div className="mt-4">
