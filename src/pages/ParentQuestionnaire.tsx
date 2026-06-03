@@ -32,6 +32,7 @@ export default function ParentQuestionnaire() {
     
     // Анамнестические данные
     prenatalDevelopment: "",
+    earlyDevelopment: "",
     neurologicalDisorders: "",
     hearingVisionDisorders: "",
     chronicDiseases: "",
@@ -44,6 +45,7 @@ export default function ParentQuestionnaire() {
   });
 
   const [prenatalNoFeatures, setPrenatalNoFeatures] = useState(false);
+  const [earlyDevNoFeatures, setEarlyDevNoFeatures] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -65,7 +67,7 @@ export default function ParentQuestionnaire() {
       const response = await fetch('https://functions.poehali.dev/65751635-528e-4830-bc09-e0b9c5344580', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, prenatalNoFeatures })
+        body: JSON.stringify({ ...formData, prenatalNoFeatures, earlyDevNoFeatures })
       });
 
       if (response.ok) {
@@ -320,6 +322,26 @@ export default function ParentQuestionnaire() {
                       onCheckedChange={(checked) => setPrenatalNoFeatures(!!checked)}
                     />
                     <Label htmlFor="prenatal-no-features" className="font-normal cursor-pointer">Без особенностей</Label>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="early-development">Особенности развития в первые 3 года жизни</Label>
+                  <Textarea
+                    id="early-development"
+                    value={formData.earlyDevelopment}
+                    onChange={(e) => handleInputChange("earlyDevelopment", e.target.value)}
+                    className="mt-2"
+                    placeholder="Особенности моторного, речевого, психического развития в первые 3 года жизни"
+                    rows={4}
+                  />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Checkbox
+                      id="early-dev-no-features"
+                      checked={earlyDevNoFeatures}
+                      onCheckedChange={(checked) => setEarlyDevNoFeatures(!!checked)}
+                    />
+                    <Label htmlFor="early-dev-no-features" className="font-normal cursor-pointer">Без особенностей</Label>
                   </div>
                 </div>
 
