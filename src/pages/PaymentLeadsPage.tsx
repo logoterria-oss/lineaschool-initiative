@@ -117,7 +117,7 @@ export default function PaymentLeadsPage() {
         {/* Заголовок */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Заявки на оплату</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Оплаты</h1>
             <p className="text-gray-500 mt-1 text-sm">
               Всего заявок: {deduplicated.length}
             </p>

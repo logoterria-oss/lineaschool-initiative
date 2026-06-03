@@ -105,7 +105,7 @@ const AdminDashboard = () => {
                   <div className="p-2 md:p-3 bg-orange-100 rounded-lg">
                     <Icon name="CreditCard" className="text-orange-600" size={24} />
                   </div>
-                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Заявки на оплату</CardTitle>
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Оплаты</CardTitle>
                 </div>
                 <CardDescription className="text-sm md:text-base">
                   Контакты клиентов, которые начали оплату
