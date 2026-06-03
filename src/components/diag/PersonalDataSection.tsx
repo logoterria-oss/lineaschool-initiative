@@ -170,15 +170,24 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
               
               // Fill conclusion fields if they exist
               if (data.speechTherapistConclusion && data.speechTherapistConclusion.trim()) {
-                onInputChange('speechTherapistConclusion', data.speechTherapistConclusion);
+                const val = data.speechTherapistCurrent
+                  ? `${data.speechTherapistConclusion.trim()} (занимаемся сейчас)`
+                  : data.speechTherapistConclusion;
+                onInputChange('speechTherapistConclusion', val);
               }
               
               if (data.neuropsychologistConclusion && data.neuropsychologistConclusion.trim()) {
-                onInputChange('neuropsychologistConclusion', data.neuropsychologistConclusion);
+                const val = data.neuropsychologistCurrent
+                  ? `${data.neuropsychologistConclusion.trim()} (занимаемся сейчас)`
+                  : data.neuropsychologistConclusion;
+                onInputChange('neuropsychologistConclusion', val);
               }
               
               if (data.defectologistConclusion && data.defectologistConclusion.trim()) {
-                onInputChange('defectologistConclusion', data.defectologistConclusion);
+                const val = data.defectologistCurrent
+                  ? `${data.defectologistConclusion.trim()} (занимаемся сейчас)`
+                  : data.defectologistConclusion;
+                onInputChange('defectologistConclusion', val);
               }
             } else {
               onInputChange('previousSpecialists', ['нет']);
@@ -194,7 +203,8 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
 
           // Other specialist name — add to additionalInfo
           if (data.otherSpecialistName && data.otherSpecialistName.trim()) {
-            onInputChange('additionalInfo', `Другой специалист: ${data.otherSpecialistName.trim()}`);
+            const suffix = data.otherSpecialistCurrent ? ' (занимаемся сейчас)' : '';
+            onInputChange('additionalInfo', `Другой специалист: ${data.otherSpecialistName.trim()}${suffix}`);
           }
         }
       }, 500);

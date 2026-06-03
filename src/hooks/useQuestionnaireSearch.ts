@@ -24,6 +24,10 @@ interface QuestionnaireData {
   defectologistConclusion: string;
   dominantHand: string;
   otherSpecialistName: string;
+  speechTherapistCurrent: boolean;
+  neuropsychologistCurrent: boolean;
+  defectologistCurrent: boolean;
+  otherSpecialistCurrent: boolean;
 }
 
 export function useQuestionnaireSearch() {
@@ -84,7 +88,11 @@ export function useQuestionnaireSearch() {
         neuropsychologistConclusion: data.neuropsychologist_conclusion || '',
         defectologistConclusion: data.defectologist_conclusion || '',
         dominantHand: data.dominant_hand || '',
-        otherSpecialistName: data.other_specialist_name || ''
+        otherSpecialistName: data.other_specialist_name || '',
+        speechTherapistCurrent: !!data.speech_therapist_current,
+        neuropsychologistCurrent: !!data.neuropsychologist_current,
+        defectologistCurrent: !!data.defectologist_current,
+        otherSpecialistCurrent: !!data.other_specialist_current
       };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка поиска');
