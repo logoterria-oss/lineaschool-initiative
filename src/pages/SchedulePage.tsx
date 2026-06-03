@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import IndividualTab from '@/components/schedule/IndividualTab';
 import GroupsTab from '@/components/schedule/GroupsTab';
+import ExportPdfModal from '@/components/schedule/ExportPdfModal';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'individual' | 'groups'>('groups');
+  const [showPdf, setShowPdf] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
@@ -21,6 +23,13 @@ const SchedulePage = () => {
               <Icon name="ArrowLeft" size={20} />
             </button>
             <h1 className="text-2xl font-bold text-gray-900">Расписание</h1>
+            <Button
+              onClick={() => setShowPdf(true)}
+              className="ml-auto gap-2 bg-green-600 hover:bg-green-700"
+            >
+              <Icon name="FileDown" size={16} />
+              Создать PDF
+            </Button>
           </div>
 
           {/* Табы */}
@@ -48,6 +57,8 @@ const SchedulePage = () => {
 
         </div>
       </div>
+
+      {showPdf && <ExportPdfModal onClose={() => setShowPdf(false)} />}
     </div>
   );
 };
