@@ -56,13 +56,13 @@ export default function PageAnamnesisInfo({
           placeholder="Болезни мамы во время беременности, патологии плода, угроза выкидыша, недоношенность, затяжные/стремительные роды, родовые травмы и т.п."
           rows={4}
         />
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
             id="prenatal-no-features"
             checked={prenatalNoFeatures}
             onCheckedChange={(checked) => setPrenatalNoFeatures(!!checked)}
           />
-          <Label htmlFor="prenatal-no-features" className="font-normal cursor-pointer">Без особенностей</Label>
+          <Label htmlFor="prenatal-no-features" className="font-normal cursor-pointer text-gray-400">Без особенностей</Label>
         </div>
       </div>
 
@@ -76,13 +76,13 @@ export default function PageAnamnesisInfo({
           placeholder="Особенности моторного, речевого, психического развития в первые 3 года жизни"
           rows={4}
         />
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
             id="early-dev-no-features"
             checked={earlyDevNoFeatures}
             onCheckedChange={(checked) => setEarlyDevNoFeatures(!!checked)}
           />
-          <Label htmlFor="early-dev-no-features" className="font-normal cursor-pointer">Без особенностей</Label>
+          <Label htmlFor="early-dev-no-features" className="font-normal cursor-pointer text-gray-400">Без особенностей</Label>
         </div>
       </div>
 
@@ -96,13 +96,13 @@ export default function PageAnamnesisInfo({
           onChange={(e) => handleInputChange("neurologicalDisorders", e.target.value)}
           className="mt-2"
         />
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
             id="neurological-none"
             checked={neurologicalNone}
             onCheckedChange={(checked) => setNeurologicalNone(!!checked)}
           />
-          <Label htmlFor="neurological-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+          <Label htmlFor="neurological-none" className="font-normal cursor-pointer text-gray-400">Нет / не диагностировано</Label>
         </div>
       </div>
 
@@ -114,13 +114,13 @@ export default function PageAnamnesisInfo({
           onChange={(e) => handleInputChange("hearingVisionDisorders", e.target.value)}
           className="mt-2"
         />
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
             id="hearing-vision-none"
             checked={hearingVisionNone}
             onCheckedChange={(checked) => setHearingVisionNone(!!checked)}
           />
-          <Label htmlFor="hearing-vision-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+          <Label htmlFor="hearing-vision-none" className="font-normal cursor-pointer text-gray-400">Нет / не диагностировано</Label>
         </div>
       </div>
 
@@ -132,13 +132,13 @@ export default function PageAnamnesisInfo({
           onChange={(e) => handleInputChange("chronicDiseases", e.target.value)}
           className="mt-2"
         />
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
             id="chronic-none"
             checked={chronicNone}
             onCheckedChange={(checked) => setChronicNone(!!checked)}
           />
-          <Label htmlFor="chronic-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+          <Label htmlFor="chronic-none" className="font-normal cursor-pointer text-gray-400">Нет / не диагностировано</Label>
         </div>
       </div>
 
@@ -150,13 +150,13 @@ export default function PageAnamnesisInfo({
           onChange={(e) => handleInputChange("speechEnvironment", e.target.value)}
           className="mt-2"
         />
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 bg-gray-50 rounded px-3 py-2">
           <Checkbox
             id="speech-env-none"
             checked={speechEnvNone}
             onCheckedChange={(checked) => setSpeechEnvNone(!!checked)}
           />
-          <Label htmlFor="speech-env-none" className="font-normal cursor-pointer">Нет / не диагностировано</Label>
+          <Label htmlFor="speech-env-none" className="font-normal cursor-pointer text-gray-400">Нет / не диагностировано</Label>
         </div>
       </div>
 
