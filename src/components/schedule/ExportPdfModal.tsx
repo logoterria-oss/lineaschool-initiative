@@ -46,6 +46,20 @@ const WEEKDAY_FULL = [
   'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье',
 ];
 
+const LOGO_URL =
+  'https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/428f7606-17b9-4503-b110-711536d2f8b2.png';
+
+const loadImageAsDataUrl = async (url: string): Promise<string> => {
+  const resp = await fetch(url, { mode: 'cors' });
+  const blob = await resp.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
   const [type, setType] = useState<ScheduleType>('both');
@@ -56,6 +70,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
   const [indDays, setIndDays] = useState<IndDay[] | null>(null);
   const [groupRows, setGroupRows] = useState<ReturnType<typeof buildGroupRowsFromLessons> | null>(null);
   const [customers, setCustomers] = useState<Record<number, Customer>>({});
+  const [logoData, setLogoData] = useState<string>('');
   const [ready, setReady] = useState(false);
 
   const onDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,6 +87,15 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     try {
       const df = fmtDate(weekStart);
       const dt = fmtDate(addDays(weekStart, 6));
+
+      if (!logoData) {
+        try {
+          const data = await loadImageAsDataUrl(LOGO_URL);
+          setLogoData(data);
+        } catch {
+          /* не критично — PDF без логотипа */
+        }
+      }
 
       if (type === 'individual' || type === 'both') {
         const resp = await fetch(`${S20_URL}?mode=ind_week&date_from=${df}&date_to=${dt}`);
@@ -294,12 +318,13 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div ref={printRef} className="bg-white p-6" style={{ width: 720 }}>
                 <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #e5e7eb' }}>
-                  <img
-                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/428f7606-17b9-4503-b110-711536d2f8b2.png"
-                    alt="ЛинэяСкул"
-                    crossOrigin="anonymous"
-                    style={{ height: 56, objectFit: 'contain' }}
-                  />
+                  {logoData && (
+                    <img
+                      src={logoData}
+                      alt="ЛинэяСкул"
+                      style={{ height: 56, objectFit: 'contain' }}
+                    />
+                  )}
                 </div>
                 <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>
                   Свободные слоты для записи
