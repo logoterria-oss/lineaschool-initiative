@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import CitySelect from "@/components/ui/CitySelect";
 import { FormData, HandleInputChange } from "./types";
 
 interface Props {
@@ -61,6 +62,17 @@ export default function PageContactInfo({ formData, handleInputChange }: Props) 
           onChange={(e) => handleInputChange("parentEmail", e.target.value)}
           className="mt-2"
         />
+      </div>
+
+      <div>
+        <Label htmlFor="city">Населённый пункт *</Label>
+        <div className="mt-2">
+          <CitySelect
+            id="city"
+            value={formData.city}
+            onChange={(val) => handleInputChange("city", val)}
+          />
+        </div>
       </div>
     </div>
   );

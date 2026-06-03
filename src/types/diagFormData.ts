@@ -6,6 +6,7 @@ export interface DiagFormData {
   parentName: string;
   phone: string;
   email: string;
+  city: string;
   complaints: string;
   educationType: string;
   aoop: string;

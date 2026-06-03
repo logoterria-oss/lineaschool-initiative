@@ -2,6 +2,7 @@ export interface FormData {
   parentName: string;
   parentPhone: string;
   parentEmail: string;
+  city: string;
   childName: string;
   birthDate: string;
   grade: string;

@@ -4,6 +4,7 @@ interface QuestionnaireData {
   parentName: string;
   parentPhone: string;
   parentEmail: string;
+  city: string;
   birthDate: string;
   grade: string;
   educationType: string;
@@ -64,6 +65,7 @@ export function useQuestionnaireSearch() {
         parentName: data.parent_name || '',
         parentPhone: data.parent_phone || '',
         parentEmail: data.parent_email || '',
+        city: data.city || '',
         birthDate: data.birth_date || '',
         grade: data.grade || '',
         educationType: educationTypeMap[data.education_type] || data.education_type || '',

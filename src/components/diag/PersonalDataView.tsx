@@ -1,5 +1,6 @@
 import { DiagData } from '@/types/DiagData';
 import { formatValue } from '@/utils/diagUtils';
+import { getCityTimezone } from '@/data/russianCities';
 
 interface PersonalDataViewProps {
   diagData: DiagData;
@@ -19,6 +20,14 @@ export default function PersonalDataView({ diagData }: PersonalDataViewProps) {
         <div><strong>ФИО родителя:</strong> {diagData.parentName}</div>
         <div><strong>Телефон:</strong> {diagData.phone}</div>
         <div><strong>Email:</strong> {diagData.email}</div>
+        {diagData.city && (
+          <div>
+            <strong>Населённый пункт:</strong> {diagData.city}
+            {getCityTimezone(diagData.city) && (
+              <span className="text-gray-400 text-xs ml-1">({getCityTimezone(diagData.city)})</span>
+            )}
+          </div>
+        )}
         <div><strong>Тип образования:</strong> {formatValue(diagData.educationType)}</div>
         <div><strong>АООП:</strong> {formatValue(diagData.aoop)}</div>
         <div><strong>Возраст поступления в школу:</strong> {diagData.schoolStartAge}</div>

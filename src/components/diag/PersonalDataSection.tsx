@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useQuestionnaireSearch } from "@/hooks/useQuestionnaireSearch";
+import CitySelect from "@/components/ui/CitySelect";
 
 interface PersonalDataSectionProps {
   formData: {
@@ -14,6 +15,7 @@ interface PersonalDataSectionProps {
     parentName: string;
     phone: string;
     email: string;
+    city: string;
     complaints: string;
     educationType: string;
     aoop: string;
@@ -57,6 +59,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           onInputChange('parentName', data.parentName);
           onInputChange('phone', data.parentPhone);
           onInputChange('email', data.parentEmail);
+          if (data.city) onInputChange('city', data.city);
           onInputChange('birthDate', data.birthDate);
           
           // Calculate age from birth date
@@ -288,6 +291,17 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             onChange={(e) => onInputChange("email", e.target.value)}
             className="mt-1"
           />
+        </div>
+
+        <div>
+          <Label htmlFor="city">Населённый пункт</Label>
+          <div className="mt-1">
+            <CitySelect
+              id="city"
+              value={formData.city}
+              onChange={(val) => onInputChange("city", val)}
+            />
+          </div>
         </div>
 
         <div>

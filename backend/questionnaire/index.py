@@ -38,7 +38,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Insert questionnaire data
             cur.execute("""
                 INSERT INTO parent_questionnaire (
-                    parent_name, parent_phone, parent_email,
+                    parent_name, parent_phone, parent_email, city,
                     child_name, birth_date, grade,
                     education_type, aoop_required, aoop_variant,
                     school_start_age, kindergarten,
@@ -52,7 +52,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     other_specialist_name, other_specialist_current,
                     dominant_hand
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s
                 )
@@ -61,6 +61,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 body_data.get('parentName'),
                 body_data.get('parentPhone'),
                 body_data.get('parentEmail'),
+                body_data.get('city'),
                 body_data.get('childName'),
                 body_data.get('birthDate'),
                 body_data.get('grade'),

@@ -10,6 +10,7 @@ export const useFormDataManager = () => {
     parentName: "",
     phone: "",
     email: "",
+    city: "",
     complaints: "",
     educationType: "",
     aoop: "",
