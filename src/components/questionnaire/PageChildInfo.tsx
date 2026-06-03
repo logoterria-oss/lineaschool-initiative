@@ -1,9 +1,37 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FormData, HandleInputChange } from "./types";
+
+function Tooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative inline-flex items-center">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-5 h-5 rounded-full border border-gray-400 text-gray-400 text-xs flex items-center justify-center hover:border-gray-600 hover:text-gray-600 flex-shrink-0"
+      >
+        ?
+      </button>
+      {open && (
+        <div className="absolute left-7 top-0 z-10 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-600">
+          {text}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   formData: FormData;
@@ -83,7 +111,10 @@ export default function PageChildInfo({ formData, handleInputChange }: Props) {
       </div>
 
       <div>
-        <Label>Реализуется ли АООП (адаптированная образовательная программа)? *</Label>
+        <div className="flex items-center gap-2">
+          <Label>Реализуется ли АООП? *</Label>
+          <Tooltip text="АООП (адаптированная основная образовательная программа) — это специальная образовательная программа, адаптированная для обучения детей с ограниченными возможностями здоровья (ОВЗ) и назначаемая психолого-медико-педагогической комиссией (ПМПК)." />
+        </div>
         <RadioGroup
           value={formData.aoopRequired}
           onValueChange={(value) => handleInputChange("aoopRequired", value)}
