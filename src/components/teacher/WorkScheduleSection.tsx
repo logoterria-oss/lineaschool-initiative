@@ -182,15 +182,12 @@ const EditModal = ({ teacher, initialWs, onClose, onSave }: EditModalProps) => {
 
                 {isAdding && (
                   <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-green-50">
-                    <select
+                    <input
+                      type="time"
                       value={addTime}
                       onChange={(e) => setAddTime(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
-                    >
-                      {TIME_OPTIONS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white font-mono"
+                    />
                     <button
                       onClick={() => addSlot(wd)}
                       className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1.5 rounded-lg transition-colors font-medium"
