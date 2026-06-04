@@ -31,6 +31,7 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
             phone: formData.phone,
             email: formData.email,
             city: formData.city,
+            cityRegion: formData.cityRegion,
             complaints: formData.complaints,
             educationType: formData.educationType,
             aoop: formData.aoop,

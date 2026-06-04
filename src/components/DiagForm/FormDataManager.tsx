@@ -11,6 +11,7 @@ export const useFormDataManager = () => {
     phone: "",
     email: "",
     city: "",
+    cityRegion: "",
     complaints: "",
     educationType: "",
     aoop: "",

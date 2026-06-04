@@ -16,6 +16,7 @@ interface PersonalDataSectionProps {
     phone: string;
     email: string;
     city: string;
+    cityRegion: string;
     complaints: string;
     educationType: string;
     aoop: string;
@@ -31,6 +32,7 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
   const { searchByChildName, isLoading } = useQuestionnaireSearch();
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [cityTimezoneLabel, setCityTimezoneLabel] = useState<string>('');
+  const [cityRegion, setCityRegion] = useState<string>('');
 
   const calculateAge = (birthDate: string): string => {
     if (!birthDate) return '';
@@ -69,10 +71,14 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
               if (Array.isArray(cityList) && cityList.length > 0) {
                 const best = cityList[0];
                 onInputChange('city', best.name);
+                onInputChange('cityRegion', best.region || '');
                 setCityTimezoneLabel(best.timezone_label || '');
+                setCityRegion(best.region || '');
               } else {
                 onInputChange('city', data.city);
+                onInputChange('cityRegion', '');
                 setCityTimezoneLabel('');
+                setCityRegion('');
               }
             } catch {
               onInputChange('city', data.city);
@@ -331,9 +337,11 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
               id="city"
               value={formData.city}
               timezoneLabel={cityTimezoneLabel}
-              onChange={(val, tz) => {
+              onChange={(val, tz, region) => {
                 onInputChange("city", val);
+                onInputChange("cityRegion", region || '');
                 setCityTimezoneLabel(tz || '');
+                setCityRegion(region || '');
               }}
             />
           </div>

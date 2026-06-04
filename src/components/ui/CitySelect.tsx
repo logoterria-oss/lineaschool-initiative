@@ -13,7 +13,7 @@ interface CityResult {
 
 interface CitySelectProps {
   value: string;
-  onChange: (city: string, timezoneLabel?: string) => void;
+  onChange: (city: string, timezoneLabel?: string, region?: string) => void;
   placeholder?: string;
   id?: string;
   timezoneLabel?: string;
@@ -78,7 +78,7 @@ export default function CitySelect({ value, onChange, placeholder = "Начни�
   };
 
   const handleSelect = (item: CityResult) => {
-    onChange(item.name, item.timezone_label);
+    onChange(item.name, item.timezone_label, item.region);
     setQuery(item.label);
     setSelectedTimezone(item.timezone_label);
     setOpen(false);
