@@ -367,7 +367,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                   Свободные слоты для записи
                 </h1>
                 <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 4 }}>
-                  Неделя: {fmtRu(weekStart)} – {fmtRu(addDays(weekStart, 6))}
+                  Неделя: {fmtRu(weekStart)} – {fmtRu(addDays(weekStart, 6))} &nbsp;·&nbsp; Время по МСК (UTC+3)
                 </p>
                 <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 16, fontStyle: 'italic' }}>
                   {actualNote}
