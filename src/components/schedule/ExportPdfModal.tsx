@@ -6,7 +6,6 @@ import Icon from '@/components/ui/icon';
 import {
   S20_URL,
   TEACHER_SHORT,
-  WEEKDAY_SHORT,
   RawLesson,
   RawTeacher,
   Customer,
@@ -64,15 +63,28 @@ const loadImageAsDataUrl = async (url: string): Promise<string> => {
   });
 };
 
+// На сколько недель подряд проверяем стабильность окна (включая стартовую)
+const STABLE_WEEKS = 3;
+// Максимальный сдвиг старта вперёд: 0 — стартовая неделя, 1 — следующая
+const MAX_START_OFFSET = 1;
+// Сколько недель данных грузим: (MAX_START_OFFSET + STABLE_WEEKS) недель
+const WEEKS_TO_LOAD = MAX_START_OFFSET + STABLE_WEEKS; // 4
+
 const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
-  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+  // Дата, с которой клиент готов начать заниматься (не обязательно понедельник)
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
   const [type, setType] = useState<ScheduleType>('both');
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState('');
   const printRef = useRef<HTMLDivElement>(null);
 
-  const [indDays, setIndDays] = useState<IndDay[] | null>(null);
-  const [groupRows, setGroupRows] = useState<ReturnType<typeof buildGroupRowsFromLessons> | null>(null);
+  // По одному набору данных на каждую загружаемую неделю (индекс 0 = неделя старта)
+  const [indWeeks, setIndWeeks] = useState<IndDay[][] | null>(null);
+  const [groupWeeks, setGroupWeeks] = useState<ReturnType<typeof buildGroupRowsFromLessons>[] | null>(null);
   const [customers, setCustomers] = useState<Record<number, Customer>>({});
   const [logoData, setLogoData] = useState<string>('');
   const [ready, setReady] = useState(false);
@@ -80,7 +92,9 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
   const onDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (!val) return;
-    setWeekStart(getMonday(new Date(`${val}T00:00:00`)));
+    const d = new Date(`${val}T00:00:00`);
+    d.setHours(0, 0, 0, 0);
+    setStartDate(d);
     setReady(false);
   };
 
@@ -89,9 +103,6 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     setError('');
     setReady(false);
     try {
-      const df = fmtDate(weekStart);
-      const dt = fmtDate(addDays(weekStart, 6));
-
       if (!logoData) {
         try {
           const data = await loadImageAsDataUrl(LOGO_URL);
@@ -101,20 +112,25 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
         }
       }
 
+      // Грузим недели по понедельникам, чтобы индекс дня недели у групп
+      // совпадал с календарным weekday у индивидуальных (0=ПН).
+      const baseMonday = getMonday(startDate);
+      const weekStarts = Array.from({ length: WEEKS_TO_LOAD }, (_, w) => addDays(baseMonday, w * 7));
+
       if (type === 'individual' || type === 'both') {
-        const resp = await fetch(`${S20_URL}?mode=ind_week&date_from=${df}&date_to=${dt}`);
-        const data = await resp.json();
-        if (data.error) throw new Error(data.error);
-        setIndDays(Array.isArray(data.days) ? data.days : []);
+        const weeks: IndDay[][] = [];
+        for (const ws of weekStarts) {
+          const resp = await fetch(`${S20_URL}?mode=ind_week&date_from=${fmtDate(ws)}&date_to=${fmtDate(addDays(ws, 6))}`);
+          const data = await resp.json();
+          if (data.error) throw new Error(data.error);
+          weeks.push(Array.isArray(data.days) ? data.days : []);
+        }
+        setIndWeeks(weeks);
       } else {
-        setIndDays(null);
+        setIndWeeks(null);
       }
 
       if (type === 'groups' || type === 'both') {
-        const resp = await fetch(`${S20_URL}?mode=lessons&date_from=${df}&date_to=${dt}`);
-        const data = await resp.json();
-        if (data.error) throw new Error(data.error);
-        const lessons: RawLesson[] = Array.isArray(data.lessons) ? data.lessons : [];
         let teachers: RawTeacher[] = [];
         try {
           const tresp = await fetch(`${S20_URL}?mode=teachers`);
@@ -124,7 +140,16 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
         } catch {
           /* не критично */
         }
-        setGroupRows(buildGroupRowsFromLessons(lessons, teachers, weekStart));
+
+        const weeks: ReturnType<typeof buildGroupRowsFromLessons>[] = [];
+        for (const ws of weekStarts) {
+          const resp = await fetch(`${S20_URL}?mode=lessons&date_from=${fmtDate(ws)}&date_to=${fmtDate(addDays(ws, 6))}`);
+          const data = await resp.json();
+          if (data.error) throw new Error(data.error);
+          const lessons: RawLesson[] = Array.isArray(data.lessons) ? data.lessons : [];
+          weeks.push(buildGroupRowsFromLessons(lessons, teachers, ws));
+        }
+        setGroupWeeks(weeks);
 
         try {
           const cresp = await fetch(`${S20_URL}?mode=customers`);
@@ -139,7 +164,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
           /* не критично — без возраста не будет пометки */
         }
       } else {
-        setGroupRows(null);
+        setGroupWeeks(null);
         setCustomers({});
       }
 
@@ -226,7 +251,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
         firstPage = false;
       }
 
-      const fileDate = fmtDate(weekStart);
+      const fileDate = fmtDate(startDate);
       pdf.save(`Расписание_${fileDate}.pdf`);
     } catch {
       setError('Не удалось сформировать PDF');
@@ -235,9 +260,181 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     }
   };
 
-  const now = new Date();
-  const actualNote = `Свободные слоты актуальны на ${now.toLocaleDateString('ru-RU')} - ${now
-    .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+  // День недели даты старта (0=ПН..6=ВС)
+  const baseMonday = getMonday(startDate);
+  const startWeekday = (() => {
+    const wd = startDate.getDay(); // 0=ВС..6=СБ
+    return wd === 0 ? 6 : wd - 1; // → 0=ПН..6=ВС
+  })();
+
+  // Реальная календарная дата дня недели weekday в неделе с индексом offset
+  const dateForSlot = (offsetWeeks: number, weekday: number): Date =>
+    addDays(baseMonday, offsetWeeks * 7 + weekday);
+
+  // Минимальный валидный offset недели для дня weekday:
+  // если день раньше дня старта в стартовой неделе — начинаем со следующей недели
+  const minOffsetForDay = (weekday: number): number => (weekday >= startWeekday ? 0 : 1);
+
+  // ── Индивидуальные: стабильные окна ──────────────────────────────────────────
+  // Свободно ли индивид. окно (weekday, time, teacherId) в неделе с индексом w
+  const isIndFree = (w: number, weekday: number, time: string, teacherId: number): boolean => {
+    const week = indWeeks?.[w];
+    if (!week) return false;
+    const day = week.find((d) => d.weekday === weekday);
+    if (!day) return false;
+    return day.slots.some(
+      (s) => s.time_from === time && s.teacher_id === teacherId && !s.busy,
+    );
+  };
+
+  // Стабильно ли окно STABLE_WEEKS недель подряд, начиная с недели startOffset
+  const isIndStable = (startOffset: number, weekday: number, time: string, teacherId: number): boolean => {
+    for (let k = 0; k < STABLE_WEEKS; k++) {
+      if (!isIndFree(startOffset + k, weekday, time, teacherId)) return false;
+    }
+    return true;
+  };
+
+  // Для каждого дня недели — список стабильных индивид. окон (с датой появления, если не с недели старта)
+  const buildIndStableDays = () => {
+    const result: { weekday: number; items: { time: string; teachers: { name: string; fromDate: Date | null }[] }[] }[] = [];
+    if (!indWeeks || indWeeks.length === 0) return result;
+
+    // Кандидаты окон берём из недели старта и следующей недели
+    const seen = new Set<string>();
+    const candidates: { weekday: number; time: string; teacherId: number; teacherName: string }[] = [];
+    for (let off = 0; off <= MAX_START_OFFSET; off++) {
+      const week = indWeeks[off];
+      if (!week) continue;
+      for (const day of week) {
+        for (const s of day.slots) {
+          if (s.busy) continue;
+          const key = `${day.weekday}__${s.time_from}__${s.teacher_id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          candidates.push({
+            weekday: day.weekday,
+            time: s.time_from,
+            teacherId: s.teacher_id,
+            teacherName: TEACHER_SHORT[s.teacher_id] || s.teacher_name,
+          });
+        }
+      }
+    }
+
+    const byDay: Record<number, Record<string, { name: string; fromDate: Date | null }[]>> = {};
+    for (const c of candidates) {
+      const minOff = minOffsetForDay(c.weekday);
+      // Ищем первую неделю (minOff..MAX_START_OFFSET), с которой окно стабильно
+      let startOffset = -1;
+      for (let off = minOff; off <= MAX_START_OFFSET; off++) {
+        if (isIndStable(off, c.weekday, c.time, c.teacherId)) {
+          startOffset = off;
+          break;
+        }
+      }
+      if (startOffset === -1) continue; // нестабильно — не предлагаем
+
+      // Дату «с …» показываем, только если начать с ближайшей доступной недели нельзя
+      const fromDate = startOffset > minOff ? dateForSlot(startOffset, c.weekday) : null;
+      byDay[c.weekday] ||= {};
+      byDay[c.weekday][c.time] ||= [];
+      byDay[c.weekday][c.time].push({ name: c.teacherName, fromDate });
+    }
+
+    for (let wd = 0; wd <= 6; wd++) {
+      const times = byDay[wd];
+      if (!times) continue;
+      const items = Object.keys(times)
+        .sort((a, b) => a.localeCompare(b))
+        .map((time) => ({ time, teachers: times[time] }));
+      if (items.length > 0) result.push({ weekday: wd, items });
+    }
+    return result;
+  };
+
+  // ── Группы: стабильные окна ──────────────────────────────────────────────────
+  // Свободно ли групповое окно (weekday, time, teacherId) в неделе w (>=1 место)
+  const groupFreeAt = (w: number, weekday: number, time: string, teacherId: number): number => {
+    const week = groupWeeks?.[w];
+    if (!week) return 0;
+    const row = week.find((r) => r.time === time && r.teacher_id === teacherId);
+    if (!row) return 0;
+    const cell = row.cells[String(weekday)];
+    if (!cell) return 0;
+    return cell.free;
+  };
+
+  const isGroupStable = (startOffset: number, weekday: number, time: string, teacherId: number): boolean => {
+    for (let k = 0; k < STABLE_WEEKS; k++) {
+      if (groupFreeAt(startOffset + k, weekday, time, teacherId) <= 0) return false;
+    }
+    return true;
+  };
+
+  const buildGroupStableDays = () => {
+    const result: {
+      weekday: number;
+      items: { time: string; teacher: string; free: number; ageLabel: string; fromDate: Date | null }[];
+    }[] = [];
+    if (!groupWeeks || groupWeeks.length === 0) return result;
+
+    // Кандидаты — все групповые окна из недели старта и следующей недели
+    const seen = new Set<string>();
+    const candidates: { weekday: number; time: string; teacherId: number; teacherName: string }[] = [];
+    for (let off = 0; off <= MAX_START_OFFSET; off++) {
+      const week = groupWeeks[off];
+      if (!week) continue;
+      for (const row of week) {
+        for (const dayStr of Object.keys(row.cells)) {
+          const weekday = Number(dayStr);
+          const key = `${weekday}__${row.time}__${row.teacher_id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          candidates.push({
+            weekday,
+            time: row.time,
+            teacherId: row.teacher_id,
+            teacherName: row.teacher_name,
+          });
+        }
+      }
+    }
+
+    const byDay: Record<number, typeof result[number]['items']> = {};
+    for (const c of candidates) {
+      const minOff = minOffsetForDay(c.weekday);
+      let startOffset = -1;
+      for (let off = minOff; off <= MAX_START_OFFSET; off++) {
+        if (isGroupStable(off, c.weekday, c.time, c.teacherId)) {
+          startOffset = off;
+          break;
+        }
+      }
+      if (startOffset === -1) continue;
+
+      // Свободные места и состав группы берём из недели, с которой окно стартует
+      const week = groupWeeks[startOffset];
+      const row = week.find((r) => r.time === c.time && r.teacher_id === c.teacherId);
+      const cell = row?.cells[String(c.weekday)];
+      const free = cell?.free ?? 0;
+      const ageLabel = groupAgeLabel(cell?.student_ids || []);
+      const fromDate = startOffset > minOff ? dateForSlot(startOffset, c.weekday) : null;
+
+      byDay[c.weekday] ||= [];
+      byDay[c.weekday].push({ time: c.time, teacher: c.teacherName, free, ageLabel, fromDate });
+    }
+
+    for (let wd = 0; wd <= 6; wd++) {
+      const items = byDay[wd];
+      if (!items || items.length === 0) continue;
+      items.sort((a, b) => a.time.localeCompare(b.time));
+      result.push({ weekday: wd, items });
+    }
+    return result;
+  };
+
+  const fmtFrom = (d: Date) => `с ${fmtRu(d)}`;
 
   // Средний возраст учеников группы по их student_ids
   const groupAgeLabel = (studentIds: number[]): string => {
@@ -261,24 +458,8 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     return '';
   };
 
-  const groupTimeDays = (rows: ReturnType<typeof buildGroupRowsFromLessons>) => {
-    const byDay: Record<number, { time: string; teacher: string; free: number; enrolled: number; ageLabel: string }[]> = {};
-    for (const row of rows) {
-      for (const [dayStr, cell] of Object.entries(row.cells)) {
-        const day = Number(dayStr);
-        if (!byDay[day]) byDay[day] = [];
-        byDay[day].push({
-          time: row.time,
-          teacher: row.teacher_name,
-          free: cell.free,
-          enrolled: cell.enrolled,
-          ageLabel: groupAgeLabel(cell.student_ids || []),
-        });
-      }
-    }
-    for (const k of Object.keys(byDay)) byDay[Number(k)].sort((a, b) => a.time.localeCompare(b.time));
-    return byDay;
-  };
+  const indStableDays = ready ? buildIndStableDays() : [];
+  const groupStableDays = ready ? buildGroupStableDays() : [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -292,19 +473,19 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
         </div>
 
         <div className="overflow-y-auto flex-1 px-5 pb-5 space-y-4">
-          {/* Неделя */}
+          {/* Дата старта */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Неделя начала занятий
+              Дата, с которой клиент готов начать
             </label>
             <input
               type="date"
-              value={fmtDate(weekStart)}
+              value={fmtDate(startDate)}
               onChange={onDateChange}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Будет показана неделя: {fmtRu(weekStart)} – {fmtRu(addDays(weekStart, 6))}
+              Окна с {fmtRu(startDate)} по {fmtRu(addDays(startDate, 6))}. Предлагаем только те, что свободны 3 недели подряд.
             </p>
           </div>
 
@@ -366,12 +547,24 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                 <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>
                   Свободные слоты для записи
                 </h1>
-                <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 4 }}>
-                  Неделя: {fmtRu(weekStart)} – {fmtRu(addDays(weekStart, 6))} &nbsp;·&nbsp; Время по МСК (UTC+3)
+                <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 12 }}>
+                  Начало занятий: {fmtRu(startDate)} – {fmtRu(addDays(startDate, 6))}
                 </p>
-                <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 16, fontStyle: 'italic' }}>
-                  {actualNote}
-                </p>
+                <div
+                  style={{
+                    display: 'inline-block',
+                    background: '#fef3c7',
+                    border: '1px solid #f59e0b',
+                    borderRadius: 6,
+                    padding: '4px 10px',
+                    marginBottom: 16,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#92400e',
+                  }}
+                >
+                  ⏰ Время указано по Москве (МСК, UTC+3)
+                </div>
 
                 {/* Индивидуальные */}
                 {(type === 'individual' || type === 'both') && (
@@ -379,33 +572,30 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                     <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>
                       Индивидуальные занятия
                     </h2>
-                    {!indDays || indDays.every((d) => d.slots.filter((s) => !s.busy).length === 0) ? (
+                    {indStableDays.length === 0 ? (
                       <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных слотов нет</p>
                     ) : (
-                      indDays.map((day) => {
-                        const free = day.slots.filter((s) => !s.busy);
-                        if (free.length === 0) return null;
-                        const byTime: Record<string, string[]> = {};
-                        for (const s of free) {
-                          (byTime[s.time_from] ||= []).push(
-                            TEACHER_SHORT[s.teacher_id] || s.teacher_name,
-                          );
-                        }
-                        return (
-                          <div key={day.date} style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                              {WEEKDAY_FULL[day.weekday]}
-                            </div>
-                            {Object.entries(byTime)
-                              .sort(([a], [b]) => a.localeCompare(b))
-                              .map(([time, teachers]) => (
-                                <div key={time} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
-                                  {time.slice(0, 5)} — {teachers.join(', ')}
-                                </div>
-                              ))}
+                      indStableDays.map((day) => (
+                        <div key={day.weekday} style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                            {WEEKDAY_FULL[day.weekday]}
                           </div>
-                        );
-                      })
+                          {day.items.map((item) => (
+                            <div key={item.time} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
+                              {item.time.slice(0, 5)} —{' '}
+                              {item.teachers.map((t, i) => (
+                                <span key={i}>
+                                  {i > 0 && ', '}
+                                  {t.name}
+                                  {t.fromDate && (
+                                    <span style={{ color: '#b45309', fontWeight: 600 }}> ({fmtFrom(t.fromDate)})</span>
+                                  )}
+                                </span>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      ))
                     )}
                   </div>
                 )}
@@ -416,33 +606,28 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                     <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>
                       Групповые занятия (есть места)
                     </h2>
-                    {(() => {
-                      const byDay = groupRows ? groupTimeDays(groupRows) : {};
-                      const daysWithFree = WEEKDAY_SHORT
-                        .map((_, day) => day)
-                        .filter((day) => (byDay[day] || []).some((x) => x.free > 0));
-                      if (daysWithFree.length === 0) {
-                        return <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных мест нет</p>;
-                      }
-                      return daysWithFree.map((day) => {
-                        const items = (byDay[day] || []).filter((x) => x.free > 0);
-                        return (
-                          <div key={day} style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                              {WEEKDAY_FULL[day]}
-                            </div>
-                            {items.map((x, i) => (
-                              <div key={i} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
-                                {x.time} — {x.teacher} (свободно {x.free} из {MAX_GROUP_SIZE})
-                                {x.ageLabel && (
-                                  <span style={{ color: '#0f766e', fontWeight: 600 }}> — {x.ageLabel}</span>
-                                )}
-                              </div>
-                            ))}
+                    {groupStableDays.length === 0 ? (
+                      <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных мест нет</p>
+                    ) : (
+                      groupStableDays.map((day) => (
+                        <div key={day.weekday} style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                            {WEEKDAY_FULL[day.weekday]}
                           </div>
-                        );
-                      });
-                    })()}
+                          {day.items.map((x, i) => (
+                            <div key={i} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
+                              {x.time} — {x.teacher} (свободно {x.free} из {MAX_GROUP_SIZE})
+                              {x.ageLabel && (
+                                <span style={{ color: '#0f766e', fontWeight: 600 }}> — {x.ageLabel}</span>
+                              )}
+                              {x.fromDate && (
+                                <span style={{ color: '#b45309', fontWeight: 600 }}> ({fmtFrom(x.fromDate)})</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
