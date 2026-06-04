@@ -25,9 +25,12 @@ interface PersonalDataSectionProps {
   onInputChange: (field: string, value: string) => void;
 }
 
+const CITY_SEARCH_URL = 'https://functions.poehali.dev/41101c3b-0b75-4f91-81c7-e6d4031e76fd';
+
 export default function PersonalDataSection({ formData, onInputChange }: PersonalDataSectionProps) {
   const { searchByChildName, isLoading } = useQuestionnaireSearch();
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [cityTimezoneLabel, setCityTimezoneLabel] = useState<string>('');
 
   const calculateAge = (birthDate: string): string => {
     if (!birthDate) return '';
@@ -59,7 +62,23 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           onInputChange('parentName', data.parentName);
           onInputChange('phone', data.parentPhone);
           onInputChange('email', data.parentEmail);
-          if (data.city) onInputChange('city', data.city);
+          if (data.city) {
+            try {
+              const cityRes = await fetch(`${CITY_SEARCH_URL}?q=${encodeURIComponent(data.city)}`);
+              const cityList = await cityRes.json();
+              if (Array.isArray(cityList) && cityList.length > 0) {
+                const best = cityList[0];
+                onInputChange('city', best.name);
+                setCityTimezoneLabel(best.timezone_label || '');
+              } else {
+                onInputChange('city', data.city);
+                setCityTimezoneLabel('');
+              }
+            } catch {
+              onInputChange('city', data.city);
+              setCityTimezoneLabel('');
+            }
+          }
           onInputChange('birthDate', data.birthDate);
           
           // Calculate age from birth date
@@ -93,9 +112,9 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
           }
           
           if (data.kindergarten === 'yes' || data.kindergarten === 'Да') {
-            onInputChange('kindergarten', 'attended');
+            onInputChange('kindergarten', 'yes');
           } else if (data.kindergarten === 'no' || data.kindergarten === 'Нет') {
-            onInputChange('kindergarten', 'not_attended');
+            onInputChange('kindergarten', 'no');
           }
           
           // Anamnesis data - fill radio buttons and custom text fields
@@ -311,7 +330,11 @@ export default function PersonalDataSection({ formData, onInputChange }: Persona
             <CitySelect
               id="city"
               value={formData.city}
-              onChange={(val) => onInputChange("city", val)}
+              timezoneLabel={cityTimezoneLabel}
+              onChange={(val, tz) => {
+                onInputChange("city", val);
+                setCityTimezoneLabel(tz || '');
+              }}
             />
           </div>
         </div>

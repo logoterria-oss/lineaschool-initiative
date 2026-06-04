@@ -30,6 +30,7 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
             parentName: formData.parentName,
             phone: formData.phone,
             email: formData.email,
+            city: formData.city,
             complaints: formData.complaints,
             educationType: formData.educationType,
             aoop: formData.aoop,
@@ -46,6 +47,8 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
             formData={{
               prenatalDevelopment: formData.prenatalDevelopment,
               prenatalDevelopmentCustom: formData.prenatalDevelopmentCustom,
+              earlyDevelopment: formData.earlyDevelopment,
+              earlyDevelopmentCustom: formData.earlyDevelopmentCustom,
               neurologicalDisorders: formData.neurologicalDisorders,
               neurologicalDisordersCustom: formData.neurologicalDisordersCustom,
               hearingVisionDisorders: formData.hearingVisionDisorders,

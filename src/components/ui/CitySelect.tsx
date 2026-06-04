@@ -13,23 +13,28 @@ interface CityResult {
 
 interface CitySelectProps {
   value: string;
-  onChange: (city: string) => void;
+  onChange: (city: string, timezoneLabel?: string) => void;
   placeholder?: string;
   id?: string;
+  timezoneLabel?: string;
 }
 
-export default function CitySelect({ value, onChange, placeholder = "Начните вводить населённый пункт...", id }: CitySelectProps) {
+export default function CitySelect({ value, onChange, placeholder = "Начните вводить населённый пункт...", id, timezoneLabel }: CitySelectProps) {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<CityResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedTimezone, setSelectedTimezone] = useState<string>('');
+  const [selectedTimezone, setSelectedTimezone] = useState<string>(timezoneLabel || '');
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setQuery(value);
   }, [value]);
+
+  useEffect(() => {
+    if (timezoneLabel !== undefined) setSelectedTimezone(timezoneLabel);
+  }, [timezoneLabel]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -73,7 +78,7 @@ export default function CitySelect({ value, onChange, placeholder = "Начни�
   };
 
   const handleSelect = (item: CityResult) => {
-    onChange(item.name);
+    onChange(item.name, item.timezone_label);
     setQuery(item.label);
     setSelectedTimezone(item.timezone_label);
     setOpen(false);
