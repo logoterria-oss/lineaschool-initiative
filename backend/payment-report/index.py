@@ -37,7 +37,7 @@ def handler(event: dict, context) -> dict:
         f"SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id "
         f"FROM {schema}.payment_leads "
         f"WHERE paid_at IS NOT NULL "
-        f"AND to_char(paid_at, 'YYYY-MM') = %s "
+        f"AND to_char(paid_at + interval '3 hours', 'YYYY-MM') = %s "
         f"ORDER BY paid_at ASC",
         (month,)
     )

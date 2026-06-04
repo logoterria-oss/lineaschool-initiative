@@ -95,8 +95,13 @@ export default function PaymentLeadsPage() {
 
     // Сначала грубо группируем по тарифу+сумме+дню, внутри — склеиваем по схожести ФИО
     const buckets = new Map<string, PaymentLead[]>();
+    const mskDay = (iso: string) => {
+      const normalized = iso.includes('+') || iso.endsWith('Z') ? iso : iso + 'Z';
+      return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Moscow' }).format(new Date(normalized));
+    };
+
     for (const l of leads) {
-      const dateDay = l.created_at?.slice(0, 10) ?? '';
+      const dateDay = l.created_at ? mskDay(l.created_at) : '';
       const bucketKey = `${l.plan}__${l.amount}__${dateDay}`;
       const bucket = buckets.get(bucketKey);
       if (bucket) {
@@ -113,10 +118,19 @@ export default function PaymentLeadsPage() {
     return Array.from(buckets.values()).flat();
   })();
 
+  const toMskPrefix = (iso: string, mode: 'month' | 'day') => {
+    const normalized = iso.includes('+') || iso.endsWith('Z') ? iso : iso + 'Z';
+    const opts = mode === 'month'
+      ? { year: 'numeric', month: '2-digit', timeZone: 'Europe/Moscow' } as const
+      : { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Moscow' } as const;
+    const parts = new Intl.DateTimeFormat('en-CA', opts).formatToParts(new Date(normalized));
+    const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+    return mode === 'month' ? `${map.year}-${map.month}` : `${map.year}-${map.month}-${map.day}`;
+  };
+
   const filtered = deduplicated.filter((l) => {
     if (!l.created_at) return false;
-    const prefix = dateFilter === 'month' ? l.created_at.slice(0, 7) : l.created_at.slice(0, 10);
-    return prefix === selectedDate;
+    return toMskPrefix(l.created_at, dateFilter) === selectedDate;
   });
 
   const paidCount = filtered.filter((l) => !!l.paid_at).length;
