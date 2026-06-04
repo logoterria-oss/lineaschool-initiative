@@ -94,9 +94,7 @@ const ExportPdfPreview = ({
         {/* Групповые */}
         {(type === 'groups' || type === 'both') && (
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>
-              Групповые занятия (есть места)
-            </h2>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>Групповые занятия</h2>
             {groupStableDays.length === 0 ? (
               <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных мест нет</p>
             ) : (
