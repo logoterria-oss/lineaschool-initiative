@@ -155,7 +155,7 @@ export default function PaymentReportModal({ onClose }: Props) {
 
         autoTable(doc, {
           startY: breakdownY + 3,
-          head: [['Тариф', 'Кол-во', '% от кол-ва', 'Выручка', '% от выручки']],
+          head: [['Тариф', 'Кол-во', '% от кол-ва', 'Выручка', '% от авансовых доходов']],
           body: stats.plan_breakdown.map(p => [
             p.plan,
             String(p.count),
