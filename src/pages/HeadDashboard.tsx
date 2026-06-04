@@ -13,36 +13,6 @@ const SECTIONS = [
     iconColor: 'text-orange-600',
     path: '/admin/payment-leads',
   },
-  {
-    id: 'reports',
-    label: 'Отчёты',
-    description: 'Логопедические заключения',
-    icon: 'FileText' as const,
-    color: 'border-blue-200 hover:border-blue-400',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    path: '/admin/reports',
-  },
-  {
-    id: 'questionnaires',
-    label: 'Анкеты',
-    description: 'Ответы родителей',
-    icon: 'ClipboardList' as const,
-    color: 'border-green-200 hover:border-green-400',
-    iconBg: 'bg-green-100',
-    iconColor: 'text-green-600',
-    path: '/admin/questionnaires',
-  },
-  {
-    id: 'schedule',
-    label: 'Расписание',
-    description: 'Групповые и индивидуальные занятия',
-    icon: 'CalendarDays' as const,
-    color: 'border-teal-200 hover:border-teal-400',
-    iconBg: 'bg-teal-100',
-    iconColor: 'text-teal-600',
-    path: '/admin/schedule',
-  },
 ];
 
 const HeadDashboard = () => {
