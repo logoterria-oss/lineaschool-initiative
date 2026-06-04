@@ -91,20 +91,24 @@ export default function PaymentReportModal({ onClose }: Props) {
         const resp = await fetch(url);
         const buf = await resp.arrayBuffer();
         const bytes = new Uint8Array(buf);
+        // Чанками по 8192 байта чтобы не переполнить стек
         let binary = '';
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const chunk = 8192;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
         const b64 = btoa(binary);
         doc.addFileToVFS(`${name}-${style}.ttf`, b64);
         doc.addFont(`${name}-${style}.ttf`, name, style);
       };
 
-      // PT Sans — содержит полную кириллицу (latin + cyrillic subset)
+      // PT Sans из GitHub Google Fonts — полный TTF с кириллицей
       await loadFont(
-        'https://fonts.gstatic.com/s/ptsans/v17/jizaRExUiTo99u79D0KEwA.ttf',
+        'https://raw.githubusercontent.com/google/fonts/main/ofl/ptsans/PTSans-Regular.ttf',
         'PTSans', 'normal'
       );
       await loadFont(
-        'https://fonts.gstatic.com/s/ptsans/v17/jizfRExUiTo99u79B_mh0O6tKA.ttf',
+        'https://raw.githubusercontent.com/google/fonts/main/ofl/ptsans/PTSans-Bold.ttf',
         'PTSans', 'bold'
       );
 
