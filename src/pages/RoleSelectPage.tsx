@@ -40,7 +40,7 @@ const roles = [
     key: 'head',
     label: 'Руководитель',
     description: 'Оплаты, отчёты, аналитика',
-    icon: 'Crown',
+    icon: 'BarChart2',
     color: 'border-amber-300 hover:border-amber-500',
     iconBg: 'bg-amber-100',
     iconColor: 'text-amber-600',

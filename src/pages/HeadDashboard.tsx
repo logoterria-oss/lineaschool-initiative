@@ -58,7 +58,7 @@ const HeadDashboard = () => {
               <Icon name="ArrowLeft" size={20} />
             </button>
             <div className="p-2 bg-amber-100 rounded-lg">
-              <Icon name="Crown" size={24} className="text-amber-600" />
+              <Icon name="BarChart2" size={24} className="text-amber-600" />
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Кабинет руководителя</h1>
