@@ -85,18 +85,14 @@ def handler(event: dict, context) -> dict:
     try:
         token = _get_s20_token()
         customers = _fetch_all_customers(token)
-        # Строим индекс: нормализованное имя → запись клиента
-        for c in customers:
-            norm = _norm(c.get('name', ''))
-            if norm:
-                s20_map[norm] = c
+        s20_map = {_norm(c.get('name', '')): c for c in customers if c.get('name')}
     except Exception as e:
         print(f"S20 fetch failed: {e}")
 
     for p in payments:
-        # Пробуем найти ребёнка по имени из платежа
         child_name = p['name']
-        child_info = s20_map.get(_norm(child_name))
+        # Сначала точное совпадение, потом нечёткое
+        child_info = s20_map.get(_norm(child_name)) or _fuzzy_find(child_name, s20_map)
         if child_info:
             p['child_name'] = child_info.get('name', child_name)
             p['parent_name'] = child_info.get('legal_name') or child_info.get('parent_name') or ''
@@ -191,6 +187,63 @@ def _fetch_all_customers(token: str) -> list:
 
 def _norm(s: str) -> str:
     return ' '.join(s.lower().replace('ё', 'е').split())
+
+
+def _levenshtein(a: str, b: str) -> int:
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a):
+        curr = [i + 1]
+        for j, cb in enumerate(b):
+            curr.append(min(curr[j] + 1, prev[j + 1] + 1, prev[j] + (0 if ca == cb else 1)))
+        prev = curr
+    return prev[len(b)]
+
+
+def _names_similar(a: str, b: str) -> bool:
+    """Похожи ли два ФИО: устойчиво к опечаткам и лишним словам."""
+    if not a or not b:
+        return False
+    wa = a.split()
+    wb = b.split()
+    shorter, longer = (wa, wb) if len(wa) <= len(wb) else (wb, wa)
+    used = set()
+    matched = 0
+    for w in shorter:
+        best_idx = -1
+        best_d = 999
+        for i, lw in enumerate(longer):
+            if i in used:
+                continue
+            d = _levenshtein(w, lw)
+            max_len = max(len(w), len(lw))
+            allowed = 0 if max_len <= 3 else (1 if max_len <= 5 else 2)
+            if d <= allowed and d < best_d:
+                best_d = d
+                best_idx = i
+        if best_idx != -1:
+            used.add(best_idx)
+            matched += 1
+    return matched == len(shorter) and matched >= 2
+
+
+def _fuzzy_find(name: str, s20_map: dict):
+    """Нечёткий поиск по s20_map — возвращает наиболее похожую запись."""
+    norm_name = _norm(name)
+    best = None
+    best_score = 999
+    for norm_key, customer in s20_map.items():
+        if _names_similar(norm_name, norm_key):
+            d = _levenshtein(norm_name, norm_key)
+            if d < best_score:
+                best_score = d
+                best = customer
+    return best
 
 
 def _first_phone(customer: dict) -> str:
