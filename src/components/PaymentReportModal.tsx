@@ -155,7 +155,7 @@ export default function PaymentReportModal({ onClose }: Props) {
 
         autoTable(doc, {
           startY: breakdownY + 3,
-          head: [['Тариф', 'Кол-во', '% от кол-ва', 'Выручка', '% от дохода']],
+          head: [['Тариф', 'Кол-во', '% от кол-ва', 'Выручка', '% от выручки']],
           body: stats.plan_breakdown.map(p => [
             p.plan,
             String(p.count),
@@ -164,16 +164,16 @@ export default function PaymentReportModal({ onClose }: Props) {
             `${p.pct_revenue}%`,
           ]),
           theme: 'striped',
-          headStyles: { fillColor: [34, 139, 87], textColor: 255, fontStyle: 'bold', fontSize: 9, font: 'NotoSans' },
+          headStyles: { fillColor: [34, 139, 87], textColor: 255, fontStyle: 'bold', fontSize: 9, font: 'NotoSans', halign: 'center' },
           styles: { fontSize: 9, cellPadding: 3, font: 'NotoSans' },
           columnStyles: {
-            0: { cellWidth: 90 },
+            0: { cellWidth: 'auto', halign: 'left' },
             1: { cellWidth: 22, halign: 'center' },
-            2: { cellWidth: 28, halign: 'center' },
-            3: { cellWidth: 35, halign: 'right' },
-            4: { cellWidth: 28, halign: 'center' },
+            2: { cellWidth: 30, halign: 'center' },
+            3: { cellWidth: 38, halign: 'center' },
+            4: { cellWidth: 32, halign: 'center' },
           },
-          margin: { left: margin },
+          margin: { left: margin, right: margin },
         });
       }
 
