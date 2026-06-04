@@ -73,12 +73,14 @@ export default function PaymentLeadsPage() {
     }
   };
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleString('ru-RU', {
+  const formatDate = (dateString: string) => {
+    const normalized = dateString.includes('+') || dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    return new Date(normalized).toLocaleString('ru-RU', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
       timeZone: 'Europe/Moscow',
     });
+  };
 
   // Дедупликация: дублем считаем платёж с тем же тарифом и суммой за один день,
   // если ФИО совпадают с точностью до опечаток и лишних слов (нечёткое сравнение).

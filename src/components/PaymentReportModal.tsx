@@ -52,8 +52,10 @@ export default function PaymentReportModal({ onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Moscow' });
+  const formatDate = (iso: string) => {
+    const normalized = iso.includes('+') || iso.endsWith('Z') ? iso : iso + 'Z';
+    return new Date(normalized).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Moscow' });
+  };
 
   const formatMoney = (n: number) =>
     n.toLocaleString('ru-RU', { minimumFractionDigits: 0 }) + ' ₽';
