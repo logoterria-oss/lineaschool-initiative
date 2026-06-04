@@ -86,31 +86,17 @@ export default function PaymentReportModal({ onClose }: Props) {
 
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-      // Загружаем Roboto с поддержкой кириллицы и встраиваем в PDF
-      const loadFont = async (url: string, name: string, style: string) => {
-        const resp = await fetch(url);
-        const buf = await resp.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        // Чанками по 8192 байта чтобы не переполнить стек
-        let binary = '';
-        const chunk = 8192;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-        }
-        const b64 = btoa(binary);
-        doc.addFileToVFS(`${name}-${style}.ttf`, b64);
-        doc.addFont(`${name}-${style}.ttf`, name, style);
+      // Грузим Noto Sans через наш бэкенд-прокси (jsDelivr → бэкенд → PDF)
+      const FONT_PROXY = 'https://functions.poehali.dev/3f32132e-3d38-4099-90c1-0fa0d31dd012';
+      const loadFont = async (style: string) => {
+        const resp = await fetch(`${FONT_PROXY}?style=${style}`);
+        const data = await resp.json();
+        doc.addFileToVFS(`NotoSans-${style}.ttf`, data.b64);
+        doc.addFont(`NotoSans-${style}.ttf`, 'NotoSans', style);
       };
 
-      // Noto Sans — шрифт Google с полной кириллицей, берём напрямую с GitHub
-      await loadFont(
-        'https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf',
-        'NotoSans', 'normal'
-      );
-      await loadFont(
-        'https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Bold.ttf',
-        'NotoSans', 'bold'
-      );
+      await loadFont('normal');
+      await loadFont('bold');
 
       doc.setFont('NotoSans');
 
