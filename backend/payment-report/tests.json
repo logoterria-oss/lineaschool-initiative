@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "Get report for current month",
+      "method": "GET",
+      "path": "/?month=2026-05&type=all",
+      "expectedStatus": 200,
+      "expectedBody": {"payments": [], "stats": {}},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "OPTIONS returns 200",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

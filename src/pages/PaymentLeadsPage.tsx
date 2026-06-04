@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
 import { namesSimilar } from '@/lib/nameSimilarity';
+import PaymentReportModal from '@/components/PaymentReportModal';
 
 const GET_LEADS_URL = 'https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2';
 const SYNC_URL = 'https://functions.poehali.dev/af003b32-0a7b-432b-a657-9e8c28bfe436';
@@ -21,12 +22,15 @@ interface PaymentLead {
 
 export default function PaymentLeadsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isHead = location.state?.from === '/admin/head';
   const [leads, setLeads] = useState<PaymentLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<'day' | 'month'>('month');
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 7));
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     // При открытии страницы — сначала тихо синхронизируем, потом загружаем список
@@ -124,6 +128,7 @@ export default function PaymentLeadsPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50">
       <AdminHeader showOnlyHome />
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -146,6 +151,15 @@ export default function PaymentLeadsPage() {
               <span className="text-sm text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-2">
                 {syncResult}
               </span>
+            )}
+            {isHead && (
+              <button
+                onClick={() => setShowReport(true)}
+                className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm"
+              >
+                <Icon name="FileText" size={16} />
+                Составить отчёт
+              </button>
             )}
             <button
               onClick={handleSync}
@@ -246,5 +260,8 @@ export default function PaymentLeadsPage() {
         </div>
       </div>
     </div>
+
+    {showReport && <PaymentReportModal onClose={() => setShowReport(false)} />}
+    </>
   );
 }

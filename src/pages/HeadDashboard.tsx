@@ -40,7 +40,7 @@ const HeadDashboard = () => {
             {SECTIONS.map((section) => (
               <button
                 key={section.id}
-                onClick={() => navigate(section.path)}
+                onClick={() => navigate(section.path, { state: { from: '/admin/head' } })}
                 className={`w-full flex items-center gap-4 bg-white rounded-xl border-2 ${section.color} p-5 text-left shadow-sm hover:shadow-md transition-all duration-200`}
               >
                 <div className={`p-3 rounded-lg ${section.iconBg} flex-shrink-0`}>
