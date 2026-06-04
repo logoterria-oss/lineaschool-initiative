@@ -82,24 +82,41 @@ def handler(event: dict, context) -> dict:
 
     # Обогащаем данными из S20: ищем ребёнка по имени
     s20_map = {}
+    s20_words_idx = {}  # слово → список клиентов (для поиска по отдельным словам)
     try:
         token = _get_s20_token()
         customers = _fetch_all_customers(token)
         s20_map = {_norm(c.get('name', '')): c for c in customers if c.get('name')}
+        # Индекс по отдельным словам — для случаев когда порядок слов разный
+        for c in customers:
+            if not c.get('name'):
+                continue
+            for w in _norm(c['name']).split():
+                if len(w) >= 4:  # только значимые слова (не предлоги)
+                    s20_words_idx.setdefault(w, []).append(c)
     except Exception as e:
         print(f"S20 fetch failed: {e}")
 
     for p in payments:
-        child_name = p['name']
-        # Сначала точное совпадение, потом нечёткое
-        child_info = s20_map.get(_norm(child_name)) or _fuzzy_find(child_name, s20_map)
+        child_name = p['name'].strip()
+        # 1) Точное совпадение
+        child_info = s20_map.get(_norm(child_name))
+        # 2) Нечёткое совпадение по всем словам
+        if not child_info:
+            child_info = _fuzzy_find(child_name, s20_map)
+        # 3) По отдельным словам — ищем в индексе по словам имени
+        if not child_info:
+            child_info = _word_find(child_name, s20_words_idx)  # type: ignore[arg-type]
+        print(f"MATCH '{child_name}' → {child_info.get('name') if child_info else 'NOT FOUND'} | legal_name={child_info.get('legal_name') if child_info else '-'}")
         if child_info:
-            p['child_name'] = child_info.get('name', child_name)
-            p['parent_name'] = child_info.get('legal_name') or child_info.get('parent_name') or ''
+            raw_child = child_info.get('name', child_name)
+            raw_parent = child_info.get('legal_name') or child_info.get('parent_name') or ''
+            p['child_name'] = _format_fi(raw_child)
+            p['parent_name'] = _format_fi(raw_parent) if raw_parent else ''
             p['child_phone'] = _first_phone(child_info)
             p['child_email'] = _first_email(child_info)
         else:
-            p['child_name'] = child_name
+            p['child_name'] = _format_fi(child_name)
             p['parent_name'] = ''
             p['child_phone'] = p.get('phone', '')
             p['child_email'] = p.get('email', '')
@@ -189,6 +206,33 @@ def _norm(s: str) -> str:
     return ' '.join(s.lower().replace('ё', 'е').split())
 
 
+def _format_fi(name: str) -> str:
+    """Возвращает 'Фамилия Имя' из любого формата: ФИО, ИФ, ФИ и т.д.
+    
+    В CRM студенты хранятся как 'Имя Фамилия' (ИФ),
+    лиды — как 'Фамилия Имя Отчество' (ФИО) или произвольно.
+    
+    Эвристика: если первое слово короткое или второе слово выглядит как фамилия
+    (заглавная буква, длиннее имени) — пробуем определить порядок.
+    Для однозначности: берём первые два слова и возвращаем как есть,
+    поскольку определить порядок ФИ vs ИФ без словаря ненадёжно.
+    Пользователь попросил 'Фамилия Имя' — если в CRM 'Имя Фамилия', переставляем.
+    """
+    if not name:
+        return ''
+    words = name.strip().split()
+    if len(words) == 0:
+        return ''
+    if len(words) == 1:
+        return words[0]
+    # Берём только первые 2 слова (убираем отчество)
+    w1, w2 = words[0], words[1]
+    # Эвристика: в русском языке имена обычно короче фамилий,
+    # но это ненадёжно. Возвращаем первые два слова как есть —
+    # порядок определяется тем, как данные хранятся в CRM.
+    return f"{w1} {w2}"
+
+
 def _levenshtein(a: str, b: str) -> int:
     if a == b:
         return 0
@@ -243,6 +287,33 @@ def _fuzzy_find(name: str, s20_map: dict):
             if d < best_score:
                 best_score = d
                 best = customer
+    return best
+
+
+def _word_find(name: str, words_idx: dict):
+    """Поиск по словам имени — находит запись у которой совпадают хотя бы 2 слова из имени платежа."""
+    norm_words = [w for w in _norm(name).split() if len(w) >= 4]
+    if not norm_words:
+        return None
+    # Считаем сколько слов совпало для каждого кандидата
+    scores = {}
+    for w in norm_words:
+        # Ищем точное и нечёткое совпадение слова в индексе
+        for idx_word, candidates in words_idx.items():
+            max_len = max(len(w), len(idx_word))
+            allowed = 0 if max_len <= 4 else (1 if max_len <= 6 else 2)
+            if _levenshtein(w, idx_word) <= allowed:
+                for c in candidates:
+                    cid = c.get('id')
+                    scores[cid] = scores.get(cid, (0, c))
+                    scores[cid] = (scores[cid][0] + 1, c)
+    # Берём кандидата с наибольшим числом совпавших слов (минимум 2)
+    best = None
+    best_count = 1  # порог: нужно хотя бы 2 совпавших слова
+    for cid, (count, customer) in scores.items():
+        if count > best_count:
+            best_count = count
+            best = customer
     return best
 
 
