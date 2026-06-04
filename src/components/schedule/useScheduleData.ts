@@ -36,10 +36,20 @@ export interface GroupStableDay {
 }
 
 export const useScheduleData = () => {
+  // Минимально допустимая дата старта — завтра (сегодня в день диагностики
+  // начинать нельзя, чтобы не ломать логику стабильных окон).
+  const minDate = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
+    return d;
+  })();
+
   // Дата, с которой клиент готов начать заниматься (не обязательно понедельник)
   const [startDate, setStartDate] = useState<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
     return d;
   });
   const [type, setType] = useState<ScheduleType>('both');
@@ -59,7 +69,8 @@ export const useScheduleData = () => {
     if (!val) return;
     const d = new Date(`${val}T00:00:00`);
     d.setHours(0, 0, 0, 0);
-    setStartDate(d);
+    // Не позволяем выбрать сегодняшний день или прошедшую дату
+    setStartDate(d < minDate ? minDate : d);
     setReady(false);
   };
 
@@ -370,6 +381,7 @@ export const useScheduleData = () => {
 
   return {
     startDate,
+    minDate,
     type,
     setType,
     building,
