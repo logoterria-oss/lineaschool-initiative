@@ -77,6 +77,7 @@ export default function PaymentLeadsPage() {
     new Date(dateString).toLocaleString('ru-RU', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
+      timeZone: 'Europe/Moscow',
     });
 
   // Дедупликация: дублем считаем платёж с тем же тарифом и суммой за один день,
