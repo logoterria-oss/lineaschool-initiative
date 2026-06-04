@@ -11,7 +11,6 @@ import {
   Customer,
   MAX_GROUP_SIZE,
   fmtDate,
-  getMonday,
   addDays,
   fmtRu,
   buildGroupRowsFromLessons,
@@ -112,10 +111,9 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
         }
       }
 
-      // Грузим недели по понедельникам, чтобы индекс дня недели у групп
-      // совпадал с календарным weekday у индивидуальных (0=ПН).
-      const baseMonday = getMonday(startDate);
-      const weekStarts = Array.from({ length: WEEKS_TO_LOAD }, (_, w) => addDays(baseMonday, w * 7));
+      // «Неделя» здесь — скользящее окно из 7 дней от даты старта:
+      // период 0 = startDate..startDate+6, период 1 = startDate+7..+13 и т.д.
+      const weekStarts = Array.from({ length: WEEKS_TO_LOAD }, (_, w) => addDays(startDate, w * 7));
 
       if (type === 'individual' || type === 'both') {
         const weeks: IndDay[][] = [];
@@ -260,60 +258,66 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     }
   };
 
-  // День недели даты старта (0=ПН..6=ВС)
-  const baseMonday = getMonday(startDate);
-  const startWeekday = (() => {
-    const wd = startDate.getDay(); // 0=ВС..6=СБ
-    return wd === 0 ? 6 : wd - 1; // → 0=ПН..6=ВС
-  })();
-
-  // Реальная календарная дата дня недели weekday в неделе с индексом offset
-  const dateForSlot = (offsetWeeks: number, weekday: number): Date =>
-    addDays(baseMonday, offsetWeeks * 7 + weekday);
-
-  // Минимальный валидный offset недели для дня weekday:
-  // если день раньше дня старта в стартовой неделе — начинаем со следующей недели
-  const minOffsetForDay = (weekday: number): number => (weekday >= startWeekday ? 0 : 1);
-
-  // ── Индивидуальные: стабильные окна ──────────────────────────────────────────
-  // Свободно ли индивид. окно (weekday, time, teacherId) в неделе с индексом w
-  const isIndFree = (w: number, weekday: number, time: string, teacherId: number): boolean => {
-    const week = indWeeks?.[w];
-    if (!week) return false;
-    const day = week.find((d) => d.weekday === weekday);
-    if (!day) return false;
-    return day.slots.some(
-      (s) => s.time_from === time && s.teacher_id === teacherId && !s.busy,
-    );
+  // dayOffset (0..6) — смещение дня от даты старта (день 0 = startDate).
+  // Календарный день недели этого дня (0=ПН..6=ВС) — для сортировки ПН→ВС.
+  const weekdayOf = (dayOffset: number): number => {
+    const d = addDays(startDate, dayOffset).getDay(); // 0=ВС..6=СБ
+    return d === 0 ? 6 : d - 1;
   };
 
-  // Стабильно ли окно STABLE_WEEKS недель подряд, начиная с недели startOffset
-  const isIndStable = (startOffset: number, weekday: number, time: string, teacherId: number): boolean => {
+  // Реальная дата дня dayOffset в периоде с индексом period
+  const dateForSlot = (period: number, dayOffset: number): Date =>
+    addDays(startDate, period * 7 + dayOffset);
+
+  // ── Индивидуальные: стабильные окна ──────────────────────────────────────────
+  // dayOffset слота внутри периода period: из даты дня минус начало периода
+  const indDayOffset = (period: number, isoDate: string): number => {
+    const periodStart = addDays(startDate, period * 7);
+    const dd = new Date(`${isoDate}T00:00:00`);
+    return Math.round((dd.getTime() - periodStart.getTime()) / 86400000);
+  };
+
+  // Свободно ли индивид. окно (dayOffset, time, teacherId) в периоде period
+  const isIndFree = (period: number, dayOffset: number, time: string, teacherId: number): boolean => {
+    const week = indWeeks?.[period];
+    if (!week) return false;
+    for (const day of week) {
+      if (indDayOffset(period, day.date) !== dayOffset) continue;
+      if (day.slots.some((s) => s.time_from === time && s.teacher_id === teacherId && !s.busy)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Стабильно ли окно STABLE_WEEKS периодов подряд, начиная с периода startPeriod
+  const isIndStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
     for (let k = 0; k < STABLE_WEEKS; k++) {
-      if (!isIndFree(startOffset + k, weekday, time, teacherId)) return false;
+      if (!isIndFree(startPeriod + k, dayOffset, time, teacherId)) return false;
     }
     return true;
   };
 
-  // Для каждого дня недели — список стабильных индивид. окон (с датой появления, если не с недели старта)
   const buildIndStableDays = () => {
-    const result: { weekday: number; items: { time: string; teachers: { name: string; fromDate: Date | null }[] }[] }[] = [];
+    const result: { dayOffset: number; items: { time: string; teachers: { name: string; fromDate: Date | null }[] }[] }[] = [];
     if (!indWeeks || indWeeks.length === 0) return result;
 
-    // Кандидаты окон берём из недели старта и следующей недели
+    // Кандидаты окон — из периода 0 и периода 1
     const seen = new Set<string>();
-    const candidates: { weekday: number; time: string; teacherId: number; teacherName: string }[] = [];
-    for (let off = 0; off <= MAX_START_OFFSET; off++) {
-      const week = indWeeks[off];
+    const candidates: { dayOffset: number; time: string; teacherId: number; teacherName: string }[] = [];
+    for (let period = 0; period <= MAX_START_OFFSET; period++) {
+      const week = indWeeks[period];
       if (!week) continue;
       for (const day of week) {
+        const dayOffset = indDayOffset(period, day.date);
+        if (dayOffset < 0 || dayOffset > 6) continue;
         for (const s of day.slots) {
           if (s.busy) continue;
-          const key = `${day.weekday}__${s.time_from}__${s.teacher_id}`;
+          const key = `${dayOffset}__${s.time_from}__${s.teacher_id}`;
           if (seen.has(key)) continue;
           seen.add(key);
           candidates.push({
-            weekday: day.weekday,
+            dayOffset,
             time: s.time_from,
             teacherId: s.teacher_id,
             teacherName: TEACHER_SHORT[s.teacher_id] || s.teacher_name,
@@ -324,75 +328,76 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
 
     const byDay: Record<number, Record<string, { name: string; fromDate: Date | null }[]>> = {};
     for (const c of candidates) {
-      const minOff = minOffsetForDay(c.weekday);
-      // Ищем первую неделю (minOff..MAX_START_OFFSET), с которой окно стабильно
-      let startOffset = -1;
-      for (let off = minOff; off <= MAX_START_OFFSET; off++) {
-        if (isIndStable(off, c.weekday, c.time, c.teacherId)) {
-          startOffset = off;
+      // Ищем первый период (0..MAX_START_OFFSET), с которого окно стабильно
+      let startPeriod = -1;
+      for (let p = 0; p <= MAX_START_OFFSET; p++) {
+        if (isIndStable(p, c.dayOffset, c.time, c.teacherId)) {
+          startPeriod = p;
           break;
         }
       }
-      if (startOffset === -1) continue; // нестабильно — не предлагаем
+      if (startPeriod === -1) continue; // нестабильно — не предлагаем
 
-      // Дату «с …» показываем, только если начать с ближайшей доступной недели нельзя
-      const fromDate = startOffset > minOff ? dateForSlot(startOffset, c.weekday) : null;
-      byDay[c.weekday] ||= {};
-      byDay[c.weekday][c.time] ||= [];
-      byDay[c.weekday][c.time].push({ name: c.teacherName, fromDate });
+      // Дату «с …» показываем, только если окна нет на текущей неделе (период 0)
+      const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
+      byDay[c.dayOffset] ||= {};
+      byDay[c.dayOffset][c.time] ||= [];
+      byDay[c.dayOffset][c.time].push({ name: c.teacherName, fromDate });
     }
 
-    for (let wd = 0; wd <= 6; wd++) {
-      const times = byDay[wd];
+    for (let dayOffset = 0; dayOffset <= 6; dayOffset++) {
+      const times = byDay[dayOffset];
       if (!times) continue;
       const items = Object.keys(times)
         .sort((a, b) => a.localeCompare(b))
         .map((time) => ({ time, teachers: times[time] }));
-      if (items.length > 0) result.push({ weekday: wd, items });
+      if (items.length > 0) result.push({ dayOffset, items });
     }
+    // Сортируем по календарному дню недели: ПН→ВС
+    result.sort((a, b) => weekdayOf(a.dayOffset) - weekdayOf(b.dayOffset));
     return result;
   };
 
   // ── Группы: стабильные окна ──────────────────────────────────────────────────
-  // Свободно ли групповое окно (weekday, time, teacherId) в неделе w (>=1 место)
-  const groupFreeAt = (w: number, weekday: number, time: string, teacherId: number): number => {
-    const week = groupWeeks?.[w];
+  // В groupWeeks[period] ключ cell = dayOffset (0..6) от начала периода
+  const groupFreeAt = (period: number, dayOffset: number, time: string, teacherId: number): number => {
+    const week = groupWeeks?.[period];
     if (!week) return 0;
     const row = week.find((r) => r.time === time && r.teacher_id === teacherId);
     if (!row) return 0;
-    const cell = row.cells[String(weekday)];
+    const cell = row.cells[String(dayOffset)];
     if (!cell) return 0;
     return cell.free;
   };
 
-  const isGroupStable = (startOffset: number, weekday: number, time: string, teacherId: number): boolean => {
+  const isGroupStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
     for (let k = 0; k < STABLE_WEEKS; k++) {
-      if (groupFreeAt(startOffset + k, weekday, time, teacherId) <= 0) return false;
+      if (groupFreeAt(startPeriod + k, dayOffset, time, teacherId) <= 0) return false;
     }
     return true;
   };
 
   const buildGroupStableDays = () => {
     const result: {
-      weekday: number;
+      dayOffset: number;
       items: { time: string; teacher: string; free: number; ageLabel: string; fromDate: Date | null }[];
     }[] = [];
     if (!groupWeeks || groupWeeks.length === 0) return result;
 
-    // Кандидаты — все групповые окна из недели старта и следующей недели
+    // Кандидаты — групповые окна из периода 0 и периода 1
     const seen = new Set<string>();
-    const candidates: { weekday: number; time: string; teacherId: number; teacherName: string }[] = [];
-    for (let off = 0; off <= MAX_START_OFFSET; off++) {
-      const week = groupWeeks[off];
+    const candidates: { dayOffset: number; time: string; teacherId: number; teacherName: string }[] = [];
+    for (let period = 0; period <= MAX_START_OFFSET; period++) {
+      const week = groupWeeks[period];
       if (!week) continue;
       for (const row of week) {
         for (const dayStr of Object.keys(row.cells)) {
-          const weekday = Number(dayStr);
-          const key = `${weekday}__${row.time}__${row.teacher_id}`;
+          const dayOffset = Number(dayStr);
+          const key = `${dayOffset}__${row.time}__${row.teacher_id}`;
           if (seen.has(key)) continue;
           seen.add(key);
           candidates.push({
-            weekday,
+            dayOffset,
             time: row.time,
             teacherId: row.teacher_id,
             teacherName: row.teacher_name,
@@ -403,34 +408,35 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
 
     const byDay: Record<number, typeof result[number]['items']> = {};
     for (const c of candidates) {
-      const minOff = minOffsetForDay(c.weekday);
-      let startOffset = -1;
-      for (let off = minOff; off <= MAX_START_OFFSET; off++) {
-        if (isGroupStable(off, c.weekday, c.time, c.teacherId)) {
-          startOffset = off;
+      let startPeriod = -1;
+      for (let p = 0; p <= MAX_START_OFFSET; p++) {
+        if (isGroupStable(p, c.dayOffset, c.time, c.teacherId)) {
+          startPeriod = p;
           break;
         }
       }
-      if (startOffset === -1) continue;
+      if (startPeriod === -1) continue;
 
-      // Свободные места и состав группы берём из недели, с которой окно стартует
-      const week = groupWeeks[startOffset];
+      // Свободные места и состав группы берём из периода, с которого окно стартует
+      const week = groupWeeks[startPeriod];
       const row = week.find((r) => r.time === c.time && r.teacher_id === c.teacherId);
-      const cell = row?.cells[String(c.weekday)];
+      const cell = row?.cells[String(c.dayOffset)];
       const free = cell?.free ?? 0;
       const ageLabel = groupAgeLabel(cell?.student_ids || []);
-      const fromDate = startOffset > minOff ? dateForSlot(startOffset, c.weekday) : null;
+      const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 
-      byDay[c.weekday] ||= [];
-      byDay[c.weekday].push({ time: c.time, teacher: c.teacherName, free, ageLabel, fromDate });
+      byDay[c.dayOffset] ||= [];
+      byDay[c.dayOffset].push({ time: c.time, teacher: c.teacherName, free, ageLabel, fromDate });
     }
 
-    for (let wd = 0; wd <= 6; wd++) {
-      const items = byDay[wd];
+    for (let dayOffset = 0; dayOffset <= 6; dayOffset++) {
+      const items = byDay[dayOffset];
       if (!items || items.length === 0) continue;
       items.sort((a, b) => a.time.localeCompare(b.time));
-      result.push({ weekday: wd, items });
+      result.push({ dayOffset, items });
     }
+    // Сортируем по календарному дню недели: ПН→ВС
+    result.sort((a, b) => weekdayOf(a.dayOffset) - weekdayOf(b.dayOffset));
     return result;
   };
 
@@ -576,9 +582,9 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                       <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных слотов нет</p>
                     ) : (
                       indStableDays.map((day) => (
-                        <div key={day.weekday} style={{ marginBottom: 16 }}>
+                        <div key={day.dayOffset} style={{ marginBottom: 16 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                            {WEEKDAY_FULL[day.weekday]}
+                            {WEEKDAY_FULL[weekdayOf(day.dayOffset)]}
                           </div>
                           {day.items.map((item) => (
                             <div key={item.time} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
@@ -610,9 +616,9 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
                       <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных мест нет</p>
                     ) : (
                       groupStableDays.map((day) => (
-                        <div key={day.weekday} style={{ marginBottom: 16 }}>
+                        <div key={day.dayOffset} style={{ marginBottom: 16 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                            {WEEKDAY_FULL[day.weekday]}
+                            {WEEKDAY_FULL[weekdayOf(day.dayOffset)]}
                           </div>
                           {day.items.map((x, i) => (
                             <div key={i} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
