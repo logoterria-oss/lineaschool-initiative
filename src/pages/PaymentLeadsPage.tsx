@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
+import { namesSimilar } from '@/lib/nameSimilarity';
 
 const GET_LEADS_URL = 'https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2';
 const SYNC_URL = 'https://functions.poehali.dev/af003b32-0a7b-432b-a657-9e8c28bfe436';
@@ -74,27 +75,35 @@ export default function PaymentLeadsPage() {
       hour: '2-digit', minute: '2-digit',
     });
 
-  // Дедупликация: группируем по имени+тарифу+дню заявки (с точностью до даты)
-  // Повторный платёж за тот же тариф в течение суток считаем дублем.
-  // Из группы берём оплаченную, если есть, иначе последнюю по id
+  // Дедупликация: дублем считаем платёж с тем же тарифом и суммой за один день,
+  // если ФИО совпадают с точностью до опечаток и лишних слов (нечёткое сравнение).
+  // Из группы берём оплаченную, если есть, иначе последнюю по id.
   const deduplicated = (() => {
-    const groups = new Map<string, PaymentLead>();
+    // Кандидат лучше текущего, если он оплачен (а текущий нет) или новее по id
+    const isBetter = (candidate: PaymentLead, current: PaymentLead) => {
+      const cPaid = !!candidate.paid_at;
+      const curPaid = !!current.paid_at;
+      return (!curPaid && cPaid) || (curPaid === cPaid && candidate.id > current.id);
+    };
+
+    // Сначала грубо группируем по тарифу+сумме+дню, внутри — склеиваем по схожести ФИО
+    const buckets = new Map<string, PaymentLead[]>();
     for (const l of leads) {
       const dateDay = l.created_at?.slice(0, 10) ?? '';
-      const key = `${l.name}__${l.plan}__${dateDay}`;
-      const existing = groups.get(key);
-      if (!existing) {
-        groups.set(key, l);
-      } else {
-        // Предпочитаем оплаченную, при равенстве — с большим id (новее)
-        const existingPaid = !!existing.paid_at;
-        const newPaid = !!l.paid_at;
-        if ((!existingPaid && newPaid) || (existingPaid === newPaid && l.id > existing.id)) {
-          groups.set(key, l);
+      const bucketKey = `${l.plan}__${l.amount}__${dateDay}`;
+      const bucket = buckets.get(bucketKey);
+      if (bucket) {
+        const match = bucket.find((x) => namesSimilar(x.name, l.name));
+        if (match) {
+          if (isBetter(l, match)) Object.assign(match, l);
+        } else {
+          bucket.push({ ...l });
         }
+      } else {
+        buckets.set(bucketKey, [{ ...l }]);
       }
     }
-    return Array.from(groups.values());
+    return Array.from(buckets.values()).flat();
   })();
 
   const filtered = deduplicated.filter((l) => {
