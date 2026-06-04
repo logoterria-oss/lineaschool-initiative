@@ -86,9 +86,29 @@ export default function PaymentReportModal({ onClose }: Props) {
 
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-      // Подключаем кириллический шрифт через встроенный helvetica + latin fallback
-      // jsPDF 4.x поддерживает UTF-8 из коробки при использовании стандартных шрифтов
-      doc.setFont('helvetica');
+      // Загружаем Roboto с поддержкой кириллицы и встраиваем в PDF
+      const loadFont = async (url: string, name: string, style: string) => {
+        const resp = await fetch(url);
+        const buf = await resp.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const b64 = btoa(binary);
+        doc.addFileToVFS(`${name}-${style}.ttf`, b64);
+        doc.addFont(`${name}-${style}.ttf`, name, style);
+      };
+
+      // PT Sans — содержит полную кириллицу (latin + cyrillic subset)
+      await loadFont(
+        'https://fonts.gstatic.com/s/ptsans/v17/jizaRExUiTo99u79D0KEwA.ttf',
+        'PTSans', 'normal'
+      );
+      await loadFont(
+        'https://fonts.gstatic.com/s/ptsans/v17/jizfRExUiTo99u79B_mh0O6tKA.ttf',
+        'PTSans', 'bold'
+      );
+
+      doc.setFont('PTSans');
 
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
@@ -99,17 +119,17 @@ export default function PaymentReportModal({ onClose }: Props) {
       doc.rect(0, 0, pageW, 22, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('PTSans', 'bold');
       doc.text(`Отчёт по оплатам — ${monthLabel()}`, margin, 14);
 
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('PTSans', 'normal');
       doc.text(`Тип: ${typeLabel()}   |   Сформирован: ${new Date().toLocaleDateString('ru-RU')}`, pageW - margin, 14, { align: 'right' });
 
       // ── Сводка ─────────────────────────────────────────────────────────────
       doc.setTextColor(30, 30, 30);
       doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('PTSans', 'bold');
       doc.text('Итоговая статистика', margin, 32);
 
       const summaryData: [string, string][] = [
@@ -124,7 +144,7 @@ export default function PaymentReportModal({ onClose }: Props) {
         head: [],
         body: summaryData,
         theme: 'plain',
-        styles: { fontSize: 10, cellPadding: 2 },
+        styles: { fontSize: 10, cellPadding: 2, font: 'PTSans' },
         columnStyles: {
           0: { fontStyle: 'bold', cellWidth: 50, textColor: [80, 80, 80] },
           1: { cellWidth: 100, textColor: [20, 20, 20] },
@@ -137,7 +157,7 @@ export default function PaymentReportModal({ onClose }: Props) {
 
       if (stats.plan_breakdown.length > 0 && payType !== 'diag') {
         doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('PTSans', 'bold');
         doc.setTextColor(30, 30, 30);
         doc.text('Разбивка по абонементам', margin, breakdownY);
 
@@ -152,8 +172,8 @@ export default function PaymentReportModal({ onClose }: Props) {
             `${p.pct_revenue}%`,
           ]),
           theme: 'striped',
-          headStyles: { fillColor: [34, 139, 87], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-          styles: { fontSize: 9, cellPadding: 3 },
+          headStyles: { fillColor: [34, 139, 87], textColor: 255, fontStyle: 'bold', fontSize: 9, font: 'PTSans' },
+          styles: { fontSize: 9, cellPadding: 3, font: 'PTSans' },
           columnStyles: {
             0: { cellWidth: 90 },
             1: { cellWidth: 22, halign: 'center' },
@@ -172,7 +192,7 @@ export default function PaymentReportModal({ onClose }: Props) {
       doc.rect(0, 0, pageW, 16, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(13);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('PTSans', 'bold');
       doc.text(`Список оплат — ${monthLabel()} (${typeLabel()})`, margin, 11);
 
       autoTable(doc, {
@@ -193,8 +213,9 @@ export default function PaymentReportModal({ onClose }: Props) {
           fontStyle: 'bold',
           fontSize: 9,
           halign: 'center',
+          font: 'PTSans',
         },
-        styles: { fontSize: 8.5, cellPadding: 3, overflow: 'linebreak' },
+        styles: { fontSize: 8.5, cellPadding: 3, overflow: 'linebreak', font: 'PTSans' },
         columnStyles: {
           0: { cellWidth: 10, halign: 'center' },
           1: { cellWidth: 65 },
@@ -210,7 +231,7 @@ export default function PaymentReportModal({ onClose }: Props) {
           const pageCount = doc.internal.pages.length - 1;
           doc.setFontSize(8);
           doc.setTextColor(150);
-          doc.setFont('helvetica', 'normal');
+          doc.setFont('PTSans', 'normal');
           doc.text(
             `Страница ${hookData.pageNumber} из ${pageCount}`,
             pageW / 2,
@@ -223,7 +244,7 @@ export default function PaymentReportModal({ onClose }: Props) {
       // Итоговая строка внизу таблицы
       const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 5;
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('PTSans', 'bold');
       doc.setTextColor(34, 139, 87);
       doc.text(
         `Итого: ${payments.length} оплат на сумму ${formatMoney(stats.total_revenue)}`,
