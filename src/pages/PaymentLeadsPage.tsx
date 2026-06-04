@@ -74,13 +74,14 @@ export default function PaymentLeadsPage() {
       hour: '2-digit', minute: '2-digit',
     });
 
-  // Дедупликация: группируем по имени+тарифу+дате заявки (с точностью до минуты)
+  // Дедупликация: группируем по имени+тарифу+дню заявки (с точностью до даты)
+  // Повторный платёж за тот же тариф в течение суток считаем дублем.
   // Из группы берём оплаченную, если есть, иначе последнюю по id
   const deduplicated = (() => {
     const groups = new Map<string, PaymentLead>();
     for (const l of leads) {
-      const dateMinute = l.created_at?.slice(0, 16) ?? '';
-      const key = `${l.name}__${l.plan}__${dateMinute}`;
+      const dateDay = l.created_at?.slice(0, 10) ?? '';
+      const key = `${l.name}__${l.plan}__${dateDay}`;
       const existing = groups.get(key);
       if (!existing) {
         groups.set(key, l);
