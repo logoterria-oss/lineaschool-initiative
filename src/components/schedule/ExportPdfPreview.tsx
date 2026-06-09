@@ -43,13 +43,15 @@ const ExportPdfPreview = ({
         </p>
         <div
           style={{
-            display: 'inline-block',
+            display: 'inline-flex',
+            alignItems: 'center',
             background: '#fef3c7',
             border: '1px solid #f59e0b',
             borderRadius: 6,
-            padding: '4px 10px',
+            padding: '6px 10px',
             marginBottom: 16,
-            fontSize: 20,
+            fontSize: 14,
+            lineHeight: 1,
             fontWeight: 700,
             color: '#92400e',
           }}
