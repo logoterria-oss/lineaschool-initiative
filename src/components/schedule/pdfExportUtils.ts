@@ -52,16 +52,30 @@ export const WEEKS_TO_LOAD = MAX_START_OFFSET + STABLE_WEEKS; // 4
 export const generatePdf = async (node: HTMLDivElement, startDate: Date, preopenedWindow?: Window | null): Promise<void> => {
   // На мобильных предпросмотр визуально сжат под узкий экран, из-за чего
   // html2canvas снимает его в уменьшенном масштабе и шрифт в PDF мелкий.
-  // Делаем off-screen клон с фиксированной шириной 720px и снимаем его.
+  // Делаем off-screen клон в обёртке с ЖЁСТКОЙ шириной 720px. Обёртка имеет
+  // реальную ширину (не зависит от вьюпорта), поэтому на телефоне макет
+  // снимается ровно так же, как на десктопе.
   const PDF_WIDTH = 720;
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'absolute';
+  wrapper.style.top = '0';
+  wrapper.style.left = '0';
+  wrapper.style.zIndex = '-1';
+  wrapper.style.width = `${PDF_WIDTH}px`;
+  wrapper.style.minWidth = `${PDF_WIDTH}px`;
+  wrapper.style.maxWidth = `${PDF_WIDTH}px`;
+  wrapper.style.background = '#ffffff';
+  wrapper.style.overflow = 'hidden';
+  wrapper.style.pointerEvents = 'none';
+  wrapper.style.opacity = '0';
+
   const clone = node.cloneNode(true) as HTMLDivElement;
   clone.style.width = `${PDF_WIDTH}px`;
-  clone.style.maxWidth = 'none';
-  clone.style.position = 'fixed';
-  clone.style.left = '-10000px';
-  clone.style.top = '0';
+  clone.style.minWidth = `${PDF_WIDTH}px`;
+  clone.style.maxWidth = `${PDF_WIDTH}px`;
   clone.style.transform = 'none';
-  document.body.appendChild(clone);
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
 
   let canvas: HTMLCanvasElement;
   try {
@@ -73,7 +87,7 @@ export const generatePdf = async (node: HTMLDivElement, startDate: Date, preopen
       windowWidth: PDF_WIDTH,
     });
   } finally {
-    document.body.removeChild(clone);
+    document.body.removeChild(wrapper);
   }
   const pdf = new jsPDF('p', 'mm', 'a4');
   const margin = 10;
