@@ -114,14 +114,22 @@ export const generatePdf = async (node: HTMLDivElement, startDate: Date): Promis
   const fileDate = fmtDate(startDate);
   const fileName = `Расписание_${fileDate}.pdf`;
 
-  const blob = pdf.output('blob');
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isIOS) {
+    // iOS не поддерживает скачивание blob — открываем data URI в новой вкладке,
+    // пользователь сохраняет через «Поделиться → Сохранить в файлы»
+    const dataUri = pdf.output('datauristring');
+    window.open(dataUri, '_blank');
+  } else {
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }
 };
