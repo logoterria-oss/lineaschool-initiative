@@ -115,11 +115,24 @@ export const generatePdf = async (node: HTMLDivElement, startDate: Date, preopen
   const fileName = `Расписание_${fileDate}.pdf`;
 
   const blob = pdf.output('blob');
-  const url = URL.createObjectURL(blob);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+  // На iOS системный «Поделиться» — единственный надёжный способ сохранить файл.
+  if (isIOS && navigator.canShare) {
+    const file = new File([blob], fileName, { type: 'application/pdf' });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: fileName });
+        preopenedWindow?.close();
+        return;
+      } catch {
+        /* пользователь отменил — пробуем запасной вариант ниже */
+      }
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
   if (preopenedWindow) {
-    // Вкладка уже открыта синхронно по клику (иначе iOS заблокирует попап).
-    // Подставляем в неё готовый PDF — пользователь сохраняет через «Поделиться».
     preopenedWindow.location.href = url;
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   } else {
