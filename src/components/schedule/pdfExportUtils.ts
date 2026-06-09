@@ -50,7 +50,31 @@ export const WEEKS_TO_LOAD = MAX_START_OFFSET + STABLE_WEEKS; // 4
 // Снимает DOM-узел в canvas и сохраняет многостраничный PDF, разрезая
 // по пустым (белым) строкам пикселей, чтобы не рвать текст.
 export const generatePdf = async (node: HTMLDivElement, startDate: Date, preopenedWindow?: Window | null): Promise<void> => {
-  const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+  // На мобильных предпросмотр визуально сжат под узкий экран, из-за чего
+  // html2canvas снимает его в уменьшенном масштабе и шрифт в PDF мелкий.
+  // Делаем off-screen клон с фиксированной шириной 720px и снимаем его.
+  const PDF_WIDTH = 720;
+  const clone = node.cloneNode(true) as HTMLDivElement;
+  clone.style.width = `${PDF_WIDTH}px`;
+  clone.style.maxWidth = 'none';
+  clone.style.position = 'fixed';
+  clone.style.left = '-10000px';
+  clone.style.top = '0';
+  clone.style.transform = 'none';
+  document.body.appendChild(clone);
+
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(clone, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      width: PDF_WIDTH,
+      windowWidth: PDF_WIDTH,
+    });
+  } finally {
+    document.body.removeChild(clone);
+  }
   const pdf = new jsPDF('p', 'mm', 'a4');
   const margin = 10;
   const pageW = pdf.internal.pageSize.getWidth();
