@@ -28,8 +28,6 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     fmtFrom,
     indStableDays,
     groupStableDays,
-    pdfBlobUrl,
-    setPdfBlobUrl,
   } = useScheduleData();
 
   return (
@@ -99,23 +97,8 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
           ) : (
             <Button onClick={downloadPdf} disabled={building} className="w-full gap-2 bg-green-600 hover:bg-green-700">
               {building ? <Icon name="Loader2" size={16} className="animate-spin" /> : <Icon name="Download" size={16} />}
-              {building ? 'Генерация…' : 'Скачать PDF'}
+              Скачать PDF
             </Button>
-          )}
-
-          {/* iOS: показываем PDF в iframe — пользователь сохраняет через «Поделиться» */}
-          {pdfBlobUrl && (
-            <div className="rounded-lg border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between bg-gray-50 px-3 py-2 border-b border-gray-200">
-                <p className="text-xs text-gray-600">
-                  Нажмите <b>«Поделиться»</b> → <b>«Сохранить в файлы»</b>
-                </p>
-                <button onClick={() => { URL.revokeObjectURL(pdfBlobUrl); setPdfBlobUrl(''); }} className="text-gray-400 hover:text-gray-600">
-                  <Icon name="X" size={16} />
-                </button>
-              </div>
-              <iframe src={pdfBlobUrl} className="w-full h-96" title="PDF предпросмотр" />
-            </div>
           )}
 
           {/* Предпросмотр — он же источник для PDF */}
