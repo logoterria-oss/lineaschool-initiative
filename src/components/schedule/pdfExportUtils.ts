@@ -112,5 +112,16 @@ export const generatePdf = async (node: HTMLDivElement, startDate: Date): Promis
   }
 
   const fileDate = fmtDate(startDate);
-  pdf.save(`Расписание_${fileDate}.pdf`);
+  const fileName = `Расписание_${fileDate}.pdf`;
+
+  // На iOS/Android pdf.save() не работает — используем blob + window.open
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } else {
+    pdf.save(fileName);
+  }
 };
