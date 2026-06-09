@@ -52,10 +52,8 @@ export const WEEKS_TO_LOAD = MAX_START_OFFSET + STABLE_WEEKS; // 4
 export const generatePdf = async (node: HTMLDivElement, startDate: Date, preopenedWindow?: Window | null): Promise<void> => {
   // На мобильных предпросмотр визуально сжат под узкий экран, из-за чего
   // html2canvas снимает его в уменьшенном масштабе и шрифт в PDF мелкий.
-  // Делаем off-screen клон с фиксированной шириной и снимаем его.
-  // Ширину держим близкой к пропорциям A4, чтобы шрифт занимал бо́льшую
-  // долю листа и не «терялся» с большими пустыми полями по краям.
-  const PDF_WIDTH = 480;
+  // Делаем off-screen клон с фиксированной шириной 720px и снимаем его.
+  const PDF_WIDTH = 720;
   const clone = node.cloneNode(true) as HTMLDivElement;
   clone.style.width = `${PDF_WIDTH}px`;
   clone.style.maxWidth = 'none';
