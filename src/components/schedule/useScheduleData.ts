@@ -152,12 +152,7 @@ export const useScheduleData = () => {
   };
 
   const downloadPdf = async () => {
-    console.log('[PDF] click downloadPdf, hasRef=', !!printRef.current);
     if (!printRef.current) return;
-
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    console.log('[PDF] isIOS=', isIOS, 'canShare=', typeof navigator.canShare, 'share=', typeof navigator.share);
-
     setBuilding(true);
     try {
       if (!logoData) {
@@ -169,11 +164,8 @@ export const useScheduleData = () => {
           /* не критично */
         }
       }
-      console.log('[PDF] start generatePdf');
       await generatePdf(printRef.current, startDate, null);
-      console.log('[PDF] generatePdf done');
-    } catch (e) {
-      console.log('[PDF] ERROR', String(e));
+    } catch {
       setError('Не удалось сформировать PDF');
     } finally {
       setBuilding(false);

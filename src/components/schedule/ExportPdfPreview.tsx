@@ -31,14 +31,14 @@ const ExportPdfPreview = ({
             <img
               src={logoData}
               alt="ЛинэяСкул"
-              style={{ height: 56, objectFit: 'contain' }}
+              style={{ height: 84, objectFit: 'contain' }}
             />
           )}
         </div>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>
+        <h1 style={{ fontSize: 30, fontWeight: 700, color: '#111827', marginBottom: 4 }}>
           Свободные слоты для записи
         </h1>
-        <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 12 }}>
+        <p style={{ fontSize: 20, color: '#4b5563', marginBottom: 12 }}>
           Начало занятий: {fmtRu(startDate)} – {fmtRu(addDays(startDate, 6))}
         </p>
         <div
@@ -49,7 +49,7 @@ const ExportPdfPreview = ({
             borderRadius: 6,
             padding: '4px 10px',
             marginBottom: 16,
-            fontSize: 13,
+            fontSize: 20,
             fontWeight: 700,
             color: '#92400e',
           }}
@@ -60,19 +60,19 @@ const ExportPdfPreview = ({
         {/* Индивидуальные */}
         {(type === 'individual' || type === 'both') && (
           <div style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>
+            <h2 style={{ fontSize: 23, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>
               Индивидуальные занятия
             </h2>
             {indStableDays.length === 0 ? (
-              <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных слотов нет</p>
+              <p style={{ fontSize: 18, color: '#9ca3af' }}>Свободных слотов нет</p>
             ) : (
               indStableDays.map((day) => (
                 <div key={day.dayOffset} style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: '#374151' }}>
                     {WEEKDAY_FULL[weekdayOf(day.dayOffset)]}
                   </div>
                   {day.items.map((item) => (
-                    <div key={item.time} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
+                    <div key={item.time} style={{ fontSize: 18, color: '#4b5563', paddingLeft: 12 }}>
                       {item.time.slice(0, 5)} —{' '}
                       {item.teachers.map((t, i) => (
                         <span key={i}>
@@ -94,17 +94,17 @@ const ExportPdfPreview = ({
         {/* Групповые */}
         {(type === 'groups' || type === 'both') && (
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>Групповые занятия</h2>
+            <h2 style={{ fontSize: 23, fontWeight: 700, color: '#0f766e', marginBottom: 8 }}>Групповые занятия</h2>
             {groupStableDays.length === 0 ? (
-              <p style={{ fontSize: 12, color: '#9ca3af' }}>Свободных мест нет</p>
+              <p style={{ fontSize: 18, color: '#9ca3af' }}>Свободных мест нет</p>
             ) : (
               groupStableDays.map((day) => (
                 <div key={day.dayOffset} style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: '#374151' }}>
                     {WEEKDAY_FULL[weekdayOf(day.dayOffset)]}
                   </div>
                   {day.items.map((x, i) => (
-                    <div key={i} style={{ fontSize: 12, color: '#4b5563', paddingLeft: 12 }}>
+                    <div key={i} style={{ fontSize: 18, color: '#4b5563', paddingLeft: 12 }}>
                       {x.time} — {x.teacher} (свободно {x.free} из {MAX_GROUP_SIZE})
                       {x.ageLabel && (
                         <span style={{ color: '#0f766e', fontWeight: 600 }}> — {x.ageLabel}</span>
