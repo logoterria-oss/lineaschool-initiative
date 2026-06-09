@@ -151,11 +151,12 @@ export const useScheduleData = () => {
     }
   };
 
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string>('');
+
   const downloadPdf = async () => {
     if (!printRef.current) return;
     setBuilding(true);
     try {
-      // Убеждаемся, что логотип загружен и попал в DOM перед снимком
       if (!logoData) {
         try {
           const data = await loadImageAsDataUrl(LOGO_URL);
@@ -165,7 +166,24 @@ export const useScheduleData = () => {
           /* не критично */
         }
       }
-      await generatePdf(printRef.current, startDate);
+      const result = await generatePdf(printRef.current, startDate);
+      if (!result) return;
+      const { blobUrl, fileName } = result;
+
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) {
+        // На iOS скачивание не работает — показываем iframe в модалке
+        setPdfBlobUrl(blobUrl);
+      } else {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+      }
     } catch {
       setError('Не удалось сформировать PDF');
     } finally {
@@ -397,5 +415,7 @@ export const useScheduleData = () => {
     fmtFrom,
     indStableDays,
     groupStableDays,
+    pdfBlobUrl,
+    setPdfBlobUrl,
   };
 };
