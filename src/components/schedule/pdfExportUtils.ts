@@ -120,18 +120,24 @@ export const generatePdf = async (node: HTMLDivElement, startDate: Date, preopen
   // На iOS системный «Поделиться» — единственный надёжный способ сохранить файл.
   if (isIOS && navigator.canShare) {
     const file = new File([blob], fileName, { type: 'application/pdf' });
-    if (navigator.canShare({ files: [file] })) {
+    const ok = navigator.canShare({ files: [file] });
+    console.log('[PDF] iOS share branch, canShare files=', ok);
+    if (ok) {
       try {
         await navigator.share({ files: [file], title: fileName });
+        console.log('[PDF] share success');
         preopenedWindow?.close();
         return;
-      } catch {
-        /* пользователь отменил — пробуем запасной вариант ниже */
+      } catch (e) {
+        console.log('[PDF] share failed/cancelled', String(e));
       }
     }
+  } else {
+    console.log('[PDF] no share API, isIOS=', isIOS);
   }
 
   const url = URL.createObjectURL(blob);
+  console.log('[PDF] fallback download/open, url len=', url.length);
   if (preopenedWindow) {
     preopenedWindow.location.href = url;
     setTimeout(() => URL.revokeObjectURL(url), 60000);

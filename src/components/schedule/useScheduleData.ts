@@ -152,16 +152,14 @@ export const useScheduleData = () => {
   };
 
   const downloadPdf = async () => {
+    console.log('[PDF] click downloadPdf, hasRef=', !!printRef.current);
     if (!printRef.current) return;
 
-    // На iOS вкладку нужно открыть СИНХРОННО в обработчике клика,
-    // иначе после await браузер заблокирует её как попап.
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const preopened = isIOS ? window.open('', '_blank') : null;
+    console.log('[PDF] isIOS=', isIOS, 'canShare=', typeof navigator.canShare, 'share=', typeof navigator.share);
 
     setBuilding(true);
     try {
-      // Убеждаемся, что логотип загружен и попал в DOM перед снимком
       if (!logoData) {
         try {
           const data = await loadImageAsDataUrl(LOGO_URL);
@@ -171,9 +169,11 @@ export const useScheduleData = () => {
           /* не критично */
         }
       }
-      await generatePdf(printRef.current, startDate, preopened);
-    } catch {
-      preopened?.close();
+      console.log('[PDF] start generatePdf');
+      await generatePdf(printRef.current, startDate, null);
+      console.log('[PDF] generatePdf done');
+    } catch (e) {
+      console.log('[PDF] ERROR', String(e));
       setError('Не удалось сформировать PDF');
     } finally {
       setBuilding(false);
