@@ -153,6 +153,12 @@ export const useScheduleData = () => {
 
   const downloadPdf = async () => {
     if (!printRef.current) return;
+
+    // На iOS вкладку нужно открыть СИНХРОННО в обработчике клика,
+    // иначе после await браузер заблокирует её как попап.
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const preopened = isIOS ? window.open('', '_blank') : null;
+
     setBuilding(true);
     try {
       // Убеждаемся, что логотип загружен и попал в DOM перед снимком
@@ -165,8 +171,9 @@ export const useScheduleData = () => {
           /* не критично */
         }
       }
-      await generatePdf(printRef.current, startDate);
+      await generatePdf(printRef.current, startDate, preopened);
     } catch {
+      preopened?.close();
       setError('Не удалось сформировать PDF');
     } finally {
       setBuilding(false);

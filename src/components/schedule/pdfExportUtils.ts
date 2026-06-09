@@ -49,7 +49,7 @@ export const WEEKS_TO_LOAD = MAX_START_OFFSET + STABLE_WEEKS; // 4
 
 // Снимает DOM-узел в canvas и сохраняет многостраничный PDF, разрезая
 // по пустым (белым) строкам пикселей, чтобы не рвать текст.
-export const generatePdf = async (node: HTMLDivElement, startDate: Date): Promise<void> => {
+export const generatePdf = async (node: HTMLDivElement, startDate: Date, preopenedWindow?: Window | null): Promise<void> => {
   const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
   const pdf = new jsPDF('p', 'mm', 'a4');
   const margin = 10;
@@ -114,15 +114,15 @@ export const generatePdf = async (node: HTMLDivElement, startDate: Date): Promis
   const fileDate = fmtDate(startDate);
   const fileName = `Расписание_${fileDate}.pdf`;
 
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isIOS) {
-    // iOS не поддерживает скачивание blob — открываем data URI в новой вкладке,
-    // пользователь сохраняет через «Поделиться → Сохранить в файлы»
-    const dataUri = pdf.output('datauristring');
-    window.open(dataUri, '_blank');
+  const blob = pdf.output('blob');
+  const url = URL.createObjectURL(blob);
+
+  if (preopenedWindow) {
+    // Вкладка уже открыта синхронно по клику (иначе iOS заблокирует попап).
+    // Подставляем в неё готовый PDF — пользователь сохраняет через «Поделиться».
+    preopenedWindow.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   } else {
-    const blob = pdf.output('blob');
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
