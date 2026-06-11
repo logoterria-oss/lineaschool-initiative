@@ -9,6 +9,7 @@ import ManualPaymentModal from '@/components/ManualPaymentModal';
 
 const GET_LEADS_URL = 'https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2';
 const SYNC_URL = 'https://functions.poehali.dev/af003b32-0a7b-432b-a657-9e8c28bfe436';
+const DELETE_URL = 'https://functions.poehali.dev/264c82a7-ca44-425a-bbf1-4006cda9e33e';
 
 interface PaymentLead {
   id: number;
@@ -34,6 +35,7 @@ export default function PaymentLeadsPage() {
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 7));
   const [showReport, setShowReport] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     // При открытии страницы — сначала тихо синхронизируем, потом загружаем список
@@ -73,6 +75,29 @@ export default function PaymentLeadsPage() {
       setSyncResult('Не удалось подключиться к почте');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleDelete = async (lead: PaymentLead) => {
+    if (!window.confirm(`Удалить оплату «${lead.name}» на ${lead.amount.toLocaleString('ru-RU')} ₽?`)) return;
+    setDeletingId(lead.id);
+    try {
+      const password = sessionStorage.getItem('admin_password') || '';
+      const resp = await fetch(DELETE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ id: lead.id }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.success) {
+        setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+      } else {
+        alert(data.error || 'Не удалось удалить оплату');
+      }
+    } catch {
+      alert('Ошибка соединения');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -277,10 +302,20 @@ export default function PaymentLeadsPage() {
                   </div>
                 </div>
 
-                <div className="text-right flex-shrink-0">
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
                   <span className={`text-xl font-bold ${lead.paid_at ? 'text-green-600' : 'text-gray-700'}`}>
                     {lead.amount.toLocaleString('ru-RU')} ₽
                   </span>
+                  {isHead && (
+                    <button
+                      onClick={() => handleDelete(lead)}
+                      disabled={deletingId === lead.id}
+                      className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+                    >
+                      <Icon name={deletingId === lead.id ? 'Loader2' : 'Trash2'} size={14} className={deletingId === lead.id ? 'animate-spin' : ''} />
+                      Удалить
+                    </button>
+                  )}
                 </div>
               </div>
             </Card>

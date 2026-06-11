@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Reject wrong password",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "wrong"},
+      "body": {"id": 1},
+      "expectedStatus": 401
+    },
+    {
+      "name": "Reject bad id",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "426874"},
+      "body": {"id": "abc"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "Delete non-existent returns 404",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "426874"},
+      "body": {"id": 999999999},
+      "expectedStatus": 404
+    }
+  ]
+}
