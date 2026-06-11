@@ -1,4 +1,5 @@
 {
+  "add-manual-payment": "https://functions.poehali.dev/975b62cd-bb6b-4608-8d61-f15b29e93b89",
   "font-proxy": "https://functions.poehali.dev/3f32132e-3d38-4099-90c1-0fa0d31dd012",
   "payment-report": "https://functions.poehali.dev/479e2c37-bd7f-48dc-88f2-60dd9cb2188a",
   "verify-manager-password": "https://functions.poehali.dev/a9e5d5a3-7d9e-4391-9cbf-6456e9a3bb9c",

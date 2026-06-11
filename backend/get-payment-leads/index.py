@@ -50,7 +50,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Get all leads ordered by created_at DESC
         cur.execute(
-            "SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id FROM payment_leads ORDER BY created_at DESC"
+            "SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id, source FROM payment_leads ORDER BY created_at DESC"
         )
         
         rows = cur.fetchall()
@@ -66,6 +66,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'created_at': row[7].isoformat() if row[7] else None,
                 'paid_at': row[8].isoformat() if row[8] else None,
                 'transaction_id': row[9],
+                'source': row[10] if len(row) > 10 else 'acquiring',
             })
         
         cur.close()

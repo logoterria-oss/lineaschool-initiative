@@ -5,6 +5,7 @@ import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
 import { namesSimilar } from '@/lib/nameSimilarity';
 import PaymentReportModal from '@/components/PaymentReportModal';
+import ManualPaymentModal from '@/components/ManualPaymentModal';
 
 const GET_LEADS_URL = 'https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2';
 const SYNC_URL = 'https://functions.poehali.dev/af003b32-0a7b-432b-a657-9e8c28bfe436';
@@ -18,6 +19,7 @@ interface PaymentLead {
   created_at: string;
   paid_at: string | null;
   transaction_id: string | null;
+  source?: string;
 }
 
 export default function PaymentLeadsPage() {
@@ -31,6 +33,7 @@ export default function PaymentLeadsPage() {
   const [dateFilter, setDateFilter] = useState<'day' | 'month'>('month');
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 7));
   const [showReport, setShowReport] = useState(false);
+  const [showManual, setShowManual] = useState(false);
 
   useEffect(() => {
     // При открытии страницы — сначала тихо синхронизируем, потом загружаем список
@@ -170,13 +173,22 @@ export default function PaymentLeadsPage() {
               </span>
             )}
             {isHead && (
-              <button
-                onClick={() => setShowReport(true)}
-                className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm"
-              >
-                <Icon name="FileText" size={16} />
-                Составить отчёт
-              </button>
+              <>
+                <button
+                  onClick={() => setShowManual(true)}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm"
+                >
+                  <Icon name="Plus" size={16} />
+                  Добавить оплату
+                </button>
+                <button
+                  onClick={() => setShowReport(true)}
+                  className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm"
+                >
+                  <Icon name="FileText" size={16} />
+                  Составить отчёт
+                </button>
+              </>
             )}
             <button
               onClick={handleSync}
@@ -239,6 +251,12 @@ export default function PaymentLeadsPage() {
                         Ожидает оплаты
                       </span>
                     )}
+                    {lead.source === 'manual' && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                        <Icon name="PencilLine" size={12} />
+                        Внесено вручную
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 mb-1">
                     <Icon name="User" size={16} className="text-gray-400 flex-shrink-0" />
@@ -279,6 +297,12 @@ export default function PaymentLeadsPage() {
     </div>
 
     {showReport && <PaymentReportModal onClose={() => setShowReport(false)} />}
+    {showManual && (
+      <ManualPaymentModal
+        onClose={() => setShowManual(false)}
+        onSaved={fetchLeads}
+      />
+    )}
     </>
   );
 }

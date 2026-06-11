@@ -1,0 +1,36 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Reject wrong password",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "wrong"},
+      "body": {"name": "Иван", "plan": "Абонемент", "amount": 5000},
+      "expectedStatus": 401
+    },
+    {
+      "name": "Reject missing fields",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "426874"},
+      "body": {"name": "", "plan": "", "amount": ""},
+      "expectedStatus": 400
+    },
+    {
+      "name": "Create manual payment",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "426874"},
+      "body": {"name": "Тест Тестов", "plan": "Абонемент 12 мес", "amount": 5990},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
