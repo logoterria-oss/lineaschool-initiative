@@ -94,6 +94,8 @@ def handler(event: dict, context) -> dict:
             for w in _norm(c['name']).split():
                 if len(w) >= 4:  # только значимые слова (не предлоги)
                     s20_words_idx.setdefault(w, []).append(c)
+        # Освежаем локальный справочник CRM (используется при оплате для подстановки имени)
+        _refresh_crm_cache(customers, schema)
     except Exception as e:
         print(f"S20 fetch failed: {e}")
 
@@ -163,6 +165,29 @@ def handler(event: dict, context) -> dict:
         'headers': {'Access-Control-Allow-Origin': '*'},
         'body': json.dumps({'payments': payments, 'stats': stats, 'month': month}, ensure_ascii=False),
     }
+
+
+def _refresh_crm_cache(customers: list, schema: str) -> None:
+    """Перезаписывает локальный справочник клиентов CRM (для подстановки имени при оплате)."""
+    try:
+        conn = psycopg2.connect(os.environ['DATABASE_URL'])
+        cur = conn.cursor()
+        cur.execute(f"TRUNCATE {schema}.crm_customers_cache")
+        for c in customers:
+            cid = c.get('id')
+            nm = (c.get('name') or '').strip()
+            if cid is None or not nm:
+                continue
+            safe = nm.replace("'", "''")
+            cur.execute(
+                f"INSERT INTO {schema}.crm_customers_cache (id, name, updated_at) "
+                f"VALUES ({int(cid)}, '{safe}', NOW())"
+            )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"CRM cache refresh failed: {e}")
 
 
 def _get_s20_token() -> str:
