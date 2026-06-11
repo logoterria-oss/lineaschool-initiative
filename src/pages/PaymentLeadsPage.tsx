@@ -157,8 +157,10 @@ export default function PaymentLeadsPage() {
   };
 
   const filtered = deduplicated.filter((l) => {
-    if (!l.created_at) return false;
-    return toMskPrefix(l.created_at, dateFilter) === selectedDate;
+    // Для оплаченных фильтруем по дате оплаты, для ожидающих — по дате заявки
+    const baseDate = l.paid_at || l.created_at;
+    if (!baseDate) return false;
+    return toMskPrefix(baseDate, dateFilter) === selectedDate;
   });
 
   const paidCount = filtered.filter((l) => !!l.paid_at).length;
