@@ -156,12 +156,19 @@ export default function PaymentLeadsPage() {
     return mode === 'month' ? `${map.year}-${map.month}` : `${map.year}-${map.month}-${map.day}`;
   };
 
-  const filtered = deduplicated.filter((l) => {
-    // Для оплаченных фильтруем по дате оплаты, для ожидающих — по дате заявки
-    const baseDate = l.paid_at || l.created_at;
-    if (!baseDate) return false;
-    return toMskPrefix(baseDate, dateFilter) === selectedDate;
-  });
+  const filtered = deduplicated
+    .filter((l) => {
+      // Для оплаченных фильтруем по дате оплаты, для ожидающих — по дате заявки
+      const baseDate = l.paid_at || l.created_at;
+      if (!baseDate) return false;
+      return toMskPrefix(baseDate, dateFilter) === selectedDate;
+    })
+    .sort((a, b) => {
+      // Новые сверху, ранние внизу — по дате оплаты (или заявки)
+      const da = new Date(a.paid_at || a.created_at || 0).getTime();
+      const db = new Date(b.paid_at || b.created_at || 0).getTime();
+      return db - da;
+    });
 
   const paidCount = filtered.filter((l) => !!l.paid_at).length;
   const unpaidCount = filtered.filter((l) => !l.paid_at).length;

@@ -1,0 +1,12 @@
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Бабина Алёна'        WHERE order_id = 'manual-sep-001';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Каплунов Семен'       WHERE order_id = 'manual-sep-002';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Королев Иван'         WHERE order_id = 'manual-sep-003';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Смерницкий Петр'      WHERE order_id = 'manual-sep-004';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Бодров Леонид'        WHERE order_id = 'manual-sep-005';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Шульга Анастасия'     WHERE order_id = 'manual-sep-006';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Марьин Иван'          WHERE order_id = 'manual-sep-007';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Протасов Саша'        WHERE order_id = 'manual-sep-008';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Карцев Александр'     WHERE order_id = 'manual-sep-009';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Гладков Сергей'       WHERE order_id = 'manual-sep-010';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Поскачей Владислав'   WHERE order_id = 'manual-sep-011';
+UPDATE t_p93118852_lineaschool_initiati.payment_leads SET name = 'Захаров Федор'        WHERE order_id = 'manual-sep-012';
