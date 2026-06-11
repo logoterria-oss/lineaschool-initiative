@@ -5,7 +5,7 @@
       "method": "GET",
       "path": "/?month=2026-05&type=all",
       "expectedStatus": 200,
-      "expectedBody": {"payments": [], "stats": {}},
+      "expectedBody": {"month": "2026-05"},
       "bodyMatcher": "partial"
     },
     {

@@ -111,12 +111,13 @@ def handler(event: dict, context) -> dict:
         if child_info:
             raw_child = child_info.get('name', child_name)
             raw_parent = child_info.get('legal_name') or child_info.get('parent_name') or ''
-            p['child_name'] = _format_fi(raw_child)
+            # Имя ребёнка из CRM показываем как есть (может быть составным: "Марк и Сеня Константиновы")
+            p['child_name'] = raw_child.strip()
             p['parent_name'] = _format_fi(raw_parent) if raw_parent else ''
             p['child_phone'] = _first_phone(child_info)
             p['child_email'] = _first_email(child_info)
         else:
-            p['child_name'] = _format_fi(child_name)
+            p['child_name'] = child_name.strip()
             p['parent_name'] = ''
             p['child_phone'] = p.get('phone', '')
             p['child_email'] = p.get('email', '')
