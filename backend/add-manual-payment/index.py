@@ -8,6 +8,7 @@ import os
 import time
 import psycopg2
 from typing import Dict, Any
+from crm_match import match_name
 
 ADMIN_PASSWORD = '426874'
 
@@ -50,6 +51,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     if not name or not plan or amount in (None, ''):
         return _resp(400, {'error': 'Заполните имя, тариф и сумму'})
+
+    # Приводим имя к виду из AlfaCRM (только для обычных тарифов, не для "Другое")
+    if not plan.lower().startswith('другое'):
+        name = match_name(name)
 
     try:
         amount = float(amount)

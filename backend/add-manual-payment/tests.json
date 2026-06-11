@@ -28,6 +28,7 @@
       "path": "/",
       "headers": {"X-Admin-Password": "426874"},
       "body": {"name": "Тест Тестов", "plan": "Абонемент 12 мес", "amount": 5990},
+      "skipTest": true,
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"

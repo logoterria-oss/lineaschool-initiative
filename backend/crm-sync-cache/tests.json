@@ -1,0 +1,1 @@
+{"tests": [{"name": "CORS preflight", "method": "OPTIONS", "path": "/", "expectedStatus": 200}, {"name": "Sync cache", "method": "GET", "path": "/", "expectedStatus": 200, "expectedBody": {"success": true}, "bodyMatcher": "partial"}]}

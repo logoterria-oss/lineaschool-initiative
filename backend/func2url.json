@@ -1,4 +1,5 @@
 {
+  "crm-sync-cache": "https://functions.poehali.dev/b28dd882-aa87-49a7-aa89-849ffeceb94b",
   "delete-payment-lead": "https://functions.poehali.dev/264c82a7-ca44-425a-bbf1-4006cda9e33e",
   "add-manual-payment": "https://functions.poehali.dev/975b62cd-bb6b-4608-8d61-f15b29e93b89",
   "font-proxy": "https://functions.poehali.dev/3f32132e-3d38-4099-90c1-0fa0d31dd012",

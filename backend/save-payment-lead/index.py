@@ -8,6 +8,7 @@ import os
 import psycopg2
 import urllib.request
 from typing import Dict, Any
+from crm_match import match_name
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'POST')
@@ -40,7 +41,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     plan = body_data.get('plan')
     amount = body_data.get('amount')
     order_id = body_data.get('order_id')
-    
+
+    # Приводим имя ребёнка к виду, как записано в AlfaCRM (для корректной аналитики)
+    if name:
+        name = match_name(name)
+
     print(f'Saving payment lead: {name}, {plan}, {amount}, {order_id}')
     
     # Get database connection string
