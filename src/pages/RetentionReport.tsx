@@ -24,6 +24,7 @@ interface Client {
   total_months: number;
   primary_retained: boolean;
   long_term_retained: boolean;
+  long_term_too_early: boolean;
 }
 
 interface Stats {
@@ -31,8 +32,11 @@ interface Stats {
   primary_retained: number;
   primary_rate: number;
   long_term_retained: number;
+  long_term_eligible: number;
+  long_term_too_early: number;
   long_term_rate: number;
   long_term_months: number;
+  long_term_eligible_months: number;
 }
 
 export default function RetentionReport() {
@@ -116,10 +120,15 @@ export default function RetentionReport() {
                   оплата абонемента позже первой (купили второй абонемент).
                 </li>
                 <li>
-                  <b>Долгосрочное удержание</b> — доля клиентов когорты, у которых <b>сумма длительностей
+                  <b>Долгосрочное удержание</b> — доля клиентов, у которых <b>сумма длительностей
                   всех купленных абонементов</b> составляет <b>{stats.long_term_months}+ месяцев</b>.
                   Длительность берём из названия тарифа (например «3 месяца» = 3). Так перерывы
                   на каникулы между абонементами не уменьшают итоговый срок.
+                </li>
+                <li>
+                  Клиентов, которые начали заниматься <b>менее {stats.long_term_eligible_months} месяцев назад</b>,
+                  в долгосрочном удержании <b>не учитываем</b> — у них ещё физически не было времени
+                  заниматься полгода. Они исключены из расчёта (но в первичном удержании остаются).
                 </li>
                 <li>
                   Все расчёты — только по нашей истории оплат. Источник: подтверждённые платежи.
@@ -143,10 +152,26 @@ export default function RetentionReport() {
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="text-xs text-gray-500 mb-1">Долгосрочное удержание</div>
-                <div className="text-3xl font-bold text-amber-600">{stats.long_term_rate}%</div>
-                <div className="text-xs text-gray-400 mt-1">
-                  занимаются 6+ мес: {stats.long_term_retained} из {stats.cohort_size}
-                </div>
+                {stats.long_term_eligible > 0 ? (
+                  <>
+                    <div className="text-3xl font-bold text-amber-600">{stats.long_term_rate}%</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      занимаются {stats.long_term_months}+ мес: {stats.long_term_retained} из {stats.long_term_eligible}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-gray-400">Рано судить</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      все клиенты начали менее {stats.long_term_eligible_months} мес назад
+                    </div>
+                  </>
+                )}
+                {stats.long_term_too_early > 0 && stats.long_term_eligible > 0 && (
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    исключено (рано судить): {stats.long_term_too_early}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -187,9 +212,11 @@ export default function RetentionReport() {
                               : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
                           </td>
                           <td className="px-4 py-2 text-center">
-                            {c.long_term_retained
-                              ? <Icon name="Check" size={16} className="text-amber-600 inline" />
-                              : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
+                            {c.long_term_too_early
+                              ? <span className="text-xs text-gray-400">рано судить</span>
+                              : c.long_term_retained
+                                ? <Icon name="Check" size={16} className="text-amber-600 inline" />
+                                : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
                           </td>
                         </tr>
                       ))}
