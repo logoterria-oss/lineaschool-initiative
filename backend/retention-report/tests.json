@@ -17,6 +17,14 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Retention dynamics all months",
+      "method": "GET",
+      "path": "/?mode=all",
+      "expectedStatus": 200,
+      "expectedBody": {"mode": "all"},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "OPTIONS returns 200",
       "method": "OPTIONS",
       "path": "/",

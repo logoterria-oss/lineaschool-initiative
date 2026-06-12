@@ -113,6 +113,14 @@ export default function RetentionReportModal({ onClose }: Props) {
               Открыть отчёт
             </button>
           </div>
+
+          <button
+            onClick={() => navigate('/admin/report/retention-dynamics')}
+            className="w-full py-2.5 rounded-lg border border-indigo-200 text-sm font-medium text-indigo-700 hover:bg-indigo-50 flex items-center justify-center gap-2 transition-colors"
+          >
+            <Icon name="TrendingUp" size={16} />
+            Анализ за весь период
+          </button>
         </div>
       </div>
     </div>

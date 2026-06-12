@@ -11,29 +11,113 @@ CORS = {
 }
 
 LONG_TERM_MONTHS = 6
+# Сколько месяцев должно пройти с первой оплаты, чтобы метрику можно было корректно оценить.
+PRIMARY_ELIGIBLE_MONTHS = 2    # первичное удержание (купил ли второй абонемент)
+LONG_TERM_ELIGIBLE_MONTHS = 7  # долгосрочное удержание (разрыв >= 6 мес)
 
 
 def handler(event: dict, context) -> dict:
     """Отчёт по коэффициенту удержания клиентов.
     Первичное удержание: доля клиентов когорты, купивших второй абонемент позже первого.
     Долгосрочное удержание: доля клиентов, у которых между первой и последней оплатой >= 6 мес.
-    Параметры: month (YYYY-MM) ИЛИ from/to (YYYY-MM-DD)."""
+    Клиенты, у которых ещё не прошло достаточно времени (too early), исключаются из знаменателя.
+    Параметры: month (YYYY-MM) ИЛИ from/to (YYYY-MM-DD) ИЛИ mode=all (динамика по всем месяцам)."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
     params = event.get('queryStringParameters') or {}
+    mode = (params.get('mode') or '').strip()
     date_from = (params.get('from') or '').strip()
     date_to = (params.get('to') or '').strip()
     month = params.get('month', datetime.now().strftime('%Y-%m'))
 
+    subs = _load_subscriptions()
+    clusters = _cluster_by_name(subs)
+
+    # Границы «рано судить» (TE): первая оплата позже этих дат — метрику считать рано.
+    today = (datetime.utcnow() + timedelta(hours=3)).date()
+    primary_cutoff = today - timedelta(days=int(PRIMARY_ELIGIBLE_MONTHS * 30.44))
+    long_term_cutoff = today - timedelta(days=int(LONG_TERM_ELIGIBLE_MONTHS * 30.44))
+
+    if mode == 'all':
+        return _dynamics_response(clusters, primary_cutoff, long_term_cutoff)
+
     use_range = bool(date_from and date_to)
     period_label = f"{date_from} — {date_to}" if use_range else month
 
+    rows_out = []
+    cohort_size = 0
+    primary_eligible = primary_retained = 0
+    long_eligible = long_retained = 0
+
+    for cluster in clusters:
+        pays = sorted(cluster, key=lambda x: x['paid_at'])
+        first = pays[0]
+        if not _date_in_period(first['paid_at'], use_range, date_from, date_to, month):
+            continue
+
+        cohort_size += 1
+        first_date = (first['paid_at'] + timedelta(hours=3)).date()
+        last = pays[-1]
+        purchases = len(pays)
+
+        primary_te = first_date > primary_cutoff
+        long_te = first_date > long_term_cutoff
+
+        has_second = purchases >= 2
+        if not primary_te:
+            primary_eligible += 1
+            if has_second:
+                primary_retained += 1
+
+        months_span = _months_between(first['paid_at'], last['paid_at'])
+        is_long = months_span >= LONG_TERM_MONTHS
+        if not long_te:
+            long_eligible += 1
+            if is_long:
+                long_retained += 1
+
+        rows_out.append({
+            'name': first['name'],
+            'first_paid_at': first['paid_at'].isoformat() if first['paid_at'] else None,
+            'last_paid_at': last['paid_at'].isoformat() if last['paid_at'] else None,
+            'purchases': purchases,
+            'months_span': round(months_span, 1),
+            'primary_retained': has_second,
+            'primary_too_early': primary_te,
+            'long_term_retained': is_long,
+            'long_term_too_early': long_te,
+        })
+
+    stats = {
+        'cohort_size': cohort_size,
+        'primary_retained': primary_retained,
+        'primary_eligible': primary_eligible,
+        'primary_too_early': cohort_size - primary_eligible,
+        'primary_rate': round(primary_retained / primary_eligible * 100, 1) if primary_eligible else 0,
+        'long_term_retained': long_retained,
+        'long_term_eligible': long_eligible,
+        'long_term_too_early': cohort_size - long_eligible,
+        'long_term_rate': round(long_retained / long_eligible * 100, 1) if long_eligible else 0,
+        'long_term_months': LONG_TERM_MONTHS,
+        'primary_eligible_months': PRIMARY_ELIGIBLE_MONTHS,
+        'long_term_eligible_months': LONG_TERM_ELIGIBLE_MONTHS,
+    }
+
+    rows_out.sort(key=lambda r: (-r['purchases'], r['name'].lower()))
+
+    return {
+        'statusCode': 200,
+        'headers': {**CORS, 'Content-Type': 'application/json'},
+        'body': json.dumps({'stats': stats, 'clients': rows_out, 'period_label': period_label}, ensure_ascii=False),
+    }
+
+
+def _load_subscriptions() -> list:
+    """Загружает все оплаченные абонементы (диагностику исключаем)."""
     schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
-
-    # Все оплаченные абонементы (исключаем диагностику) за всю историю — нужны для отслеживания второй покупки
     cur.execute(
         f"SELECT name, plan, amount, paid_at "
         f"FROM {schema}.payment_leads "
@@ -44,7 +128,6 @@ def handler(event: dict, context) -> dict:
     cur.close()
     conn.close()
 
-    # Только абонементы (диагностику не считаем абонементом)
     subs = []
     for name, plan, amount, paid_at in all_rows:
         plan_name = plan or ''
@@ -54,63 +137,60 @@ def handler(event: dict, context) -> dict:
         if not (name or '').strip():
             continue
         subs.append({'name': name.strip(), 'plan': plan_name, 'amount': float(amount), 'paid_at': paid_at})
+    return subs
 
-    # Кластеризуем платежи по клиентам (нечёткое сравнение ФИО)
-    clusters = _cluster_by_name(subs)
 
-    cohort = []          # клиенты, чья ПЕРВАЯ покупка абонемента попала в период
-    primary_retained = 0  # купили второй абонемент позже первого
-    long_term_retained = 0  # разрыв между первой и последней оплатой >= 6 мес
-    rows_out = []
+def _dynamics_response(clusters, primary_cutoff, long_term_cutoff) -> dict:
+    """Динамика удержания по всем месяцам когорт, где есть данные.
+    Для каждого месяца считаем метрику только если в нём есть клиенты, по которым
+    уже можно судить (не too early); иначе помечаем метрику как недоступную."""
+    buckets = {}  # 'YYYY-MM' -> {'cohort':int, 'p_elig':int, 'p_ret':int, 'l_elig':int, 'l_ret':int}
 
     for cluster in clusters:
         pays = sorted(cluster, key=lambda x: x['paid_at'])
         first = pays[0]
-        # Клиент входит в когорту, если его ПЕРВАЯ оплата абонемента попадает в выбранный период
-        if not _date_in_period(first['paid_at'], use_range, date_from, date_to, month):
-            continue
+        first_date = (first['paid_at'] + timedelta(hours=3)).date()
+        key = first_date.strftime('%Y-%m')
+        b = buckets.setdefault(key, {'cohort': 0, 'p_elig': 0, 'p_ret': 0, 'l_elig': 0, 'l_ret': 0})
 
-        cohort.append(cluster)
-        client_name = first['name']
+        b['cohort'] += 1
         purchases = len(pays)
-        last = pays[-1]
 
-        has_second = purchases >= 2
-        if has_second:
-            primary_retained += 1
+        if first_date <= primary_cutoff:
+            b['p_elig'] += 1
+            if purchases >= 2:
+                b['p_ret'] += 1
 
-        months_span = _months_between(first['paid_at'], last['paid_at'])
-        is_long = months_span >= LONG_TERM_MONTHS
-        if is_long:
-            long_term_retained += 1
+        if first_date <= long_term_cutoff:
+            b['l_elig'] += 1
+            months_span = _months_between(first['paid_at'], pays[-1]['paid_at'])
+            if months_span >= LONG_TERM_MONTHS:
+                b['l_ret'] += 1
 
-        rows_out.append({
-            'name': client_name,
-            'first_paid_at': first['paid_at'].isoformat() if first['paid_at'] else None,
-            'last_paid_at': last['paid_at'].isoformat() if last['paid_at'] else None,
-            'purchases': purchases,
-            'months_span': round(months_span, 1),
-            'primary_retained': has_second,
-            'long_term_retained': is_long,
+    months = []
+    for key in sorted(buckets.keys()):
+        b = buckets[key]
+        months.append({
+            'month': key,
+            'cohort_size': b['cohort'],
+            'primary_eligible': b['p_elig'],
+            'primary_retained': b['p_ret'],
+            'primary_rate': round(b['p_ret'] / b['p_elig'] * 100, 1) if b['p_elig'] else None,
+            'long_term_eligible': b['l_elig'],
+            'long_term_retained': b['l_ret'],
+            'long_term_rate': round(b['l_ret'] / b['l_elig'] * 100, 1) if b['l_elig'] else None,
         })
-
-    cohort_size = len(cohort)
-    stats = {
-        'cohort_size': cohort_size,
-        'primary_retained': primary_retained,
-        'primary_rate': round(primary_retained / cohort_size * 100, 1) if cohort_size else 0,
-        'long_term_retained': long_term_retained,
-        'long_term_rate': round(long_term_retained / cohort_size * 100, 1) if cohort_size else 0,
-        'long_term_months': LONG_TERM_MONTHS,
-    }
-
-    # сортируем: сначала удержанные, потом по количеству покупок
-    rows_out.sort(key=lambda r: (-r['purchases'], r['name'].lower()))
 
     return {
         'statusCode': 200,
         'headers': {**CORS, 'Content-Type': 'application/json'},
-        'body': json.dumps({'stats': stats, 'clients': rows_out, 'period_label': period_label}, ensure_ascii=False),
+        'body': json.dumps({
+            'mode': 'all',
+            'months': months,
+            'long_term_months': LONG_TERM_MONTHS,
+            'primary_eligible_months': PRIMARY_ELIGIBLE_MONTHS,
+            'long_term_eligible_months': LONG_TERM_ELIGIBLE_MONTHS,
+        }, ensure_ascii=False),
     }
 
 

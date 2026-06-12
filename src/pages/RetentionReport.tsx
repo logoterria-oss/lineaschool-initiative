@@ -23,16 +23,24 @@ interface Client {
   purchases: number;
   months_span: number;
   primary_retained: boolean;
+  primary_too_early: boolean;
   long_term_retained: boolean;
+  long_term_too_early: boolean;
 }
 
 interface Stats {
   cohort_size: number;
   primary_retained: number;
+  primary_eligible: number;
+  primary_too_early: number;
   primary_rate: number;
   long_term_retained: number;
+  long_term_eligible: number;
+  long_term_too_early: number;
   long_term_rate: number;
   long_term_months: number;
+  primary_eligible_months: number;
+  long_term_eligible_months: number;
 }
 
 export default function RetentionReport() {
@@ -121,6 +129,11 @@ export default function RetentionReport() {
                   дольше полугода).
                 </li>
                 <li>
+                  <b>Клиенты «рано судить» (TE)</b> исключаются из расчёта: для первичного удержания —
+                  кто начал менее <b>{stats.primary_eligible_months} мес</b> назад, для долгосрочного — менее{' '}
+                  <b>{stats.long_term_eligible_months} мес</b> назад. У них ещё не было времени, чтобы оценить метрику.
+                </li>
+                <li>
                   Все расчёты — только по нашей истории оплат. Источник: подтверждённые платежи.
                 </li>
               </ul>
@@ -135,17 +148,41 @@ export default function RetentionReport() {
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="text-xs text-gray-500 mb-1">Первичное удержание</div>
-                <div className="text-3xl font-bold text-green-600">{stats.primary_rate}%</div>
-                <div className="text-xs text-gray-400 mt-1">
-                  купили 2-й абонемент: {stats.primary_retained} из {stats.cohort_size}
-                </div>
+                {stats.primary_eligible > 0 ? (
+                  <>
+                    <div className="text-3xl font-bold text-green-600">{stats.primary_rate}%</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      купили 2-й абонемент: {stats.primary_retained} из {stats.primary_eligible}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-gray-400">Рано судить</div>
+                    <div className="text-xs text-gray-400 mt-1">все начали менее {stats.primary_eligible_months} мес назад</div>
+                  </>
+                )}
+                {stats.primary_too_early > 0 && stats.primary_eligible > 0 && (
+                  <div className="text-xs text-gray-400 mt-0.5">исключено (рано судить): {stats.primary_too_early}</div>
+                )}
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="text-xs text-gray-500 mb-1">Долгосрочное удержание</div>
-                <div className="text-3xl font-bold text-amber-600">{stats.long_term_rate}%</div>
-                <div className="text-xs text-gray-400 mt-1">
-                  занимаются 6+ мес: {stats.long_term_retained} из {stats.cohort_size}
-                </div>
+                {stats.long_term_eligible > 0 ? (
+                  <>
+                    <div className="text-3xl font-bold text-amber-600">{stats.long_term_rate}%</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      занимаются {stats.long_term_months}+ мес: {stats.long_term_retained} из {stats.long_term_eligible}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-gray-400">Рано судить</div>
+                    <div className="text-xs text-gray-400 mt-1">все начали менее {stats.long_term_eligible_months} мес назад</div>
+                  </>
+                )}
+                {stats.long_term_too_early > 0 && stats.long_term_eligible > 0 && (
+                  <div className="text-xs text-gray-400 mt-0.5">исключено (рано судить): {stats.long_term_too_early}</div>
+                )}
               </div>
             </div>
 
@@ -173,25 +210,39 @@ export default function RetentionReport() {
                       </tr>
                     </thead>
                     <tbody>
-                      {clients.map((c, i) => (
-                        <tr key={i} className="border-t border-gray-100 hover:bg-gray-50/60">
-                          <td className="px-4 py-2 text-gray-900">{c.name}</td>
+                      {clients.map((c, i) => {
+                        const isTE = c.primary_too_early || c.long_term_too_early;
+                        return (
+                        <tr key={i} className={`border-t border-gray-100 ${isTE ? 'bg-gray-50/70' : 'hover:bg-gray-50/60'}`}>
+                          <td className="px-4 py-2 text-gray-900">
+                            {c.name}
+                            {isTE && (
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-gray-200 text-gray-500 rounded px-1.5 py-0.5 align-middle">
+                                рано судить
+                              </span>
+                            )}
+                          </td>
                           <td className="px-4 py-2 text-center text-gray-500">{dmy(c.first_paid_at || '')}</td>
                           <td className="px-4 py-2 text-center text-gray-500">{dmy(c.last_paid_at || '')}</td>
                           <td className="px-4 py-2 text-center font-medium">{c.purchases}</td>
                           <td className="px-4 py-2 text-center text-gray-600">{c.months_span}</td>
                           <td className="px-4 py-2 text-center">
-                            {c.primary_retained
-                              ? <Icon name="Check" size={16} className="text-green-600 inline" />
-                              : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
+                            {c.primary_too_early
+                              ? <span className="text-xs text-gray-400">—</span>
+                              : c.primary_retained
+                                ? <Icon name="Check" size={16} className="text-green-600 inline" />
+                                : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
                           </td>
                           <td className="px-4 py-2 text-center">
-                            {c.long_term_retained
-                              ? <Icon name="Check" size={16} className="text-amber-600 inline" />
-                              : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
+                            {c.long_term_too_early
+                              ? <span className="text-xs text-gray-400">—</span>
+                              : c.long_term_retained
+                                ? <Icon name="Check" size={16} className="text-amber-600 inline" />
+                                : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
