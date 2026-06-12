@@ -13,6 +13,16 @@ const SECTIONS = [
     iconColor: 'text-orange-600',
     path: '/admin/payment-leads',
   },
+  {
+    id: 'reports',
+    label: 'Отчёты',
+    description: 'Авансовые доходы и аналитика',
+    icon: 'FileText' as const,
+    color: 'border-green-200 hover:border-green-400',
+    iconBg: 'bg-green-100',
+    iconColor: 'text-green-600',
+    path: '/admin/head-reports',
+  },
 ];
 
 const HeadDashboard = () => {

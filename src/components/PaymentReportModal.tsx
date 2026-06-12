@@ -47,7 +47,10 @@ interface Props {
 }
 
 export default function PaymentReportModal({ onClose }: Props) {
+  const [rangeMode, setRangeMode] = useState<'month' | 'period'>('month');
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [dateFrom, setDateFrom] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [payType, setPayType] = useState<'all' | 'diag' | 'subscription'>('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -60,10 +63,21 @@ export default function PaymentReportModal({ onClose }: Props) {
   const formatMoney = (n: number) =>
     n.toLocaleString('ru-RU', { minimumFractionDigits: 0 }) + ' ₽';
 
+  const formatDMY = (iso: string) => {
+    const [y, m, d] = iso.split('-');
+    return `${d}.${m}.${y}`;
+  };
+
   const monthLabel = () => {
+    if (rangeMode === 'period') return `${formatDMY(dateFrom)} — ${formatDMY(dateTo)}`;
     const [year, mon] = month.split('-');
     return `${MONTH_NAMES[mon] || mon} ${year}`;
   };
+
+  const queryParams = () =>
+    rangeMode === 'period'
+      ? `from=${dateFrom}&to=${dateTo}&type=${payType}`
+      : `month=${month}&type=${payType}`;
 
   const typeLabel = () => {
     if (payType === 'diag') return 'Диагностика';
@@ -72,10 +86,14 @@ export default function PaymentReportModal({ onClose }: Props) {
   };
 
   const generatePdf = async () => {
+    if (rangeMode === 'period' && dateFrom > dateTo) {
+      setError('Дата начала позже даты окончания.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${REPORT_URL}?month=${month}&type=${payType}`);
+      const res = await fetch(`${REPORT_URL}?${queryParams()}`);
       const data = await res.json();
       const payments: Payment[] = data.payments || [];
       const stats: Stats = data.stats;
@@ -112,7 +130,7 @@ export default function PaymentReportModal({ onClose }: Props) {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
       doc.setFont('NotoSans', 'bold');
-      doc.text(`Отчёт по оплатам — ${monthLabel()}`, margin, 14);
+      doc.text(`Авансовые доходы — ${monthLabel()}`, margin, 14);
 
       doc.setFontSize(10);
       doc.setFont('NotoSans', 'normal');
@@ -245,7 +263,8 @@ export default function PaymentReportModal({ onClose }: Props) {
         { align: 'right' }
       );
 
-      const fileName = `otchet_oplaty_${month}_${payType}.pdf`;
+      const periodSlug = rangeMode === 'period' ? `${dateFrom}_${dateTo}` : month;
+      const fileName = `avansovye_dohody_${periodSlug}_${payType}.pdf`;
       doc.save(fileName);
     } catch (e) {
       console.error(e);
@@ -263,7 +282,7 @@ export default function PaymentReportModal({ onClose }: Props) {
             <div className="p-2 bg-green-100 rounded-lg">
               <Icon name="FileText" size={20} className="text-green-600" />
             </div>
-            <h2 className="text-lg font-bold text-gray-900">Составить отчёт</h2>
+            <h2 className="text-lg font-bold text-gray-900">Авансовые доходы</h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <Icon name="X" size={20} />
@@ -272,13 +291,52 @@ export default function PaymentReportModal({ onClose }: Props) {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Месяц</label>
-            <input
-              type="month"
-              value={month}
-              onChange={e => setMonth(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Период</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {(['month', 'period'] as const).map(m => (
+                <button
+                  key={m}
+                  onClick={() => setRangeMode(m)}
+                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-all ${
+                    rangeMode === m
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'
+                  }`}
+                >
+                  {m === 'month' ? 'По месяцу' : 'За период'}
+                </button>
+              ))}
+            </div>
+
+            {rangeMode === 'month' ? (
+              <input
+                type="month"
+                value={month}
+                onChange={e => setMonth(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="block text-xs text-gray-500 mb-1">С</span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={e => setDateFrom(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+                <div>
+                  <span className="block text-xs text-gray-500 mb-1">По</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={e => setDateTo(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

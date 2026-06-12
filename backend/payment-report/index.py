@@ -9,9 +9,9 @@ S20_EMAIL = "abram.viktoriya.00@mail.ru"
 
 
 def handler(event: dict, context) -> dict:
-    """Возвращает данные для PDF-отчёта по оплатам за выбранный месяц.
+    """Возвращает данные для PDF-отчёта по оплатам за выбранный период.
     Обогащает платежи данными о родителе и ребёнке из S20 CRM.
-    Параметры: month (YYYY-MM), type (all | diag | subscription)."""
+    Параметры: month (YYYY-MM) ИЛИ from/to (YYYY-MM-DD), type (all | diag | subscription)."""
     if event.get('httpMethod') == 'OPTIONS':
         return {
             'statusCode': 200,
@@ -25,22 +25,40 @@ def handler(event: dict, context) -> dict:
         }
 
     params = event.get('queryStringParameters') or {}
-    month = params.get('month', datetime.now().strftime('%Y-%m'))
     pay_type = params.get('type', 'all')  # all | diag | subscription
+    date_from = (params.get('from') or '').strip()  # YYYY-MM-DD
+    date_to = (params.get('to') or '').strip()      # YYYY-MM-DD
+    month = params.get('month', datetime.now().strftime('%Y-%m'))
+
+    # Период имеет приоритет над месяцем (если переданы обе даты)
+    use_range = bool(date_from and date_to)
+    period_label = f"{date_from} — {date_to}" if use_range else month
 
     schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
 
-    # Загружаем оплаченные платежи за месяц
-    cur.execute(
-        f"SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id "
-        f"FROM {schema}.payment_leads "
-        f"WHERE paid_at IS NOT NULL "
-        f"AND to_char(paid_at + interval '3 hours', 'YYYY-MM') = %s "
-        f"ORDER BY paid_at ASC",
-        (month,)
-    )
+    if use_range:
+        # Период по датам оплаты (включительно), время МСК (+3 часа к UTC)
+        cur.execute(
+            f"SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id "
+            f"FROM {schema}.payment_leads "
+            f"WHERE paid_at IS NOT NULL "
+            f"AND (paid_at + interval '3 hours')::date >= %s "
+            f"AND (paid_at + interval '3 hours')::date <= %s "
+            f"ORDER BY paid_at ASC",
+            (date_from, date_to)
+        )
+    else:
+        # Загружаем оплаченные платежи за месяц
+        cur.execute(
+            f"SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id "
+            f"FROM {schema}.payment_leads "
+            f"WHERE paid_at IS NOT NULL "
+            f"AND to_char(paid_at + interval '3 hours', 'YYYY-MM') = %s "
+            f"ORDER BY paid_at ASC",
+            (month,)
+        )
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -163,7 +181,7 @@ def handler(event: dict, context) -> dict:
     return {
         'statusCode': 200,
         'headers': {'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'payments': payments, 'stats': stats, 'month': month}, ensure_ascii=False),
+        'body': json.dumps({'payments': payments, 'stats': stats, 'month': month, 'period_label': period_label}, ensure_ascii=False),
     }
 
 

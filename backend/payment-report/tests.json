@@ -9,6 +9,14 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Get report for custom date range",
+      "method": "GET",
+      "path": "/?from=2026-05-01&to=2026-05-31&type=all",
+      "expectedStatus": 200,
+      "expectedBody": {"period_label": "2026-05-01 — 2026-05-31"},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "OPTIONS returns 200",
       "method": "OPTIONS",
       "path": "/",
