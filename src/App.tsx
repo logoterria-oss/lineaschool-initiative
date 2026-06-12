@@ -20,6 +20,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import HeadDashboard from "./pages/HeadDashboard";
 import HeadReportsPage from "./pages/HeadReportsPage";
+import AdvanceIncomeReport from "./pages/AdvanceIncomeReport";
 import ReportsAdmin from "./components/ReportsAdmin";
 import TelegramSetup from "./pages/TelegramSetup";
 import PaymentLeadsPage from "./pages/PaymentLeadsPage";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/admin/manager" element={<ManagerDashboard />} />
             <Route path="/admin/head" element={<HeadDashboard />} />
             <Route path="/admin/head-reports" element={<HeadReportsPage />} />
+            <Route path="/admin/report/advance-income" element={<AdvanceIncomeReport />} />
             <Route path="/admin/reports" element={<ReportsAdmin />} />
             <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
             <Route path="/telegram-setup" element={<TelegramSetup />} />
