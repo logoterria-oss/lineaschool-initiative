@@ -21,7 +21,7 @@ interface Client {
   first_paid_at: string | null;
   last_paid_at: string | null;
   purchases: number;
-  months_span: number;
+  total_months: number;
   primary_retained: boolean;
   long_term_retained: boolean;
 }
@@ -116,9 +116,10 @@ export default function RetentionReport() {
                   оплата абонемента позже первой (купили второй абонемент).
                 </li>
                 <li>
-                  <b>Долгосрочное удержание</b> — доля клиентов когорты, у которых между <b>первой и
-                  последней</b> оплатой прошло <b>{stats.long_term_months}+ месяцев</b> (продолжают заниматься
-                  дольше полугода).
+                  <b>Долгосрочное удержание</b> — доля клиентов когорты, у которых <b>сумма длительностей
+                  всех купленных абонементов</b> составляет <b>{stats.long_term_months}+ месяцев</b>.
+                  Длительность берём из названия тарифа (например «3 месяца» = 3). Так перерывы
+                  на каникулы между абонементами не уменьшают итоговый срок.
                 </li>
                 <li>
                   Все расчёты — только по нашей истории оплат. Источник: подтверждённые платежи.
@@ -167,7 +168,7 @@ export default function RetentionReport() {
                         <th className="text-center font-medium px-4 py-2">1-я оплата</th>
                         <th className="text-center font-medium px-4 py-2">Посл. оплата</th>
                         <th className="text-center font-medium px-4 py-2">Покупок</th>
-                        <th className="text-center font-medium px-4 py-2">Срок, мес</th>
+                        <th className="text-center font-medium px-4 py-2">Сумма мес.</th>
                         <th className="text-center font-medium px-4 py-2">Первичное</th>
                         <th className="text-center font-medium px-4 py-2">Долгосрочное</th>
                       </tr>
@@ -179,7 +180,7 @@ export default function RetentionReport() {
                           <td className="px-4 py-2 text-center text-gray-500">{dmy(c.first_paid_at || '')}</td>
                           <td className="px-4 py-2 text-center text-gray-500">{dmy(c.last_paid_at || '')}</td>
                           <td className="px-4 py-2 text-center font-medium">{c.purchases}</td>
-                          <td className="px-4 py-2 text-center text-gray-600">{c.months_span}</td>
+                          <td className="px-4 py-2 text-center text-gray-600">{c.total_months}</td>
                           <td className="px-4 py-2 text-center">
                             {c.primary_retained
                               ? <Icon name="Check" size={16} className="text-green-600 inline" />

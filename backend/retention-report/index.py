@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import psycopg2
 from datetime import datetime, timedelta
@@ -16,7 +17,8 @@ LONG_TERM_MONTHS = 6
 def handler(event: dict, context) -> dict:
     """Отчёт по коэффициенту удержания клиентов.
     Первичное удержание: доля клиентов когорты, купивших второй абонемент позже первого.
-    Долгосрочное удержание: доля клиентов, у которых между первой и последней оплатой >= 6 мес.
+    Долгосрочное удержание: доля клиентов, у которых сумма длительностей всех купленных
+    абонементов (в месяцах из названия тарифа) >= 6 мес. Так каникулы не уменьшают срок.
     Параметры: month (YYYY-MM) ИЛИ from/to (YYYY-MM-DD)."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
@@ -60,7 +62,7 @@ def handler(event: dict, context) -> dict:
 
     cohort = []          # клиенты, чья ПЕРВАЯ покупка абонемента попала в период
     primary_retained = 0  # купили второй абонемент позже первого
-    long_term_retained = 0  # разрыв между первой и последней оплатой >= 6 мес
+    long_term_retained = 0  # сумма длительностей всех абонементов >= 6 мес
     rows_out = []
 
     for cluster in clusters:
@@ -79,8 +81,10 @@ def handler(event: dict, context) -> dict:
         if has_second:
             primary_retained += 1
 
-        months_span = _months_between(first['paid_at'], last['paid_at'])
-        is_long = months_span >= LONG_TERM_MONTHS
+        # Долгосрочное удержание: суммируем длительности ВСЕХ купленных абонементов
+        # (в месяцах из названия тарифа). Так каникулы между абонементами не уменьшают срок.
+        total_months = sum(_plan_months(p['plan']) for p in pays)
+        is_long = total_months >= LONG_TERM_MONTHS
         if is_long:
             long_term_retained += 1
 
@@ -89,7 +93,7 @@ def handler(event: dict, context) -> dict:
             'first_paid_at': first['paid_at'].isoformat() if first['paid_at'] else None,
             'last_paid_at': last['paid_at'].isoformat() if last['paid_at'] else None,
             'purchases': purchases,
-            'months_span': round(months_span, 1),
+            'total_months': total_months,
             'primary_retained': has_second,
             'long_term_retained': is_long,
         })
@@ -122,10 +126,17 @@ def _date_in_period(paid_at, use_range, date_from, date_to, month) -> bool:
     return msk_date[:7] == month
 
 
-def _months_between(a, b) -> float:
-    """Сколько месяцев прошло между двумя датами (приблизительно, в месяцах)."""
-    delta = b - a
-    return delta.days / 30.44
+def _plan_months(plan: str) -> int:
+    """Длительность абонемента в месяцах, извлечённая из названия тарифа.
+    Примеры: '3 урока в неделю - 1 месяц' -> 1, '... - 3 месяца' -> 3, '... - 6 месяцев' -> 6.
+    Если месяцы в названии не указаны (пробный урок, групповые занятия) -> 0.
+    Берём ПОСЛЕДНЕЕ упоминание числа месяцев в строке."""
+    if not plan:
+        return 0
+    matches = re.findall(r"(\d+)\s*месяц", plan.lower())
+    if not matches:
+        return 0
+    return int(matches[-1])
 
 
 # ── Кластеризация клиентов по нечёткому совпадению ФИО ──
