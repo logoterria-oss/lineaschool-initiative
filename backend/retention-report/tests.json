@@ -1,0 +1,26 @@
+{
+  "tests": [
+    {
+      "name": "Retention report by month",
+      "method": "GET",
+      "path": "/?month=2026-01",
+      "expectedStatus": 200,
+      "expectedBody": {"period_label": "2026-01"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Retention report by date range",
+      "method": "GET",
+      "path": "/?from=2026-01-01&to=2026-03-31",
+      "expectedStatus": 200,
+      "expectedBody": {"period_label": "2026-01-01 — 2026-03-31"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "OPTIONS returns 200",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

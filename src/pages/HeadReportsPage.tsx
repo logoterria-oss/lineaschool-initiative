@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
 import PaymentReportModal from '@/components/PaymentReportModal';
+import RetentionReportModal from '@/components/RetentionReportModal';
 
 const REPORTS = [
   {
@@ -13,6 +14,15 @@ const REPORTS = [
     color: 'border-green-200 hover:border-green-400',
     iconBg: 'bg-green-100',
     iconColor: 'text-green-600',
+  },
+  {
+    id: 'retention',
+    label: 'Коэффициент удержания',
+    description: 'Первичное и долгосрочное удержание клиентов',
+    icon: 'Users' as const,
+    color: 'border-indigo-200 hover:border-indigo-400',
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
   },
 ];
 
@@ -62,6 +72,7 @@ const HeadReportsPage = () => {
       </div>
 
       {openReport === 'advance-income' && <PaymentReportModal onClose={() => setOpenReport(null)} />}
+      {openReport === 'retention' && <RetentionReportModal onClose={() => setOpenReport(null)} />}
     </>
   );
 };
