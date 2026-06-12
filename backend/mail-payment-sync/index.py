@@ -100,11 +100,18 @@ def sync_payments():
                     body_text = _get_body(msg, prefer="text")
                     combined = body_text + _html_to_text(body_html)
 
-                    if order_id not in combined:
+                    # Точное совпадение order_id в письме (а не частичное вхождение)
+                    if not re.search(rf"(?<![A-Za-z0-9_]){re.escape(order_id)}(?![A-Za-z0-9_])", combined):
                         continue
 
                     tx_match = re.search(r"ID\s*транзакции[:\s]+(\d+)", combined)
                     transaction_id = tx_match.group(1) if tx_match else None
+
+                    # Помечаем оплаченным ТОЛЬКО при наличии реального ID транзакции банка.
+                    # Без него письмо относится к другой заявке клиента -> ложный матч.
+                    if not transaction_id:
+                        print(f"Skip {order_id}: no transaction_id in email (possible false match)")
+                        continue
 
                     print(f"Found: {order_id} tx={transaction_id} folder={folder}")
                     payments.append({"order_id": order_id, "transaction_id": transaction_id, "paid_at": paid_at})
@@ -128,6 +135,16 @@ def sync_payments():
     try:
         with conn.cursor() as cur:
             for p in payments:
+                # Защита: одна банковская транзакция не должна закрывать несколько заявок
+                cur.execute(
+                    f"SELECT 1 FROM {SCHEMA}.payment_leads WHERE transaction_id = %s LIMIT 1",
+                    (p["transaction_id"],)
+                )
+                if cur.fetchone():
+                    print(f"Skip {p['order_id']}: transaction {p['transaction_id']} already used")
+                    not_found += 1
+                    continue
+
                 cur.execute(
                     f"UPDATE {SCHEMA}.payment_leads SET paid_at = %s, transaction_id = %s "
                     f"WHERE order_id = %s AND paid_at IS NULL",
