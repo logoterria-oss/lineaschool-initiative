@@ -5,7 +5,7 @@ import email
 import re
 import psycopg2
 from email.header import decode_header
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from html.parser import HTMLParser
 
 CORS = {
@@ -19,6 +19,7 @@ MAIL_USER = "abram.viktoriya.00@mail.ru"
 SENDER_FILTER = "oplata@tbank.ru"
 FOLDERS_TO_CHECK = ["INBOX", "INBOX/Receipts", "Receipts"]
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
+SEARCH_DAYS = 14
 
 
 def handler(event: dict, context) -> dict:
@@ -63,7 +64,9 @@ def sync_payments():
     imap = imaplib.IMAP4_SSL(MAIL_HOST)
     imap.login(MAIL_USER, mail_password)
 
-    # Для каждой незакрытой заявки ищем письмо через IMAP SEARCH BODY — только нужные
+    # Один пакетный поиск свежих писем от банка, дальше сопоставляем локально.
+    # Так мы НЕ делаем отдельный IMAP-запрос на каждую заявку (это и было тормозом).
+    since_date = (datetime.utcnow() - timedelta(days=SEARCH_DAYS)).strftime("%d-%b-%Y")
     payments = []
     found_orders = set()
 
@@ -74,51 +77,49 @@ def sync_payments():
             status, _ = imap.select(f'"{folder}"', readonly=True)
             if status != "OK":
                 continue
-            print(f"Searching in {folder!r}...")
+            print(f"Searching in {folder!r} since {since_date}...")
 
-            for order_id in list(unpaid_orders - found_orders):
+            status2, message_ids = imap.search(
+                None, f'FROM "{SENDER_FILTER}" SINCE {since_date}'
+            )
+            if status2 != "OK" or not message_ids[0]:
+                continue
+
+            fids = message_ids[0].split()
+            print(f"  {len(fids)} bank emails in {folder!r}")
+
+            # Тянем письма пачкой и парсим каждое один раз
+            for msg_id in reversed(fids):
+                if not (unpaid_orders - found_orders):
+                    break
                 try:
-                    status2, message_ids = imap.search(
-                        None, f'FROM "{SENDER_FILTER}" BODY "{order_id}"'
-                    )
-                    if status2 != "OK" or not message_ids[0]:
-                        continue
-                    fids = message_ids[0].split()
-                    if not fids:
-                        continue
-
-                    msg_id = fids[-1]
                     _, data = imap.fetch(msg_id, "(BODY.PEEK[])")
                     if not data or not data[0]:
                         continue
 
                     msg = email.message_from_bytes(data[0][1])
-                    date_str = msg.get("Date", "")
-                    paid_at = _parse_email_date(date_str)
+                    paid_at = _parse_email_date(msg.get("Date", ""))
 
                     body_html = _get_body(msg, prefer="html")
                     body_text = _get_body(msg, prefer="text")
                     combined = body_text + _html_to_text(body_html)
 
-                    # Точное совпадение order_id в письме (а не частичное вхождение)
-                    if not re.search(rf"(?<![A-Za-z0-9_]){re.escape(order_id)}(?![A-Za-z0-9_])", combined):
-                        continue
-
                     tx_match = re.search(r"ID\s*транзакции[:\s]+(\d+)", combined)
                     transaction_id = tx_match.group(1) if tx_match else None
-
-                    # Помечаем оплаченным ТОЛЬКО при наличии реального ID транзакции банка.
-                    # Без него письмо относится к другой заявке клиента -> ложный матч.
+                    # Без реального ID транзакции письмо не закрывает заявку
                     if not transaction_id:
-                        print(f"Skip {order_id}: no transaction_id in email (possible false match)")
                         continue
 
-                    print(f"Found: {order_id} tx={transaction_id} folder={folder}")
-                    payments.append({"order_id": order_id, "transaction_id": transaction_id, "paid_at": paid_at})
-                    found_orders.add(order_id)
+                    # Какой из незакрытых order_id упомянут в этом письме
+                    for order_id in (unpaid_orders - found_orders):
+                        if re.search(rf"(?<![A-Za-z0-9_]){re.escape(order_id)}(?![A-Za-z0-9_])", combined):
+                            print(f"Found: {order_id} tx={transaction_id} folder={folder}")
+                            payments.append({"order_id": order_id, "transaction_id": transaction_id, "paid_at": paid_at})
+                            found_orders.add(order_id)
+                            break
 
                 except Exception as e:
-                    print(f"Search error {order_id} in {folder}: {e}")
+                    print(f"Parse error msg {msg_id} in {folder}: {e}")
 
         except Exception as e:
             print(f"Folder {folder!r} error: {e}")

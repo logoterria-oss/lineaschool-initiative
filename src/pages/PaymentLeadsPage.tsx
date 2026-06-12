@@ -67,7 +67,7 @@ export default function PaymentLeadsPage() {
           ? `Найдено новых оплат: ${data.matched}`
           : 'Новых оплат не найдено';
         setSyncResult(msg);
-        if (data.matched > 0) await fetchLeads();
+        await fetchLeads();
       } else {
         setSyncResult('Ошибка синхронизации');
       }
