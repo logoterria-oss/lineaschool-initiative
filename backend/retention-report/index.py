@@ -1,5 +1,4 @@
 import os
-import re
 import json
 import psycopg2
 from datetime import datetime, timedelta
@@ -12,18 +11,12 @@ CORS = {
 }
 
 LONG_TERM_MONTHS = 6
-# Сколько месяцев должно пройти с первой оплаты, чтобы корректно судить о долгосрочном удержании.
-# Клиентов, начавших позже (сегодня - 7 мес), не считаем — у них ещё не было времени.
-LONG_TERM_ELIGIBLE_MONTHS = 7
 
 
 def handler(event: dict, context) -> dict:
     """Отчёт по коэффициенту удержания клиентов.
     Первичное удержание: доля клиентов когорты, купивших второй абонемент позже первого.
-    Долгосрочное удержание: доля клиентов, у которых сумма длительностей всех купленных
-    абонементов (в месяцах из названия тарифа) >= 6 мес. Так каникулы не уменьшают срок.
-    Клиентов, начавших меньше 7 месяцев назад, в долгосрочном удержании не считаем
-    (у них ещё физически не было времени) — они исключены из знаменателя.
+    Долгосрочное удержание: доля клиентов, у которых между первой и последней оплатой >= 6 мес.
     Параметры: month (YYYY-MM) ИЛИ from/to (YYYY-MM-DD)."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
@@ -67,13 +60,8 @@ def handler(event: dict, context) -> dict:
 
     cohort = []          # клиенты, чья ПЕРВАЯ покупка абонемента попала в период
     primary_retained = 0  # купили второй абонемент позже первого
-    long_term_retained = 0  # сумма длительностей всех абонементов >= 6 мес
-    long_term_eligible = 0  # клиенты, у которых уже прошло достаточно времени для оценки
+    long_term_retained = 0  # разрыв между первой и последней оплатой >= 6 мес
     rows_out = []
-
-    # Граница «рано судить»: клиенты с первой оплатой позже этой даты ещё физически
-    # не могли заниматься 6+ месяцев — их исключаем из расчёта долгосрочного удержания.
-    eligibility_cutoff = (datetime.utcnow() - timedelta(days=LONG_TERM_ELIGIBLE_MONTHS * 30.44)).date()
 
     for cluster in clusters:
         pays = sorted(cluster, key=lambda x: x['paid_at'])
@@ -91,30 +79,19 @@ def handler(event: dict, context) -> dict:
         if has_second:
             primary_retained += 1
 
-        # Долгосрочное удержание: суммируем длительности ВСЕХ купленных абонементов
-        # (в месяцах из названия тарифа). Так каникулы между абонементами не уменьшают срок.
-        total_months = sum(_plan_months(p['plan']) for p in pays)
-
-        # Можно ли уже судить о долгосрочном удержании этого клиента
-        first_date_msk = (first['paid_at'] + timedelta(hours=3)).date()
-        too_early = first_date_msk > eligibility_cutoff
-
-        is_long = False
-        if not too_early:
-            long_term_eligible += 1
-            is_long = total_months >= LONG_TERM_MONTHS
-            if is_long:
-                long_term_retained += 1
+        months_span = _months_between(first['paid_at'], last['paid_at'])
+        is_long = months_span >= LONG_TERM_MONTHS
+        if is_long:
+            long_term_retained += 1
 
         rows_out.append({
             'name': client_name,
             'first_paid_at': first['paid_at'].isoformat() if first['paid_at'] else None,
             'last_paid_at': last['paid_at'].isoformat() if last['paid_at'] else None,
             'purchases': purchases,
-            'total_months': total_months,
+            'months_span': round(months_span, 1),
             'primary_retained': has_second,
             'long_term_retained': is_long,
-            'long_term_too_early': too_early,
         })
 
     cohort_size = len(cohort)
@@ -123,11 +100,8 @@ def handler(event: dict, context) -> dict:
         'primary_retained': primary_retained,
         'primary_rate': round(primary_retained / cohort_size * 100, 1) if cohort_size else 0,
         'long_term_retained': long_term_retained,
-        'long_term_eligible': long_term_eligible,
-        'long_term_too_early': cohort_size - long_term_eligible,
-        'long_term_rate': round(long_term_retained / long_term_eligible * 100, 1) if long_term_eligible else 0,
+        'long_term_rate': round(long_term_retained / cohort_size * 100, 1) if cohort_size else 0,
         'long_term_months': LONG_TERM_MONTHS,
-        'long_term_eligible_months': LONG_TERM_ELIGIBLE_MONTHS,
     }
 
     # сортируем: сначала удержанные, потом по количеству покупок
@@ -148,17 +122,10 @@ def _date_in_period(paid_at, use_range, date_from, date_to, month) -> bool:
     return msk_date[:7] == month
 
 
-def _plan_months(plan: str) -> int:
-    """Длительность абонемента в месяцах, извлечённая из названия тарифа.
-    Примеры: '3 урока в неделю - 1 месяц' -> 1, '... - 3 месяца' -> 3, '... - 6 месяцев' -> 6.
-    Если месяцы в названии не указаны (пробный урок, групповые занятия) -> 0.
-    Берём ПОСЛЕДНЕЕ упоминание числа месяцев в строке."""
-    if not plan:
-        return 0
-    matches = re.findall(r"(\d+)\s*месяц", plan.lower())
-    if not matches:
-        return 0
-    return int(matches[-1])
+def _months_between(a, b) -> float:
+    """Сколько месяцев прошло между двумя датами (приблизительно, в месяцах)."""
+    delta = b - a
+    return delta.days / 30.44
 
 
 # ── Кластеризация клиентов по нечёткому совпадению ФИО ──

@@ -21,10 +21,9 @@ interface Client {
   first_paid_at: string | null;
   last_paid_at: string | null;
   purchases: number;
-  total_months: number;
+  months_span: number;
   primary_retained: boolean;
   long_term_retained: boolean;
-  long_term_too_early: boolean;
 }
 
 interface Stats {
@@ -32,11 +31,8 @@ interface Stats {
   primary_retained: number;
   primary_rate: number;
   long_term_retained: number;
-  long_term_eligible: number;
-  long_term_too_early: number;
   long_term_rate: number;
   long_term_months: number;
-  long_term_eligible_months: number;
 }
 
 export default function RetentionReport() {
@@ -120,15 +116,9 @@ export default function RetentionReport() {
                   оплата абонемента позже первой (купили второй абонемент).
                 </li>
                 <li>
-                  <b>Долгосрочное удержание</b> — доля клиентов, у которых <b>сумма длительностей
-                  всех купленных абонементов</b> составляет <b>{stats.long_term_months}+ месяцев</b>.
-                  Длительность берём из названия тарифа (например «3 месяца» = 3). Так перерывы
-                  на каникулы между абонементами не уменьшают итоговый срок.
-                </li>
-                <li>
-                  Клиентов, которые начали заниматься <b>менее {stats.long_term_eligible_months} месяцев назад</b>,
-                  в долгосрочном удержании <b>не учитываем</b> — у них ещё физически не было времени
-                  заниматься полгода. Они исключены из расчёта (но в первичном удержании остаются).
+                  <b>Долгосрочное удержание</b> — доля клиентов когорты, у которых между <b>первой и
+                  последней</b> оплатой прошло <b>{stats.long_term_months}+ месяцев</b> (продолжают заниматься
+                  дольше полугода).
                 </li>
                 <li>
                   Все расчёты — только по нашей истории оплат. Источник: подтверждённые платежи.
@@ -152,26 +142,10 @@ export default function RetentionReport() {
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="text-xs text-gray-500 mb-1">Долгосрочное удержание</div>
-                {stats.long_term_eligible > 0 ? (
-                  <>
-                    <div className="text-3xl font-bold text-amber-600">{stats.long_term_rate}%</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      занимаются {stats.long_term_months}+ мес: {stats.long_term_retained} из {stats.long_term_eligible}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-gray-400">Рано судить</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      все клиенты начали менее {stats.long_term_eligible_months} мес назад
-                    </div>
-                  </>
-                )}
-                {stats.long_term_too_early > 0 && stats.long_term_eligible > 0 && (
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    исключено (рано судить): {stats.long_term_too_early}
-                  </div>
-                )}
+                <div className="text-3xl font-bold text-amber-600">{stats.long_term_rate}%</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  занимаются 6+ мес: {stats.long_term_retained} из {stats.cohort_size}
+                </div>
               </div>
             </div>
 
@@ -193,7 +167,7 @@ export default function RetentionReport() {
                         <th className="text-center font-medium px-4 py-2">1-я оплата</th>
                         <th className="text-center font-medium px-4 py-2">Посл. оплата</th>
                         <th className="text-center font-medium px-4 py-2">Покупок</th>
-                        <th className="text-center font-medium px-4 py-2">Сумма мес.</th>
+                        <th className="text-center font-medium px-4 py-2">Срок, мес</th>
                         <th className="text-center font-medium px-4 py-2">Первичное</th>
                         <th className="text-center font-medium px-4 py-2">Долгосрочное</th>
                       </tr>
@@ -205,18 +179,16 @@ export default function RetentionReport() {
                           <td className="px-4 py-2 text-center text-gray-500">{dmy(c.first_paid_at || '')}</td>
                           <td className="px-4 py-2 text-center text-gray-500">{dmy(c.last_paid_at || '')}</td>
                           <td className="px-4 py-2 text-center font-medium">{c.purchases}</td>
-                          <td className="px-4 py-2 text-center text-gray-600">{c.total_months}</td>
+                          <td className="px-4 py-2 text-center text-gray-600">{c.months_span}</td>
                           <td className="px-4 py-2 text-center">
                             {c.primary_retained
                               ? <Icon name="Check" size={16} className="text-green-600 inline" />
                               : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
                           </td>
                           <td className="px-4 py-2 text-center">
-                            {c.long_term_too_early
-                              ? <span className="text-xs text-gray-400">рано судить</span>
-                              : c.long_term_retained
-                                ? <Icon name="Check" size={16} className="text-amber-600 inline" />
-                                : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
+                            {c.long_term_retained
+                              ? <Icon name="Check" size={16} className="text-amber-600 inline" />
+                              : <Icon name="Minus" size={16} className="text-gray-300 inline" />}
                           </td>
                         </tr>
                       ))}
