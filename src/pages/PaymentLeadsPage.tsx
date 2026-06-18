@@ -10,6 +10,7 @@ import ManualPaymentModal from '@/components/ManualPaymentModal';
 const GET_LEADS_URL = 'https://functions.poehali.dev/63eeb76f-c729-4aa3-a483-7f5b321bc4c2';
 const SYNC_URL = 'https://functions.poehali.dev/af003b32-0a7b-432b-a657-9e8c28bfe436';
 const DELETE_URL = 'https://functions.poehali.dev/264c82a7-ca44-425a-bbf1-4006cda9e33e';
+const BLOCKLIST_URL = 'https://functions.poehali.dev/c892bd2c-ff6b-488b-8f0c-67f73cbf4300';
 
 interface PaymentLead {
   id: number;
@@ -21,6 +22,15 @@ interface PaymentLead {
   paid_at: string | null;
   transaction_id: string | null;
   source?: string;
+}
+
+interface BlockedPayment {
+  id: number;
+  order_id: string;
+  transaction_id: string;
+  name: string;
+  reason: string;
+  blocked_at: string | null;
 }
 
 export default function PaymentLeadsPage() {
@@ -36,12 +46,49 @@ export default function PaymentLeadsPage() {
   const [showReport, setShowReport] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [tab, setTab] = useState<'active' | 'blocked'>('active');
+  const [blocked, setBlocked] = useState<BlockedPayment[]>([]);
+  const [unblockingId, setUnblockingId] = useState<number | null>(null);
 
   useEffect(() => {
     // При открытии страницы — сначала тихо синхронизируем, потом загружаем список
     fetch(SYNC_URL).catch(() => {});
     fetchLeads();
+    fetchBlocked();
   }, []);
+
+  const fetchBlocked = async () => {
+    try {
+      const response = await fetch(BLOCKLIST_URL);
+      const data = await response.json();
+      setBlocked(data.items || []);
+    } catch (error) {
+      console.error('Error fetching blocklist:', error);
+    }
+  };
+
+  const handleUnblock = async (item: BlockedPayment) => {
+    if (!window.confirm(`Вернуть платёж «${item.name}» из чёрного списка? Он снова сможет появиться при синхронизации с почтой банка.`)) return;
+    setUnblockingId(item.id);
+    try {
+      const password = sessionStorage.getItem('admin_password') || '';
+      const resp = await fetch(BLOCKLIST_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ id: item.id }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.success) {
+        setBlocked((prev) => prev.filter((b) => b.id !== item.id));
+      } else {
+        alert(data.error || 'Не удалось вернуть платёж');
+      }
+    } catch {
+      alert('Ошибка соединения');
+    } finally {
+      setUnblockingId(null);
+    }
+  };
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -91,6 +138,7 @@ export default function PaymentLeadsPage() {
       const data = await resp.json();
       if (resp.ok && data.success) {
         setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+        fetchBlocked();
       } else {
         alert(data.error || 'Не удалось удалить оплату');
       }
@@ -235,6 +283,69 @@ export default function PaymentLeadsPage() {
           </div>
         </div>
 
+        {/* Вкладки */}
+        <div className="flex gap-2 mb-5 border-b border-gray-200">
+          <button
+            onClick={() => setTab('active')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'active' ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            Оплаты
+          </button>
+          <button
+            onClick={() => setTab('blocked')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${tab === 'blocked' ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            <Icon name="ShieldOff" size={15} />
+            Заблокированные
+            {blocked.length > 0 && (
+              <span className="text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 font-semibold">{blocked.length}</span>
+            )}
+          </button>
+        </div>
+
+        {tab === 'blocked' ? (
+          <div className="grid gap-3">
+            <p className="text-sm text-gray-500 mb-1">
+              Эти платежи удалены вручную и больше не появляются в отчётах. Автосинхронизация с почтой банка не будет их восстанавливать. Нажмите «Вернуть», если платёж заблокирован по ошибке.
+            </p>
+            {blocked.map((item) => (
+              <Card key={item.id} className="p-5 border-l-4 border-l-red-300">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon name="User" size={16} className="text-gray-400 flex-shrink-0" />
+                      <span className="font-semibold text-gray-900">{item.name || '—'}</span>
+                    </div>
+                    {item.blocked_at && (
+                      <div className="text-xs text-gray-400">Заблокирован: {formatDate(item.blocked_at)}</div>
+                    )}
+                    <div className="text-xs text-gray-300 mt-1">
+                      {item.order_id}
+                      {item.transaction_id && ` · TX: ${item.transaction_id}`}
+                    </div>
+                  </div>
+                  {isHead && (
+                    <button
+                      onClick={() => handleUnblock(item)}
+                      disabled={unblockingId === item.id}
+                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50 transition-colors flex-shrink-0"
+                    >
+                      <Icon name={unblockingId === item.id ? 'Loader2' : 'Undo2'} size={14} className={unblockingId === item.id ? 'animate-spin' : ''} />
+                      Вернуть
+                    </button>
+                  )}
+                </div>
+              </Card>
+            ))}
+            {blocked.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <Icon name="ShieldCheck" size={36} className="mx-auto mb-3" />
+                <p>Заблокированных платежей нет</p>
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
         {/* Фильтр по дате */}
         <div className="flex items-center gap-3 mb-5">
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
@@ -337,6 +448,8 @@ export default function PaymentLeadsPage() {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
 
