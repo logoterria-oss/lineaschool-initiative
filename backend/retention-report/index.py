@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import psycopg2
 from datetime import datetime, timedelta
@@ -11,14 +12,45 @@ CORS = {
 }
 
 LONG_TERM_MONTHS = 4
-# Сколько месяцев должно пройти с первой оплаты, чтобы метрику можно было корректно оценить.
-PRIMARY_ELIGIBLE_MONTHS = 2    # первичное удержание (купил ли второй абонемент)
+# Долгосрочное удержание: сколько месяцев должно пройти с первой оплаты, чтобы судить.
 LONG_TERM_ELIGIBLE_MONTHS = 4  # долгосрочное удержание (занимается > 4 мес)
+# Первичное удержание: буфер на продление после окончания первого абонемента.
+# Пока первый абонемент идёт (+ буфер) и второго ещё нет — судить рано (TE).
+PRIMARY_BUFFER_DAYS = 14
+DEFAULT_PLAN_MONTHS = 1  # если длительность из названия тарифа не распознана
+
+
+def _plan_months(plan: str) -> int:
+    """Длительность абонемента в месяцах из названия тарифа.
+    '3 урока в неделю - 1 месяц' -> 1, '... - 3 месяца' -> 3, '... - 6 месяцев' -> 6.
+    Берём последнее упоминание числа месяцев. Если не найдено — DEFAULT_PLAN_MONTHS."""
+    if not plan:
+        return DEFAULT_PLAN_MONTHS
+    matches = re.findall(r"(\d+)\s*месяц", plan.lower())
+    if not matches:
+        return DEFAULT_PLAN_MONTHS
+    return int(matches[-1])
+
+
+def _primary_status(pays, first_date, today):
+    """Статус первичного удержания клиента.
+    Возвращает 'retained' | 'lost' | 'te'.
+    - есть второй абонемент -> retained (сразу, независимо от срока);
+    - второго нет, первый абонемент ещё не закончился (+ буфер) -> te (рано судить);
+    - второго нет, первый закончился (+ буфер прошёл) -> lost."""
+    if len(pays) >= 2:
+        return 'retained'
+    first_plan_months = _plan_months(pays[0]['plan'])
+    first_end = first_date + timedelta(days=int(first_plan_months * 30.44) + PRIMARY_BUFFER_DAYS)
+    if today < first_end:
+        return 'te'
+    return 'lost'
 
 
 def handler(event: dict, context) -> dict:
     """Отчёт по коэффициенту удержания клиентов.
-    Первичное удержание: доля клиентов когорты, купивших второй абонемент позже первого.
+    Первичное удержание: купил второй абонемент -> удержан (сразу). Если второго нет и первый
+    абонемент ещё идёт (+ буфер на продление) -> рано судить (TE); если закончился -> не удержан.
     Долгосрочное удержание: доля клиентов, у которых между первой и последней оплатой >= 4 мес.
     Клиенты, у которых ещё не прошло достаточно времени (too early), исключаются из знаменателя.
     Параметры: month (YYYY-MM) ИЛИ from/to (YYYY-MM-DD) ИЛИ mode=all (динамика по всем месяцам)."""
@@ -34,13 +66,12 @@ def handler(event: dict, context) -> dict:
     subs = _load_subscriptions()
     clusters = _cluster_by_name(subs)
 
-    # Границы «рано судить» (TE): первая оплата позже этих дат — метрику считать рано.
+    # Границы «рано судить» (TE).
     today = (datetime.utcnow() + timedelta(hours=3)).date()
-    primary_cutoff = today - timedelta(days=int(PRIMARY_ELIGIBLE_MONTHS * 30.44))
     long_term_cutoff = today - timedelta(days=int(LONG_TERM_ELIGIBLE_MONTHS * 30.44))
 
     if mode == 'all':
-        return _dynamics_response(clusters, primary_cutoff, long_term_cutoff)
+        return _dynamics_response(clusters, today, long_term_cutoff)
 
     use_range = bool(date_from and date_to)
     period_label = f"{date_from} — {date_to}" if use_range else month
@@ -61,15 +92,15 @@ def handler(event: dict, context) -> dict:
         last = pays[-1]
         purchases = len(pays)
 
-        primary_te = first_date > primary_cutoff
-        long_te = first_date > long_term_cutoff
-
+        p_status = _primary_status(pays, first_date, today)
+        primary_te = p_status == 'te'
         has_second = purchases >= 2
         if not primary_te:
             primary_eligible += 1
-            if has_second:
+            if p_status == 'retained':
                 primary_retained += 1
 
+        long_te = first_date > long_term_cutoff
         months_span = _months_between(first['paid_at'], last['paid_at'])
         is_long = months_span >= LONG_TERM_MONTHS
         if not long_te:
@@ -100,7 +131,7 @@ def handler(event: dict, context) -> dict:
         'long_term_too_early': cohort_size - long_eligible,
         'long_term_rate': round(long_retained / long_eligible * 100, 1) if long_eligible else 0,
         'long_term_months': LONG_TERM_MONTHS,
-        'primary_eligible_months': PRIMARY_ELIGIBLE_MONTHS,
+        'primary_buffer_days': PRIMARY_BUFFER_DAYS,
         'long_term_eligible_months': LONG_TERM_ELIGIBLE_MONTHS,
     }
 
@@ -140,7 +171,7 @@ def _load_subscriptions() -> list:
     return subs
 
 
-def _dynamics_response(clusters, primary_cutoff, long_term_cutoff) -> dict:
+def _dynamics_response(clusters, today, long_term_cutoff) -> dict:
     """Динамика удержания по всем месяцам когорт, где есть данные.
     Для каждого месяца считаем метрику только если в нём есть клиенты, по которым
     уже можно судить (не too early); иначе помечаем метрику как недоступную."""
@@ -154,11 +185,11 @@ def _dynamics_response(clusters, primary_cutoff, long_term_cutoff) -> dict:
         b = buckets.setdefault(key, {'cohort': 0, 'p_elig': 0, 'p_ret': 0, 'l_elig': 0, 'l_ret': 0})
 
         b['cohort'] += 1
-        purchases = len(pays)
 
-        if first_date <= primary_cutoff:
+        p_status = _primary_status(pays, first_date, today)
+        if p_status != 'te':
             b['p_elig'] += 1
-            if purchases >= 2:
+            if p_status == 'retained':
                 b['p_ret'] += 1
 
         if first_date <= long_term_cutoff:
@@ -188,7 +219,7 @@ def _dynamics_response(clusters, primary_cutoff, long_term_cutoff) -> dict:
             'mode': 'all',
             'months': months,
             'long_term_months': LONG_TERM_MONTHS,
-            'primary_eligible_months': PRIMARY_ELIGIBLE_MONTHS,
+            'primary_buffer_days': PRIMARY_BUFFER_DAYS,
             'long_term_eligible_months': LONG_TERM_ELIGIBLE_MONTHS,
         }, ensure_ascii=False),
     }

@@ -29,7 +29,7 @@ interface MonthRow {
 interface Data {
   months: MonthRow[];
   long_term_months: number;
-  primary_eligible_months: number;
+  primary_buffer_days: number;
   long_term_eligible_months: number;
 }
 
@@ -104,8 +104,12 @@ export default function RetentionDynamics() {
                   Для каждого месяца берём <b>когорту</b> — клиентов с первой оплатой абонемента в этом месяце.
                 </li>
                 <li>
-                  <b>Первичное удержание</b> считаем только по тем, кто начал минимум{' '}
-                  <b>{data.primary_eligible_months} мес</b> назад; <b>долгосрочное</b> — кто начал минимум{' '}
+                  <b>Первичное удержание</b>: купил второй абонемент = удержан (сразу). Если второго нет,
+                  но первый абонемент уже закончился (плюс {data.primary_buffer_days} дн. на продление) — не удержан.
+                  Пока первый идёт и второго нет — «рано судить».
+                </li>
+                <li>
+                  <b>Долгосрочное удержание</b> считаем только по тем, кто начал минимум{' '}
                   <b>{data.long_term_eligible_months} мес</b> назад. Остальных пропускаем — «рано судить».
                 </li>
                 <li>Если по месяцу нет ни одного клиента, по которому можно судить — метрика не считается.</li>

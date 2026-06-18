@@ -39,7 +39,7 @@ interface Stats {
   long_term_too_early: number;
   long_term_rate: number;
   long_term_months: number;
-  primary_eligible_months: number;
+  primary_buffer_days: number;
   long_term_eligible_months: number;
 }
 
@@ -120,8 +120,9 @@ export default function RetentionReport() {
                   опечатки и разный порядок слов).
                 </li>
                 <li>
-                  <b>Первичное удержание</b> — доля клиентов когорты, у которых есть <b>хотя бы ещё одна</b>{' '}
-                  оплата абонемента позже первой (купили второй абонемент).
+                  <b>Первичное удержание</b> — купил <b>второй абонемент</b> = удержан (сразу, не зависит от срока).
+                  Если второго нет, но первый абонемент <b>уже закончился</b> (плюс {stats.primary_buffer_days} дн.
+                  на продление) — клиент <b>не удержан</b>.
                 </li>
                 <li>
                   <b>Долгосрочное удержание</b> — доля клиентов когорты, у которых между <b>первой и
@@ -129,9 +130,9 @@ export default function RetentionReport() {
                   дольше {stats.long_term_months} месяцев).
                 </li>
                 <li>
-                  <b>Клиенты «рано судить» (TE)</b> исключаются из расчёта: для первичного удержания —
-                  кто начал менее <b>{stats.primary_eligible_months} мес</b> назад, для долгосрочного — менее{' '}
-                  <b>{stats.long_term_eligible_months} мес</b> назад. У них ещё не было времени, чтобы оценить метрику.
+                  <b>Клиенты «рано судить» (TE)</b> исключаются из расчёта. Для первичного — у кого
+                  второго абонемента ещё нет, а первый <b>пока не закончился</b>. Для долгосрочного — кто начал
+                  менее <b>{stats.long_term_eligible_months} мес</b> назад. У них ещё не было возможности оценить метрику.
                 </li>
                 <li>
                   Все расчёты — только по нашей истории оплат. Источник: подтверждённые платежи.
@@ -158,7 +159,7 @@ export default function RetentionReport() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold text-gray-400">Рано судить</div>
-                    <div className="text-xs text-gray-400 mt-1">все начали менее {stats.primary_eligible_months} мес назад</div>
+                    <div className="text-xs text-gray-400 mt-1">у всех первый абонемент ещё идёт</div>
                   </>
                 )}
                 {stats.primary_too_early > 0 && stats.primary_eligible > 0 && (
