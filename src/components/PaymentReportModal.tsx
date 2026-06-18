@@ -10,7 +10,7 @@ export default function PaymentReportModal({ onClose }: Props) {
   const navigate = useNavigate();
   const [rangeMode, setRangeMode] = useState<'month' | 'period'>('month');
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
-  const [dateFrom, setDateFrom] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dateFrom, setDateFrom] = useState(() => new Date().toISOString().slice(0, 7) + '-01');
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [payType, setPayType] = useState<'all' | 'diag' | 'subscription'>('all');
   const [error, setError] = useState('');
