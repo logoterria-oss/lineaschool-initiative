@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
 import WorkScheduleSection from '@/components/teacher/WorkScheduleSection';
+import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
 
 const SECTIONS = [
   {
@@ -12,6 +13,14 @@ const SECTIONS = [
     color: 'text-blue-600',
     bg: 'bg-blue-100',
     border: 'border-blue-200 hover:border-blue-400',
+  },
+  {
+    id: 'homework',
+    label: 'Контроль ДЗ',
+    icon: 'ClipboardCheck' as const,
+    color: 'text-green-600',
+    bg: 'bg-green-100',
+    border: 'border-green-200 hover:border-green-400',
   },
 ];
 
@@ -67,6 +76,9 @@ const TeacherDashboard = () => {
 
           {/* Раздел: Рабочее время */}
           {activeSection === 'schedule' && <WorkScheduleSection />}
+
+          {/* Раздел: Контроль ДЗ */}
+          {activeSection === 'homework' && <HomeworkControlSection />}
 
         </div>
       </div>

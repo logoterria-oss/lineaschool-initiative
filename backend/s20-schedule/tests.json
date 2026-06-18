@@ -5,6 +5,20 @@
       "method": "OPTIONS",
       "path": "/",
       "expectedStatus": 200
+    },
+    {
+      "name": "HW save without data returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {"teacher_id": 4},
+      "expectedStatus": 400
+    },
+    {
+      "name": "HW save bad status returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {"teacher_id": 4, "student_id": 1, "lesson_date": "2026-06-07", "status": "blue"},
+      "expectedStatus": 400
     }
   ]
 }

@@ -1,7 +1,10 @@
 import os
 import json
 import requests
+import psycopg2
 from datetime import datetime, timedelta, date
+
+HW_START_DATE = "2026-06-01"
 
 
 def get_work_schedule_from_db() -> dict:
@@ -327,6 +330,114 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
     return result
 
 
+def _hw_json(status, body, cors_headers):
+    return {
+        "statusCode": status,
+        "headers": {**cors_headers, "Content-Type": "application/json"},
+        "body": json.dumps(body, ensure_ascii=False),
+    }
+
+
+def _hw_save(event, cors_headers):
+    """Сохранить/снять статус ДЗ по клетке."""
+    schema = os.environ.get("MAIN_DB_SCHEMA", "public")
+    body = json.loads(event.get("body", "{}"))
+    teacher_id = body.get("teacher_id")
+    student_id = body.get("student_id")
+    student_name = (body.get("student_name") or "").strip()
+    lesson_date = (body.get("lesson_date") or "").strip()
+    status = (body.get("status") or "").strip()
+
+    if not teacher_id or not student_id or not lesson_date:
+        return _hw_json(400, {"error": "Не хватает данных"}, cors_headers)
+    if status not in ("green", "yellow", "red", ""):
+        return _hw_json(400, {"error": "Некорректный статус"}, cors_headers)
+
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    cur = conn.cursor()
+    if status == "":
+        cur.execute(
+            f"DELETE FROM {schema}.homework_status "
+            f"WHERE teacher_id = %s AND student_id = %s AND lesson_date = %s",
+            (int(teacher_id), int(student_id), lesson_date)
+        )
+    else:
+        cur.execute(
+            f"INSERT INTO {schema}.homework_status "
+            f"(teacher_id, student_id, student_name, lesson_date, status, updated_at) "
+            f"VALUES (%s, %s, %s, %s, %s, NOW()) "
+            f"ON CONFLICT (teacher_id, student_id, lesson_date) "
+            f"DO UPDATE SET status = EXCLUDED.status, updated_at = NOW()",
+            (int(teacher_id), int(student_id), student_name, lesson_date, status)
+        )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return _hw_json(200, {"success": True}, cors_headers)
+
+
+def _hw_table(params, cors_headers):
+    """Таблица учеников педагога: даты уроков с 1 июня (проведённые + будущие) и статусы ДЗ."""
+    schema = os.environ.get("MAIN_DB_SCHEMA", "public")
+    teacher_id = params.get("teacher_id")
+    if not teacher_id:
+        return _hw_json(400, {"error": "Не указан педагог"}, cors_headers)
+    teacher_id = int(teacher_id)
+
+    today = date.today()
+    today_str = today.strftime("%Y-%m-%d")
+    future_to = (today + timedelta(days=31)).strftime("%Y-%m-%d")
+
+    try:
+        token = get_token()
+        lessons = get_lessons_all_statuses(token, HW_START_DATE, future_to)
+        customers = get_customers(token)
+    except Exception as e:
+        return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
+
+    names = {c.get("id"): (c.get("name") or "").strip() for c in customers}
+
+    students = {}
+    for ls in lessons:
+        if teacher_id not in (ls.get("teacher_ids") or []):
+            continue
+        if ls.get("status") == 2:
+            continue
+        lesson_date = (ls.get("date") or "")[:10]
+        if not lesson_date or lesson_date < HW_START_DATE:
+            continue
+        is_future = lesson_date > today_str
+        for cid in (ls.get("customer_ids") or []):
+            nm = names.get(cid) or f"#{cid}"
+            entry = students.setdefault(cid, {"id": cid, "name": nm, "dates": {}})
+            if lesson_date not in entry["dates"]:
+                entry["dates"][lesson_date] = is_future
+
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT student_id, lesson_date, status FROM {schema}.homework_status WHERE teacher_id = %s",
+        (teacher_id,)
+    )
+    saved = {(sid, ld.strip()): st for sid, ld, st in cur.fetchall()}
+    cur.close()
+    conn.close()
+
+    result = []
+    for entry in students.values():
+        ldates = []
+        for d in sorted(entry["dates"].keys()):
+            ldates.append({
+                "date": d,
+                "is_future": entry["dates"][d],
+                "status": saved.get((entry["id"], d), ""),
+            })
+        result.append({"id": entry["id"], "name": entry["name"], "lessons": ldates})
+
+    result.sort(key=lambda s: s["name"].lower())
+    return _hw_json(200, {"students": result}, cors_headers)
+
+
 def handler(event: dict, context) -> dict:
     """Расписание S20: занятия, группы, педагоги, свободные слоты для записи"""
     cors_headers = {
@@ -335,11 +446,21 @@ def handler(event: dict, context) -> dict:
         "Access-Control-Allow-Headers": "Content-Type",
     }
 
+    cors_headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers, "body": ""}
 
+    # --- Контроль ДЗ: сохранение статуса клетки (POST) ---
+    if event.get("httpMethod") == "POST":
+        return _hw_save(event, cors_headers)
+
     params = event.get("queryStringParameters") or {}
     mode = params.get("mode", "lessons")
+
+    # --- Контроль ДЗ: таблица учеников педагога с датами уроков ---
+    if mode == "hw":
+        return _hw_table(params, cors_headers)
 
     today = datetime.today()
     date_from = params.get("date_from", today.strftime("%Y-%m-%d"))
