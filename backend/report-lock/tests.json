@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET closed months",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Reject wrong password",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "wrong"},
+      "body": {"month": "2026-01", "action": "lock"},
+      "expectedStatus": 401
+    },
+    {
+      "name": "Reject bad month",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "426874"},
+      "body": {"month": "bad", "action": "lock"},
+      "expectedStatus": 400
+    }
+  ]
+}

@@ -12,6 +12,7 @@ import {
 } from '@/lib/advanceIncomePdf';
 
 const REPORT_URL = 'https://functions.poehali.dev/479e2c37-bd7f-48dc-88f2-60dd9cb2188a';
+const LOCK_URL = 'https://functions.poehali.dev/4bc5692e-5bfe-47ab-997d-6ad9c23cd3f1';
 
 const MONTH_NAMES: Record<string, string> = {
   '01': 'Январь', '02': 'Февраль', '03': 'Март', '04': 'Апрель',
@@ -49,6 +50,8 @@ export default function AdvanceIncomeReport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [locking, setLocking] = useState(false);
 
   useEffect(() => {
     document.title = `Авансовые доходы — ${periodLabel}`;
@@ -69,6 +72,41 @@ export default function AdvanceIncomeReport() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
+
+  useEffect(() => {
+    if (isRange || !month) return;
+    fetch(LOCK_URL)
+      .then((r) => r.json())
+      .then((d) => setLocked((d.months || []).some((m: { month: string }) => m.month === month)))
+      .catch(() => {});
+  }, [month, isRange]);
+
+  const toggleLock = async () => {
+    const action = locked ? 'unlock' : 'lock';
+    const confirmMsg = locked
+      ? `Снять блокировку с месяца «${periodLabel}»? После этого данные снова можно будет менять.`
+      : `Подтвердить сверку месяца «${periodLabel}» с бухгалтером? После этого любые изменения за этот месяц будут заблокированы (включая автосинхронизацию и ручные правки).`;
+    if (!window.confirm(confirmMsg)) return;
+    setLocking(true);
+    try {
+      const password = sessionStorage.getItem('admin_password') || '';
+      const resp = await fetch(LOCK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ month, action }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.success) {
+        setLocked(data.locked);
+      } else {
+        alert(data.error || 'Не удалось изменить статус сверки');
+      }
+    } catch {
+      alert('Ошибка соединения');
+    } finally {
+      setLocking(false);
+    }
+  };
 
   const handleDownload = async () => {
     if (!stats) return;
@@ -99,15 +137,38 @@ export default function AdvanceIncomeReport() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleDownload}
-            disabled={loading || downloading || !payments.length}
-            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors"
-          >
-            <Icon name={downloading ? 'Loader2' : 'Download'} size={18} className={downloading ? 'animate-spin' : ''} />
-            {downloading ? 'Формирую…' : 'Скачать PDF'}
-          </button>
+          <div className="flex items-center gap-3">
+            {!isRange && month && (
+              <button
+                onClick={toggleLock}
+                disabled={locking}
+                className={`inline-flex items-center gap-2 disabled:opacity-60 font-semibold px-5 py-2.5 rounded-lg transition-colors border ${
+                  locked
+                    ? 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                    : 'bg-slate-800 text-white border-slate-800 hover:bg-slate-900'
+                }`}
+              >
+                <Icon name={locking ? 'Loader2' : locked ? 'Lock' : 'ShieldCheck'} size={18} className={locking ? 'animate-spin' : ''} />
+                {locking ? 'Сохраняю…' : locked ? 'Сверено · снять блокировку' : 'Сверено с бухгалтером'}
+              </button>
+            )}
+            <button
+              onClick={handleDownload}
+              disabled={loading || downloading || !payments.length}
+              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors"
+            >
+              <Icon name={downloading ? 'Loader2' : 'Download'} size={18} className={downloading ? 'animate-spin' : ''} />
+              {downloading ? 'Формирую…' : 'Скачать PDF'}
+            </button>
+          </div>
         </div>
+
+        {locked && !isRange && (
+          <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 mb-6">
+            <Icon name="Lock" size={16} />
+            Месяц сверён с бухгалтером и закрыт. Любые изменения данных за этот период заблокированы.
+          </div>
+        )}
 
         {loading && <div className="text-gray-500 py-12 text-center">Загрузка отчёта…</div>}
 

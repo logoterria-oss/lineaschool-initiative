@@ -57,6 +57,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
+        # Защита заморозки: нельзя удалять платёж из месяца, сверённого с бухгалтером
+        cur.execute(
+            f"SELECT to_char(COALESCE(paid_at, created_at) + interval '3 hours', 'YYYY-MM') "
+            f"FROM {schema}.payment_leads WHERE id = %s",
+            (lead_id,)
+        )
+        mrow = cur.fetchone()
+        if mrow and mrow[0]:
+            cur.execute(f"SELECT 1 FROM {schema}.closed_months WHERE month = %s", (mrow[0],))
+            if cur.fetchone():
+                cur.close()
+                conn.close()
+                return _resp(409, {'error': f'Месяц {mrow[0]} сверён с бухгалтером и закрыт для изменений'})
         # Сначала запоминаем заявку в чёрном списке, чтобы автосинхронизация
         # с почтой банка не воскресила её из старого письма об оплате
         cur.execute(

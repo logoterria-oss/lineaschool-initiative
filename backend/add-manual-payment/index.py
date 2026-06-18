@@ -68,8 +68,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return _resp(500, {'error': 'Database not configured'})
 
     try:
+        schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
+        # Проверка заморозки месяца (МСК). Берём месяц оплаты, иначе текущий.
+        cur.execute(
+            f"SELECT to_char(COALESCE(%s::timestamp, NOW()) + interval '3 hours', 'YYYY-MM')",
+            (paid_at or None,)
+        )
+        target_month = cur.fetchone()[0]
+        cur.execute(f"SELECT 1 FROM {schema}.closed_months WHERE month = %s", (target_month,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return _resp(409, {'error': f'Месяц {target_month} сверён с бухгалтером и закрыт для изменений'})
         if paid_at:
             cur.execute(
                 "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, source, created_at, paid_at) "

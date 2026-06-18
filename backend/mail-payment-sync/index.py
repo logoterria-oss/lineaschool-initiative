@@ -63,6 +63,9 @@ def sync_payments():
                     blocked_orders.add(o)
                 if t:
                     blocked_tx.add(t)
+            # Замороженные (сверённые с бухгалтером) месяцы — в них оплаты не проставляем
+            cur.execute(f"SELECT month FROM {SCHEMA}.closed_months")
+            closed_months = {row[0] for row in cur.fetchall()}
     finally:
         conn.close()
 
@@ -151,6 +154,12 @@ def sync_payments():
                 # Чёрный список: не воскрешаем удалённые вручную заявки/транзакции
                 if p["order_id"] in blocked_orders or p["transaction_id"] in blocked_tx:
                     print(f"Skip {p['order_id']}: blocklisted")
+                    not_found += 1
+                    continue
+                # Заморозка месяца: не проставляем оплату в сверённый с бухгалтером период
+                pay_month = (p["paid_at"] + timedelta(hours=3)).strftime("%Y-%m") if p.get("paid_at") else None
+                if pay_month and pay_month in closed_months:
+                    print(f"Skip {p['order_id']}: month {pay_month} is closed")
                     not_found += 1
                     continue
                 # Защита: одна банковская транзакция не должна закрывать несколько заявок
