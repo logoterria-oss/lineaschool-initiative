@@ -330,6 +330,24 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
     return result
 
 
+def _hw_surname_first(name: str) -> str:
+    """CRM хранит имена как 'Имя Фамилия'. Переворачиваем в 'Фамилия Имя'.
+    Сиблингов ('Марк и Сеня Константиновы' — общая фамилия в конце) оставляем как есть."""
+    name = (name or "").strip()
+    if not name:
+        return name
+    parts = name.split()
+    # Составные имена сиблингов: содержат союз 'и' — фамилия уже в конце или общая
+    if "и" in [p.lower() for p in parts]:
+        return name
+    if len(parts) == 2:
+        return f"{parts[1]} {parts[0]}"
+    # Три и более слова без 'и' — двойное имя/фамилия: переносим последнее слово вперёд
+    if len(parts) >= 3:
+        return f"{parts[-1]} {' '.join(parts[:-1])}"
+    return name
+
+
 def _hw_json(status, body, cors_headers):
     return {
         "statusCode": status,
@@ -395,7 +413,7 @@ def _hw_table(params, cors_headers):
     except Exception as e:
         return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
 
-    names = {c.get("id"): (c.get("name") or "").strip() for c in customers}
+    names = {c.get("id"): _hw_surname_first((c.get("name") or "").strip()) for c in customers}
 
     students = {}
     for ls in lessons:
