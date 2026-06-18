@@ -101,7 +101,7 @@ def handler(event: dict, context) -> dict:
                 primary_retained += 1
 
         long_te = first_date > long_term_cutoff
-        months_span = _months_between(first['paid_at'], last['paid_at'])
+        months_span = _engagement_months(pays)
         is_long = months_span >= LONG_TERM_MONTHS
         if not long_te:
             long_eligible += 1
@@ -194,7 +194,7 @@ def _dynamics_response(clusters, today, long_term_cutoff) -> dict:
 
         if first_date <= long_term_cutoff:
             b['l_elig'] += 1
-            months_span = _months_between(first['paid_at'], pays[-1]['paid_at'])
+            months_span = _engagement_months(pays)
             if months_span >= LONG_TERM_MONTHS:
                 b['l_ret'] += 1
 
@@ -237,6 +237,17 @@ def _months_between(a, b) -> float:
     """Сколько месяцев прошло между двумя датами (приблизительно, в месяцах)."""
     delta = b - a
     return delta.days / 30.44
+
+
+def _engagement_months(pays) -> float:
+    """Длительность занятий клиента в месяцах: от первой оплаты до ОКОНЧАНИЯ последнего
+    абонемента (дата последней оплаты + длительность последнего тарифа из названия).
+    Так срок отражает, до какого момента у клиента оплачены занятия, а не разрыв между оплатами."""
+    first_at = pays[0]['paid_at']
+    last_at = pays[-1]['paid_at']
+    last_plan_months = _plan_months(pays[-1]['plan'])
+    last_end = last_at + timedelta(days=int(last_plan_months * 30.44))
+    return _months_between(first_at, last_end)
 
 
 # ── Кластеризация клиентов по нечёткому совпадению ФИО ──
