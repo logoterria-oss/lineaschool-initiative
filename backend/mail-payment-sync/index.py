@@ -54,8 +54,20 @@ def sync_payments():
         with conn.cursor() as cur:
             cur.execute(f"SELECT order_id FROM {SCHEMA}.payment_leads WHERE paid_at IS NULL")
             unpaid_orders = {row[0] for row in cur.fetchall()}
+            # Чёрный список: заявки/транзакции, удалённые вручную — их не воскрешаем
+            cur.execute(f"SELECT order_id, transaction_id FROM {SCHEMA}.payment_blocklist")
+            blocked_orders = set()
+            blocked_tx = set()
+            for o, t in cur.fetchall():
+                if o:
+                    blocked_orders.add(o)
+                if t:
+                    blocked_tx.add(t)
     finally:
         conn.close()
+
+    # Исключаем заблокированные order_id из поиска
+    unpaid_orders -= blocked_orders
 
     print(f"Unpaid orders to match: {len(unpaid_orders)}")
     if not unpaid_orders:
@@ -136,6 +148,11 @@ def sync_payments():
     try:
         with conn.cursor() as cur:
             for p in payments:
+                # Чёрный список: не воскрешаем удалённые вручную заявки/транзакции
+                if p["order_id"] in blocked_orders or p["transaction_id"] in blocked_tx:
+                    print(f"Skip {p['order_id']}: blocklisted")
+                    not_found += 1
+                    continue
                 # Защита: одна банковская транзакция не должна закрывать несколько заявок
                 cur.execute(
                     f"SELECT 1 FROM {SCHEMA}.payment_leads WHERE transaction_id = %s LIMIT 1",

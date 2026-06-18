@@ -54,9 +54,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return _resp(500, {'error': 'Database not configured'})
 
     try:
+        schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
-        cur.execute("DELETE FROM payment_leads WHERE id = %s RETURNING id", (lead_id,))
+        # Сначала запоминаем заявку в чёрном списке, чтобы автосинхронизация
+        # с почтой банка не воскресила её из старого письма об оплате
+        cur.execute(
+            f"INSERT INTO {schema}.payment_blocklist (order_id, transaction_id, name, reason) "
+            f"SELECT order_id, transaction_id, name, 'manual_delete' "
+            f"FROM {schema}.payment_leads WHERE id = %s",
+            (lead_id,)
+        )
+        cur.execute(f"DELETE FROM {schema}.payment_leads WHERE id = %s RETURNING id", (lead_id,))
         row = cur.fetchone()
         conn.commit()
         cur.close()
