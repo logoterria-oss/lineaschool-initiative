@@ -44,6 +44,8 @@ def handler(event: dict, context) -> dict:
             f"SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id "
             f"FROM {schema}.payment_leads "
             f"WHERE paid_at IS NOT NULL "
+            f"AND order_id NOT LIKE 'manual-start-%%' "
+            f"AND order_id != 'manual-mazur-oct' "
             f"AND (paid_at + interval '3 hours')::date >= %s "
             f"AND (paid_at + interval '3 hours')::date <= %s "
             f"ORDER BY paid_at ASC",
@@ -55,6 +57,8 @@ def handler(event: dict, context) -> dict:
             f"SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id "
             f"FROM {schema}.payment_leads "
             f"WHERE paid_at IS NOT NULL "
+            f"AND order_id NOT LIKE 'manual-start-%%' "
+            f"AND order_id != 'manual-mazur-oct' "
             f"AND to_char(paid_at + interval '3 hours', 'YYYY-MM') = %s "
             f"ORDER BY paid_at ASC",
             (month,)
