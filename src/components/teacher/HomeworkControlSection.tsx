@@ -192,7 +192,7 @@ const HomeworkControlSection = () => {
 
         <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-green-500 inline-block" /> Хорошо</span>
-          <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-yellow-400 inline-block" /> Плохо</span>
+          <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-yellow-400 inline-block" /> Выполнено плохо / не полностью / не вовремя</span>
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-red-500 inline-block" /> Не выполнено</span>
           <span className="text-gray-400">· наведите на дату, чтобы увидеть педагога и форму урока</span>
         </div>
@@ -325,7 +325,7 @@ const HomeworkControlSection = () => {
       {/* Легенда */}
       <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
         <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-green-500 inline-block" /> Выполнено хорошо</span>
-        <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-yellow-400 inline-block" /> Выполнено плохо</span>
+        <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-yellow-400 inline-block" /> Выполнено плохо / не полностью / не вовремя</span>
         <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-red-500 inline-block" /> Не выполнено</span>
         <span className="text-gray-400">· кликайте по дате, чтобы менять цвет</span>
       </div>
