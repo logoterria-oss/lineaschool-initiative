@@ -394,6 +394,104 @@ def _hw_save(event, cors_headers):
     return _hw_json(200, {"success": True}, cors_headers)
 
 
+HW_ALL_TEACHERS = [
+    {"id": 4, "name": "Еремина Дарья"},
+    {"id": 18, "name": "Карамова Анна"},
+    {"id": 11, "name": "Камнева Валерия"},
+    {"id": 2, "name": "Шишаева Анастасия"},
+    {"id": 17, "name": "Канкулова Екатерина"},
+    {"id": 15, "name": "Мацвей Екатерина"},
+]
+
+
+def _hw_lesson_customer_ids(ls) -> set:
+    """Все id учеников из урока (индивид. — customer_ids, групп. — details[])."""
+    cids = set()
+    for key in ("customer_ids", "client_ids", "student_ids"):
+        for sid in (ls.get(key) or []):
+            cids.add(sid)
+    details = ls.get("details")
+    if isinstance(details, list):
+        for d_item in details:
+            if isinstance(d_item, dict):
+                cid = d_item.get("customer_id") or d_item.get("client_id")
+                if cid is not None:
+                    cids.add(cid)
+    return cids
+
+
+def _hw_all(cors_headers):
+    """Сводная таблица: все педагоги, все ученики, все уроки с 1 июня, разбивка по месяцам."""
+    schema = os.environ.get("MAIN_DB_SCHEMA", "public")
+    today = date.today()
+    today_str = today.strftime("%Y-%m-%d")
+    future_to = (today + timedelta(days=31)).strftime("%Y-%m-%d")
+
+    try:
+        token = get_token()
+        lessons = get_lessons_all_statuses(token, HW_START_DATE, future_to)
+        customers = get_customers(token)
+    except Exception as e:
+        return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
+
+    names = {c.get("id"): _hw_surname_first((c.get("name") or "").strip()) for c in customers}
+    teacher_name_by_id = {t["id"]: t["name"] for t in HW_ALL_TEACHERS}
+    known_ids = set(teacher_name_by_id.keys())
+
+    # (teacher_id, student_id) -> {name, teacher_name, dates: {date: is_future}}
+    rows = {}
+    for ls in lessons:
+        if ls.get("status") == 2:
+            continue
+        lesson_date = (ls.get("date") or "")[:10]
+        if not lesson_date or lesson_date < HW_START_DATE:
+            continue
+        is_future = lesson_date > today_str
+        cids = _hw_lesson_customer_ids(ls)
+        for tid in (ls.get("teacher_ids") or []):
+            if tid not in known_ids:
+                continue
+            for cid in cids:
+                key = (tid, cid)
+                entry = rows.setdefault(key, {
+                    "teacher_id": tid,
+                    "teacher_name": teacher_name_by_id[tid],
+                    "student_id": cid,
+                    "name": names.get(cid) or f"#{cid}",
+                    "dates": {},
+                })
+                if lesson_date not in entry["dates"]:
+                    entry["dates"][lesson_date] = is_future
+
+    # Сохранённые статусы по всем педагогам
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    cur = conn.cursor()
+    cur.execute(f"SELECT teacher_id, student_id, lesson_date, status FROM {schema}.homework_status")
+    saved = {(t, s, ld.strip()): st for t, s, ld, st in cur.fetchall()}
+    cur.close()
+    conn.close()
+
+    students = []
+    for (tid, cid), entry in rows.items():
+        ldates = []
+        for d in sorted(entry["dates"].keys()):
+            ldates.append({
+                "date": d,
+                "is_future": entry["dates"][d],
+                "status": saved.get((tid, cid, d), ""),
+            })
+        students.append({
+            "teacher_id": tid,
+            "teacher_name": entry["teacher_name"],
+            "id": cid,
+            "name": entry["name"],
+            "lessons": ldates,
+        })
+
+    students.sort(key=lambda s: (s["teacher_name"].lower(), s["name"].lower()))
+    return _hw_json(200, {"students": students}, cors_headers)
+
+
 def _hw_table(params, cors_headers):
     """Таблица учеников педагога: даты уроков с 1 июня (проведённые + будущие) и статусы ДЗ."""
     schema = os.environ.get("MAIN_DB_SCHEMA", "public")
@@ -494,6 +592,10 @@ def handler(event: dict, context) -> dict:
     # --- Контроль ДЗ: таблица учеников педагога с датами уроков ---
     if mode == "hw":
         return _hw_table(params, cors_headers)
+
+    # --- Контроль ДЗ: сводная по всем педагогам ---
+    if mode == "hw_all":
+        return _hw_all(cors_headers)
 
     today = datetime.today()
     date_from = params.get("date_from", today.strftime("%Y-%m-%d"))

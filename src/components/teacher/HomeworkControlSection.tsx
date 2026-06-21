@@ -49,11 +49,42 @@ const fmtDate = (iso: string) => {
   return `${d}.${m}`;
 };
 
+const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const monthKey = (iso: string) => iso.slice(0, 7); // YYYY-MM
+const monthLabel = (key: string) => {
+  const [y, m] = key.split('-');
+  return `${MONTH_NAMES[Number(m) - 1]} ${y}`;
+};
+
+interface SummaryStudent extends Student {
+  teacher_id: number;
+  teacher_name: string;
+}
+
 const HomeworkControlSection = () => {
   const [teacher, setTeacher] = useState<{ id: number; name: string } | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [showSummary, setShowSummary] = useState(false);
+  const [summary, setSummary] = useState<SummaryStudent[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
+
+  const openSummary = () => {
+    setShowSummary(true);
+    setSummaryLoading(true);
+    setSummaryError('');
+    fetch(`${HW_URL}?mode=hw_all`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) setSummaryError('Не удалось загрузить сводную таблицу. Попробуйте позже.');
+        else setSummary(data.students || []);
+      })
+      .catch(() => setSummaryError('Ошибка соединения.'))
+      .finally(() => setSummaryLoading(false));
+  };
 
   useEffect(() => {
     if (!teacher) return;
@@ -96,10 +127,92 @@ const HomeworkControlSection = () => {
     }
   };
 
+  // --- Сводная таблица по всем педагогам ---
+  if (showSummary) {
+    // Собираем все месяцы, встречающиеся в данных
+    const monthsSet = new Set<string>();
+    summary.forEach((s) => s.lessons.forEach((l) => monthsSet.add(monthKey(l.date))));
+    const months = Array.from(monthsSet).sort();
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setShowSummary(false)}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <Icon name="ArrowLeft" size={16} />
+            Назад
+          </button>
+          <span className="font-semibold text-gray-900">Сводная таблица</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
+          <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-green-500 inline-block" /> Хорошо</span>
+          <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-yellow-400 inline-block" /> Плохо</span>
+          <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-red-500 inline-block" /> Не выполнено</span>
+        </div>
+
+        {summaryLoading && <div className="text-gray-500 py-12 text-center">Собираем данные по всем педагогам…</div>}
+        {summaryError && !summaryLoading && (
+          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{summaryError}</p>
+        )}
+
+        {!summaryLoading && !summaryError && summary.length === 0 && (
+          <div className="text-center py-12 text-gray-400">
+            <Icon name="Inbox" size={36} className="mx-auto mb-3" />
+            <p>Нет данных</p>
+          </div>
+        )}
+
+        {!summaryLoading && summary.length > 0 && months.map((mk) => (
+          <div key={mk} className="mb-6">
+            <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Icon name="Calendar" size={16} className="text-green-600" />
+              {monthLabel(mk)}
+            </h3>
+            <div className="space-y-2">
+              {summary
+                .filter((s) => s.lessons.some((l) => monthKey(l.date) === mk))
+                .map((s) => (
+                  <div key={`${s.teacher_id}-${s.id}`} className="bg-white rounded-xl border border-gray-200 p-3">
+                    <div className="flex flex-wrap items-baseline gap-x-2 mb-2">
+                      <span className="font-semibold text-gray-900 text-sm">{s.name}</span>
+                      <span className="text-xs text-gray-400">· {s.teacher_name}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {s.lessons
+                        .filter((l) => monthKey(l.date) === mk)
+                        .map((l) => (
+                          <span
+                            key={l.date}
+                            className={`min-w-[52px] text-center px-2 py-1 rounded-md border text-xs font-medium font-mono ${STATUS_STYLE[l.status]} ${l.is_future && l.status === '' ? 'opacity-50' : ''}`}
+                          >
+                            {fmtDate(l.date)}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   // --- Экран выбора педагога ---
   if (!teacher) {
     return (
       <div className="space-y-6">
+        <button
+          onClick={openSummary}
+          className="w-full flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white rounded-xl p-4 font-semibold transition-colors shadow-sm"
+        >
+          <Icon name="Table" size={20} />
+          Составить сводную таблицу
+        </button>
+
         <div>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
             Индивидуальные занятия
