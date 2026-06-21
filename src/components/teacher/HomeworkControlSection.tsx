@@ -106,18 +106,31 @@ const HomeworkControlSection = () => {
     loadSummary();
   };
 
-  useEffect(() => {
-    if (!teacher) return;
+  const [teacherMonth, setTeacherMonth] = useState('');
+  const [teacherMonths, setTeacherMonths] = useState<string[]>([]);
+
+  const loadTeacher = (teacherId: number, month?: string) => {
     setLoading(true);
     setError('');
-    fetch(`${HW_URL}?mode=hw&teacher_id=${teacher.id}`)
+    const q = month ? `&month=${month}` : '';
+    fetch(`${HW_URL}?mode=hw&teacher_id=${teacherId}${q}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setError('Не удалось загрузить данные. Попробуйте позже.');
-        else setStudents(data.students || []);
+        else {
+          setStudents(data.students || []);
+          setTeacherMonth(data.month || '');
+          if (data.months) setTeacherMonths(data.months);
+        }
       })
       .catch(() => setError('Ошибка соединения.'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!teacher) return;
+    loadTeacher(teacher.id);
+     
   }, [teacher]);
 
   const cycleStatus = async (student: Student, cell: LessonCell) => {
@@ -294,6 +307,21 @@ const HomeworkControlSection = () => {
         <span className="font-semibold text-gray-900">{teacher.name}</span>
       </div>
 
+      {/* Выбор месяца */}
+      <div className="flex items-center gap-2 mb-4">
+        <Icon name="Calendar" size={16} className="text-blue-600" />
+        <select
+          value={teacherMonth}
+          onChange={(e) => loadTeacher(teacher.id, e.target.value)}
+          disabled={loading}
+          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          {teacherMonths.map((mk) => (
+            <option key={mk} value={mk}>{monthLabel(mk)}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Легенда */}
       <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
         <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-green-500 inline-block" /> Выполнено хорошо</span>
@@ -310,7 +338,7 @@ const HomeworkControlSection = () => {
       {!loading && !error && students.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <Icon name="Inbox" size={36} className="mx-auto mb-3" />
-          <p>Нет уроков с 1 июня</p>
+          <p>Нет уроков в этом месяце</p>
         </div>
       )}
 

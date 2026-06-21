@@ -404,6 +404,30 @@ HW_ALL_TEACHERS = [
 ]
 
 
+def _hw_resolve_month(params):
+    """Возвращает (month, month_from, month_to, available_months). Будущие месяцы не разрешены."""
+    today = date.today()
+    cur_month = today.strftime("%Y-%m")
+    month = (params.get("month") or cur_month)[:7]
+    if month > cur_month:
+        month = cur_month
+    if month < HW_START_DATE[:7]:
+        month = HW_START_DATE[:7]
+
+    y, m = int(month[:4]), int(month[5:7])
+    month_from = f"{month}-01"
+    last_day = date(y + (1 if m == 12 else 0), 1 if m == 12 else m + 1, 1) - timedelta(days=1)
+    month_to = last_day.strftime("%Y-%m-%d")
+
+    available = []
+    ym = (int(HW_START_DATE[:4]), int(HW_START_DATE[5:7]))
+    while (ym[0], ym[1]) <= (today.year, today.month):
+        available.append(f"{ym[0]:04d}-{ym[1]:02d}")
+        ym = (ym[0] + (1 if ym[1] == 12 else 0), 1 if ym[1] == 12 else ym[1] + 1)
+
+    return month, month_from, month_to, available
+
+
 def _hw_lesson_customer_ids(ls) -> set:
     """Все id учеников из урока (индивид. — customer_ids, групп. — details[])."""
     cids = set()
@@ -427,19 +451,7 @@ def _hw_all(params, cors_headers):
     today = date.today()
     today_str = today.strftime("%Y-%m-%d")
 
-    # Месяц: параметр month=YYYY-MM. По умолчанию — текущий. Будущие не разрешаем.
-    cur_month = today.strftime("%Y-%m")
-    month = (params.get("month") or cur_month)[:7]
-    if month > cur_month:
-        month = cur_month
-    if month < HW_START_DATE[:7]:
-        month = HW_START_DATE[:7]
-
-    # Границы месяца
-    y, m = int(month[:4]), int(month[5:7])
-    month_from = f"{month}-01"
-    last_day = (date(y + (1 if m == 12 else 0), 1 if m == 12 else m + 1, 1) - timedelta(days=1))
-    month_to = last_day.strftime("%Y-%m-%d")
+    month, month_from, month_to, available = _hw_resolve_month(params)
 
     try:
         token = get_token()
@@ -505,13 +517,6 @@ def _hw_all(params, cors_headers):
 
     students.sort(key=lambda s: s["name"].lower())
 
-    # Доступные месяцы для выбора: с июня по текущий включительно
-    available = []
-    ym = (2026, 6)
-    while (ym[0], ym[1]) <= (today.year, today.month):
-        available.append(f"{ym[0]:04d}-{ym[1]:02d}")
-        ym = (ym[0] + (1 if ym[1] == 12 else 0), 1 if ym[1] == 12 else ym[1] + 1)
-
     return _hw_json(200, {"students": students, "month": month, "months": available}, cors_headers)
 
 
@@ -525,11 +530,11 @@ def _hw_table(params, cors_headers):
 
     today = date.today()
     today_str = today.strftime("%Y-%m-%d")
-    future_to = (today + timedelta(days=31)).strftime("%Y-%m-%d")
+    month, month_from, month_to, available = _hw_resolve_month(params)
 
     try:
         token = get_token()
-        lessons = get_lessons_all_statuses(token, HW_START_DATE, future_to)
+        lessons = get_lessons_all_statuses(token, month_from, month_to)
         customers = get_customers(token)
     except Exception as e:
         return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
@@ -543,24 +548,10 @@ def _hw_table(params, cors_headers):
         if ls.get("status") == 2:
             continue
         lesson_date = (ls.get("date") or "")[:10]
-        if not lesson_date or lesson_date < HW_START_DATE:
+        if not lesson_date or lesson_date < month_from or lesson_date > month_to:
             continue
         is_future = lesson_date > today_str
-
-        # Собираем учеников из всех возможных источников:
-        # индивидуальные — в customer_ids; групповые — часто в details[] (по факту посещения).
-        cids = set()
-        for key in ("customer_ids", "client_ids", "student_ids"):
-            for sid in (ls.get(key) or []):
-                cids.add(sid)
-        details = ls.get("details")
-        if isinstance(details, list):
-            for d_item in details:
-                if isinstance(d_item, dict):
-                    cid = d_item.get("customer_id") or d_item.get("client_id")
-                    if cid is not None:
-                        cids.add(cid)
-
+        cids = _hw_lesson_customer_ids(ls)
         for cid in cids:
             nm = names.get(cid) or f"#{cid}"
             entry = students.setdefault(cid, {"id": cid, "name": nm, "dates": {}})
@@ -589,7 +580,7 @@ def _hw_table(params, cors_headers):
         result.append({"id": entry["id"], "name": entry["name"], "lessons": ldates})
 
     result.sort(key=lambda s: s["name"].lower())
-    return _hw_json(200, {"students": result}, cors_headers)
+    return _hw_json(200, {"students": result, "month": month, "months": available}, cors_headers)
 
 
 def handler(event: dict, context) -> dict:
