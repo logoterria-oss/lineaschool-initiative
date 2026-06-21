@@ -425,7 +425,22 @@ def _hw_table(params, cors_headers):
         if not lesson_date or lesson_date < HW_START_DATE:
             continue
         is_future = lesson_date > today_str
-        for cid in (ls.get("customer_ids") or []):
+
+        # Собираем учеников из всех возможных источников:
+        # индивидуальные — в customer_ids; групповые — часто в details[] (по факту посещения).
+        cids = set()
+        for key in ("customer_ids", "client_ids", "student_ids"):
+            for sid in (ls.get(key) or []):
+                cids.add(sid)
+        details = ls.get("details")
+        if isinstance(details, list):
+            for d_item in details:
+                if isinstance(d_item, dict):
+                    cid = d_item.get("customer_id") or d_item.get("client_id")
+                    if cid is not None:
+                        cids.add(cid)
+
+        for cid in cids:
             nm = names.get(cid) or f"#{cid}"
             entry = students.setdefault(cid, {"id": cid, "name": nm, "dates": {}})
             if lesson_date not in entry["dates"]:

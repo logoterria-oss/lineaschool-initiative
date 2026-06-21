@@ -11,7 +11,7 @@ const INDIVIDUAL_TEACHERS = [
 ];
 
 const GROUP_TEACHERS = [
-  { id: 20, name: 'Канкулова Екатерина' },
+  { id: 17, name: 'Канкулова Екатерина' },
   { id: 15, name: 'Мацвей Екатерина' },
 ];
 
