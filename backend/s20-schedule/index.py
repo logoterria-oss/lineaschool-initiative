@@ -420,16 +420,30 @@ def _hw_lesson_customer_ids(ls) -> set:
     return cids
 
 
-def _hw_all(cors_headers):
-    """Сводная таблица: все педагоги, все ученики, все уроки с 1 июня, разбивка по месяцам."""
+def _hw_all(params, cors_headers):
+    """Сводная таблица: все ученики объединены в одну строку (даже с разными педагогами).
+    Один месяц (текущий или прошедший). У каждого урока — педагог и форма (групп./индив.)."""
     schema = os.environ.get("MAIN_DB_SCHEMA", "public")
     today = date.today()
     today_str = today.strftime("%Y-%m-%d")
-    future_to = (today + timedelta(days=31)).strftime("%Y-%m-%d")
+
+    # Месяц: параметр month=YYYY-MM. По умолчанию — текущий. Будущие не разрешаем.
+    cur_month = today.strftime("%Y-%m")
+    month = (params.get("month") or cur_month)[:7]
+    if month > cur_month:
+        month = cur_month
+    if month < HW_START_DATE[:7]:
+        month = HW_START_DATE[:7]
+
+    # Границы месяца
+    y, m = int(month[:4]), int(month[5:7])
+    month_from = f"{month}-01"
+    last_day = (date(y + (1 if m == 12 else 0), 1 if m == 12 else m + 1, 1) - timedelta(days=1))
+    month_to = last_day.strftime("%Y-%m-%d")
 
     try:
         token = get_token()
-        lessons = get_lessons_all_statuses(token, HW_START_DATE, future_to)
+        lessons = get_lessons_all_statuses(token, month_from, month_to)
         customers = get_customers(token)
     except Exception as e:
         return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
@@ -438,32 +452,35 @@ def _hw_all(cors_headers):
     teacher_name_by_id = {t["id"]: t["name"] for t in HW_ALL_TEACHERS}
     known_ids = set(teacher_name_by_id.keys())
 
-    # (teacher_id, student_id) -> {name, teacher_name, dates: {date: is_future}}
+    # student_id -> {name, lessons: {date -> {teacher_id, teacher_name, form, is_future}}}
     rows = {}
     for ls in lessons:
         if ls.get("status") == 2:
             continue
         lesson_date = (ls.get("date") or "")[:10]
-        if not lesson_date or lesson_date < HW_START_DATE:
+        if not lesson_date or lesson_date < month_from or lesson_date > month_to:
             continue
         is_future = lesson_date > today_str
+        form = "individual" if ls.get("lesson_type_id") == 1 else "group"
         cids = _hw_lesson_customer_ids(ls)
         for tid in (ls.get("teacher_ids") or []):
             if tid not in known_ids:
                 continue
             for cid in cids:
-                key = (tid, cid)
-                entry = rows.setdefault(key, {
-                    "teacher_id": tid,
-                    "teacher_name": teacher_name_by_id[tid],
-                    "student_id": cid,
+                entry = rows.setdefault(cid, {
+                    "id": cid,
                     "name": names.get(cid) or f"#{cid}",
-                    "dates": {},
+                    "lessons": {},
                 })
-                if lesson_date not in entry["dates"]:
-                    entry["dates"][lesson_date] = is_future
+                if lesson_date not in entry["lessons"]:
+                    entry["lessons"][lesson_date] = {
+                        "teacher_id": tid,
+                        "teacher_name": teacher_name_by_id[tid],
+                        "form": form,
+                        "is_future": is_future,
+                    }
 
-    # Сохранённые статусы по всем педагогам
+    # Сохранённые статусы (ключ — педагог+ученик+дата)
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
     cur = conn.cursor()
     cur.execute(f"SELECT teacher_id, student_id, lesson_date, status FROM {schema}.homework_status")
@@ -472,24 +489,30 @@ def _hw_all(cors_headers):
     conn.close()
 
     students = []
-    for (tid, cid), entry in rows.items():
+    for cid, entry in rows.items():
         ldates = []
-        for d in sorted(entry["dates"].keys()):
+        for d in sorted(entry["lessons"].keys()):
+            info = entry["lessons"][d]
             ldates.append({
                 "date": d,
-                "is_future": entry["dates"][d],
-                "status": saved.get((tid, cid, d), ""),
+                "is_future": info["is_future"],
+                "teacher_id": info["teacher_id"],
+                "teacher_name": info["teacher_name"],
+                "form": info["form"],
+                "status": saved.get((info["teacher_id"], cid, d), ""),
             })
-        students.append({
-            "teacher_id": tid,
-            "teacher_name": entry["teacher_name"],
-            "id": cid,
-            "name": entry["name"],
-            "lessons": ldates,
-        })
+        students.append({"id": cid, "name": entry["name"], "lessons": ldates})
 
-    students.sort(key=lambda s: (s["teacher_name"].lower(), s["name"].lower()))
-    return _hw_json(200, {"students": students}, cors_headers)
+    students.sort(key=lambda s: s["name"].lower())
+
+    # Доступные месяцы для выбора: с июня по текущий включительно
+    available = []
+    ym = (2026, 6)
+    while (ym[0], ym[1]) <= (today.year, today.month):
+        available.append(f"{ym[0]:04d}-{ym[1]:02d}")
+        ym = (ym[0] + (1 if ym[1] == 12 else 0), 1 if ym[1] == 12 else ym[1] + 1)
+
+    return _hw_json(200, {"students": students, "month": month, "months": available}, cors_headers)
 
 
 def _hw_table(params, cors_headers):
@@ -595,7 +618,7 @@ def handler(event: dict, context) -> dict:
 
     # --- Контроль ДЗ: сводная по всем педагогам ---
     if mode == "hw_all":
-        return _hw_all(cors_headers)
+        return _hw_all(params, cors_headers)
 
     today = datetime.today()
     date_from = params.get("date_from", today.strftime("%Y-%m-%d"))

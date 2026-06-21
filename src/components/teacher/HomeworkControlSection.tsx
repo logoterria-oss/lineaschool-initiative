@@ -50,15 +50,24 @@ const fmtDate = (iso: string) => {
 };
 
 const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-const monthKey = (iso: string) => iso.slice(0, 7); // YYYY-MM
 const monthLabel = (key: string) => {
   const [y, m] = key.split('-');
   return `${MONTH_NAMES[Number(m) - 1]} ${y}`;
 };
 
-interface SummaryStudent extends Student {
+interface SummaryCell {
+  date: string;
+  is_future: boolean;
+  status: HwStatus;
   teacher_id: number;
   teacher_name: string;
+  form: 'individual' | 'group';
+}
+
+interface SummaryStudent {
+  id: number;
+  name: string;
+  lessons: SummaryCell[];
 }
 
 const HomeworkControlSection = () => {
@@ -71,19 +80,30 @@ const HomeworkControlSection = () => {
   const [summary, setSummary] = useState<SummaryStudent[]>([]);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState('');
+  const [summaryMonth, setSummaryMonth] = useState('');
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
 
-  const openSummary = () => {
-    setShowSummary(true);
+  const loadSummary = (month?: string) => {
     setSummaryLoading(true);
     setSummaryError('');
-    fetch(`${HW_URL}?mode=hw_all`)
+    const q = month ? `&month=${month}` : '';
+    fetch(`${HW_URL}?mode=hw_all${q}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setSummaryError('Не удалось загрузить сводную таблицу. Попробуйте позже.');
-        else setSummary(data.students || []);
+        else {
+          setSummary(data.students || []);
+          setSummaryMonth(data.month || '');
+          if (data.months) setAvailableMonths(data.months);
+        }
       })
       .catch(() => setSummaryError('Ошибка соединения.'))
       .finally(() => setSummaryLoading(false));
+  };
+
+  const openSummary = () => {
+    setShowSummary(true);
+    loadSummary();
   };
 
   useEffect(() => {
@@ -129,11 +149,6 @@ const HomeworkControlSection = () => {
 
   // --- Сводная таблица по всем педагогам ---
   if (showSummary) {
-    // Собираем все месяцы, встречающиеся в данных
-    const monthsSet = new Set<string>();
-    summary.forEach((s) => s.lessons.forEach((l) => monthsSet.add(monthKey(l.date))));
-    const months = Array.from(monthsSet).sort();
-
     return (
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -147,10 +162,26 @@ const HomeworkControlSection = () => {
           <span className="font-semibold text-gray-900">Сводная таблица</span>
         </div>
 
+        {/* Выбор месяца */}
+        <div className="flex items-center gap-2 mb-4">
+          <Icon name="Calendar" size={16} className="text-green-600" />
+          <select
+            value={summaryMonth}
+            onChange={(e) => loadSummary(e.target.value)}
+            disabled={summaryLoading}
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
+          >
+            {availableMonths.map((mk) => (
+              <option key={mk} value={mk}>{monthLabel(mk)}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-green-500 inline-block" /> Хорошо</span>
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-yellow-400 inline-block" /> Плохо</span>
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-red-500 inline-block" /> Не выполнено</span>
+          <span className="text-gray-400">· наведите на дату, чтобы увидеть педагога и форму урока</span>
         </div>
 
         {summaryLoading && <div className="text-gray-500 py-12 text-center">Собираем данные по всем педагогам…</div>}
@@ -161,42 +192,33 @@ const HomeworkControlSection = () => {
         {!summaryLoading && !summaryError && summary.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             <Icon name="Inbox" size={36} className="mx-auto mb-3" />
-            <p>Нет данных</p>
+            <p>Нет уроков в этом месяце</p>
           </div>
         )}
 
-        {!summaryLoading && summary.length > 0 && months.map((mk) => (
-          <div key={mk} className="mb-6">
-            <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <Icon name="Calendar" size={16} className="text-green-600" />
-              {monthLabel(mk)}
-            </h3>
-            <div className="space-y-2">
-              {summary
-                .filter((s) => s.lessons.some((l) => monthKey(l.date) === mk))
-                .map((s) => (
-                  <div key={`${s.teacher_id}-${s.id}`} className="bg-white rounded-xl border border-gray-200 p-3">
-                    <div className="flex flex-wrap items-baseline gap-x-2 mb-2">
-                      <span className="font-semibold text-gray-900 text-sm">{s.name}</span>
-                      <span className="text-xs text-gray-400">· {s.teacher_name}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {s.lessons
-                        .filter((l) => monthKey(l.date) === mk)
-                        .map((l) => (
-                          <span
-                            key={l.date}
-                            className={`min-w-[52px] text-center px-2 py-1 rounded-md border text-xs font-medium font-mono ${STATUS_STYLE[l.status]} ${l.is_future && l.status === '' ? 'opacity-50' : ''}`}
-                          >
-                            {fmtDate(l.date)}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                ))}
-            </div>
+        {!summaryLoading && summary.length > 0 && (
+          <div className="space-y-2">
+            {summary.map((s, i) => (
+              <div key={s.id} className="bg-white rounded-xl border border-gray-200 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-gray-400 text-xs w-5 flex-shrink-0">{i + 1}.</span>
+                  <span className="font-semibold text-gray-900 text-sm">{s.name}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pl-7">
+                  {s.lessons.map((l) => (
+                    <span
+                      key={`${l.date}-${l.teacher_id}`}
+                      title={`${fmtDate(l.date)} · ${l.form === 'group' ? 'Групповой' : 'Индивидуальный'} · ${l.teacher_name}`}
+                      className={`min-w-[52px] text-center px-2 py-1 rounded-md border text-xs font-medium font-mono cursor-default ${STATUS_STYLE[l.status]} ${l.is_future && l.status === '' ? 'opacity-50' : ''}`}
+                    >
+                      {fmtDate(l.date)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     );
   }
