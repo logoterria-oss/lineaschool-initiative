@@ -4,6 +4,7 @@ import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
 import WorkScheduleSection from '@/components/teacher/WorkScheduleSection';
 import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
+import RegulationsSection from '@/components/teacher/RegulationsSection';
 
 const SECTIONS = [
   {
@@ -21,6 +22,14 @@ const SECTIONS = [
     color: 'text-green-600',
     bg: 'bg-green-100',
     border: 'border-green-200 hover:border-green-400',
+  },
+  {
+    id: 'regulations',
+    label: 'Регламенты',
+    icon: 'BookOpen' as const,
+    color: 'text-purple-600',
+    bg: 'bg-purple-100',
+    border: 'border-purple-200 hover:border-purple-400',
   },
 ];
 
@@ -79,6 +88,9 @@ const TeacherDashboard = () => {
 
           {/* Раздел: Контроль ДЗ */}
           {activeSection === 'homework' && <HomeworkControlSection />}
+
+          {/* Раздел: Регламенты */}
+          {activeSection === 'regulations' && <RegulationsSection />}
 
         </div>
       </div>
