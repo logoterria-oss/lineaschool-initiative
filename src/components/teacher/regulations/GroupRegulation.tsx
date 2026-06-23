@@ -389,7 +389,10 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
                 </ol>
               </div>
             </div>
-            <p className="text-[13px] text-gray-500 italic mt-4 text-center">Помним: рабочая память школьника в норме удерживает 7±2 элемента!</p>
+            <div className="mt-4 flex gap-2.5 bg-red-50 border border-red-300 rounded-xl px-4 py-3 text-[15px] text-red-900 font-semibold">
+              <span className="flex-shrink-0">❗</span>
+              <p>Помним: рабочая память школьника в норме удерживает 7±2 элемента!</p>
+            </div>
           </div>
         </section>
 
