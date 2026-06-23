@@ -278,7 +278,21 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
                 <img
                   src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/da97b328-2809-41d2-9873-b1aa4d10be62.png"
                   alt="Алгоритм «Почему животные подарили обувь Насте?»"
-                  className="w-full max-w-xs mx-auto block rounded-lg border border-gray-200 shadow-sm"
+                  className="w-full max-w-[160px] mx-auto block rounded-lg border border-gray-200 shadow-sm"
+                />
+              </figure>
+            </div>
+
+            {/* Пример 3 — по заданной теме */}
+            <div className="mt-5">
+              <p className="text-[13px] font-medium text-gray-500 mb-1">Пример 3: алгоритм по заданной теме</p>
+              <p className="text-[13px] text-gray-600 mb-2">Тема, предложенная учителем: «Сборы в школу»</p>
+              <figure>
+                <p className="text-[13px] font-medium text-gray-600 italic mb-1 text-center">Алгоритм «Как собраться утром в школу?»</p>
+                <img
+                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/de0f9a9b-05a5-4ec8-90ff-6a77026c6591.png"
+                  alt="Алгоритм «Как собраться утром в школу?»"
+                  className="w-full max-w-[160px] mx-auto block rounded-lg border border-gray-200 shadow-sm"
                 />
               </figure>
             </div>
