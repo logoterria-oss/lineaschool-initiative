@@ -744,7 +744,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
               </div>
               <div>
                 <p className="text-[15px] font-medium">4. В комментарии можем указать успехи/сложности ученика и <span className="font-bold">ОБЯЗАТЕЛЬНО</span> ссылку на видео проведённого урока — даже если ученик не подключился по неуважительной причине.</p>
-                <p className="text-[14px] mt-2 text-blue-700 underline cursor-pointer">Обучающее видео «Как скопировать ссылку на видео»</p>
+                <a href="https://disk.yandex.ru/i/wg7NmV3B2qsLRw" target="_blank" rel="noopener noreferrer" className="text-[14px] mt-2 text-blue-700 underline underline-offset-2 hover:text-blue-900 block">Обучающее видео «Как скопировать ссылку на видео»</a>
               </div>
             </div>
           </div>
