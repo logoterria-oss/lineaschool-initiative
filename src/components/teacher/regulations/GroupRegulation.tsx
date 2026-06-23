@@ -257,7 +257,7 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
                 <figure className="w-full sm:w-1/2">
                   <p className="text-[13px] font-medium text-gray-600 italic mb-1 text-center">Алгоритм «Как обидеть кота?»</p>
                   <img
-                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/98d8d458-5d9f-4ea8-bf6a-02b93a19de4d.png"
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/326607b5-cdc5-45ba-9d08-e0f120093429.png"
                     alt="Алгоритм «Как обидеть кота?»"
                     className="w-full rounded-lg border border-gray-200 shadow-sm"
                   />
