@@ -249,40 +249,6 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
               <li>По заданному тексту</li>
               <li>По заданной теме (напр., «Сборы в школу»)</li>
             </ol>
-
-            {/* Пример 1 — картинки + алгоритм */}
-            <div className="mt-5">
-              <p className="text-[13px] font-medium text-gray-500 mb-2">Пример 1: алгоритм по серии сюжетных картинок</p>
-              <div className="flex flex-col sm:flex-row gap-3 items-start">
-                <img
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/377da531-8a87-4777-a1b5-00b6d2cd7830.png"
-                  alt="Серия сюжетных картинок"
-                  className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
-                />
-                <img
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/98d8d458-5d9f-4ea8-bf6a-02b93a19de4d.png"
-                  alt="Алгоритм «Как обидеть кота?»"
-                  className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
-                />
-              </div>
-            </div>
-
-            {/* Пример 2 — рассказ + алгоритм */}
-            <div className="mt-5">
-              <p className="text-[13px] font-medium text-gray-500 mb-2">Пример 2: алгоритм по рассказу</p>
-              <div className="flex flex-col sm:flex-row gap-3 items-start">
-                <img
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/94185afd-7ab7-4925-b6a7-5fc526daa0ce.png"
-                  alt="Рассказ «Сапожки для кошки»"
-                  className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
-                />
-                <img
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/da97b328-2809-41d2-9873-b1aa4d10be62.png"
-                  alt="Алгоритм «Почему животные подарили обувь Насте?»"
-                  className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
-                />
-              </div>
-            </div>
             <div className="mt-4 flex gap-2.5 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-[14px] text-blue-900">
               <span className="flex-shrink-0">💡</span>
               <p>Добавьте временной компонент: просите оценить, сколько времени займёт каждый шаг — это тренирует сукцессивные процессы и чувство времени.</p>
