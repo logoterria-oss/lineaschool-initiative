@@ -315,7 +315,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
                   </div>
                 </div>
                 <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-                  <p className="text-[13px] font-semibold text-gray-600 mb-1">Отдельно: твёрдые и мягкие согласные (Ь и йотированные гласные)</p>
+                  <p className="text-[13px] font-semibold text-gray-600 mb-1">Отдельно: твёрдые и мягкие согласные (Ь как показатель мягкости и йотированные гласные)</p>
                   <p className="text-[13px] text-gray-600 mb-2">Этапность:</p>
                   <ol className="list-decimal pl-5 space-y-0.5 text-[13px] text-gray-700 marker:text-gray-400">
                     <li>Мягкий знак в конце слова (сильная позиция)</li>
