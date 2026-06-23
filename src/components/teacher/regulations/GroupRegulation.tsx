@@ -144,6 +144,22 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
         <section id="lesson">
           <h2 className="text-xl font-bold text-gray-900 pb-2 border-b border-gray-200">3. Проведение занятия</h2>
 
+          <div className="mt-4 space-y-3 text-[15px]">
+            <p>После подключения педагог проверяет осуществление записи занятия.{' '}
+              <a href="https://disk.yandex.ru/i/p_HNikxyQ8fYQA" target="_blank" rel="noopener noreferrer" className="text-purple-600 underline underline-offset-2 hover:text-purple-900">Как настроить автоматическую запись в Zoom?</a>{' '}
+              Запускаем учеников в конференцию, и начинается работа. Если ученика (одного или нескольких) нет — педагог ждёт 1–2 минуты, затем пишет в мессенджер школы о том, что ожидает ученика. Если никто из учеников не подключился, педагог ожидает всё время занятия (можно выключить звук и видео — такая ситуация бывает редко, проверьте мессенджер). Если ученик не подключается — тегните администратора <span className="font-mono bg-gray-100 px-1 rounded">@админ</span> в мессенджере.
+            </p>
+            <p>В случае пропуска/отмены педагогом занятия по неуважительной причине ему будут начислены штрафные баллы в KPI, которые отразятся на размере премиальной части заработной платы.</p>
+          </div>
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-[15px] text-red-900">
+            <p className="font-semibold mb-2">Неуважительные причины для пропуска:</p>
+            <ul className="list-disc pl-5 space-y-1 marker:text-red-400">
+              <li>невыход ученика/педагога на занятие без предупреждения;</li>
+              <li>невыход при предупреждении менее чем за <span className="font-semibold">12 часов</span> (для ученика) и <span className="font-semibold">24 часа</span> (для педагога) до запланированного урока.</li>
+            </ul>
+            <p className="mt-2 text-red-700 text-[13px]">* Исключения: болезнь со справкой врача, ЧС в регионе или семье, блокировка интернета с подтверждением от провайдера.</p>
+          </div>
+
           {/* 3.1 Блок 1 мозга */}
           <div id="block1" className="mt-8">
             <h3 className="text-base font-bold text-gray-900 text-center mb-3">Упражнения на развитие 1 блока мозга</h3>
