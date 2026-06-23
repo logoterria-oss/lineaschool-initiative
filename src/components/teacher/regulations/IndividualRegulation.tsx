@@ -163,7 +163,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
           {/* 3.1 Коррекция дисграфии */}
           <div id="dysgraphia" className="mt-10">
-            <h3 className="text-lg font-bold text-gray-900 mb-3 pb-1 border-b border-gray-100">3.1. Коррекция дисграфии</h3>
+            <h3 className="text-base font-bold text-gray-900 text-center mb-3 mt-2">Коррекция дисграфии</h3>
             <p className="text-[15px]">Единой программы для коррекции дисграфии нет. На индивидуальных занятиях педагоги работают над симптоматикой, т.е. над имеющимися ошибками у ученика.</p>
             <p className="text-[15px] mt-2 font-medium">Направления работы логопеда:</p>
             <ol className="mt-2 list-decimal pl-5 space-y-1 text-[15px] marker:text-gray-400">
@@ -174,13 +174,12 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
             {/* 3.1.1 Речевые функции */}
             <div id="speech" className="mt-7">
-              <h4 className="text-base font-semibold text-gray-800 mb-1">Развитие речевых функций</h4>
-              <p className="text-[13px] text-gray-500 italic mb-4">Артикуляторно-акустическая, акустическая, на почве нарушения языкового анализа и синтеза, аграмматическая</p>
+              <h4 className="text-[15px] font-bold text-gray-900 text-center mb-1">Развитие речевых функций</h4>
+              <p className="text-[13px] text-gray-500 italic text-center mb-4">Артикуляторно-акустическая, акустическая, на почве нарушения языкового анализа и синтеза, аграмматическая</p>
 
               {/* 3.1.1.1 */}
               <div id="pronunciation" className="mt-4">
-                <h5 className="text-[15px] font-semibold text-gray-800">Коррекция нарушений звукопроизношения</h5>
-                <p className="text-[13px] text-gray-500 italic mb-2">при артикуляторно-акустической дисграфии</p>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Коррекция нарушений звукопроизношения при артикуляторно-акустической дисграфии</h5>
                 <p className="text-[15px] mt-2">Работа со звукопроизношением проводится только если искажения/пропуски/замены звуков в устной речи отображаются на процессе письма.</p>
                 <div className="mt-3 space-y-2">
                   <div className="bg-gray-50 rounded-lg px-4 py-2.5 text-[14px]"><span className="font-medium">Пример 1:</span> параротацизм (Р→Л), при письме заменяет Р на Л («молковка») — занимаемся коррекцией параротацизма.</div>
@@ -195,8 +194,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.2 */}
               <div id="phonemic" className="mt-6">
-                <h5 className="text-[15px] font-semibold text-gray-800">Развитие фонематического восприятия</h5>
-                <p className="text-[13px] text-gray-500 italic mb-2">дифференциация фонем</p>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Развитие фонематического восприятия (дифференциации фонем)</h5>
                 <div className="mt-2 flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[14px] text-amber-900">
                   <span className="flex-shrink-0">⚠️</span>
                   <p>Если ошибок очень много и они встречаются в устной речи — можно рекомендовать родителям проверить физический слух ученика.</p>
@@ -252,7 +250,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.3 */}
               <div id="language-analysis" className="mt-6">
-                <h5 className="text-[15px] font-semibold text-gray-800">Языковой анализ и синтез</h5>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Языковой анализ и синтез</h5>
                 <p className="text-[13px] text-gray-500 italic mb-3">Дисграфия на почве нарушений языкового анализа и синтеза (регуляторная дисграфия)</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-[13px] border-collapse">
@@ -347,7 +345,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.4 */}
               <div id="vocabulary" className="mt-6">
-                <h5 className="text-[15px] font-semibold text-gray-800">Развитие словаря и грамматического строя речи</h5>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Развитие словаря и грамматического строя речи</h5>
                 <p className="text-[15px] mt-2">Целенаправленный процесс обогащения словарного запаса, освоения морфологии, словообразования и синтаксиса.</p>
                 <p className="text-[14px] font-medium mt-3 mb-1">Ключевые направления:</p>
                 <ul className="list-disc pl-5 space-y-1 text-[14px] marker:text-gray-400">
@@ -360,7 +358,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.5 */}
               <div id="connected-speech" className="mt-6">
-                <h5 className="text-[15px] font-semibold text-gray-800">Развитие связной речи</h5>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Развитие связной речи</h5>
                 <p className="text-[15px] mt-2">Формирование умений логично, последовательно, грамматически и лексически правильно излагать мысли в устной и письменной форме.</p>
                 <p className="text-[14px] font-medium mt-3 mb-1">Базовые методы и приёмы:</p>
                 <ul className="list-disc pl-5 space-y-1 text-[14px] marker:text-gray-400">
@@ -372,8 +370,8 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
             {/* 3.1.2 Зрительные функции */}
             <div id="visual" className="mt-8">
-              <h4 className="text-base font-semibold text-gray-800 mb-1">Развитие зрительных, зрительно-пространственных и моторных функций</h4>
-              <p className="text-[13px] text-gray-500 italic mb-3">Оптико-моторная, оптическая дисграфия</p>
+              <h4 className="text-[15px] font-bold text-gray-900 text-center mb-1">Развитие зрительных, зрительно-пространственных и моторных функций</h4>
+              <p className="text-[13px] text-gray-500 italic text-center mb-3">Оптико-моторная, оптическая дисграфия</p>
               <p className="text-[14px] font-medium mb-2">Симптомы зрительно-пространственной дисграфии:</p>
               <ul className="list-disc pl-5 space-y-1 text-[14px] marker:text-gray-400">
                 <li>Трудности ориентировки на листе (левостороннее игнорирование)</li>
@@ -476,9 +474,9 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
           {/* 3.2 Коррекция дизорфографии */}
           <div id="dysorthography" className="mt-10">
-            <h3 className="text-lg font-bold text-gray-900 mb-3 pb-1 border-b border-gray-100">3.2. Коррекция дизорфографии</h3>
+            <h3 className="text-base font-bold text-gray-900 text-center mb-3 mt-2">Коррекция дизорфографии</h3>
             <div id="dysorth-stages" className="mt-3">
-              <h4 className="text-base font-semibold text-gray-800 mb-3">3.2.1. Этапы работы</h4>
+              <h4 className="text-[15px] font-bold text-gray-900 text-center mb-3">Этапы работы</h4>
               <ol className="list-decimal pl-5 space-y-1 text-[15px] marker:text-gray-400">
                 <li>Обучение обнаружению орфограммы (орфографическая зоркость)</li>
                 <li>Обучение определению типа орфограммы и актуализация правила</li>
@@ -573,7 +571,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
             </div>
 
             <div id="dysorth-list" className="mt-7">
-              <h4 className="text-base font-semibold text-gray-800 mb-3">3.2.2. Список орфограмм начальной школы</h4>
+              <h4 className="text-[15px] font-bold text-gray-900 text-center mb-3">Список орфограмм начальной школы</h4>
               <div className="space-y-4">
                 {[
                   { grade: '1 класс', items: ['Заглавная буква в начале предложения', 'Правописание безударных гласных', 'Слова с удвоенными согласными', 'Правописание слов с мягким знаком', 'Правописание парных глухих и звонких согласных', 'Буквосочетания чк, чн, чт', 'Буквосочетания жи-ши, ча-ща, чу-щу', 'Заглавная буква в именах собственных'] },
@@ -594,7 +592,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
           {/* 3.3 Коррекция дислексии */}
           <div id="dyslexia" className="mt-10">
-            <h3 className="text-lg font-bold text-gray-900 mb-3 pb-1 border-b border-gray-100">3.3. Коррекция дислексии</h3>
+            <h3 className="text-base font-bold text-gray-900 text-center mb-3 mt-2">Коррекция дислексии</h3>
             <p className="text-[15px]">Основные направления:</p>
             <ul className="mt-2 list-disc pl-5 space-y-1 text-[15px] marker:text-gray-400">
               <li>Развитие техники чтения (скорость и корректность): слоги, слова, предложения, тексты</li>
@@ -615,7 +613,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
             </div>
 
             <div id="reading-tech" className="mt-6">
-              <h4 className="text-base font-semibold text-gray-800 mb-3">3.3.1. Техника чтения</h4>
+              <h4 className="text-[15px] font-bold text-gray-900 text-center mb-3">Техника чтения</h4>
               <div className="space-y-4">
                 <div>
                   <p className="text-[14px] font-semibold text-gray-700">Техника чтения на начальном этапе:</p>
@@ -664,7 +662,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
             </div>
 
             <div id="reading-comp" className="mt-6">
-              <h4 className="text-base font-semibold text-gray-800 mb-3">3.3.2. Развитие понимания прочитанного</h4>
+              <h4 className="text-[15px] font-bold text-gray-900 text-center mb-3">Развитие понимания прочитанного</h4>
               <div className="bg-gray-50 rounded-xl px-4 py-3 text-[14px] mb-3">
                 <p className="font-medium text-gray-700 mb-1">Причины сложностей:</p>
                 <ol className="list-decimal pl-5 space-y-0.5 text-gray-600 marker:text-gray-400">
