@@ -247,7 +247,7 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
             <ol className="list-decimal pl-5 space-y-1 text-[14px] marker:text-gray-400">
               <li>По серии сюжетных картинок</li>
               <li>По заданному тексту</li>
-              <li>По заданной теме (напр., «Сборы в школу»)</li>
+              <li>По заданной теме</li>
             </ol>
 
             {/* Пример 1 — картинки + алгоритм */}
