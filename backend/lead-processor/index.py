@@ -197,6 +197,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    if method == 'GET':
+        from urllib.request import Request as URequest, urlopen as uopen
+        questionnaire_token = os.environ.get('TELEGRAM_QUESTIONNAIRE_BOT_TOKEN')
+        leads_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
+        admin_chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
+        recipient_ids = [admin_chat_id, '976372702']
+        results = {}
+        for bot_name, token in [('анкеты', questionnaire_token), ('лиды', leads_token)]:
+            results[bot_name] = []
+            for chat_id in recipient_ids:
+                if not chat_id or not token:
+                    results[bot_name].append({'chat_id': chat_id, 'ok': False, 'error': 'no token or chat_id'})
+                    continue
+                try:
+                    payload = json.dumps({'chat_id': chat_id, 'text': f'✅ Тест бота «LineaSchool - {bot_name}»: сообщение доставлено!'}).encode('utf-8')
+                    req = URequest(f'https://api.telegram.org/bot{token}/sendMessage', data=payload, headers={'Content-Type': 'application/json'})
+                    with uopen(req, timeout=30) as resp:
+                        r = json.loads(resp.read().decode('utf-8'))
+                        results[bot_name].append({'chat_id': chat_id, 'ok': r.get('ok')})
+                except Exception as e:
+                    results[bot_name].append({'chat_id': chat_id, 'ok': False, 'error': str(e)})
+        print(f'TG test results: {json.dumps(results, ensure_ascii=False)}')
+        return {'statusCode': 200, 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, 'body': json.dumps(results, ensure_ascii=False)}
+
     if method != 'POST':
         return {
             'statusCode': 405,
