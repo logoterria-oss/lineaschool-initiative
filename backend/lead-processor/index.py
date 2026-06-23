@@ -164,17 +164,17 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
     
     message = ''.join(message_parts)
     
-    try:
-        recipient_ids = [chat_id, '976372702']
-        for recipient_id in recipient_ids:
+    recipient_ids = [chat_id, '976372702']
+    for recipient_id in recipient_ids:
+        try:
             response = requests.post(
                 f'https://api.telegram.org/bot{bot_token}/sendMessage',
                 json={'chat_id': recipient_id, 'text': message},
-                timeout=5
+                timeout=30
             )
             print(f'Telegram response to {recipient_id}: {response.status_code} - {response.text}')
-    except Exception as e:
-        print(f'Telegram notification failed: {str(e)}')
+        except Exception as e:
+            print(f'Telegram notification failed for {recipient_id}: {str(e)}')
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     print(f'=== INCOMING REQUEST ===')

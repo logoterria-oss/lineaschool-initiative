@@ -107,19 +107,23 @@ def handler(event: dict, context) -> dict:
         recipient_ids = [admin_chat_id, '976372702']
         telegram_result = None
         for recipient_id in recipient_ids:
-            payload = json.dumps({
-                'chat_id': recipient_id,
-                'text': message,
-                'parse_mode': 'HTML',
-                'reply_markup': reply_markup
-            }).encode('utf-8')
-            req = Request(
-                telegram_url,
-                data=payload,
-                headers={'Content-Type': 'application/json'}
-            )
-            with urlopen(req, timeout=10) as response:
-                telegram_result = json.loads(response.read().decode('utf-8'))
+            try:
+                payload = json.dumps({
+                    'chat_id': recipient_id,
+                    'text': message,
+                    'parse_mode': 'HTML',
+                    'reply_markup': reply_markup
+                }).encode('utf-8')
+                req = Request(
+                    telegram_url,
+                    data=payload,
+                    headers={'Content-Type': 'application/json'}
+                )
+                with urlopen(req, timeout=30) as response:
+                    telegram_result = json.loads(response.read().decode('utf-8'))
+                print(f'Telegram sent to {recipient_id}: {telegram_result}')
+            except Exception as e:
+                print(f'Telegram failed for {recipient_id}: {str(e)}')
 
         if not telegram_result.get('ok'):
             return {
