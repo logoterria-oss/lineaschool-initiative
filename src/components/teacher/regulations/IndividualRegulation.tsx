@@ -174,12 +174,13 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
             {/* 3.1.1 Речевые функции */}
             <div id="speech" className="mt-7">
-              <h4 className="text-base font-semibold text-gray-800 mb-1">3.1.1. Развитие речевых функций</h4>
+              <h4 className="text-base font-semibold text-gray-800 mb-1">Развитие речевых функций</h4>
               <p className="text-[13px] text-gray-500 italic mb-4">Артикуляторно-акустическая, акустическая, на почве нарушения языкового анализа и синтеза, аграмматическая</p>
 
               {/* 3.1.1.1 */}
               <div id="pronunciation" className="mt-4">
-                <p className="font-semibold text-[15px] text-gray-800">3.1.1.1. Коррекция нарушений звукопроизношения при артикуляторно-акустической дисграфии</p>
+                <h5 className="text-[15px] font-semibold text-gray-800">Коррекция нарушений звукопроизношения</h5>
+                <p className="text-[13px] text-gray-500 italic mb-2">при артикуляторно-акустической дисграфии</p>
                 <p className="text-[15px] mt-2">Работа со звукопроизношением проводится только если искажения/пропуски/замены звуков в устной речи отображаются на процессе письма.</p>
                 <div className="mt-3 space-y-2">
                   <div className="bg-gray-50 rounded-lg px-4 py-2.5 text-[14px]"><span className="font-medium">Пример 1:</span> параротацизм (Р→Л), при письме заменяет Р на Л («молковка») — занимаемся коррекцией параротацизма.</div>
@@ -194,7 +195,8 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.2 */}
               <div id="phonemic" className="mt-6">
-                <p className="font-semibold text-[15px] text-gray-800">3.1.1.2. Развитие фонематического восприятия (дифференциации фонем)</p>
+                <h5 className="text-[15px] font-semibold text-gray-800">Развитие фонематического восприятия</h5>
+                <p className="text-[13px] text-gray-500 italic mb-2">дифференциация фонем</p>
                 <div className="mt-2 flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[14px] text-amber-900">
                   <span className="flex-shrink-0">⚠️</span>
                   <p>Если ошибок очень много и они встречаются в устной речи — можно рекомендовать родителям проверить физический слух ученика.</p>
@@ -250,7 +252,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.3 */}
               <div id="language-analysis" className="mt-6">
-                <p className="font-semibold text-[15px] text-gray-800">3.1.1.3. Языковой анализ и синтез</p>
+                <h5 className="text-[15px] font-semibold text-gray-800">Языковой анализ и синтез</h5>
                 <p className="text-[13px] text-gray-500 italic mb-3">Дисграфия на почве нарушений языкового анализа и синтеза (регуляторная дисграфия)</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-[13px] border-collapse">
@@ -345,7 +347,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.4 */}
               <div id="vocabulary" className="mt-6">
-                <p className="font-semibold text-[15px] text-gray-800">3.1.1.4. Развитие словаря и грамматического строя речи</p>
+                <h5 className="text-[15px] font-semibold text-gray-800">Развитие словаря и грамматического строя речи</h5>
                 <p className="text-[15px] mt-2">Целенаправленный процесс обогащения словарного запаса, освоения морфологии, словообразования и синтаксиса.</p>
                 <p className="text-[14px] font-medium mt-3 mb-1">Ключевые направления:</p>
                 <ul className="list-disc pl-5 space-y-1 text-[14px] marker:text-gray-400">
@@ -358,7 +360,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.5 */}
               <div id="connected-speech" className="mt-6">
-                <p className="font-semibold text-[15px] text-gray-800">3.1.1.5. Развитие связной речи</p>
+                <h5 className="text-[15px] font-semibold text-gray-800">Развитие связной речи</h5>
                 <p className="text-[15px] mt-2">Формирование умений логично, последовательно, грамматически и лексически правильно излагать мысли в устной и письменной форме.</p>
                 <p className="text-[14px] font-medium mt-3 mb-1">Базовые методы и приёмы:</p>
                 <ul className="list-disc pl-5 space-y-1 text-[14px] marker:text-gray-400">
@@ -370,7 +372,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
             {/* 3.1.2 Зрительные функции */}
             <div id="visual" className="mt-8">
-              <h4 className="text-base font-semibold text-gray-800 mb-3">3.1.2. Развитие зрительных, зрительно-пространственных и моторных функций</h4>
+              <h4 className="text-base font-semibold text-gray-800 mb-1">Развитие зрительных, зрительно-пространственных и моторных функций</h4>
               <p className="text-[13px] text-gray-500 italic mb-3">Оптико-моторная, оптическая дисграфия</p>
               <p className="text-[14px] font-medium mb-2">Симптомы зрительно-пространственной дисграфии:</p>
               <ul className="list-disc pl-5 space-y-1 text-[14px] marker:text-gray-400">
