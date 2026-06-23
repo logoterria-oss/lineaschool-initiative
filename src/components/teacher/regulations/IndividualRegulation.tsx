@@ -734,7 +734,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
                 />
               </div>
               <div>
-                <p className="text-[15px] font-medium mb-3">2. Нажимаем на проведённый урок. Если ученик отсутствовал — убираем «галочку», выставляем причину отсутствия.</p>
+                <p className="text-[15px] font-medium mb-3">2. Нажимаем на урок --> "Провести". Если ученик отсутствовал — убираем «галочку», выставляем причину отсутствия.</p>
                 <img
                   src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/56c488f5-09f8-4dec-b624-5443ce01c426.png"
                   alt="Проведение урока в AlfaCRM — причина отсутствия"
