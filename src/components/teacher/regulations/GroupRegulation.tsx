@@ -278,7 +278,7 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
                 <img
                   src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/da97b328-2809-41d2-9873-b1aa4d10be62.png"
                   alt="Алгоритм «Почему животные подарили обувь Насте?»"
-                  className="w-full rounded-lg border border-gray-200 shadow-sm"
+                  className="w-full max-w-xs mx-auto block rounded-lg border border-gray-200 shadow-sm"
                 />
               </figure>
             </div>
