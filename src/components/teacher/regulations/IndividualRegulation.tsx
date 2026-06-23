@@ -179,7 +179,8 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.1 */}
               <div id="pronunciation" className="mt-4">
-                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Коррекция нарушений звукопроизношения при артикуляторно-акустической дисграфии</h5>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Коррекция нарушений звукопроизношения</h5>
+                <p className="text-[13px] text-gray-500 italic mb-2">артикуляторно-акустическая дисграфия</p>
                 <p className="text-[15px] mt-2">Работа со звукопроизношением проводится только если искажения/пропуски/замены звуков в устной речи отображаются на процессе письма.</p>
                 <div className="mt-3 space-y-2">
                   <div className="bg-gray-50 rounded-lg px-4 py-2.5 text-[14px]"><span className="font-medium">Пример 1:</span> параротацизм (Р→Л), при письме заменяет Р на Л («молковка») — занимаемся коррекцией параротацизма.</div>
@@ -194,7 +195,8 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.2 */}
               <div id="phonemic" className="mt-6">
-                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Развитие фонематического восприятия (дифференциации фонем)  при артикуляторно-акустической /акустической дисграфии</h5>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Развитие фонематического восприятия (дифференциации фонем)</h5>
+                <p className="text-[13px] text-gray-500 italic mb-2">артикуляторно-акустическая, акустическая дисграфия</p>
                 <div className="mt-2 flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[14px] text-amber-900">
                   <span className="flex-shrink-0">⚠️</span>
                   <p>Если ошибок очень много и они встречаются в устной речи — можно рекомендовать родителям проверить физический слух ученика.</p>
