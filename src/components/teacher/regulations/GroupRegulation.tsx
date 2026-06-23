@@ -254,16 +254,14 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
             <div className="mt-5">
               <p className="text-[13px] font-medium text-gray-500 mb-2">Пример 1: алгоритм по серии сюжетных картинок</p>
               <div className="flex flex-col sm:flex-row gap-3 items-start">
-                <img
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/377da531-8a87-4777-a1b5-00b6d2cd7830.png"
-                  alt="Серия сюжетных картинок"
-                  className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
-                />
-                <img
-                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/98d8d458-5d9f-4ea8-bf6a-02b93a19de4d.png"
-                  alt="Алгоритм «Как обидеть кота?»"
-                  className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
-                />
+                <figure className="w-full sm:w-1/2">
+                  <p className="text-[13px] font-medium text-gray-600 italic mb-1 text-center">Алгоритм «Как обидеть кота?»</p>
+                  <img
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/98d8d458-5d9f-4ea8-bf6a-02b93a19de4d.png"
+                    alt="Алгоритм «Как обидеть кота?»"
+                    className="w-full rounded-lg border border-gray-200 shadow-sm"
+                  />
+                </figure>
               </div>
             </div>
 
