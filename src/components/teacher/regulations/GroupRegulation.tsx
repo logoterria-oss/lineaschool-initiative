@@ -93,7 +93,17 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
             <li>На ЯндексДиск открываем папку с файлами для групповых.</li>
             <li>Знакомимся с материалами (если возникают вопросы — пишем Ирине Зинченко).</li>
             <li>При необходимости адаптируем задания под возраст и ЗУН'ы учеников группы: подумайте, как каждое задание можно адаптировать под каждого ученика.</li>
-            <li>В свободное от занятий время проверяем наличие выполненной домашней работы, запрашиваем фото ДЗ, проверяем и пишем обратную связь.</li>
+            <li>
+              Проверяем наличие выполненной домашней работы:
+              <ol className="mt-2 space-y-1 list-decimal pl-5 marker:text-gray-400">
+                <li>Перед предстоящим уроком проверяем ДЗ и пишем ученику обратную связь (если ДЗ нет — напоминаем, что нужно выполнить).</li>
+                <li>После проверки заходим в «Контроль ДЗ» под своё имя на сайте{' '}
+                  <a href="https://lineaschool.ru/admin/teacher" target="_blank" rel="noopener noreferrer" className="text-purple-600 underline decoration-purple-300 underline-offset-2 hover:text-purple-900">lineaschool.ru/admin/teacher</a>{' '}
+                  (пароль 426874) и на дату урока, НА КОТОРОМ ДАЛИ ДЗ, ставим цвет: <span className="text-green-700 font-medium">зелёный</span> — выполнено хорошо, <span className="text-yellow-600 font-medium">жёлтый</span> — выполнено плохо или не полностью, <span className="text-red-600 font-medium">красный</span> — не выполнено.
+                </li>
+                <li>Если ДЗ ученик отправил, но не вовремя — также жёлтый.</li>
+              </ol>
+            </li>
           </ul>
         </section>
 
