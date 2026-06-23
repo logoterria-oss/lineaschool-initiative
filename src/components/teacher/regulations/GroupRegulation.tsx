@@ -244,9 +244,37 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
               </ul>
             </div>
             <p className="text-[14px] font-medium mt-4 mb-2">Составлять алгоритмы можно:</p>
-            <ol className="list-decimal pl-5 space-y-1 text-[14px] marker:text-gray-400">
-              <li>По серии сюжетных картинок</li>
-              <li>По заданному тексту</li>
+            <ol className="list-decimal pl-5 space-y-4 text-[14px] marker:text-gray-400">
+              <li>
+                По серии сюжетных картинок:
+                <div className="mt-3 flex flex-col sm:flex-row gap-3 items-start">
+                  <img
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/377da531-8a87-4777-a1b5-00b6d2cd7830.png"
+                    alt="Серия сюжетных картинок"
+                    className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
+                  />
+                  <img
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/98d8d458-5d9f-4ea8-bf6a-02b93a19de4d.png"
+                    alt="Алгоритм «Как обидеть кота?»"
+                    className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
+                  />
+                </div>
+              </li>
+              <li>
+                По заданному тексту:
+                <div className="mt-3 flex flex-col sm:flex-row gap-3 items-start">
+                  <img
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/94185afd-7ab7-4925-b6a7-5fc526daa0ce.png"
+                    alt="Рассказ «Сапожки для кошки»"
+                    className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
+                  />
+                  <img
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/da97b328-2809-41d2-9873-b1aa4d10be62.png"
+                    alt="Алгоритм «Почему животные подарили обувь Насте?»"
+                    className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
+                  />
+                </div>
+              </li>
               <li>По заданной теме (напр., «Сборы в школу»)</li>
             </ol>
             <div className="mt-4 flex gap-2.5 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-[14px] text-blue-900">
