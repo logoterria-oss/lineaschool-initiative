@@ -387,6 +387,14 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
                 <li>Трудности овладения словарными словами</li>
               </ul>
 
+              <figure className="my-4">
+                <img
+                  src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/05b19646-8dbd-4562-9f9d-d776cdd23629.png"
+                  alt="Пример зеркальных ошибок на письме"
+                  className="w-full max-w-sm mx-auto rounded-lg border border-gray-200 shadow-sm"
+                />
+              </figure>
+
               <div className="mt-5">
                 <p className="text-[14px] font-semibold text-gray-700">Зеркальные ошибки</p>
                 <ul className="mt-2 list-disc pl-5 space-y-1 text-[14px] marker:text-gray-400">
@@ -435,6 +443,14 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
                   <li>понимания принципа таблицы умножения, действий в столбик, геометрии</li>
                 </ul>
                 <p className="text-[14px] mt-3">Если ученик не находит стартовую точку — маркируем левый верхний угол буквой «Л». Для удержания строки маркируем её цветом или используем метод «кривых строк».</p>
+                <p className="text-[14px] mt-3">При оформлении работы используем правило «3-2-1»:</p>
+                <figure className="mt-3">
+                  <img
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/2a5f6776-a99a-4fea-b698-08b4fc41f6f4.png"
+                    alt="Правило 3-2-1 при оформлении работы"
+                    className="w-full max-w-sm mx-auto rounded-lg border border-gray-200 shadow-sm"
+                  />
+                </figure>
               </div>
 
               <div className="mt-5">
