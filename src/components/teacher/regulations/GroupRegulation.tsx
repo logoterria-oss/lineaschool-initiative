@@ -361,7 +361,7 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
 
             <div className="mt-5 space-y-4">
               <div>
-                <p className="text-[14px] font-semibold text-gray-800 mb-2">Задания на произвольное внимание:</p>
+                <p className="text-[14px] font-semibold text-gray-800 mb-2">Примеры заданий на произвольное внимание:</p>
                 <ol className="list-decimal pl-5 space-y-0.5 text-[14px] marker:text-gray-400">
                   <li>Поиск предметов на картинке</li>
                   <li>Корректурные пробы</li>
@@ -371,7 +371,7 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
               </div>
 
               <div>
-                <p className="text-[14px] font-semibold text-gray-800 mb-2">Задания на рабочую память (зрительную):</p>
+                <p className="text-[14px] font-semibold text-gray-800 mb-2">Примеры заданий на рабочую память (зрительную):</p>
                 <ol className="list-decimal pl-5 space-y-2 text-[14px] marker:text-gray-400">
                   <li>«Что пропало?»</li>
                   <li>«Запомни ряд»</li>
@@ -380,7 +380,7 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
               </div>
 
               <div>
-                <p className="text-[14px] font-semibold text-gray-800 mb-2">Задания на рабочую память (слуховую):</p>
+                <p className="text-[14px] font-semibold text-gray-800 mb-2">Примеры заданий на рабочую память (слуховую):</p>
                 <ol className="list-decimal pl-5 space-y-2 text-[14px] marker:text-gray-400">
                   <li>«Цифры наоборот» — педагог называет ряд цифр или слов, дети повторяют в обратном порядке.</li>
                   <li>«Многоступенчатая инструкция» — например: «Встань, подними правую руку, скажи СТОП, сядь». Дети выполняют по памяти.</li>
