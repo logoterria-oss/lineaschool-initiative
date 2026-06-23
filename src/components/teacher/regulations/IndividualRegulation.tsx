@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 
 const TOC = [
@@ -30,6 +30,7 @@ const Placeholder = () => (
 
 const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
   const contentRef = useRef<HTMLDivElement>(null);
+  const [tocOpen, setTocOpen] = useState(false);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -55,22 +56,28 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
       </div>
 
       {/* Оглавление */}
-      <div className="bg-white rounded-2xl border border-gray-200 border-t-4 border-t-blue-500 shadow-sm px-5 py-5 mb-6">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-          Оглавление
-        </h2>
-        <nav className="space-y-0.5">
-          {TOC.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => scrollTo(item.id)}
-              className="w-full text-left text-blue-700 hover:text-blue-900 hover:bg-blue-50 rounded-lg py-1.5 text-[14px] transition-colors"
-              style={{ paddingLeft: `${(item.indent ?? 0) * 14 + 12}px` }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
+      <div className="bg-white rounded-2xl border border-gray-200 border-t-4 border-t-blue-500 shadow-sm mb-6 overflow-hidden">
+        <button
+          onClick={() => setTocOpen(!tocOpen)}
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+        >
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Оглавление</span>
+          <Icon name={tocOpen ? 'ChevronUp' : 'ChevronDown'} size={16} className="text-gray-400" />
+        </button>
+        {tocOpen && (
+          <nav className="space-y-0.5 px-5 pb-4">
+            {TOC.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => { scrollTo(item.id); setTocOpen(false); }}
+                className="w-full text-left text-blue-700 hover:text-blue-900 hover:bg-blue-50 rounded-lg py-1.5 text-[14px] transition-colors"
+                style={{ paddingLeft: `${(item.indent ?? 0) * 14 + 12}px` }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        )}
       </div>
 
       {/* Контент */}
