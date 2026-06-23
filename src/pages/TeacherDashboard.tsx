@@ -5,6 +5,7 @@ import Icon from '@/components/ui/icon';
 import WorkScheduleSection from '@/components/teacher/WorkScheduleSection';
 import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
 import RegulationsSection from '@/components/teacher/RegulationsSection';
+import KpiSection from '@/components/teacher/KpiSection';
 
 const SECTIONS = [
   {
@@ -30,6 +31,14 @@ const SECTIONS = [
     color: 'text-purple-600',
     bg: 'bg-purple-100',
     border: 'border-purple-200 hover:border-purple-400',
+  },
+  {
+    id: 'kpi',
+    label: 'Оценка качества и KPI',
+    icon: 'BarChart2' as const,
+    color: 'text-orange-600',
+    bg: 'bg-orange-100',
+    border: 'border-orange-200 hover:border-orange-400',
   },
 ];
 
@@ -91,6 +100,9 @@ const TeacherDashboard = () => {
 
           {/* Раздел: Регламенты */}
           {activeSection === 'regulations' && <RegulationsSection />}
+
+          {/* Раздел: Оценка качества и KPI */}
+          {activeSection === 'kpi' && <KpiSection />}
 
         </div>
       </div>
