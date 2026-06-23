@@ -427,16 +427,16 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
                 />
               </div>
               <div>
-                <p className="text-[15px] font-medium mb-3">2. Нажимаем на проведённый урок, проверяем список учеников. Если ученик отсутствовал — убираем «галочку», выставляем причину отсутствия.</p>
+                <p className="text-[15px] font-medium mb-3">2. Нажимаем на урок → «Провести», проверяем список учеников. Если ученик отсутствовал — убираем «галочку», выставляем причину отсутствия.</p>
                 <div className="flex flex-col sm:flex-row gap-3 items-start justify-center">
                   <img
-                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/68709c92-bbc9-427c-a425-34012542034e.png"
-                    alt="Карточка урока"
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/9fcc5a92-d715-454c-89fe-4d22c3a5f36d.png"
+                    alt="Карточка группового урока"
                     className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
                   />
                   <img
-                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/56c488f5-09f8-4dec-b624-5443ce01c426.png"
-                    alt="Причина отсутствия"
+                    src="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/8e7e6e8e-dfd8-4fab-8d74-295a435be447.png"
+                    alt="Проведение группового урока — причина отсутствия"
                     className="w-full sm:w-1/2 rounded-lg border border-gray-200 shadow-sm"
                   />
                 </div>
