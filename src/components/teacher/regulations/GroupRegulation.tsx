@@ -357,36 +357,39 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
           {/* 3.7 Рабочая память и внимание */}
           <div id="memory" className="mt-10">
             <h3 className="text-base font-bold text-gray-900 text-center mb-3">Развитие рабочей памяти и произвольного внимания</h3>
-            <p className="text-[15px]">При корректной работе по всем направлениям выше рабочая память и произвольное внимание развиваются побочно. Следующие задания подключаем, если осталось время.</p>
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-gray-50 rounded-xl px-4 py-3 text-[13px]">
-                <p className="font-semibold text-gray-700 mb-2">Произвольное внимание</p>
-                <ul className="list-disc pl-4 space-y-0.5 marker:text-gray-400">
+            <p className="text-[15px]">При корректной работе по всем направлениям выше рабочая память и произвольное внимание развиваются побочно на всех этапах работы. Если на занятии вы успели качественно отработать все вышеописанные направления и у вас осталось время — подключаем следующие задания.</p>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <p className="text-[14px] font-semibold text-gray-800 mb-2">Задания на произвольное внимание:</p>
+                <ol className="list-decimal pl-5 space-y-0.5 text-[14px] marker:text-gray-400">
                   <li>Поиск предметов на картинке</li>
                   <li>Корректурные пробы</li>
                   <li>Таблицы Шульте</li>
                   <li>Поиск отличий</li>
-                </ul>
+                </ol>
               </div>
-              <div className="bg-gray-50 rounded-xl px-4 py-3 text-[13px]">
-                <p className="font-semibold text-gray-700 mb-2">Рабочая память (зрительная)</p>
-                <ul className="list-disc pl-4 space-y-0.5 marker:text-gray-400">
+
+              <div>
+                <p className="text-[14px] font-semibold text-gray-800 mb-2">Задания на рабочую память (зрительную):</p>
+                <ol className="list-decimal pl-5 space-y-2 text-[14px] marker:text-gray-400">
                   <li>«Что пропало?»</li>
                   <li>«Запомни ряд»</li>
-                  <li>«Где была фигура?» (сетка 3×3)</li>
-                </ul>
+                  <li>«Где была фигура?» — показать сетку 3×3 или крупнее с одной или несколькими фигурами на несколько секунд и убрать; дети либо указывают координаты фигур («второй столбик, первая строчка»), либо воспроизводят сетку в тетради.</li>
+                </ol>
               </div>
-              <div className="bg-gray-50 rounded-xl px-4 py-3 text-[13px]">
-                <p className="font-semibold text-gray-700 mb-2">Рабочая память (слуховая)</p>
-                <ul className="list-disc pl-4 space-y-0.5 marker:text-gray-400">
-                  <li>«Цифры наоборот»</li>
-                  <li>«Многоступенчатая инструкция»</li>
-                  <li>«Две дорожки»</li>
-                  <li>«Обратный порядок + действие»</li>
-                </ul>
+
+              <div>
+                <p className="text-[14px] font-semibold text-gray-800 mb-2">Задания на рабочую память (слуховую):</p>
+                <ol className="list-decimal pl-5 space-y-2 text-[14px] marker:text-gray-400">
+                  <li>«Цифры наоборот» — педагог называет ряд цифр или слов, дети повторяют в обратном порядке.</li>
+                  <li>«Многоступенчатая инструкция» — например: «Встань, подними правую руку, скажи СТОП, сядь». Дети выполняют по памяти.</li>
+                  <li>«Две дорожки» — педагог называет два коротких ряда цифр или слов; дети воспроизводят первый ряд в прямом порядке, а второй — в обратном, или чередуя по одному элементу из каждого ряда.</li>
+                  <li>«Обратный порядок + действие» — ряд цифр (3-7-2) → дети называют в обратном порядке, прибавляя 1 к каждой цифре (3-8-4).</li>
+                </ol>
               </div>
             </div>
-            <p className="text-[13px] text-gray-500 italic mt-3 text-center">Помним: рабочая память школьника в норме удерживает 7±2 элемента!</p>
+            <p className="text-[13px] text-gray-500 italic mt-4 text-center">Помним: рабочая память школьника в норме удерживает 7±2 элемента!</p>
           </div>
         </section>
 
