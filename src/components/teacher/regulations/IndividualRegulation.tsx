@@ -194,7 +194,7 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
 
               {/* 3.1.1.2 */}
               <div id="phonemic" className="mt-6">
-                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Развитие фонематического восприятия (дифференциации фонем)</h5>
+                <h5 className="text-[15px] font-semibold text-gray-900 underline underline-offset-2 mb-1">Развитие фонематического восприятия (дифференциации фонем)  при артикуляторно-акустической /акустической дисграфии</h5>
                 <div className="mt-2 flex gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[14px] text-amber-900">
                   <span className="flex-shrink-0">⚠️</span>
                   <p>Если ошибок очень много и они встречаются в устной речи — можно рекомендовать родителям проверить физический слух ученика.</p>
