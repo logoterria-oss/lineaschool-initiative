@@ -204,6 +204,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         questionnaire_token = os.environ.get('TELEGRAM_QUESTIONNAIRE_BOT_TOKEN')
         leads_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
+        payment_token = os.environ.get('TELEGRAM_PAYMENT_BOT_TOKEN')
         admin_chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
         recipient_ids = [rid for rid in [admin_chat_id, '976372702'] if rid]
 
@@ -230,6 +231,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         bots = [
             ('Анкеты', 'TELEGRAM_QUESTIONNAIRE_BOT_TOKEN', questionnaire_token),
             ('Лиды', 'TELEGRAM_LEADS_BOT_TOKEN', leads_token),
+            ('Оплаты', 'TELEGRAM_PAYMENT_BOT_TOKEN', payment_token),
         ]
         for bot_name, token_env, token in bots:
             entry = {
