@@ -87,6 +87,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     terminal_key = os.environ.get('TBANK_TERMINAL_KEY')
     password = os.environ.get('TBANK_PASSWORD')
 
+    # Срезаем случайные пробелы/переносы строк, которые могли попасть при вставке
+    if terminal_key:
+        terminal_key = terminal_key.strip()
+    if password:
+        password = password.strip()
+
     if not terminal_key or not password:
         return {
             'statusCode': 500,
