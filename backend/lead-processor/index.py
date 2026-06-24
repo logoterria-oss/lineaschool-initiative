@@ -198,27 +198,62 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     if method == 'GET':
+        import time as _time
         from urllib.request import Request as URequest, urlopen as uopen
+        from urllib.error import HTTPError as UHTTPError
+
         questionnaire_token = os.environ.get('TELEGRAM_QUESTIONNAIRE_BOT_TOKEN')
         leads_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
         admin_chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
-        recipient_ids = [admin_chat_id, '976372702']
-        results = {}
-        for bot_name, token in [('анкеты', questionnaire_token), ('лиды', leads_token)]:
-            results[bot_name] = []
-            for chat_id in recipient_ids:
-                if not chat_id or not token:
-                    results[bot_name].append({'chat_id': chat_id, 'ok': False, 'error': 'no token or chat_id'})
-                    continue
+        recipient_ids = [rid for rid in [admin_chat_id, '976372702'] if rid]
+
+        def tg_call(token, tg_method, body=None):
+            started = _time.time()
+            url = f'https://api.telegram.org/bot{token}/{tg_method}'
+            try:
+                data = json.dumps(body).encode('utf-8') if body is not None else None
+                req = URequest(url, data=data, headers={'Content-Type': 'application/json'})
+                with uopen(req, timeout=25) as resp:
+                    parsed = json.loads(resp.read().decode('utf-8'))
+                    return {'ok': parsed.get('ok'), 'http_status': resp.status, 'ms': round((_time.time() - started) * 1000), 'response': parsed}
+            except UHTTPError as he:
+                err_body = ''
                 try:
-                    payload = json.dumps({'chat_id': chat_id, 'text': f'✅ Тест бота «LineaSchool - {bot_name}»: сообщение доставлено!'}).encode('utf-8')
-                    req = URequest(f'https://api.telegram.org/bot{token}/sendMessage', data=payload, headers={'Content-Type': 'application/json'})
-                    with uopen(req, timeout=30) as resp:
-                        r = json.loads(resp.read().decode('utf-8'))
-                        results[bot_name].append({'chat_id': chat_id, 'ok': r.get('ok')})
-                except Exception as e:
-                    results[bot_name].append({'chat_id': chat_id, 'ok': False, 'error': str(e)})
-        print(f'TG test results: {json.dumps(results, ensure_ascii=False)}')
+                    err_body = he.read().decode('utf-8')[:300]
+                except Exception:
+                    pass
+                return {'ok': False, 'http_status': he.code, 'ms': round((_time.time() - started) * 1000), 'error': f'HTTP {he.code}', 'response': err_body}
+            except Exception as e:
+                return {'ok': False, 'http_status': None, 'ms': round((_time.time() - started) * 1000), 'error': f'{type(e).__name__}: {str(e)}'}
+
+        results = {'bots': {}}
+        bots = [
+            ('Анкеты', 'TELEGRAM_QUESTIONNAIRE_BOT_TOKEN', questionnaire_token),
+            ('Лиды', 'TELEGRAM_LEADS_BOT_TOKEN', leads_token),
+        ]
+        for bot_name, token_env, token in bots:
+            entry = {
+                'token_env': token_env,
+                'token_present': bool(token),
+                'token_length': len(token) if token else 0,
+                'getMe': None,
+                'sends': [],
+            }
+            if not token:
+                entry['getMe'] = {'ok': False, 'error': 'token not configured'}
+                results['bots'][bot_name] = entry
+                continue
+            entry['getMe'] = tg_call(token, 'getMe')
+            for chat_id in recipient_ids:
+                send_res = tg_call(token, 'sendMessage', {
+                    'chat_id': chat_id,
+                    'text': f'✅ Тест бота «LineaSchool — {bot_name}»: сообщение доставлено!',
+                })
+                send_res['chat_id'] = chat_id
+                entry['sends'].append(send_res)
+            results['bots'][bot_name] = entry
+
+        print(f'TG debug results: {json.dumps(results, ensure_ascii=False)}')
         return {'statusCode': 200, 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, 'body': json.dumps(results, ensure_ascii=False)}
 
     if method != 'POST':

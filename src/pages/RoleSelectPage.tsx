@@ -138,6 +138,20 @@ const RoleSelectPage = () => {
       </div>
 
       <button
+        onClick={() => navigate('/admin/settings')}
+        className="mt-6 w-full max-w-sm flex items-center gap-3 bg-white rounded-xl border-2 border-gray-200 hover:border-gray-400 p-4 text-left shadow-sm hover:shadow-md transition-all duration-200"
+      >
+        <div className="p-2 rounded-lg bg-gray-100 flex-shrink-0">
+          <Icon name="Settings" size={20} className="text-gray-600" />
+        </div>
+        <div>
+          <div className="font-semibold text-gray-900">Настройки</div>
+          <div className="text-sm text-gray-500">Диагностика и отладка</div>
+        </div>
+        <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto flex-shrink-0" />
+      </button>
+
+      <button
         onClick={() => navigate('/')}
         className="mt-8 text-gray-400 hover:text-gray-600 flex items-center gap-2 text-sm transition-colors"
       >
