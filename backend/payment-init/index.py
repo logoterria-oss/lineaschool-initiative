@@ -6,9 +6,48 @@ Returns: HTTP response with PaymentURL
 import json
 import hashlib
 import os
+import ssl
 from typing import Dict, Any
 import urllib.request
 import urllib.error
+
+# Сертификаты Минцифры (Russian Trusted CA). Т-Банк рекомендует доверять им
+# для соединений с API эквайринга, иначе при переходе банка на российский УЦ
+# серверный запрос Init упадёт с ошибкой TLS.
+# https://developer.tbank.ru/eacq/intro/migration-russian-trusted-ca
+_RUSSIAN_TRUSTED_CA_URLS = [
+    'https://gu-st.ru/content/Other/doc/russiantrustedca.pem',
+    'https://gu-st.ru/content/lending/russian_trusted_root_ca_pem.crt',
+    'https://gu-st.ru/content/lending/russian_trusted_sub_ca_pem.crt',
+]
+
+_ssl_context_cache: Dict[str, Any] = {}
+
+
+def _build_ssl_context() -> ssl.SSLContext:
+    """Готовит TLS-контекст, доверяющий стандартным корням + сертификатам Минцифры.
+
+    Сертификаты Минцифры скачиваются с серверов Госуслуг и добавляются к
+    системным доверенным корням. Если загрузка не удалась — используется
+    обычный контекст, чтобы оплаты не сломались.
+    """
+    if 'ctx' in _ssl_context_cache:
+        return _ssl_context_cache['ctx']
+
+    ctx = ssl.create_default_context()
+    for url in _RUSSIAN_TRUSTED_CA_URLS:
+        try:
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                pem_data = resp.read().decode('utf-8', errors='ignore')
+            if 'BEGIN CERTIFICATE' not in pem_data:
+                continue
+            ctx.load_verify_locations(cadata=pem_data)
+            print(f'Russian Trusted CA loaded from {url}')
+        except Exception as e:
+            print(f'Skip CA {url}: {e}')
+
+    _ssl_context_cache['ctx'] = ctx
+    return ctx
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'POST')
@@ -92,7 +131,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     )
     
     try:
-        with urllib.request.urlopen(req) as response:
+        ssl_ctx = _build_ssl_context()
+        with urllib.request.urlopen(req, context=ssl_ctx) as response:
             result = json.loads(response.read().decode('utf-8'))
             
             print(f'T-Bank response: {json.dumps(result)}')
