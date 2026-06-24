@@ -83,12 +83,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     print(f'Payment request: amount={amount}, order={order_id}, desc={description}')
     
-    # TEMPORARY: Hardcoded credentials (move to secrets later!)
-    terminal_key = '1759382115116'
-    password = 'n$$U2VG*02KQT*U!'
-    
-    print(f'DEBUG: Using TerminalKey from code: {terminal_key}')
-    print(f'DEBUG: Using Password from code: {password[:5]}...')
+    # Credentials from secrets
+    terminal_key = os.environ.get('TBANK_TERMINAL_KEY')
+    password = os.environ.get('TBANK_PASSWORD')
+
+    if not terminal_key or not password:
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Платёжный терминал не настроен'}),
+            'isBase64Encoded': False
+        }
     
     # Prepare request to T-Bank Init API
     init_data = {
@@ -117,9 +122,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     token = hashlib.sha256(sorted_values.encode()).hexdigest()
     init_data['Token'] = token
     
-    print(f'Token calculation: {sorted_values}')
-    print(f'Token hash: {token}')
-    print(f'Sending to T-Bank: {json.dumps(init_data)}')
+    print(f'Sending to T-Bank: order={order_id}, amount={amount}')
     
     # Send request to T-Bank
     url = 'https://securepay.tinkoff.ru/v2/Init'
