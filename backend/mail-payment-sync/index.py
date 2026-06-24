@@ -27,6 +27,25 @@ def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
+    params = event.get("queryStringParameters") or {}
+    debug_order = params.get("debug")
+    if debug_order:
+        try:
+            result = debug_order_search(debug_order)
+            return {
+                "statusCode": 200,
+                "headers": {**CORS, "Content-Type": "application/json"},
+                "body": json.dumps(result, ensure_ascii=False),
+            }
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return {
+                "statusCode": 500,
+                "headers": {**CORS, "Content-Type": "application/json"},
+                "body": json.dumps({"error": str(e)}, ensure_ascii=False),
+            }
+
     try:
         result = sync_payments()
         return {
@@ -187,6 +206,81 @@ def sync_payments():
         conn.close()
 
     return {"ok": True, "matched": matched, "already_paid": 0, "not_found": not_found}
+
+
+def debug_order_search(order_id: str):
+    """Диагностика: ищем письма банка, где упомянут конкретный order_id или его число."""
+    mail_password = os.environ["MAIL_PASSWORD"]
+    bare_number = re.sub(r"^ORDER_", "", order_id)
+
+    imap = imaplib.IMAP4_SSL(MAIL_HOST)
+    imap.login(MAIL_USER, mail_password)
+
+    since_date = (datetime.utcnow() - timedelta(days=SEARCH_DAYS)).strftime("%d-%b-%Y")
+    report = {
+        "order_id": order_id,
+        "bare_number": bare_number,
+        "search_days": SEARCH_DAYS,
+        "folders": [],
+        "hits": [],
+    }
+
+    for folder in FOLDERS_TO_CHECK:
+        folder_info = {"folder": folder, "selectable": False, "emails": 0}
+        try:
+            status, _ = imap.select(f'"{folder}"', readonly=True)
+            if status != "OK":
+                report["folders"].append(folder_info)
+                continue
+            folder_info["selectable"] = True
+
+            status2, message_ids = imap.search(
+                None, f'FROM "{SENDER_FILTER}" SINCE {since_date}'
+            )
+            if status2 != "OK" or not message_ids[0]:
+                report["folders"].append(folder_info)
+                continue
+
+            fids = message_ids[0].split()
+            folder_info["emails"] = len(fids)
+            report["folders"].append(folder_info)
+
+            for msg_id in reversed(fids):
+                try:
+                    _, data = imap.fetch(msg_id, "(BODY.PEEK[])")
+                    if not data or not data[0]:
+                        continue
+                    msg = email.message_from_bytes(data[0][1])
+                    combined = _get_body(msg, prefer="text") + _html_to_text(_get_body(msg, prefer="html"))
+
+                    has_full = bool(re.search(rf"(?<![A-Za-z0-9_]){re.escape(order_id)}(?![A-Za-z0-9_])", combined))
+                    has_bare = bool(re.search(rf"(?<!\d){re.escape(bare_number)}(?!\d)", combined))
+                    if not (has_full or has_bare):
+                        continue
+
+                    tx_match = re.search(r"ID\s*транзакции[:\s]+(\d+)", combined)
+                    transaction_id = tx_match.group(1) if tx_match else None
+
+                    idx = combined.find(bare_number)
+                    snippet = combined[max(0, idx - 80): idx + 120] if idx >= 0 else combined[:200]
+
+                    report["hits"].append({
+                        "folder": folder,
+                        "date": msg.get("Date", ""),
+                        "subject": _decode_header_str(msg.get("Subject", "")),
+                        "matches_full_order_id": has_full,
+                        "matches_bare_number": has_bare,
+                        "transaction_id_extracted": transaction_id,
+                        "snippet": snippet,
+                    })
+                except Exception as e:
+                    print(f"Debug parse error {msg_id} in {folder}: {e}")
+        except Exception as e:
+            folder_info["error"] = str(e)
+            report["folders"].append(folder_info)
+
+    imap.logout()
+    return report
 
 
 class _HTMLTextExtractor(HTMLParser):
