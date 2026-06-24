@@ -12,7 +12,7 @@
       "path": "/",
       "body": {
         "amount": 100000,
-        "order": "TEST_ORDER_RTCA_20260624",
+        "order": "TEST_ORDER_RTCA_20260624_b",
         "description": "Test payment",
         "receipt": {
           "Email": "test@example.com",
