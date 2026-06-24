@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
+import IndividualCriteriaTable from './IndividualCriteriaTable';
 
 type IconName = 'Users' | 'User' | 'UserCheck' | 'ListChecks' | 'BarChart2';
 
@@ -153,6 +154,8 @@ const KpiSection = () => {
             </div>
           ))}
         </div>
+      ) : block === 'criteria' && section === 'individual' ? (
+        <IndividualCriteriaTable />
       ) : (
         <Placeholder item={activeBlock} />
       )}
