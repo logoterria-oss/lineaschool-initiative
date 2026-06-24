@@ -109,7 +109,15 @@ const RoleSelectPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center px-4">
+    <div className="relative min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center px-4">
+      <button
+        onClick={() => navigate('/admin/settings')}
+        title="Настройки"
+        className="absolute top-4 right-4 p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-400 shadow-sm transition-all duration-200"
+      >
+        <Icon name="Settings" size={20} />
+      </button>
+
       <div className="mb-8 text-center">
         <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
           <Icon name="Settings" size={28} className="text-white" />
@@ -136,20 +144,6 @@ const RoleSelectPage = () => {
           </button>
         ))}
       </div>
-
-      <button
-        onClick={() => navigate('/admin/settings')}
-        className="mt-6 w-full max-w-sm flex items-center gap-3 bg-white rounded-xl border-2 border-gray-200 hover:border-gray-400 p-4 text-left shadow-sm hover:shadow-md transition-all duration-200"
-      >
-        <div className="p-2 rounded-lg bg-gray-100 flex-shrink-0">
-          <Icon name="Settings" size={20} className="text-gray-600" />
-        </div>
-        <div>
-          <div className="font-semibold text-gray-900">Настройки</div>
-          <div className="text-sm text-gray-500">Диагностика и отладка</div>
-        </div>
-        <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto flex-shrink-0" />
-      </button>
 
       <button
         onClick={() => navigate('/')}
