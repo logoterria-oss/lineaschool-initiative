@@ -29,6 +29,22 @@
       "headers": {"X-Admin-Password": "426874"},
       "body": {"id": 999999999},
       "expectedStatus": 404
+    },
+    {
+      "name": "Reject bad action",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "426874"},
+      "body": {"id": 1, "action": "bad"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "Mark paid non-existent returns 404",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Admin-Password": "426874"},
+      "body": {"id": 999999999, "action": "mark_paid"},
+      "expectedStatus": 404
     }
   ]
 }

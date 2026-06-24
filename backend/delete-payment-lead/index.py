@@ -1,7 +1,7 @@
 '''
-Business: Удаление записи об оплате руководителем.
-Args: event с httpMethod, body (id), headers (X-Admin-Password)
-Returns: HTTP-ответ со статусом удаления
+Business: Удаление и ручная смена статуса оплаты руководителем.
+Args: event с httpMethod, body (id, action), headers (X-Admin-Password)
+Returns: HTTP-ответ со статусом операции
 '''
 import json
 import os
@@ -43,11 +43,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     body_data = json.loads(event.get('body', '{}'))
     lead_id = body_data.get('id')
+    action = body_data.get('action', 'delete')
 
     try:
         lead_id = int(lead_id)
     except (TypeError, ValueError):
         return _resp(400, {'error': 'Некорректный id'})
+
+    if action not in ('delete', 'mark_paid', 'mark_unpaid'):
+        return _resp(400, {'error': 'Некорректное действие'})
 
     dsn = os.environ.get('DATABASE_URL')
     if not dsn:
@@ -57,7 +61,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
-        # Защита заморозки: нельзя удалять платёж из месяца, сверённого с бухгалтером
+        # Защита заморозки: нельзя менять платёж из месяца, сверённого с бухгалтером
         cur.execute(
             f"SELECT to_char(COALESCE(paid_at, created_at) + interval '3 hours', 'YYYY-MM') "
             f"FROM {schema}.payment_leads WHERE id = %s",
@@ -70,6 +74,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.close()
                 conn.close()
                 return _resp(409, {'error': f'Месяц {mrow[0]} сверён с бухгалтером и закрыт для изменений'})
+
+        if action == 'mark_paid':
+            cur.execute(
+                f"UPDATE {schema}.payment_leads SET paid_at = NOW(), source = 'manual' "
+                f"WHERE id = %s RETURNING id",
+                (lead_id,)
+            )
+            row = cur.fetchone()
+            conn.commit()
+            cur.close()
+            conn.close()
+            if not row:
+                return _resp(404, {'error': 'Оплата не найдена'})
+            return _resp(200, {'success': True, 'updated': row[0]})
+
+        if action == 'mark_unpaid':
+            # Сбрасываем статус оплаты и блокируем транзакцию, чтобы автосинхронизация
+            # с почтой банка не вернула оплату из старого письма
+            cur.execute(
+                f"INSERT INTO {schema}.payment_blocklist (order_id, transaction_id, name, reason) "
+                f"SELECT order_id, transaction_id, name, 'manual_unpaid' "
+                f"FROM {schema}.payment_leads WHERE id = %s AND transaction_id IS NOT NULL",
+                (lead_id,)
+            )
+            cur.execute(
+                f"UPDATE {schema}.payment_leads SET paid_at = NULL, transaction_id = NULL "
+                f"WHERE id = %s RETURNING id",
+                (lead_id,)
+            )
+            row = cur.fetchone()
+            conn.commit()
+            cur.close()
+            conn.close()
+            if not row:
+                return _resp(404, {'error': 'Оплата не найдена'})
+            return _resp(200, {'success': True, 'updated': row[0]})
+
+        # action == 'delete'
         # Сначала запоминаем заявку в чёрном списке, чтобы автосинхронизация
         # с почтой банка не воскресила её из старого письма об оплате
         cur.execute(

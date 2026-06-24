@@ -46,6 +46,7 @@ export default function PaymentLeadsPage() {
   const [showReport, setShowReport] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
   const [tab, setTab] = useState<'active' | 'blocked'>('active');
   const [blocked, setBlocked] = useState<BlockedPayment[]>([]);
   const [unblockingId, setUnblockingId] = useState<number | null>(null);
@@ -146,6 +147,34 @@ export default function PaymentLeadsPage() {
       alert('Ошибка соединения');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleTogglePaid = async (lead: PaymentLead) => {
+    const markPaid = !lead.paid_at;
+    const confirmMsg = markPaid
+      ? `Отметить оплату «${lead.name}» на ${lead.amount.toLocaleString('ru-RU')} ₽ как оплаченную?`
+      : `Вернуть оплату «${lead.name}» в статус «Ожидает оплаты»?`;
+    if (!window.confirm(confirmMsg)) return;
+    setTogglingId(lead.id);
+    try {
+      const password = sessionStorage.getItem('admin_password') || '';
+      const resp = await fetch(DELETE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ id: lead.id, action: markPaid ? 'mark_paid' : 'mark_unpaid' }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.success) {
+        await fetchLeads();
+        fetchBlocked();
+      } else {
+        alert(data.error || 'Не удалось изменить статус');
+      }
+    } catch {
+      alert('Ошибка соединения');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -426,6 +455,22 @@ export default function PaymentLeadsPage() {
                   <span className={`text-xl font-bold ${lead.paid_at ? 'text-green-600' : 'text-gray-700'}`}>
                     {lead.amount.toLocaleString('ru-RU')} ₽
                   </span>
+                  {isHead && (
+                    <button
+                      onClick={() => handleTogglePaid(lead)}
+                      disabled={togglingId === lead.id}
+                      className={`flex items-center gap-1 text-xs disabled:opacity-50 transition-colors ${
+                        lead.paid_at ? 'text-orange-500 hover:text-orange-700' : 'text-green-600 hover:text-green-800'
+                      }`}
+                    >
+                      <Icon
+                        name={togglingId === lead.id ? 'Loader2' : lead.paid_at ? 'RotateCcw' : 'CheckCircle'}
+                        size={14}
+                        className={togglingId === lead.id ? 'animate-spin' : ''}
+                      />
+                      {lead.paid_at ? 'В ожидание' : 'Отметить оплаченной'}
+                    </button>
+                  )}
                   {isHead && (
                     <button
                       onClick={() => handleDelete(lead)}
