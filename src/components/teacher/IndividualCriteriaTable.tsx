@@ -204,8 +204,9 @@ const CRITERIA: CriterionGroup[] = [
 ];
 
 const IndividualCriteriaTable = () => (
-  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-    <div className="overflow-x-auto">
+  <>
+    {/* Таблица — на планшетах и десктопе */}
+    <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="bg-gray-50 text-gray-600">
@@ -240,7 +241,33 @@ const IndividualCriteriaTable = () => (
         </tbody>
       </table>
     </div>
-  </div>
+
+    {/* Карточки — на мобильных, без горизонтальной прокрутки */}
+    <div className="md:hidden space-y-5">
+      {CRITERIA.map((group) => (
+        <div key={group.group}>
+          <h3 className="text-sm font-bold text-gray-900 bg-gray-100 rounded-lg px-3 py-2 mb-2">
+            {group.group}
+          </h3>
+          <div className="space-y-2">
+            {group.rows.map((row) => (
+              <div
+                key={`${group.group}-${row.criterion}`}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm p-4"
+              >
+                <p className="font-semibold text-gray-900 text-sm mb-2">{row.criterion}</p>
+                <div className="space-y-1 text-sm text-gray-700">
+                  {row.scale.map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </>
 );
 
 export default IndividualCriteriaTable;
