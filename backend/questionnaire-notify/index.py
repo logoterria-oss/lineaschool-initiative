@@ -106,26 +106,33 @@ def handler(event: dict, context) -> dict:
 
         recipient_ids = [admin_chat_id, '976372702']
         telegram_result = None
+        any_ok = False
         for recipient_id in recipient_ids:
-            try:
-                payload = json.dumps({
-                    'chat_id': recipient_id,
-                    'text': message,
-                    'parse_mode': 'HTML',
-                    'reply_markup': reply_markup
-                }).encode('utf-8')
-                req = Request(
-                    telegram_url,
-                    data=payload,
-                    headers={'Content-Type': 'application/json'}
-                )
-                with urlopen(req, timeout=30) as response:
-                    telegram_result = json.loads(response.read().decode('utf-8'))
-                print(f'Telegram sent to {recipient_id}: {telegram_result}')
-            except Exception as e:
-                print(f'Telegram failed for {recipient_id}: {str(e)}')
+            # Короткий таймаут + повторы: зависший запрос к Telegram не должен
+            # съедать весь лимит функции и блокировать остальных получателей.
+            for attempt in range(1, 4):
+                try:
+                    payload = json.dumps({
+                        'chat_id': recipient_id,
+                        'text': message,
+                        'parse_mode': 'HTML',
+                        'reply_markup': reply_markup
+                    }).encode('utf-8')
+                    req = Request(
+                        telegram_url,
+                        data=payload,
+                        headers={'Content-Type': 'application/json'}
+                    )
+                    with urlopen(req, timeout=7) as response:
+                        telegram_result = json.loads(response.read().decode('utf-8'))
+                    if telegram_result.get('ok'):
+                        any_ok = True
+                    print(f'Telegram sent to {recipient_id} (try {attempt}): {telegram_result}')
+                    break
+                except Exception as e:
+                    print(f'Telegram failed for {recipient_id} (try {attempt}): {str(e)}')
 
-        if not telegram_result.get('ok'):
+        if not any_ok:
             return {
                 'statusCode': 500,
                 'headers': {

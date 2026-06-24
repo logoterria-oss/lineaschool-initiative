@@ -166,15 +166,20 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
     
     recipient_ids = [chat_id, '976372702']
     for recipient_id in recipient_ids:
-        try:
-            response = requests.post(
-                f'https://api.telegram.org/bot{bot_token}/sendMessage',
-                json={'chat_id': recipient_id, 'text': message},
-                timeout=30
-            )
-            print(f'Telegram response to {recipient_id}: {response.status_code} - {response.text}')
-        except Exception as e:
-            print(f'Telegram notification failed for {recipient_id}: {str(e)}')
+        # Короткий таймаут + повторы: если запрос к Telegram завис, не ждём 30 сек
+        # (иначе функция упадёт по общему лимиту и второй получатель не получит сообщение),
+        # а быстро обрываем и пробуем снова.
+        for attempt in range(1, 4):
+            try:
+                response = requests.post(
+                    f'https://api.telegram.org/bot{bot_token}/sendMessage',
+                    json={'chat_id': recipient_id, 'text': message},
+                    timeout=7
+                )
+                print(f'Telegram response to {recipient_id} (try {attempt}): {response.status_code} - {response.text}')
+                break
+            except Exception as e:
+                print(f'Telegram notification failed for {recipient_id} (try {attempt}): {str(e)}')
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     print(f'=== INCOMING REQUEST ===')
