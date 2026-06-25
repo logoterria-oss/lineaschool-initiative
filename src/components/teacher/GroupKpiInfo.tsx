@@ -98,8 +98,8 @@ const GroupKpiInfo = () => (
         премия назначается на весь следующий отчётный период.
       </p>
       <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-gray-700">
-        <span className="font-semibold text-emerald-800">Например:</span> по итогам января–марта
-        средний балл по итогам супервизии = 30 → значит, в апреле–июне вы будете получать 300 ₽ + 200 ₽
+        <span className="font-semibold text-emerald-800">Например:</span> средний балл по итогам
+        супервизии за январь–март = 30 → значит, в апреле–июне вы будете получать 300 ₽ + 200 ₽
         = <span className="font-semibold">500 ₽/час</span>.
       </div>
       <p className="text-gray-700 mt-3">
