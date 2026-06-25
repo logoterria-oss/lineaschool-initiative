@@ -1,4 +1,5 @@
 {
+  "supervisions": "https://functions.poehali.dev/c3d6e0e1-692e-4133-9442-9d5e01c95ca3",
   "report-lock": "https://functions.poehali.dev/4bc5692e-5bfe-47ab-997d-6ad9c23cd3f1",
   "payment-blocklist": "https://functions.poehali.dev/c892bd2c-ff6b-488b-8f0c-67f73cbf4300",
   "retention-report": "https://functions.poehali.dev/4dc86795-cf29-4988-bffb-c2286ca74ff5",

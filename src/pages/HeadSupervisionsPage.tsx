@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
+import SupervisionForm from '@/components/supervision/SupervisionForm';
+import SupervisionsTable from '@/components/supervision/SupervisionsTable';
+import { createSupervision, SupervisionInput } from '@/lib/supervisionsApi';
+import { useToast } from '@/components/ui/use-toast';
 
 const SUBSECTIONS = [
   {
@@ -26,15 +30,23 @@ const SUBSECTIONS = [
 
 const HeadSupervisionsPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [active, setActive] = useState<string | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
-  const activeItem = SUBSECTIONS.find((s) => s.id === active);
+  const handleCreate = async (input: SupervisionInput) => {
+    await createSupervision(input);
+    toast({ title: 'Супервизия сохранена', description: input.teacher_name });
+    setFormKey((k) => k + 1);
+  };
+
+  const wide = active === 'add' || active === 'summary';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
       <AdminHeader showOnlyHome />
       <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-2xl mx-auto">
+        <div className={wide ? 'max-w-4xl mx-auto' : 'max-w-2xl mx-auto'}>
           <div className="flex items-center gap-3 mb-8">
             <button
               onClick={() => (active ? setActive(null) : navigate('/admin/head'))}
@@ -46,12 +58,18 @@ const HeadSupervisionsPage = () => {
               <Icon name="UserCheck" size={24} className="text-amber-600" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Супервизии</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                {active === 'add'
+                  ? 'Добавить супервизию'
+                  : active === 'summary'
+                    ? 'Сводная таблица'
+                    : 'Супервизии'}
+              </h1>
               <p className="text-gray-500 text-sm">Оценка работы педагогов</p>
             </div>
           </div>
 
-          {!active ? (
+          {!active && (
             <div className="space-y-3">
               {SUBSECTIONS.map((s) => (
                 <button
@@ -70,16 +88,13 @@ const HeadSupervisionsPage = () => {
                 </button>
               ))}
             </div>
-          ) : (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-              <div className={`inline-flex p-4 rounded-full ${activeItem?.iconBg} mb-4`}>
-                <Icon name={activeItem!.icon} size={32} className={activeItem?.iconColor} />
-              </div>
-              <p className="text-lg font-medium text-gray-500">
-                Раздел «{activeItem?.label}» в разработке
-              </p>
-            </div>
           )}
+
+          {active === 'add' && (
+            <SupervisionForm key={formKey} onSubmit={handleCreate} />
+          )}
+
+          {active === 'summary' && <SupervisionsTable />}
         </div>
       </div>
     </div>

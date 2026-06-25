@@ -5,6 +5,7 @@ import GroupCriteriaTable from './GroupCriteriaTable';
 import RegulationsSection from './RegulationsSection';
 import GroupKpiInfo from './GroupKpiInfo';
 import GroupPenaltyInfo from './GroupPenaltyInfo';
+import TeacherSupervisions from '@/components/supervision/TeacherSupervisions';
 
 type IconName = 'Users' | 'User' | 'UserCheck' | 'ListChecks' | 'BarChart2' | 'BookOpen';
 
@@ -61,18 +62,6 @@ const KPI_SUBSECTIONS: KpiCategory[] = [
     bg: 'bg-teal-100',
     border: 'border-teal-200 hover:border-teal-400',
   },
-];
-
-const GROUP_TEACHERS = [
-  { id: 20, name: 'Канкулова Екатерина' },
-  { id: 15, name: 'Мацвей Екатерина' },
-];
-
-const INDIVIDUAL_TEACHERS = [
-  { id: 4, name: 'Еремина Дарья' },
-  { id: 18, name: 'Карамова Анна' },
-  { id: 11, name: 'Камнева Валерия' },
-  { id: 2, name: 'Шишаева Анастасия' },
 ];
 
 const MenuButton = ({ item, onClick }: { item: KpiCategory; onClick: () => void }) => (
@@ -139,50 +128,12 @@ const KpiSection = () => {
     );
   }
 
-  // Супервизии — все педагоги списком, как в «Контроль ДЗ»
+  // Супервизии — выбор педагога, период и средний балл
   if (block === 'supervisions') {
     return (
       <div>
         <BackButton onClick={() => setBlock(null)} />
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Индивидуальные занятия
-            </h3>
-            <div className="grid gap-2">
-              {INDIVIDUAL_TEACHERS.map((t) => (
-                <div
-                  key={t.id}
-                  className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-4"
-                >
-                  <div className="p-2 bg-teal-100 rounded-lg">
-                    <Icon name="User" size={18} className="text-teal-600" />
-                  </div>
-                  <span className="font-medium text-gray-900">{t.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Групповые занятия
-            </h3>
-            <div className="grid gap-2">
-              {GROUP_TEACHERS.map((t) => (
-                <div
-                  key={t.id}
-                  className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-4"
-                >
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Icon name="Users" size={18} className="text-orange-600" />
-                  </div>
-                  <span className="font-medium text-gray-900">{t.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <TeacherSupervisions />
       </div>
     );
   }
