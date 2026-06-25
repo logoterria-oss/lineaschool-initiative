@@ -130,6 +130,54 @@ const KpiSection = () => {
     );
   }
 
+  // Супервизии — все педагоги списком, как в «Контроль ДЗ»
+  if (block === 'supervisions') {
+    return (
+      <div>
+        <BackButton onClick={() => setBlock(null)} />
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Индивидуальные занятия
+            </h3>
+            <div className="grid gap-2">
+              {INDIVIDUAL_TEACHERS.map((t) => (
+                <div
+                  key={t.id}
+                  className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-4"
+                >
+                  <div className="p-2 bg-teal-100 rounded-lg">
+                    <Icon name="User" size={18} className="text-teal-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">{t.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Групповые занятия
+            </h3>
+            <div className="grid gap-2">
+              {GROUP_TEACHERS.map((t) => (
+                <div
+                  key={t.id}
+                  className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-4"
+                >
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Icon name="Users" size={18} className="text-orange-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">{t.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Уровень 2: выбор Групповые / Индивидуальные
   if (!section) {
     return (
@@ -144,28 +192,13 @@ const KpiSection = () => {
     );
   }
 
-  const teachers = section === 'group' ? GROUP_TEACHERS : INDIVIDUAL_TEACHERS;
   const activeBlock = TOP_BLOCKS.find((b) => b.id === block)!;
 
   // Уровень 3
   return (
     <div>
       <BackButton onClick={() => setSection(null)} />
-      {block === 'supervisions' ? (
-        <div className="space-y-3">
-          {teachers.map((t) => (
-            <div
-              key={t.id}
-              className="w-full flex items-center gap-4 bg-white rounded-xl border-2 border-indigo-200 p-5 shadow-sm"
-            >
-              <div className="p-3 rounded-lg bg-indigo-100 flex-shrink-0">
-                <Icon name="User" size={24} className="text-indigo-600" />
-              </div>
-              <span className="font-semibold text-gray-900 text-lg">{t.name}</span>
-            </div>
-          ))}
-        </div>
-      ) : block === 'criteria' && section === 'individual' ? (
+      {block === 'criteria' && section === 'individual' ? (
         <IndividualCriteriaTable />
       ) : block === 'criteria' && section === 'group' ? (
         <GroupCriteriaTable />
