@@ -25,7 +25,7 @@ const SECTIONS = [
   },
   {
     id: 'kpi',
-    label: 'Оценка качества работы и KPI',
+    label: 'Супервизии, регламенты, KPI',
     icon: 'BarChart2' as const,
     color: 'text-orange-600',
     bg: 'bg-orange-100',
