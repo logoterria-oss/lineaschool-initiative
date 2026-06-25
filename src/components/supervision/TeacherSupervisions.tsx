@@ -4,7 +4,8 @@ import {
   Supervision,
   fetchSupervisions,
 } from '@/lib/supervisionsApi';
-import { GROUP_TEACHERS, INDIVIDUAL_TEACHERS, maxTotalScore } from '@/lib/supervisionChecklist';
+import { GROUP_TEACHERS, INDIVIDUAL_TEACHERS } from '@/lib/supervisionChecklist';
+import SupervisionCard from './SupervisionCard';
 
 const ALL_TEACHERS = [...INDIVIDUAL_TEACHERS, ...GROUP_TEACHERS];
 
@@ -222,31 +223,7 @@ const TeacherSupervisions = () => {
       ) : (
         <div className="space-y-2">
           {items.map((s) => (
-            <div
-              key={s.id}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-start justify-between gap-3"
-            >
-              <div>
-                <div className="font-medium text-gray-900">{fmtDate(s.supervision_date)}</div>
-                <div className="text-sm text-gray-500">
-                  {s.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное'}
-                  {s.lesson_date ? ` · урок ${fmtDate(s.lesson_date)}` : ''}
-                </div>
-                {s.student_name && (
-                  <div className="text-sm text-gray-600">
-                    Ученик: {s.student_name}
-                    {s.student_age != null ? ` (${s.student_age})` : ''}
-                  </div>
-                )}
-                {s.reviewer_comment && (
-                  <div className="text-sm text-gray-600 mt-1">{s.reviewer_comment}</div>
-                )}
-              </div>
-              <div className="text-right font-semibold text-indigo-700 flex-shrink-0">
-                {s.total_score}
-                <span className="text-gray-400 font-normal text-xs"> / {maxTotalScore(s.lesson_form)}</span>
-              </div>
-            </div>
+            <SupervisionCard key={s.id} s={s} />
           ))}
         </div>
       )}
