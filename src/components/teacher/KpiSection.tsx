@@ -3,6 +3,7 @@ import Icon from '@/components/ui/icon';
 import IndividualCriteriaTable from './IndividualCriteriaTable';
 import GroupCriteriaTable from './GroupCriteriaTable';
 import RegulationsSection from './RegulationsSection';
+import GroupKpiInfo from './GroupKpiInfo';
 
 type IconName = 'Users' | 'User' | 'UserCheck' | 'ListChecks' | 'BarChart2' | 'BookOpen';
 
@@ -227,6 +228,8 @@ const KpiSection = () => {
 
           {tab === 'criteria' ? (
             section === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />
+          ) : tab === 'kpi' && section === 'group' ? (
+            <GroupKpiInfo />
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <div className="inline-flex p-4 rounded-full bg-emerald-100 mb-4">
