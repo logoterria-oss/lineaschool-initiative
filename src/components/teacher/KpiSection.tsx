@@ -231,8 +231,27 @@ const KpiSection = () => {
             section === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />
           ) : tab === 'kpi' && section === 'group' ? (
             <GroupKpiInfo />
+          ) : tab === 'kpi' && section === 'individual' ? (
+            <GroupKpiInfo
+              bonusRows={[
+                { score: 'от 30 до 34', bonus: '+ 100 ₽', total: '400 ₽' },
+                { score: 'от 35 до 40', bonus: '+ 200 ₽', total: '500 ₽' },
+                { score: 'от 41 до 45', bonus: '+ 350 ₽', total: '650 ₽' },
+              ]}
+              exampleScore={37}
+              exampleBonus="200 ₽"
+              exampleTotal="500 ₽"
+            />
           ) : tab === 'penalty' && section === 'group' ? (
             <GroupPenaltyInfo />
+          ) : tab === 'penalty' && section === 'individual' ? (
+            <GroupPenaltyInfo
+              exampleBaseScore={37}
+              examplePenalty={3}
+              exampleFinalScore={34}
+              exampleBonus="+100 ₽/час"
+              exampleHigherBonus="+200"
+            />
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <div className="inline-flex p-4 rounded-full bg-emerald-100 mb-4">

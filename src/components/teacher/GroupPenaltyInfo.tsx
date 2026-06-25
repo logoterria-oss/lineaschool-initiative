@@ -38,7 +38,21 @@ const PENALTY_ROWS = [
   },
 ];
 
-const GroupPenaltyInfo = () => (
+interface GroupPenaltyInfoProps {
+  exampleBaseScore?: number;
+  examplePenalty?: number;
+  exampleFinalScore?: number;
+  exampleBonus?: string;
+  exampleHigherBonus?: string;
+}
+
+const GroupPenaltyInfo = ({
+  exampleBaseScore = 30,
+  examplePenalty = 2,
+  exampleFinalScore = 28,
+  exampleBonus = '+100 ₽/час',
+  exampleHigherBonus = '+200',
+}: GroupPenaltyInfoProps) => (
   <div className="space-y-6">
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <p className="text-gray-700 mb-3">
@@ -101,7 +115,7 @@ const GroupPenaltyInfo = () => (
       <h3 className="font-semibold text-gray-900 mb-2">Как это применяется к вашему среднему баллу</h3>
       <p className="text-gray-700 mb-2"><span className="font-semibold">Пример:</span></p>
       <p className="text-gray-700 mb-3">
-        За отчётный период (например, январь–март) ваш средний балл по супервизиям составил 30. В этом
+        За отчётный период (например, январь–март) ваш средний балл по супервизиям составил {exampleBaseScore}. В этом
         же периоде вы:
       </p>
       <ul className="space-y-1.5 mb-4">
@@ -115,9 +129,10 @@ const GroupPenaltyInfo = () => (
         </li>
       </ul>
       <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-gray-700">
-        Итоговый средний балл = 30 – 2 = <span className="font-semibold">28</span>. Теперь ваша премия
-        будет рассчитываться уже из балла 28, что соответствует надбавке{' '}
-        <span className="font-semibold">+100 ₽/час</span> (а не +200, как было бы при 30).
+        Итоговый средний балл = {exampleBaseScore} – {examplePenalty} ={' '}
+        <span className="font-semibold">{exampleFinalScore}</span>. Теперь ваша премия будет
+        рассчитываться уже из балла {exampleFinalScore}, что соответствует надбавке{' '}
+        <span className="font-semibold">{exampleBonus}</span> (а не {exampleHigherBonus}, как было бы при {exampleBaseScore}).
       </div>
     </div>
 

@@ -1,6 +1,8 @@
 import Icon from '@/components/ui/icon';
 
-const BONUS_ROWS = [
+type BonusRow = { score: string; bonus: string; total: string };
+
+const GROUP_BONUS_ROWS: BonusRow[] = [
   { score: 'от 24 до 28', bonus: '+ 100 ₽', total: '400 ₽' },
   { score: 'от 29 до 32', bonus: '+ 200 ₽', total: '500 ₽' },
   { score: 'от 33 до 35', bonus: '+ 350 ₽', total: '650 ₽' },
@@ -8,7 +10,21 @@ const BONUS_ROWS = [
 
 const PERIODS = ['январь – март', 'апрель – июнь', 'июль – сентябрь', 'октябрь – декабрь'];
 
-const GroupKpiInfo = () => (
+interface GroupKpiInfoProps {
+  bonusRows?: BonusRow[];
+  exampleScore?: number;
+  exampleBonus?: string;
+  exampleTotal?: string;
+}
+
+const GroupKpiInfo = ({
+  bonusRows = GROUP_BONUS_ROWS,
+  exampleScore = 30,
+  exampleBonus = '200 ₽',
+  exampleTotal = '500 ₽',
+}: GroupKpiInfoProps) => {
+  const BONUS_ROWS = bonusRows;
+  return (
   <div className="space-y-6">
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <p className="text-gray-800 mb-4">Ваша зарплата состоит из двух частей:</p>
@@ -99,14 +115,15 @@ const GroupKpiInfo = () => (
       </p>
       <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-gray-700">
         <span className="font-semibold text-emerald-800">Например:</span> средний балл по итогам
-        супервизии за январь–март = 30 → значит, в апреле–июне вы будете получать 300 ₽ + 200 ₽
-        = <span className="font-semibold">500 ₽/час</span>.
+        супервизии за январь–март = {exampleScore} → значит, в апреле–июне вы будете получать 300 ₽ + {exampleBonus}
+        = <span className="font-semibold">{exampleTotal}/час</span>.
       </div>
       <p className="text-gray-700 mt-3">
         В следующем периоде балл пересчитывается заново, и премиальная часть может измениться.
       </p>
     </div>
   </div>
-);
+  );
+};
 
 export default GroupKpiInfo;
