@@ -105,9 +105,16 @@ const Placeholder = ({ item }: { item: KpiCategory }) => (
   </div>
 );
 
+const CRITERIA_TABS = [
+  { id: 'criteria', label: 'Критерии оценки' },
+  { id: 'kpi', label: 'KPI' },
+  { id: 'penalty', label: 'Штрафные баллы' },
+];
+
 const KpiSection = () => {
   const [block, setBlock] = useState<string | null>(null);
   const [section, setSection] = useState<string | null>(null);
+  const [tab, setTab] = useState('criteria');
 
   // Уровень 1: выбор Супервизии / Регламенты / Критерии
   if (!block) {
@@ -197,11 +204,40 @@ const KpiSection = () => {
   // Уровень 3
   return (
     <div>
-      <BackButton onClick={() => setSection(null)} />
-      {block === 'criteria' && section === 'individual' ? (
-        <IndividualCriteriaTable />
-      ) : block === 'criteria' && section === 'group' ? (
-        <GroupCriteriaTable />
+      <BackButton onClick={() => { setSection(null); setTab('criteria'); }} />
+
+      {block === 'criteria' ? (
+        <>
+          {/* Навигация: Критерии оценки / KPI / Штрафные баллы */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            {CRITERIA_TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  tab === t.id
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-300'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'criteria' ? (
+            section === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="inline-flex p-4 rounded-full bg-emerald-100 mb-4">
+                <Icon name={tab === 'kpi' ? 'BarChart2' : 'AlertTriangle'} size={32} className="text-emerald-600" />
+              </div>
+              <p className="text-lg font-medium text-gray-500">
+                Раздел «{CRITERIA_TABS.find((t) => t.id === tab)?.label}» в разработке
+              </p>
+            </div>
+          )}
+        </>
       ) : (
         <Placeholder item={activeBlock} />
       )}
