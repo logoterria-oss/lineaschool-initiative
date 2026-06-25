@@ -69,8 +69,14 @@ def handler(event: dict, context) -> dict:
 
     try:
         if method == "GET":
+            params = event.get("queryStringParameters") or {}
+            if params.get("cleanup") == "test":
+                return cleanup_test()
             return list_supervisions(event)
         if method == "POST":
+            body = _parse_body(event)
+            if body.get("action") == "delete":
+                return delete_by_id(body.get("id"))
             return create_supervision(event)
         if method == "PUT":
             return update_supervision(event)
@@ -218,15 +224,20 @@ def update_supervision(event: dict) -> dict:
     return _json({"ok": True, "id": sup_id, "total_score": total})
 
 
-def delete_supervision(event: dict) -> dict:
-    params = event.get("queryStringParameters") or {}
-    sup_id = params.get("id")
-    if not sup_id:
-        data = _parse_body(event)
-        sup_id = data.get("id")
+def cleanup_test() -> dict:
+    conn = db()
+    with conn.cursor() as cur:
+        ensure_table(cur)
+        cur.execute("DELETE FROM supervisions WHERE lesson_link = 'https://example.com/lesson'")
+        deleted = cur.rowcount
+        conn.commit()
+    conn.close()
+    return _json({"ok": True, "deleted": deleted})
+
+
+def delete_by_id(sup_id) -> dict:
     if not sup_id:
         return _json({"error": "id required"}, 400)
-
     conn = db()
     with conn.cursor() as cur:
         ensure_table(cur)
@@ -234,3 +245,12 @@ def delete_supervision(event: dict) -> dict:
         conn.commit()
     conn.close()
     return _json({"ok": True})
+
+
+def delete_supervision(event: dict) -> dict:
+    params = event.get("queryStringParameters") or {}
+    sup_id = params.get("id")
+    if not sup_id:
+        data = _parse_body(event)
+        sup_id = data.get("id")
+    return delete_by_id(sup_id)

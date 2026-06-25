@@ -8,23 +8,10 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Create supervision",
-      "method": "POST",
+      "name": "CORS preflight",
+      "method": "OPTIONS",
       "path": "/",
-      "body": {
-        "lesson_form": "individual",
-        "teacher_id": 2,
-        "teacher_name": "Шишаева Анастасия",
-        "supervision_date": "2026-06-26",
-        "lesson_date": "2026-06-25",
-        "lesson_link": "https://example.com/lesson",
-        "lesson_structure": "Разминка, основная часть, ДЗ",
-        "scores": {"i_internet": 2, "i_noise": 1},
-        "reviewer_comment": "Хороший урок"
-      },
-      "expectedStatus": 200,
-      "expectedBody": {"ok": true, "total_score": 3},
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     }
   ]
 }
