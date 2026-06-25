@@ -2,8 +2,9 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import IndividualCriteriaTable from './IndividualCriteriaTable';
 import GroupCriteriaTable from './GroupCriteriaTable';
+import RegulationsSection from './RegulationsSection';
 
-type IconName = 'Users' | 'User' | 'UserCheck' | 'ListChecks' | 'BarChart2';
+type IconName = 'Users' | 'User' | 'UserCheck' | 'ListChecks' | 'BarChart2' | 'BookOpen';
 
 interface KpiCategory {
   id: string;
@@ -13,6 +14,33 @@ interface KpiCategory {
   bg: string;
   border: string;
 }
+
+const TOP_BLOCKS: KpiCategory[] = [
+  {
+    id: 'supervisions',
+    label: 'Мои супервизии',
+    icon: 'UserCheck',
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-100',
+    border: 'border-indigo-200 hover:border-indigo-400',
+  },
+  {
+    id: 'regulations',
+    label: 'Регламенты',
+    icon: 'BookOpen',
+    color: 'text-purple-600',
+    bg: 'bg-purple-100',
+    border: 'border-purple-200 hover:border-purple-400',
+  },
+  {
+    id: 'criteria',
+    label: 'Критерии оценки и KPI',
+    icon: 'ListChecks',
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-100',
+    border: 'border-emerald-200 hover:border-emerald-400',
+  },
+];
 
 const KPI_SUBSECTIONS: KpiCategory[] = [
   {
@@ -30,33 +58,6 @@ const KPI_SUBSECTIONS: KpiCategory[] = [
     color: 'text-teal-600',
     bg: 'bg-teal-100',
     border: 'border-teal-200 hover:border-teal-400',
-  },
-];
-
-const KPI_BLOCKS: KpiCategory[] = [
-  {
-    id: 'supervisions',
-    label: 'Мои супервизии',
-    icon: 'UserCheck',
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-100',
-    border: 'border-indigo-200 hover:border-indigo-400',
-  },
-  {
-    id: 'criteria',
-    label: 'Критерии оценки',
-    icon: 'ListChecks',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-100',
-    border: 'border-emerald-200 hover:border-emerald-400',
-  },
-  {
-    id: 'kpi',
-    label: 'KPI',
-    icon: 'BarChart2',
-    color: 'text-amber-600',
-    bg: 'bg-amber-100',
-    border: 'border-amber-200 hover:border-amber-400',
   },
 ];
 
@@ -105,42 +106,51 @@ const Placeholder = ({ item }: { item: KpiCategory }) => (
 );
 
 const KpiSection = () => {
-  const [section, setSection] = useState<string | null>(null);
   const [block, setBlock] = useState<string | null>(null);
+  const [section, setSection] = useState<string | null>(null);
 
-  // Уровень 1: выбор Групповые / Индивидуальные
-  if (!section) {
+  // Уровень 1: выбор Супервизии / Регламенты / Критерии
+  if (!block) {
     return (
       <div className="space-y-3">
-        {KPI_SUBSECTIONS.map((sub) => (
-          <MenuButton key={sub.id} item={sub} onClick={() => setSection(sub.id)} />
+        {TOP_BLOCKS.map((b) => (
+          <MenuButton key={b.id} item={b} onClick={() => setBlock(b.id)} />
         ))}
       </div>
     );
   }
 
-  const teachers = section === 'group' ? GROUP_TEACHERS : INDIVIDUAL_TEACHERS;
-
-  // Уровень 2: внутри Групповые / Индивидуальные — Супервизии / Критерии / KPI
-  if (!block) {
+  // Регламенты — без деления на Групповые / Индивидуальные
+  if (block === 'regulations') {
     return (
       <div>
-        <BackButton onClick={() => setSection(null)} />
+        <BackButton onClick={() => setBlock(null)} />
+        <RegulationsSection />
+      </div>
+    );
+  }
+
+  // Уровень 2: выбор Групповые / Индивидуальные
+  if (!section) {
+    return (
+      <div>
+        <BackButton onClick={() => setBlock(null)} />
         <div className="space-y-3">
-          {KPI_BLOCKS.map((b) => (
-            <MenuButton key={b.id} item={b} onClick={() => setBlock(b.id)} />
+          {KPI_SUBSECTIONS.map((sub) => (
+            <MenuButton key={sub.id} item={sub} onClick={() => setSection(sub.id)} />
           ))}
         </div>
       </div>
     );
   }
 
-  const activeBlock = KPI_BLOCKS.find((b) => b.id === block)!;
+  const teachers = section === 'group' ? GROUP_TEACHERS : INDIVIDUAL_TEACHERS;
+  const activeBlock = TOP_BLOCKS.find((b) => b.id === block)!;
 
   // Уровень 3
   return (
     <div>
-      <BackButton onClick={() => setBlock(null)} />
+      <BackButton onClick={() => setSection(null)} />
       {block === 'supervisions' ? (
         <div className="space-y-3">
           {teachers.map((t) => (
