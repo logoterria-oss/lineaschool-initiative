@@ -251,6 +251,10 @@ const KpiSection = () => {
               exampleFinalScore={34}
               exampleBonus="+100 ₽/час"
               exampleHigherBonus="+200"
+              exampleViolations={[
+                '1 раз не вышли на занятие без предупреждения (без уважительной причины) → штраф –2;',
+                '3 раза отправили ссылки после 10:00 → за это вам выставили –1 (половина от максимума).',
+              ]}
             />
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">

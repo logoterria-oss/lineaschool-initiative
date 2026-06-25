@@ -38,12 +38,18 @@ const PENALTY_ROWS = [
   },
 ];
 
+const GROUP_EXAMPLE_VIOLATIONS = [
+  '1 раз отменили занятие за 12 часов (без уважительной причины) → штраф –1;',
+  '3 раза отправили ссылки после 10:00 → за это вам выставили –1 (половина от максимума).',
+];
+
 interface GroupPenaltyInfoProps {
   exampleBaseScore?: number;
   examplePenalty?: number;
   exampleFinalScore?: number;
   exampleBonus?: string;
   exampleHigherBonus?: string;
+  exampleViolations?: string[];
 }
 
 const GroupPenaltyInfo = ({
@@ -52,6 +58,7 @@ const GroupPenaltyInfo = ({
   exampleFinalScore = 28,
   exampleBonus = '+100 ₽/час',
   exampleHigherBonus = '+200',
+  exampleViolations = GROUP_EXAMPLE_VIOLATIONS,
 }: GroupPenaltyInfoProps) => (
   <div className="space-y-6">
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
@@ -119,14 +126,12 @@ const GroupPenaltyInfo = ({
         же периоде вы:
       </p>
       <ul className="space-y-1.5 mb-4">
-        <li className="flex items-start gap-2 text-gray-700">
-          <Icon name="Minus" size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
-          1 раз отменили занятие за 12 часов (без уважительной причины) → штраф –1;
-        </li>
-        <li className="flex items-start gap-2 text-gray-700">
-          <Icon name="Minus" size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
-          3 раза отправили ссылки после 10:00 → за это вам выставили –1 (половина от максимума).
-        </li>
+        {exampleViolations.map((v, i) => (
+          <li key={i} className="flex items-start gap-2 text-gray-700">
+            <Icon name="Minus" size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+            {v}
+          </li>
+        ))}
       </ul>
       <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-gray-700">
         Итоговый средний балл = {exampleBaseScore} – {examplePenalty} ={' '}
