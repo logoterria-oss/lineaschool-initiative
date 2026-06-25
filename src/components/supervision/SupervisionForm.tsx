@@ -13,6 +13,7 @@ import {
 } from '@/lib/supervisionChecklist';
 import { Supervision, SupervisionInput } from '@/lib/supervisionsApi';
 import { useStudents } from '@/lib/useStudents';
+import StudentCombobox from './StudentCombobox';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -138,22 +139,13 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
 
           <div className="space-y-1.5">
             <Label className={labelCls}>Ученик</Label>
-            <select
-              className={selectCls}
+            <StudentCombobox
+              students={students}
+              loading={studentsLoading}
               value={studentId}
-              onChange={(e) => setStudentId(e.target.value ? Number(e.target.value) : '')}
-            >
-              <option value="">{studentsLoading ? 'Загрузка…' : '— выберите ученика —'}</option>
-              {studentId !== '' && !selectedStudent && initial?.student_name && (
-                <option value={studentId}>{initial.student_name}</option>
-              )}
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                  {s.age != null ? ` (${s.age})` : ''}
-                </option>
-              ))}
-            </select>
+              valueName={initial?.student_name}
+              onSelect={(s) => setStudentId(s ? s.id : '')}
+            />
           </div>
 
           <div className="space-y-1.5">
