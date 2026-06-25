@@ -232,6 +232,12 @@ const TeacherSupervisions = () => {
                   {s.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное'}
                   {s.lesson_date ? ` · урок ${fmtDate(s.lesson_date)}` : ''}
                 </div>
+                {s.student_name && (
+                  <div className="text-sm text-gray-600">
+                    Ученик: {s.student_name}
+                    {s.student_age != null ? ` (${s.student_age})` : ''}
+                  </div>
+                )}
                 {s.reviewer_comment && (
                   <div className="text-sm text-gray-600 mt-1">{s.reviewer_comment}</div>
                 )}

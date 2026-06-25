@@ -12,6 +12,7 @@ import {
   calcTotalScore,
 } from '@/lib/supervisionChecklist';
 import { Supervision, SupervisionInput } from '@/lib/supervisionsApi';
+import { useStudents } from '@/lib/useStudents';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -35,8 +36,14 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
   const [lessonStructure, setLessonStructure] = useState(initial?.lesson_structure ?? '');
   const [comment, setComment] = useState(initial?.reviewer_comment ?? '');
   const [scores, setScores] = useState<Record<string, number>>(initial?.scores ?? {});
+  const [studentId, setStudentId] = useState<number | ''>(initial?.student_id ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const { students, loading: studentsLoading } = useStudents();
+  const selectedStudent = students.find((s) => s.id === studentId);
+  const studentAge =
+    selectedStudent?.age ?? (studentId === initial?.student_id ? initial?.student_age ?? null : null);
 
   const teachers = TEACHERS_BY_FORM[form];
   const checklist = CHECKLIST_BY_FORM[form];
@@ -72,6 +79,9 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
         lesson_structure: lessonStructure || null,
         reviewer_comment: comment || null,
         scores,
+        student_id: studentId || null,
+        student_name: selectedStudent?.name ?? initial?.student_name ?? null,
+        student_age: studentAge,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка сохранения');
@@ -124,6 +134,35 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
           <div className="space-y-1.5">
             <Label className={labelCls}>Дата урока</Label>
             <Input type="date" value={lessonDate} onChange={(e) => setLessonDate(e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className={labelCls}>Ученик</Label>
+            <select
+              className={selectCls}
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value ? Number(e.target.value) : '')}
+            >
+              <option value="">{studentsLoading ? 'Загрузка…' : '— выберите ученика —'}</option>
+              {studentId !== '' && !selectedStudent && initial?.student_name && (
+                <option value={studentId}>{initial.student_name}</option>
+              )}
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.age != null ? ` (${s.age})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className={labelCls}>Возраст ученика</Label>
+            <Input
+              value={studentAge != null ? `${studentAge} лет` : '—'}
+              readOnly
+              className="bg-gray-50 text-gray-600"
+            />
           </div>
         </div>
 

@@ -98,6 +98,7 @@ const SupervisionsTable = () => {
                 <tr className="bg-gray-50 text-gray-600">
                   <th className="text-left font-semibold px-4 py-3 border-b border-gray-200">Дата супервизии</th>
                   <th className="text-left font-semibold px-4 py-3 border-b border-gray-200">Педагог</th>
+                  <th className="text-left font-semibold px-4 py-3 border-b border-gray-200">Ученик</th>
                   <th className="text-left font-semibold px-4 py-3 border-b border-gray-200">Форма</th>
                   <th className="text-left font-semibold px-4 py-3 border-b border-gray-200">Дата урока</th>
                   <th className="text-left font-semibold px-4 py-3 border-b border-gray-200">Оценка</th>
@@ -109,6 +110,12 @@ const SupervisionsTable = () => {
                   <tr key={s.id} className="border-b border-gray-100 last:border-b-0">
                     <td className="px-4 py-3 text-gray-800">{fmtDate(s.supervision_date)}</td>
                     <td className="px-4 py-3 text-gray-800">{s.teacher_name}</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {s.student_name || '—'}
+                      {s.student_age != null && (
+                        <span className="text-gray-400"> · {s.student_age} лет</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-600">
                       {s.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное'}
                     </td>
@@ -148,6 +155,12 @@ const SupervisionsTable = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold text-gray-900">{s.teacher_name}</div>
+                    {s.student_name && (
+                      <div className="text-sm text-gray-600">
+                        Ученик: {s.student_name}
+                        {s.student_age != null ? ` (${s.student_age})` : ''}
+                      </div>
+                    )}
                     <div className="text-sm text-gray-500">
                       {s.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное'} · {fmtDate(s.supervision_date)}
                     </div>

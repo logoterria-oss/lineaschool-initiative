@@ -14,6 +14,9 @@ export interface Supervision {
   scores: Record<string, number>;
   reviewer_comment: string | null;
   total_score: number;
+  student_id: number | null;
+  student_name: string | null;
+  student_age: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -29,6 +32,9 @@ export interface SupervisionInput {
   lesson_structure?: string | null;
   scores: Record<string, number>;
   reviewer_comment?: string | null;
+  student_id?: number | null;
+  student_name?: string | null;
+  student_age?: number | null;
 }
 
 export const fetchSupervisions = async (params?: {

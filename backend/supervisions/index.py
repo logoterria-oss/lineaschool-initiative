@@ -23,9 +23,15 @@ CREATE TABLE IF NOT EXISTS supervisions (
     scores JSONB NOT NULL DEFAULT '{}',
     reviewer_comment TEXT,
     total_score INTEGER NOT NULL DEFAULT 0,
+    student_id INTEGER,
+    student_name VARCHAR(255),
+    student_age INTEGER,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+ALTER TABLE supervisions ADD COLUMN IF NOT EXISTS student_id INTEGER;
+ALTER TABLE supervisions ADD COLUMN IF NOT EXISTS student_name VARCHAR(255);
+ALTER TABLE supervisions ADD COLUMN IF NOT EXISTS student_age INTEGER;
 """
 
 
@@ -95,7 +101,8 @@ def list_supervisions(event: dict) -> dict:
 
     sql = (
         "SELECT id, lesson_form, teacher_id, teacher_name, supervision_date, lesson_date, "
-        "lesson_link, lesson_structure, scores, reviewer_comment, total_score, created_at, updated_at "
+        "lesson_link, lesson_structure, scores, reviewer_comment, total_score, "
+        "student_id, student_name, student_age, created_at, updated_at "
         "FROM supervisions"
     )
     if where:
@@ -146,8 +153,9 @@ def create_supervision(event: dict) -> dict:
         ensure_table(cur)
         cur.execute(
             "INSERT INTO supervisions (lesson_form, teacher_id, teacher_name, supervision_date, "
-            "lesson_date, lesson_link, lesson_structure, scores, reviewer_comment, total_score) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "lesson_date, lesson_link, lesson_structure, scores, reviewer_comment, total_score, "
+            "student_id, student_name, student_age) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 lesson_form,
                 int(teacher_id),
@@ -159,6 +167,9 @@ def create_supervision(event: dict) -> dict:
                 json.dumps(scores, ensure_ascii=False),
                 data.get("reviewer_comment") or None,
                 total,
+                data.get("student_id") or None,
+                (data.get("student_name") or "").strip() or None,
+                data.get("student_age") if data.get("student_age") is not None else None,
             ),
         )
         new_id = cur.fetchone()["id"]
@@ -182,7 +193,8 @@ def update_supervision(event: dict) -> dict:
         cur.execute(
             "UPDATE supervisions SET lesson_form = %s, teacher_id = %s, teacher_name = %s, "
             "supervision_date = %s, lesson_date = %s, lesson_link = %s, lesson_structure = %s, "
-            "scores = %s, reviewer_comment = %s, total_score = %s, updated_at = NOW() "
+            "scores = %s, reviewer_comment = %s, total_score = %s, "
+            "student_id = %s, student_name = %s, student_age = %s, updated_at = NOW() "
             "WHERE id = %s",
             (
                 data.get("lesson_form"),
@@ -195,6 +207,9 @@ def update_supervision(event: dict) -> dict:
                 json.dumps(scores, ensure_ascii=False),
                 data.get("reviewer_comment") or None,
                 total,
+                data.get("student_id") or None,
+                (data.get("student_name") or "").strip() or None,
+                data.get("student_age") if data.get("student_age") is not None else None,
                 int(sup_id),
             ),
         )
