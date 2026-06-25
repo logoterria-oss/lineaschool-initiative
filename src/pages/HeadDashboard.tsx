@@ -23,6 +23,16 @@ const SECTIONS = [
     iconColor: 'text-green-600',
     path: '/admin/head-reports',
   },
+  {
+    id: 'supervisions',
+    label: 'Супервизии',
+    description: 'Оценка работы педагогов',
+    icon: 'UserCheck' as const,
+    color: 'border-indigo-200 hover:border-indigo-400',
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
+    path: '/admin/head-supervisions',
+  },
 ];
 
 const HeadDashboard = () => {
