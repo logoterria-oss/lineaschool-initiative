@@ -10,7 +10,19 @@ import {
   updateSupervision,
   deleteSupervision,
 } from '@/lib/supervisionsApi';
-import { GROUP_TEACHERS, INDIVIDUAL_TEACHERS, maxTotalScore } from '@/lib/supervisionChecklist';
+import {
+  GROUP_TEACHERS,
+  INDIVIDUAL_TEACHERS,
+  maxTotalScore,
+  LessonForm,
+} from '@/lib/supervisionChecklist';
+import {
+  MONTHS,
+  QUARTERS,
+  monthStart,
+  monthEnd,
+  PeriodMode,
+} from '@/lib/supervisionPeriod';
 
 const ALL_TEACHERS = [...INDIVIDUAL_TEACHERS, ...GROUP_TEACHERS];
 
@@ -28,6 +40,14 @@ const SupervisionsTable = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [teacherFilter, setTeacherFilter] = useState<number | ''>('');
+  const [formFilter, setFormFilter] = useState<'' | LessonForm>('');
+  const now = new Date();
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('quarter');
+  const [periodEnabled, setPeriodEnabled] = useState(false);
+  const [year, setYear] = useState(now.getFullYear());
+  const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1);
+  const [fromMonth, setFromMonth] = useState(0);
+  const [toMonth, setToMonth] = useState(now.getMonth());
   const [editing, setEditing] = useState<Supervision | null>(null);
 
   const load = async () => {
@@ -46,9 +66,32 @@ const SupervisionsTable = () => {
     load();
   }, []);
 
+  const years = useMemo(() => {
+    const y = now.getFullYear();
+    return [y - 2, y - 1, y, y + 1];
+  }, [now]);
+
+  const period = useMemo(() => {
+    if (periodMode === 'quarter') {
+      const q = QUARTERS.find((x) => x.id === quarter)!;
+      return { from: monthStart(year, q.from), to: monthEnd(year, q.to) };
+    }
+    const lo = Math.min(fromMonth, toMonth);
+    const hi = Math.max(fromMonth, toMonth);
+    return { from: monthStart(year, lo), to: monthEnd(year, hi) };
+  }, [periodMode, quarter, fromMonth, toMonth, year]);
+
   const filtered = useMemo(
-    () => (teacherFilter ? items.filter((i) => i.teacher_id === teacherFilter) : items),
-    [items, teacherFilter],
+    () =>
+      items.filter((i) => {
+        if (teacherFilter && i.teacher_id !== teacherFilter) return false;
+        if (formFilter && i.lesson_form !== formFilter) return false;
+        if (periodEnabled) {
+          if (i.supervision_date < period.from || i.supervision_date > period.to) return false;
+        }
+        return true;
+      }),
+    [items, teacherFilter, formFilter, periodEnabled, period],
   );
 
   const handleUpdate = async (input: SupervisionInput) => {
@@ -68,26 +111,140 @@ const SupervisionsTable = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm text-gray-500">Педагог:</span>
-        <select
-          className={selectCls}
-          value={teacherFilter}
-          onChange={(e) => setTeacherFilter(e.target.value ? Number(e.target.value) : '')}
-        >
-          <option value="">Все</option>
-          {ALL_TEACHERS.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <span className="text-sm text-gray-400 ml-auto">Всего: {filtered.length}</span>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">Педагог</label>
+            <select
+              className={selectCls}
+              value={teacherFilter}
+              onChange={(e) => setTeacherFilter(e.target.value ? Number(e.target.value) : '')}
+            >
+              <option value="">Все</option>
+              {ALL_TEACHERS.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">Форма занятий</label>
+            <select
+              className={selectCls}
+              value={formFilter}
+              onChange={(e) => setFormFilter(e.target.value as '' | LessonForm)}
+            >
+              <option value="">Все</option>
+              <option value="group">Групповые</option>
+              <option value="individual">Индивидуальные</option>
+            </select>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-600 pb-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={periodEnabled}
+              onChange={(e) => setPeriodEnabled(e.target.checked)}
+              className="w-4 h-4"
+            />
+            Фильтр по периоду
+          </label>
+
+          <span className="text-sm text-gray-400 ml-auto pb-2">Всего: {filtered.length}</span>
+        </div>
+
+        {periodEnabled && (
+          <div className="flex flex-wrap items-end gap-3 pt-1 border-t border-gray-100">
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setPeriodMode('quarter')}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  periodMode === 'quarter'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-indigo-100'
+                }`}
+              >
+                Квартал
+              </button>
+              <button
+                onClick={() => setPeriodMode('range')}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  periodMode === 'range'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-indigo-100'
+                }`}
+              >
+                Диапазон месяцев
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Год</label>
+              <select className={selectCls} value={year} onChange={(e) => setYear(Number(e.target.value))}>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {periodMode === 'quarter' ? (
+              <div className="space-y-1 flex-1 min-w-[180px]">
+                <label className="text-xs text-gray-500">Квартал</label>
+                <select
+                  className={`${selectCls} w-full`}
+                  value={quarter}
+                  onChange={(e) => setQuarter(Number(e.target.value))}
+                >
+                  {QUARTERS.map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">С месяца</label>
+                  <select
+                    className={selectCls}
+                    value={fromMonth}
+                    onChange={(e) => setFromMonth(Number(e.target.value))}
+                  >
+                    {MONTHS.map((m, i) => (
+                      <option key={m} value={i}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">По месяц</label>
+                  <select
+                    className={selectCls}
+                    value={toMonth}
+                    onChange={(e) => setToMonth(Number(e.target.value))}
+                  >
+                    {MONTHS.map((m, i) => (
+                      <option key={m} value={i}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-          Супервизий пока нет
+          {items.length === 0 ? 'Супервизий пока нет' : 'По выбранным фильтрам ничего не найдено'}
         </div>
       ) : (
         <>
