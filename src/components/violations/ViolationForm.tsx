@@ -55,6 +55,7 @@ const ViolationForm = ({
     try {
       await onSubmit({
         id: initial?.id,
+        staff_role: role,
         teacher_id: teacher.id,
         teacher_name: teacher.name,
         violation_date: date,

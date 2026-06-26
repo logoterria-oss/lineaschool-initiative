@@ -26,9 +26,11 @@ CREATE TABLE IF NOT EXISTS violations (
     dispute_status VARCHAR(20) NOT NULL DEFAULT 'none',
     dispute_comment TEXT,
     dispute_photos JSONB NOT NULL DEFAULT '[]',
+    staff_role VARCHAR(20) NOT NULL DEFAULT 'teacher',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+ALTER TABLE violations ADD COLUMN IF NOT EXISTS staff_role VARCHAR(20) NOT NULL DEFAULT 'teacher';
 """
 
 
@@ -109,11 +111,15 @@ def handler(event: dict, context) -> dict:
 def list_violations(event: dict) -> dict:
     params = event.get("queryStringParameters") or {}
     teacher_id = params.get("teacher_id")
+    staff_role = params.get("staff_role")
     date_from = params.get("date_from")
     date_to = params.get("date_to")
 
     where = []
     args = []
+    if staff_role:
+        where.append("staff_role = %s")
+        args.append(staff_role)
     if teacher_id:
         where.append("teacher_id = %s")
         args.append(int(teacher_id))
@@ -126,7 +132,7 @@ def list_violations(event: dict) -> dict:
 
     sql = (
         "SELECT id, teacher_id, teacher_name, violation_date, violation_code, violation_title, "
-        "penalty, admin_comment, dispute_status, dispute_comment, dispute_photos, "
+        "penalty, admin_comment, dispute_status, dispute_comment, dispute_photos, staff_role, "
         "created_at, updated_at FROM violations"
     )
     if where:
@@ -170,8 +176,8 @@ def create_violation(event: dict) -> dict:
         ensure_table(cur)
         cur.execute(
             "INSERT INTO violations (teacher_id, teacher_name, violation_date, violation_code, "
-            "violation_title, penalty, admin_comment) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "violation_title, penalty, admin_comment, staff_role) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 int(teacher_id),
                 teacher_name,
@@ -180,6 +186,7 @@ def create_violation(event: dict) -> dict:
                 violation_title,
                 (data.get("penalty") or "").strip() or None,
                 (data.get("admin_comment") or "").strip() or None,
+                (data.get("staff_role") or "teacher").strip() or "teacher",
             ),
         )
         new_id = cur.fetchone()["id"]

@@ -13,6 +13,7 @@ import {
   monthEnd,
   PeriodMode,
 } from '@/lib/supervisionPeriod';
+import { STAFF_ROLES, StaffRoleId } from '@/lib/staffRoles';
 
 const ALL_TEACHERS = [...INDIVIDUAL_TEACHERS, ...GROUP_TEACHERS];
 
@@ -25,11 +26,18 @@ const fmtDate = (d: string | null) => {
   return `${day}.${m}.${y}`;
 };
 
-const ViolationsTable = ({ reloadKey }: { reloadKey?: number }) => {
+const ViolationsTable = ({
+  reloadKey,
+  withRoleFilter = false,
+}: {
+  reloadKey?: number;
+  withRoleFilter?: boolean;
+}) => {
   const now = new Date();
   const [items, setItems] = useState<Violation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'' | StaffRoleId>('');
   const [teacherFilter, setTeacherFilter] = useState<number | ''>('');
   const [periodMode, setPeriodMode] = useState<PeriodMode>('quarter');
   const [periodEnabled, setPeriodEnabled] = useState(false);
@@ -73,13 +81,14 @@ const ViolationsTable = ({ reloadKey }: { reloadKey?: number }) => {
   const filtered = useMemo(
     () =>
       items.filter((i) => {
+        if (roleFilter && i.staff_role !== roleFilter) return false;
         if (teacherFilter && i.teacher_id !== teacherFilter) return false;
         if (periodEnabled) {
           if (i.violation_date < period.from || i.violation_date > period.to) return false;
         }
         return true;
       }),
-    [items, teacherFilter, periodEnabled, period],
+    [items, roleFilter, teacherFilter, periodEnabled, period],
   );
 
   const handleDelete = async (id: number) => {
@@ -96,8 +105,26 @@ const ViolationsTable = ({ reloadKey }: { reloadKey?: number }) => {
       {/* Фильтры */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
         <div className="flex flex-wrap items-end gap-4">
+          {withRoleFilter && (
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Роль</label>
+              <select
+                className={selectCls}
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value as '' | StaffRoleId)}
+              >
+                <option value="">Все</option>
+                {STAFF_ROLES.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="space-y-1">
-            <label className="text-xs text-gray-500">Педагог (ФИО)</label>
+            <label className="text-xs text-gray-500">ФИО</label>
             <select
               className={selectCls}
               value={teacherFilter}
@@ -216,7 +243,14 @@ const ViolationsTable = ({ reloadKey }: { reloadKey?: number }) => {
             <div key={v.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-semibold text-gray-900">{v.teacher_name}</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-gray-900">{v.teacher_name}</span>
+                    {withRoleFilter && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                        {STAFF_ROLES.find((r) => r.id === v.staff_role)?.label ?? v.staff_role}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-sm text-gray-500">{fmtDate(v.violation_date)}</div>
                   <div className="text-sm text-gray-800 mt-1">{v.violation_title}</div>
                   {v.admin_comment && (

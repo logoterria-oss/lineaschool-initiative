@@ -60,12 +60,10 @@ const TeacherViolationsManager = ({ withRole = false }: Props) => {
         )}
       </section>
 
-      {ready && (
-        <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-3">Сводная таблица</h2>
-          <ViolationsTable reloadKey={reloadKey} />
-        </section>
-      )}
+      <section>
+        <h2 className="text-lg font-bold text-gray-900 mb-3">Сводная таблица</h2>
+        <ViolationsTable reloadKey={reloadKey} withRoleFilter={withRole} />
+      </section>
     </div>
   );
 };

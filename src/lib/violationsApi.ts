@@ -4,6 +4,7 @@ export type DisputeStatus = 'none' | 'disputed';
 
 export interface Violation {
   id: number;
+  staff_role: string;
   teacher_id: number;
   teacher_name: string;
   violation_date: string;
@@ -20,6 +21,7 @@ export interface Violation {
 
 export interface ViolationInput {
   id?: number;
+  staff_role?: string;
   teacher_id: number;
   teacher_name: string;
   violation_date: string;
@@ -31,11 +33,13 @@ export interface ViolationInput {
 
 export const fetchViolations = async (params?: {
   teacher_id?: number;
+  staff_role?: string;
   date_from?: string;
   date_to?: string;
 }): Promise<Violation[]> => {
   const qs = new URLSearchParams();
   if (params?.teacher_id) qs.set('teacher_id', String(params.teacher_id));
+  if (params?.staff_role) qs.set('staff_role', params.staff_role);
   if (params?.date_from) qs.set('date_from', params.date_from);
   if (params?.date_to) qs.set('date_to', params.date_to);
   const url = qs.toString() ? `${API_URL}?${qs}` : API_URL;
