@@ -25,7 +25,7 @@ const SECTIONS = [
   },
   {
     id: 'violations',
-    label: 'Дисциплинарные и организационные нарушения',
+    label: 'Дисциплинарные нарушения педагогов',
     description: 'Учёт нарушений и штрафных баллов',
     icon: 'AlertTriangle' as const,
     color: 'border-red-200 hover:border-red-400',
