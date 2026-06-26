@@ -45,6 +45,14 @@ const monthEnd = (year: number, month: number) => {
 
 type Mode = 'quarter' | 'range';
 
+// Цвет строки критерия по доле среднего балла от максимума.
+const criterionStyle = (avg: number, max: number) => {
+  const ratio = max > 0 ? avg / max : 1;
+  if (ratio < 0.6) return { row: 'bg-red-50', score: 'text-red-600' };
+  if (ratio < 0.85) return { row: 'bg-amber-50', score: 'text-amber-600' };
+  return { row: '', score: 'text-emerald-600' };
+};
+
 const TeacherSupervisions = () => {
   const now = new Date();
   const [teacherId, setTeacherId] = useState<number | ''>('');
@@ -262,6 +270,17 @@ const TeacherSupervisions = () => {
 
               {showCriteria && (
                 <div className="mt-3 space-y-4">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-red-200" /> ниже 60%
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-amber-200" /> 60–85%
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-emerald-200" /> выше 85%
+                    </span>
+                  </div>
                   {criteriaAverages.map((block) => (
                     <div key={block.form}>
                       <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
@@ -272,18 +291,21 @@ const TeacherSupervisions = () => {
                           <div key={g.group}>
                             <div className="text-xs font-semibold text-gray-500 mb-1">{g.group}</div>
                             <div className="divide-y divide-indigo-100 bg-white rounded-lg border border-indigo-100">
-                              {g.items.map((it) => (
-                                <div
-                                  key={it.key}
-                                  className="flex items-center justify-between gap-3 px-3 py-2"
-                                >
-                                  <span className="text-sm text-gray-700">{it.criterion}</span>
-                                  <span className="text-sm font-semibold text-indigo-700 flex-shrink-0">
-                                    {it.avg}
-                                    <span className="text-gray-400 font-normal"> / {it.max}</span>
-                                  </span>
-                                </div>
-                              ))}
+                              {g.items.map((it) => {
+                                const st = criterionStyle(it.avg, it.max);
+                                return (
+                                  <div
+                                    key={it.key}
+                                    className={`flex items-center justify-between gap-3 px-3 py-2 ${st.row}`}
+                                  >
+                                    <span className="text-sm text-gray-700">{it.criterion}</span>
+                                    <span className={`text-sm font-semibold flex-shrink-0 ${st.score}`}>
+                                      {it.avg}
+                                      <span className="text-gray-400 font-normal"> / {it.max}</span>
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}
