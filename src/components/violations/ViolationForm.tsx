@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { GROUP_TEACHERS, INDIVIDUAL_TEACHERS } from '@/lib/supervisionChecklist';
 import { VIOLATION_TYPES, violationByCode } from '@/lib/violationsCatalog';
 import { Violation, ViolationInput } from '@/lib/violationsApi';
+import { STAFF_ROLES, StaffRoleId } from '@/lib/staffRoles';
 
 const ALL_TEACHERS = [...INDIVIDUAL_TEACHERS, ...GROUP_TEACHERS];
 
@@ -19,9 +20,20 @@ interface Props {
   initial?: Violation | null;
   onSubmit: (input: ViolationInput) => Promise<void>;
   submitLabel?: string;
+  // Опциональный выбор роли нарушителя (для кабинета руководителя).
+  withRole?: boolean;
+  role?: StaffRoleId;
+  onRoleChange?: (role: StaffRoleId) => void;
 }
 
-const ViolationForm = ({ initial, onSubmit, submitLabel = 'Зафиксировать нарушение' }: Props) => {
+const ViolationForm = ({
+  initial,
+  onSubmit,
+  submitLabel = 'Зафиксировать нарушение',
+  withRole = false,
+  role = 'teacher',
+  onRoleChange,
+}: Props) => {
   const [teacherId, setTeacherId] = useState<number | ''>(initial?.teacher_id ?? '');
   const [date, setDate] = useState(initial?.violation_date ?? today());
   const [code, setCode] = useState(initial?.violation_code ?? '');
@@ -63,9 +75,26 @@ const ViolationForm = ({ initial, onSubmit, submitLabel = 'Зафиксиров�
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+      {withRole && (
+        <div className="space-y-1.5">
+          <Label className={labelCls}>Роль нарушителя</Label>
+          <select
+            className={selectCls}
+            value={role}
+            onChange={(e) => onRoleChange?.(e.target.value as StaffRoleId)}
+          >
+            {STAFF_ROLES.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={labelCls}>Педагог</Label>
+          <Label className={labelCls}>ФИО</Label>
           <select
             className={selectCls}
             value={teacherId}
