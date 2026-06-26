@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS supervisions (
 ALTER TABLE supervisions ADD COLUMN IF NOT EXISTS student_id INTEGER;
 ALTER TABLE supervisions ADD COLUMN IF NOT EXISTS student_name VARCHAR(255);
 ALTER TABLE supervisions ADD COLUMN IF NOT EXISTS student_age INTEGER;
+ALTER TABLE supervisions ADD COLUMN IF NOT EXISTS group_size INTEGER;
 """
 
 
@@ -108,7 +109,7 @@ def list_supervisions(event: dict) -> dict:
     sql = (
         "SELECT id, lesson_form, teacher_id, teacher_name, supervision_date, lesson_date, "
         "lesson_link, lesson_structure, scores, reviewer_comment, total_score, "
-        "student_id, student_name, student_age, created_at, updated_at "
+        "student_id, student_name, student_age, group_size, created_at, updated_at "
         "FROM supervisions"
     )
     if where:
@@ -160,8 +161,8 @@ def create_supervision(event: dict) -> dict:
         cur.execute(
             "INSERT INTO supervisions (lesson_form, teacher_id, teacher_name, supervision_date, "
             "lesson_date, lesson_link, lesson_structure, scores, reviewer_comment, total_score, "
-            "student_id, student_name, student_age) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "student_id, student_name, student_age, group_size) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 lesson_form,
                 int(teacher_id),
@@ -176,6 +177,7 @@ def create_supervision(event: dict) -> dict:
                 data.get("student_id") or None,
                 (data.get("student_name") or "").strip() or None,
                 data.get("student_age") if data.get("student_age") is not None else None,
+                data.get("group_size") if data.get("group_size") is not None else None,
             ),
         )
         new_id = cur.fetchone()["id"]
@@ -200,7 +202,7 @@ def update_supervision(event: dict) -> dict:
             "UPDATE supervisions SET lesson_form = %s, teacher_id = %s, teacher_name = %s, "
             "supervision_date = %s, lesson_date = %s, lesson_link = %s, lesson_structure = %s, "
             "scores = %s, reviewer_comment = %s, total_score = %s, "
-            "student_id = %s, student_name = %s, student_age = %s, updated_at = NOW() "
+            "student_id = %s, student_name = %s, student_age = %s, group_size = %s, updated_at = NOW() "
             "WHERE id = %s",
             (
                 data.get("lesson_form"),
@@ -216,6 +218,7 @@ def update_supervision(event: dict) -> dict:
                 data.get("student_id") or None,
                 (data.get("student_name") or "").strip() or None,
                 data.get("student_age") if data.get("student_age") is not None else None,
+                data.get("group_size") if data.get("group_size") is not None else None,
                 int(sup_id),
             ),
         )

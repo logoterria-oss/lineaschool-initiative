@@ -38,6 +38,7 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
   const [comment, setComment] = useState(initial?.reviewer_comment ?? '');
   const [scores, setScores] = useState<Record<string, number>>(initial?.scores ?? {});
   const [studentId, setStudentId] = useState<number | ''>(initial?.student_id ?? '');
+  const [groupSize, setGroupSize] = useState<number | ''>(initial?.group_size ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,6 +56,11 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
     setForm(next);
     setTeacherId('');
     setScores({});
+    if (next === 'group') {
+      setStudentId('');
+    } else {
+      setGroupSize('');
+    }
   };
 
   const setScore = (key: string, value: number) =>
@@ -80,9 +86,10 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
         lesson_structure: lessonStructure || null,
         reviewer_comment: comment || null,
         scores,
-        student_id: studentId || null,
-        student_name: selectedStudent?.name ?? initial?.student_name ?? null,
-        student_age: studentAge,
+        student_id: form === 'group' ? null : studentId || null,
+        student_name: form === 'group' ? null : selectedStudent?.name ?? initial?.student_name ?? null,
+        student_age: form === 'group' ? null : studentAge,
+        group_size: form === 'group' ? (groupSize || null) : null,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка сохранения');
@@ -137,25 +144,45 @@ const SupervisionForm = ({ initial, onSubmit, onCancel, submitLabel = 'Сохр�
             <Input type="date" value={lessonDate} onChange={(e) => setLessonDate(e.target.value)} />
           </div>
 
-          <div className="space-y-1.5">
-            <Label className={labelCls}>Ученик</Label>
-            <StudentCombobox
-              students={students}
-              loading={studentsLoading}
-              value={studentId}
-              valueName={initial?.student_name}
-              onSelect={(s) => setStudentId(s ? s.id : '')}
-            />
-          </div>
+          {form === 'group' ? (
+            <div className="space-y-1.5">
+              <Label className={labelCls}>Количество учеников в группе</Label>
+              <select
+                className={selectCls}
+                value={groupSize}
+                onChange={(e) => setGroupSize(e.target.value ? Number(e.target.value) : '')}
+              >
+                <option value="">— выберите —</option>
+                {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Ученик</Label>
+                <StudentCombobox
+                  students={students}
+                  loading={studentsLoading}
+                  value={studentId}
+                  valueName={initial?.student_name}
+                  onSelect={(s) => setStudentId(s ? s.id : '')}
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <Label className={labelCls}>Возраст ученика</Label>
-            <Input
-              value={studentAge != null ? `${studentAge} лет` : '—'}
-              readOnly
-              className="bg-gray-50 text-gray-600"
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Возраст ученика</Label>
+                <Input
+                  value={studentAge != null ? `${studentAge} лет` : '—'}
+                  readOnly
+                  className="bg-gray-50 text-gray-600"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <div className="space-y-1.5">

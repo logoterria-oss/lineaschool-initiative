@@ -288,9 +288,19 @@ const SupervisionsTable = () => {
                     <td className="px-4 py-3 text-gray-800">{fmtDate(s.supervision_date)}</td>
                     <td className="px-4 py-3 text-gray-800">{s.teacher_name}</td>
                     <td className="px-4 py-3 text-gray-600">
-                      {s.student_name || '—'}
-                      {s.student_age != null && (
-                        <span className="text-gray-400"> · {s.student_age} лет</span>
+                      {s.lesson_form === 'group' ? (
+                        s.group_size != null ? (
+                          <span>Группа · {s.group_size} уч.</span>
+                        ) : (
+                          'Группа'
+                        )
+                      ) : (
+                        <>
+                          {s.student_name || '—'}
+                          {s.student_age != null && (
+                            <span className="text-gray-400"> · {s.student_age} лет</span>
+                          )}
+                        </>
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
@@ -332,12 +342,16 @@ const SupervisionsTable = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold text-gray-900">{s.teacher_name}</div>
-                    {s.student_name && (
-                      <div className="text-sm text-gray-600">
-                        Ученик: {s.student_name}
-                        {s.student_age != null ? ` (${s.student_age})` : ''}
-                      </div>
-                    )}
+                    {s.lesson_form === 'group'
+                      ? s.group_size != null && (
+                          <div className="text-sm text-gray-600">Учеников в группе: {s.group_size}</div>
+                        )
+                      : s.student_name && (
+                          <div className="text-sm text-gray-600">
+                            Ученик: {s.student_name}
+                            {s.student_age != null ? ` (${s.student_age})` : ''}
+                          </div>
+                        )}
                     <div className="text-sm text-gray-500">
                       {s.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное'} · {fmtDate(s.supervision_date)}
                     </div>

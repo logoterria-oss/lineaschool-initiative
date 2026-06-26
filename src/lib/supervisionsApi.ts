@@ -17,6 +17,7 @@ export interface Supervision {
   student_id: number | null;
   student_name: string | null;
   student_age: number | null;
+  group_size: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -35,6 +36,7 @@ export interface SupervisionInput {
   student_id?: number | null;
   student_name?: string | null;
   student_age?: number | null;
+  group_size?: number | null;
 }
 
 export const fetchSupervisions = async (params?: {

@@ -26,12 +26,16 @@ const SupervisionCard = ({ s }: { s: Supervision }) => {
             {s.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное'}
             {s.lesson_date ? ` · урок ${fmtDate(s.lesson_date)}` : ''}
           </div>
-          {s.student_name && (
-            <div className="text-sm text-gray-600">
-              Ученик: {s.student_name}
-              {s.student_age != null ? ` (${s.student_age})` : ''}
-            </div>
-          )}
+          {s.lesson_form === 'group'
+            ? s.group_size != null && (
+                <div className="text-sm text-gray-600">Учеников в группе: {s.group_size}</div>
+              )
+            : s.student_name && (
+                <div className="text-sm text-gray-600">
+                  Ученик: {s.student_name}
+                  {s.student_age != null ? ` (${s.student_age})` : ''}
+                </div>
+              )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="text-right font-semibold text-indigo-700">
