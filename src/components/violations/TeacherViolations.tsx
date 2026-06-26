@@ -243,9 +243,6 @@ const TeacherViolations = () => {
                     <div className="text-sm text-gray-600 mt-1">Комментарий руководителя: {v.admin_comment}</div>
                   )}
                 </div>
-                {v.penalty && (
-                  <span className="font-semibold text-red-600 whitespace-nowrap flex-shrink-0">{v.penalty}</span>
-                )}
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
