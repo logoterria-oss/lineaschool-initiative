@@ -5,7 +5,7 @@ import Icon from '@/components/ui/icon';
 const SECTIONS = [
   {
     id: 'payments',
-    label: 'Оплаты',
+    label: 'Статус оплат',
     description: 'Заявки и статусы оплат',
     icon: 'CreditCard' as const,
     color: 'border-orange-200 hover:border-orange-400',
@@ -35,7 +35,7 @@ const SECTIONS = [
   },
   {
     id: 'regulations',
-    label: 'Регламент',
+    label: 'Регламент работы администратора',
     description: 'Правила проведения занятий',
     icon: 'BookOpen' as const,
     color: 'border-indigo-200 hover:border-indigo-400',
