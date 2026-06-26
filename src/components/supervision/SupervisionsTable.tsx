@@ -265,9 +265,9 @@ const SupervisionsTable = () => {
       {/* Средний балл по отфильтрованным супервизиям — отдельно по формам */}
       {filtered.length > 0 && (
         <div className="grid sm:grid-cols-2 gap-3">
-          <div className="bg-orange-50 border border-orange-100 rounded-xl p-5 flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-orange-100">
-              <Icon name="Users" size={24} className="text-orange-600" />
+          <div className="bg-orange-100 border border-orange-300 rounded-xl p-5 flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-orange-200">
+              <Icon name="Users" size={24} className="text-orange-700" />
             </div>
             <div>
               <div className="text-sm text-gray-600">Средний балл · групповые</div>
