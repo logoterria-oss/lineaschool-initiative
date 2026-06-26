@@ -136,10 +136,7 @@ const RoleSelectPage = () => {
             <div className={`p-3 rounded-lg ${role.iconBg} flex-shrink-0`}>
               <Icon name={role.icon as 'Settings'} size={24} className={role.iconColor} />
             </div>
-            <div>
-              <div className="font-semibold text-gray-900 text-lg">{role.label}</div>
-              <div className="text-sm text-gray-500">{role.description}</div>
-            </div>
+            <div className="font-semibold text-gray-900 text-lg">{role.label}</div>
             <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto flex-shrink-0" />
           </button>
         ))}

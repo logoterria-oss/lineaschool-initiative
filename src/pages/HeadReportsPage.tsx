@@ -59,10 +59,7 @@ const HeadReportsPage = () => {
                   <div className={`p-3 rounded-lg ${report.iconBg} flex-shrink-0`}>
                     <Icon name={report.icon} size={24} className={report.iconColor} />
                   </div>
-                  <div>
-                    <div className="font-semibold text-gray-900 text-lg">{report.label}</div>
-                    <div className="text-sm text-gray-500">{report.description}</div>
-                  </div>
+                  <div className="font-semibold text-gray-900 text-lg">{report.label}</div>
                   <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto flex-shrink-0" />
                 </button>
               ))}

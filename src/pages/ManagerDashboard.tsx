@@ -76,10 +76,7 @@ const ManagerDashboard = () => {
                 <div className={`p-3 rounded-lg ${section.iconBg} flex-shrink-0`}>
                   <Icon name={section.icon} size={24} className={section.iconColor} />
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900 text-lg">{section.label}</div>
-                  <div className="text-sm text-gray-500">{section.description}</div>
-                </div>
+                <div className="font-semibold text-gray-900 text-lg">{section.label}</div>
                 <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto flex-shrink-0" />
               </button>
             ))}
