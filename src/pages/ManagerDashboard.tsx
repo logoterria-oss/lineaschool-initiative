@@ -33,6 +33,16 @@ const SECTIONS = [
     iconColor: 'text-red-600',
     path: '/admin/head-violations',
   },
+  {
+    id: 'regulations',
+    label: 'Регламент',
+    description: 'Правила проведения занятий',
+    icon: 'BookOpen' as const,
+    color: 'border-indigo-200 hover:border-indigo-400',
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
+    path: '/admin/regulations',
+  },
 ];
 
 const ManagerDashboard = () => {
