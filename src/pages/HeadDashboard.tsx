@@ -33,6 +33,16 @@ const SECTIONS = [
     iconColor: 'text-indigo-600',
     path: '/admin/head-supervisions',
   },
+  {
+    id: 'staff-violations',
+    label: 'Дисциплинарные нарушения сотрудников',
+    description: 'Нарушения по ролям сотрудников',
+    icon: 'AlertTriangle' as const,
+    color: 'border-red-200 hover:border-red-400',
+    iconBg: 'bg-red-100',
+    iconColor: 'text-red-600',
+    path: '/admin/head-staff-violations',
+  },
 ];
 
 const HeadDashboard = () => {
