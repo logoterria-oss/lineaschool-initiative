@@ -262,6 +262,41 @@ const SupervisionsTable = () => {
         )}
       </div>
 
+      {/* Средний балл по отфильтрованным супервизиям — отдельно по формам */}
+      {filtered.length > 0 && (
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="bg-orange-50 border border-orange-100 rounded-xl p-5 flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-orange-100">
+              <Icon name="Users" size={24} className="text-orange-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Средний балл · групповые</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {avgByForm.group ? `${avgByForm.group.avg}/${maxTotalScore('group')}` : '—'}
+                <span className="text-sm font-normal text-gray-400">
+                  {' '}· супервизий: {avgByForm.group?.count ?? 0}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-teal-50 border border-teal-100 rounded-xl p-5 flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-teal-100">
+              <Icon name="User" size={24} className="text-teal-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Средний балл · индивидуальные</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {avgByForm.individual ? `${avgByForm.individual.avg}/${maxTotalScore('individual')}` : '—'}
+                <span className="text-sm font-normal text-gray-400">
+                  {' '}· супервизий: {avgByForm.individual?.count ?? 0}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
           {items.length === 0 ? 'Супервизий пока нет' : 'По выбранным фильтрам ничего не найдено'}
@@ -379,38 +414,6 @@ const SupervisionsTable = () => {
             ))}
           </div>
 
-          {/* Средний балл по отфильтрованным супервизиям — отдельно по формам */}
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="bg-orange-50 border border-orange-100 rounded-xl p-5 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-100">
-                <Icon name="Users" size={24} className="text-orange-600" />
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Средний балл · групповые</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {avgByForm.group ? avgByForm.group.avg : '—'}
-                  <span className="text-sm font-normal text-gray-400">
-                    {' '}· супервизий: {avgByForm.group?.count ?? 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-teal-50 border border-teal-100 rounded-xl p-5 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-teal-100">
-                <Icon name="User" size={24} className="text-teal-600" />
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Средний балл · индивидуальные</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {avgByForm.individual ? avgByForm.individual.avg : '—'}
-                  <span className="text-sm font-normal text-gray-400">
-                    {' '}· супервизий: {avgByForm.individual?.count ?? 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </>
       )}
 
