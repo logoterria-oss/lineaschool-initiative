@@ -94,10 +94,21 @@ const SupervisionsTable = () => {
     [items, teacherFilter, formFilter, periodEnabled, period],
   );
 
-  const avgScore = useMemo(() => {
-    if (filtered.length === 0) return null;
-    const sum = filtered.reduce((s, i) => s + i.total_score, 0);
-    return Math.round((sum / filtered.length) * 10) / 10;
+  const teacherOptions = useMemo(() => {
+    if (formFilter === 'group') return GROUP_TEACHERS;
+    if (formFilter === 'individual') return INDIVIDUAL_TEACHERS;
+    return ALL_TEACHERS;
+  }, [formFilter]);
+
+  // Средний балл считаем отдельно по групповым и индивидуальным.
+  const avgByForm = useMemo(() => {
+    const calc = (form: LessonForm) => {
+      const list = filtered.filter((i) => i.lesson_form === form);
+      if (list.length === 0) return null;
+      const sum = list.reduce((s, i) => s + i.total_score, 0);
+      return { avg: Math.round((sum / list.length) * 10) / 10, count: list.length };
+    };
+    return { group: calc('group'), individual: calc('individual') };
   }, [filtered]);
 
   const handleUpdate = async (input: SupervisionInput) => {
@@ -120,6 +131,22 @@ const SupervisionsTable = () => {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1">
+            <label className="text-xs text-gray-500">Форма занятий</label>
+            <select
+              className={selectCls}
+              value={formFilter}
+              onChange={(e) => {
+                setFormFilter(e.target.value as '' | LessonForm);
+                setTeacherFilter('');
+              }}
+            >
+              <option value="">Все</option>
+              <option value="group">Групповые</option>
+              <option value="individual">Индивидуальные</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
             <label className="text-xs text-gray-500">Педагог</label>
             <select
               className={selectCls}
@@ -127,24 +154,11 @@ const SupervisionsTable = () => {
               onChange={(e) => setTeacherFilter(e.target.value ? Number(e.target.value) : '')}
             >
               <option value="">Все</option>
-              {ALL_TEACHERS.map((t) => (
+              {teacherOptions.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
               ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs text-gray-500">Форма занятий</label>
-            <select
-              className={selectCls}
-              value={formFilter}
-              onChange={(e) => setFormFilter(e.target.value as '' | LessonForm)}
-            >
-              <option value="">Все</option>
-              <option value="group">Групповые</option>
-              <option value="individual">Индивидуальные</option>
             </select>
           </div>
 
@@ -351,16 +365,35 @@ const SupervisionsTable = () => {
             ))}
           </div>
 
-          {/* Средний балл по отфильтрованным супервизиям */}
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-emerald-100">
-              <Icon name="Award" size={24} className="text-emerald-600" />
+          {/* Средний балл по отфильтрованным супервизиям — отдельно по формам */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-5 flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-orange-100">
+                <Icon name="Users" size={24} className="text-orange-600" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Средний балл · групповые</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {avgByForm.group ? avgByForm.group.avg : '—'}
+                  <span className="text-sm font-normal text-gray-400">
+                    {' '}· супервизий: {avgByForm.group?.count ?? 0}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-sm text-gray-600">Средний балл по выбранным супервизиям</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {avgScore !== null ? avgScore : '—'}
-                <span className="text-sm font-normal text-gray-400"> · супервизий: {filtered.length}</span>
+
+            <div className="bg-teal-50 border border-teal-100 rounded-xl p-5 flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-teal-100">
+                <Icon name="User" size={24} className="text-teal-600" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Средний балл · индивидуальные</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {avgByForm.individual ? avgByForm.individual.avg : '—'}
+                  <span className="text-sm font-normal text-gray-400">
+                    {' '}· супервизий: {avgByForm.individual?.count ?? 0}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
