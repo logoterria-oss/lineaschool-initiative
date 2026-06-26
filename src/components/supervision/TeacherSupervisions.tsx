@@ -4,7 +4,12 @@ import {
   Supervision,
   fetchSupervisions,
 } from '@/lib/supervisionsApi';
-import { GROUP_TEACHERS, INDIVIDUAL_TEACHERS } from '@/lib/supervisionChecklist';
+import {
+  GROUP_TEACHERS,
+  INDIVIDUAL_TEACHERS,
+  CHECKLIST_BY_FORM,
+  LessonForm,
+} from '@/lib/supervisionChecklist';
 import SupervisionCard from './SupervisionCard';
 
 const ALL_TEACHERS = [...INDIVIDUAL_TEACHERS, ...GROUP_TEACHERS];
@@ -48,6 +53,7 @@ const TeacherSupervisions = () => {
   const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1);
   const [fromMonth, setFromMonth] = useState(0);
   const [toMonth, setToMonth] = useState(now.getMonth());
+  const [showCriteria, setShowCriteria] = useState(false);
 
   const [items, setItems] = useState<Supervision[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,6 +91,35 @@ const TeacherSupervisions = () => {
     if (items.length === 0) return null;
     const sum = items.reduce((s, i) => s + i.total_score, 0);
     return Math.round((sum / items.length) * 10) / 10;
+  }, [items]);
+
+  // Средний балл по каждому критерию по всем супервизиям педагога за период.
+  // Критерии у групповых и индивидуальных разные, поэтому считаем по каждой форме отдельно.
+  const criteriaAverages = useMemo(() => {
+    const forms: LessonForm[] = ['individual', 'group'];
+    return forms
+      .map((form) => {
+        const formItems = items.filter((i) => i.lesson_form === form);
+        if (formItems.length === 0) return null;
+        const groups = CHECKLIST_BY_FORM[form].map((g) => ({
+          group: g.group,
+          items: g.items.map((it) => {
+            const sum = formItems.reduce((s, sup) => s + (Number(sup.scores?.[it.key]) || 0), 0);
+            return {
+              key: it.key,
+              criterion: it.criterion,
+              max: it.max,
+              avg: Math.round((sum / formItems.length) * 10) / 10,
+            };
+          }),
+        }));
+        return { form, count: formItems.length, groups };
+      })
+      .filter(Boolean) as {
+      form: LessonForm;
+      count: number;
+      groups: { group: string; items: { key: string; criterion: string; max: number; avg: number }[] }[];
+    }[];
   }, [items]);
 
   return (
@@ -195,17 +230,70 @@ const TeacherSupervisions = () => {
 
       {/* Средний балл */}
       {teacherId !== '' && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 flex items-center gap-4">
-          <div className="p-3 rounded-lg bg-indigo-100">
-            <Icon name="Award" size={24} className="text-indigo-600" />
-          </div>
-          <div>
-            <div className="text-sm text-gray-600">Средний балл за период</div>
-            <div className="text-2xl font-bold text-gray-900">
-              {avg !== null ? avg : '—'}
-              <span className="text-sm font-normal text-gray-400"> · супервизий: {items.length}</span>
+        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-indigo-100">
+              <Icon name="Award" size={24} className="text-indigo-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Средний балл за период</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {avg !== null ? avg : '—'}
+                <span className="text-sm font-normal text-gray-400"> · супервизий: {items.length}</span>
+              </div>
             </div>
           </div>
+
+          {criteriaAverages.length > 0 && (
+            <>
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setShowCriteria((v) => !v)}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                >
+                  Средний балл по критериям
+                  <Icon
+                    name="ChevronDown"
+                    size={16}
+                    className={`transition-transform ${showCriteria ? 'rotate-180' : ''}`}
+                  />
+                </button>
+              </div>
+
+              {showCriteria && (
+                <div className="mt-3 space-y-4">
+                  {criteriaAverages.map((block) => (
+                    <div key={block.form}>
+                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                        {block.form === 'group' ? 'Групповые' : 'Индивидуальные'} · супервизий: {block.count}
+                      </div>
+                      <div className="space-y-3">
+                        {block.groups.map((g) => (
+                          <div key={g.group}>
+                            <div className="text-xs font-semibold text-gray-500 mb-1">{g.group}</div>
+                            <div className="divide-y divide-indigo-100 bg-white rounded-lg border border-indigo-100">
+                              {g.items.map((it) => (
+                                <div
+                                  key={it.key}
+                                  className="flex items-center justify-between gap-3 px-3 py-2"
+                                >
+                                  <span className="text-sm text-gray-700">{it.criterion}</span>
+                                  <span className="text-sm font-semibold text-indigo-700 flex-shrink-0">
+                                    {it.avg}
+                                    <span className="text-gray-400 font-normal"> / {it.max}</span>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
