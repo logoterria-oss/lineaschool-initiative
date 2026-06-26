@@ -129,16 +129,40 @@ const TeacherSupervisions = () => {
   const bonus = useMemo(() => {
     if (avg === null || !teacherForm) return null;
     const score = avg;
-    if (teacherForm === 'group') {
-      if (score >= 33) return { bonus: '350 ₽', total: '650 ₽/час' };
-      if (score >= 29) return { bonus: '200 ₽', total: '500 ₽/час' };
-      if (score >= 24) return { bonus: '100 ₽', total: '400 ₽/час' };
-      return { bonus: '0 ₽', total: '300 ₽/час' };
+
+    // Пороги: минимальный балл уровня → премия за час и итоговая ставка.
+    const tiers =
+      teacherForm === 'group'
+        ? [
+            { min: 24, bonus: '100 ₽', total: '400 ₽/час' },
+            { min: 29, bonus: '200 ₽', total: '500 ₽/час' },
+            { min: 33, bonus: '350 ₽', total: '650 ₽/час' },
+          ]
+        : [
+            { min: 30, bonus: '100 ₽', total: '400 ₽/час' },
+            { min: 35, bonus: '200 ₽', total: '500 ₽/час' },
+            { min: 41, bonus: '350 ₽', total: '650 ₽/час' },
+          ];
+
+    // Текущий уровень — последний, чей порог достигнут.
+    let currentIdx = -1;
+    for (let i = 0; i < tiers.length; i++) {
+      if (score >= tiers[i].min) currentIdx = i;
     }
-    if (score >= 41) return { bonus: '350 ₽', total: '650 ₽/час' };
-    if (score >= 35) return { bonus: '200 ₽', total: '500 ₽/час' };
-    if (score >= 30) return { bonus: '100 ₽', total: '400 ₽/час' };
-    return { bonus: '0 ₽', total: '300 ₽/час' };
+    const current =
+      currentIdx >= 0 ? tiers[currentIdx] : { bonus: '0 ₽', total: '300 ₽/час' };
+
+    // Следующий уровень (если есть, куда расти).
+    const next = tiers[currentIdx + 1] ?? null;
+    const nextHint = next
+      ? {
+          needed: Math.round((next.min - score) * 10) / 10,
+          bonus: next.bonus,
+          total: next.total,
+        }
+      : null;
+
+    return { ...current, next: nextHint };
   }, [avg, teacherForm]);
 
   // Средний балл по каждому критерию по всем супервизиям педагога за период.
@@ -322,6 +346,14 @@ const TeacherSupervisions = () => {
                 Ориентировочная премия по баллам супервизии на следующий период:{' '}
                 <span className="font-semibold text-emerald-800">+{bonus.bonus}/час</span>{' '}
                 <span className="text-gray-500">(ставка {bonus.total})</span>
+                {bonus.next && (
+                  <div className="mt-1.5 text-gray-600">
+                    Чтобы получать{' '}
+                    <span className="font-semibold text-emerald-700">+{bonus.next.bonus}/час</span>{' '}
+                    (ставка {bonus.next.total}), нужно поднять средний балл на{' '}
+                    <span className="font-semibold">{bonus.next.needed}</span>.
+                  </div>
+                )}
               </div>
             </div>
           )}
