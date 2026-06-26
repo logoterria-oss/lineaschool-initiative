@@ -25,7 +25,7 @@ const HeadViolationsPage = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
             <button
-              onClick={() => navigate('/admin/head')}
+              onClick={() => navigate('/admin/manager')}
               className="text-gray-400 hover:text-gray-700 transition-colors"
             >
               <Icon name="ArrowLeft" size={20} />

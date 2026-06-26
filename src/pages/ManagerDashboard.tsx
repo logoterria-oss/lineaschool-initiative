@@ -23,6 +23,16 @@ const SECTIONS = [
     iconColor: 'text-teal-600',
     path: '/admin/schedule',
   },
+  {
+    id: 'violations',
+    label: 'Дисциплинарные и организационные нарушения',
+    description: 'Учёт нарушений и штрафных баллов',
+    icon: 'AlertTriangle' as const,
+    color: 'border-red-200 hover:border-red-400',
+    iconBg: 'bg-red-100',
+    iconColor: 'text-red-600',
+    path: '/admin/head-violations',
+  },
 ];
 
 const ManagerDashboard = () => {
