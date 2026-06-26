@@ -150,11 +150,16 @@ const TeacherSupervisions = () => {
         return {
           date: fmtDate(i.supervision_date),
           score: i.total_score,
-          percent: max > 0 ? Math.round((i.total_score / max) * 100) : 0,
+          max,
           form: i.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное',
         };
       });
   }, [items]);
+
+  const dynamicMax = useMemo(() => {
+    const maxScore = dynamicData.reduce((m, d) => Math.max(m, d.score, d.max), 0);
+    return Math.ceil(maxScore / 5) * 5;
+  }, [dynamicData]);
 
   return (
     <div className="space-y-5">
@@ -363,20 +368,20 @@ const TeacherSupervisions = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#eef2ff" />
                   <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <YAxis
-                    domain={[0, 100]}
-                    tickFormatter={(v) => `${v}%`}
+                    domain={[0, dynamicMax]}
+                    allowDecimals={false}
                     tick={{ fontSize: 12, fill: '#6b7280' }}
                   />
                   <Tooltip
                     formatter={(value: number, _name, props) => [
-                      `${value}% (${props.payload.score} б.)`,
+                      `${value} из ${props.payload.max} б.`,
                       props.payload.form,
                     ]}
                     labelStyle={{ color: '#111827', fontWeight: 600 }}
                   />
                   <Line
                     type="monotone"
-                    dataKey="percent"
+                    dataKey="score"
                     stroke="#4f46e5"
                     strokeWidth={2.5}
                     dot={{ r: 4, fill: '#4f46e5' }}

@@ -124,9 +124,14 @@ export const CHECKLIST_BY_FORM: Record<LessonForm, ChecklistGroup[]> = {
   individual: INDIVIDUAL_CHECKLIST,
 };
 
+// Ключи бонусных (преференционных) баллов — они даются сверх 100%
+// и не учитываются в максимуме (100% индивидуальных = 45 баллов).
+export const BONUS_KEYS = ['i_bonus'];
+
 export const maxTotalScore = (form: LessonForm): number =>
   CHECKLIST_BY_FORM[form].reduce(
-    (sum, g) => sum + g.items.reduce((s, i) => s + i.max, 0),
+    (sum, g) =>
+      sum + g.items.reduce((s, i) => s + (BONUS_KEYS.includes(i.key) ? 0 : i.max), 0),
     0,
   );
 
