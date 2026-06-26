@@ -21,6 +21,7 @@ import ManagerDashboard from "./pages/ManagerDashboard";
 import HeadDashboard from "./pages/HeadDashboard";
 import HeadReportsPage from "./pages/HeadReportsPage";
 import HeadSupervisionsPage from "./pages/HeadSupervisionsPage";
+import HeadViolationsPage from "./pages/HeadViolationsPage";
 import AdvanceIncomeReport from "./pages/AdvanceIncomeReport";
 import RetentionReport from "./pages/RetentionReport";
 import RetentionDynamics from "./pages/RetentionDynamics";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/admin/head" element={<HeadDashboard />} />
             <Route path="/admin/head-reports" element={<HeadReportsPage />} />
             <Route path="/admin/head-supervisions" element={<HeadSupervisionsPage />} />
+            <Route path="/admin/head-violations" element={<HeadViolationsPage />} />
             <Route path="/admin/report/advance-income" element={<AdvanceIncomeReport />} />
             <Route path="/admin/report/retention" element={<RetentionReport />} />
             <Route path="/admin/report/retention-dynamics" element={<RetentionDynamics />} />

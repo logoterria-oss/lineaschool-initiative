@@ -6,8 +6,9 @@ import RegulationsSection from './RegulationsSection';
 import GroupKpiInfo from './GroupKpiInfo';
 import GroupPenaltyInfo from './GroupPenaltyInfo';
 import TeacherSupervisions from '@/components/supervision/TeacherSupervisions';
+import TeacherViolations from '@/components/violations/TeacherViolations';
 
-type IconName = 'Users' | 'User' | 'UserCheck' | 'ListChecks' | 'BarChart2' | 'BookOpen';
+type IconName = 'Users' | 'User' | 'UserCheck' | 'ListChecks' | 'BarChart2' | 'BookOpen' | 'AlertTriangle';
 
 interface KpiCategory {
   id: string;
@@ -26,6 +27,14 @@ const TOP_BLOCKS: KpiCategory[] = [
     color: 'text-indigo-600',
     bg: 'bg-indigo-100',
     border: 'border-indigo-200 hover:border-indigo-400',
+  },
+  {
+    id: 'violations',
+    label: 'Мои нарушения',
+    icon: 'AlertTriangle',
+    color: 'text-red-600',
+    bg: 'bg-red-100',
+    border: 'border-red-200 hover:border-red-400',
   },
   {
     id: 'regulations',
@@ -134,6 +143,16 @@ const KpiSection = () => {
       <div>
         <BackButton onClick={() => setBlock(null)} />
         <TeacherSupervisions />
+      </div>
+    );
+  }
+
+  // Мои нарушения — список нарушений педагога с возможностью оспорить
+  if (block === 'violations') {
+    return (
+      <div>
+        <BackButton onClick={() => setBlock(null)} />
+        <TeacherViolations />
       </div>
     );
   }
