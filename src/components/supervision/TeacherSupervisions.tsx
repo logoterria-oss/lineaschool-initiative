@@ -111,6 +111,36 @@ const TeacherSupervisions = () => {
     return Math.round((sum / items.length) * 10) / 10;
   }, [items]);
 
+  // Форма работы выбранного педагога (групповой / индивидуальный).
+  const teacherForm: LessonForm | null = useMemo(() => {
+    if (teacherId === '') return null;
+    if (GROUP_TEACHERS.some((t) => t.id === teacherId)) return 'group';
+    if (INDIVIDUAL_TEACHERS.some((t) => t.id === teacherId)) return 'individual';
+    return null;
+  }, [teacherId]);
+
+  // Максимальный балл по форме педагога (для подписи «из скольки»).
+  const maxScore = useMemo(
+    () => (teacherForm ? maxTotalScore(teacherForm) : null),
+    [teacherForm],
+  );
+
+  // Ориентировочная премия на следующий период по среднему баллу супервизии.
+  const bonus = useMemo(() => {
+    if (avg === null || !teacherForm) return null;
+    const score = avg;
+    if (teacherForm === 'group') {
+      if (score >= 33) return { bonus: '350 ₽', total: '650 ₽/час' };
+      if (score >= 29) return { bonus: '200 ₽', total: '500 ₽/час' };
+      if (score >= 24) return { bonus: '100 ₽', total: '400 ₽/час' };
+      return { bonus: '0 ₽', total: '300 ₽/час' };
+    }
+    if (score >= 41) return { bonus: '350 ₽', total: '650 ₽/час' };
+    if (score >= 35) return { bonus: '200 ₽', total: '500 ₽/час' };
+    if (score >= 30) return { bonus: '100 ₽', total: '400 ₽/час' };
+    return { bonus: '0 ₽', total: '300 ₽/час' };
+  }, [avg, teacherForm]);
+
   // Средний балл по каждому критерию по всем супервизиям педагога за период.
   // Критерии у групповых и индивидуальных разные, поэтому считаем по каждой форме отдельно.
   const criteriaAverages = useMemo(() => {
@@ -277,11 +307,24 @@ const TeacherSupervisions = () => {
             <div>
               <div className="text-sm text-gray-600">Средний балл за период</div>
               <div className="text-2xl font-bold text-gray-900">
-                {avg !== null ? avg : '—'}
+                {avg !== null ? `${avg}${maxScore ? `/${maxScore}` : ''}` : '—'}
                 <span className="text-sm font-normal text-gray-400"> · супервизий: {items.length}</span>
               </div>
             </div>
           </div>
+
+          {bonus && (
+            <div className="mt-3 flex items-start gap-3 bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+              <div className="p-2 rounded-lg bg-emerald-100 flex-shrink-0">
+                <Icon name="TrendingUp" size={18} className="text-emerald-600" />
+              </div>
+              <div className="text-sm text-gray-700">
+                Ориентировочная премия по баллам супервизии на следующий период:{' '}
+                <span className="font-semibold text-emerald-800">+{bonus.bonus}/час</span>{' '}
+                <span className="text-gray-500">(ставка {bonus.total})</span>
+              </div>
+            </div>
+          )}
 
           {criteriaAverages.length > 0 && (
             <>
