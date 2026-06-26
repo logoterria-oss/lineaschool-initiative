@@ -15,7 +15,7 @@ const SECTIONS = [
   },
   {
     id: 'schedule',
-    label: 'Расписание',
+    label: 'Расписание групп и свободные слоты',
     description: 'Групповые и индивидуальные занятия',
     icon: 'CalendarDays' as const,
     color: 'border-teal-200 hover:border-teal-400',
