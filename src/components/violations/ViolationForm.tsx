@@ -48,7 +48,6 @@ const ViolationForm = ({ initial, onSubmit, submitLabel = 'Зафиксиров�
         violation_date: date,
         violation_code: selectedType.code,
         violation_title: selectedType.title,
-        penalty: selectedType.penalty,
         admin_comment: comment || null,
       });
       if (!initial) {
@@ -93,7 +92,7 @@ const ViolationForm = ({ initial, onSubmit, submitLabel = 'Зафиксиров�
           <option value="">— выберите нарушение —</option>
           {VIOLATION_TYPES.map((v) => (
             <option key={v.code} value={v.code}>
-              {v.title} ({v.penalty})
+              {v.title}
             </option>
           ))}
         </select>

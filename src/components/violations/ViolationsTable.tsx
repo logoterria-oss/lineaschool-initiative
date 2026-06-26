@@ -224,9 +224,6 @@ const ViolationsTable = ({ reloadKey }: { reloadKey?: number }) => {
                   )}
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  {v.penalty && (
-                    <span className="font-semibold text-red-600 whitespace-nowrap">{v.penalty}</span>
-                  )}
                   <button
                     onClick={() => handleDelete(v.id)}
                     className="text-gray-400 hover:text-red-600 transition-colors"
