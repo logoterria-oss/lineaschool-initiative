@@ -280,9 +280,9 @@ const SupervisionsTable = () => {
             </div>
           </div>
 
-          <div className="bg-teal-50 border border-teal-100 rounded-xl p-5 flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-teal-100">
-              <Icon name="User" size={24} className="text-teal-600" />
+          <div className="bg-teal-100 border border-teal-300 rounded-xl p-5 flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-teal-200">
+              <Icon name="User" size={24} className="text-teal-700" />
             </div>
             <div>
               <div className="text-sm text-gray-600">Средний балл · индивидуальные</div>
