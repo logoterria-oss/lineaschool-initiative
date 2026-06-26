@@ -94,6 +94,12 @@ const SupervisionsTable = () => {
     [items, teacherFilter, formFilter, periodEnabled, period],
   );
 
+  const avgScore = useMemo(() => {
+    if (filtered.length === 0) return null;
+    const sum = filtered.reduce((s, i) => s + i.total_score, 0);
+    return Math.round((sum / filtered.length) * 10) / 10;
+  }, [filtered]);
+
   const handleUpdate = async (input: SupervisionInput) => {
     await updateSupervision(input);
     setEditing(null);
@@ -343,6 +349,20 @@ const SupervisionsTable = () => {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Средний балл по отфильтрованным супервизиям */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-emerald-100">
+              <Icon name="Award" size={24} className="text-emerald-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Средний балл по выбранным супервизиям</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {avgScore !== null ? avgScore : '—'}
+                <span className="text-sm font-normal text-gray-400"> · супервизий: {filtered.length}</span>
+              </div>
+            </div>
           </div>
         </>
       )}
