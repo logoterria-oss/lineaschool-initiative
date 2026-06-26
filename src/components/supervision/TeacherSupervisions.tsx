@@ -9,8 +9,18 @@ import {
   INDIVIDUAL_TEACHERS,
   CHECKLIST_BY_FORM,
   LessonForm,
+  maxTotalScore,
 } from '@/lib/supervisionChecklist';
 import SupervisionCard from './SupervisionCard';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 
 const ALL_TEACHERS = [...INDIVIDUAL_TEACHERS, ...GROUP_TEACHERS];
 
@@ -128,6 +138,22 @@ const TeacherSupervisions = () => {
       count: number;
       groups: { group: string; items: { key: string; criterion: string; max: number; avg: number }[] }[];
     }[];
+  }, [items]);
+
+  // Динамика: средний балл (в % от максимума) по каждой супервизии в хронологическом порядке.
+  const dynamicData = useMemo(() => {
+    return [...items]
+      .filter((i) => i.supervision_date)
+      .sort((a, b) => (a.supervision_date! < b.supervision_date! ? -1 : 1))
+      .map((i) => {
+        const max = maxTotalScore(i.lesson_form);
+        return {
+          date: fmtDate(i.supervision_date),
+          score: i.total_score,
+          percent: max > 0 ? Math.round((i.total_score / max) * 100) : 0,
+          form: i.lesson_form === 'group' ? 'Групповое' : 'Индивидуальное',
+        };
+      });
   }, [items]);
 
   return (
@@ -315,6 +341,50 @@ const TeacherSupervisions = () => {
                 </div>
               )}
             </>
+          )}
+        </div>
+      )}
+
+      {/* Моя динамика */}
+      {teacherId !== '' && dynamicData.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Icon name="TrendingUp" size={20} className="text-indigo-600" />
+            <h3 className="text-base font-bold text-gray-900">Моя динамика</h3>
+          </div>
+          {dynamicData.length < 2 ? (
+            <p className="text-sm text-gray-400">
+              Для построения графика нужно минимум две супервизии за период.
+            </p>
+          ) : (
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dynamicData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eef2ff" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <YAxis
+                    domain={[0, 100]}
+                    tickFormatter={(v) => `${v}%`}
+                    tick={{ fontSize: 12, fill: '#6b7280' }}
+                  />
+                  <Tooltip
+                    formatter={(value: number, _name, props) => [
+                      `${value}% (${props.payload.score} б.)`,
+                      props.payload.form,
+                    ]}
+                    labelStyle={{ color: '#111827', fontWeight: 600 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="percent"
+                    stroke="#4f46e5"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#4f46e5' }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
       )}
