@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
-import RegulationsSection from '@/components/teacher/RegulationsSection';
 
 const AdminRegulationsPage = () => {
   const navigate = useNavigate();
@@ -23,11 +22,13 @@ const AdminRegulationsPage = () => {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Регламент</h1>
-              <p className="text-gray-500 text-sm">Правила проведения занятий</p>
+              <p className="text-gray-500 text-sm">Регламент администратора</p>
             </div>
           </div>
 
-          <RegulationsSection />
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
+            Текст регламента появится здесь
+          </div>
         </div>
       </div>
     </div>
