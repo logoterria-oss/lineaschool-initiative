@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   StudentRow,
   StatusFilter,
@@ -191,6 +197,7 @@ const StudentsTablePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all_active');
+  const [tariffFilter, setTariffFilter] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -202,31 +209,117 @@ const StudentsTablePage = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Уникальные названия абонементов для мультиселекта.
+  const tariffOptions = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((i) => {
+      if (i.tariff?.name) set.add(i.tariff.name);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [items]);
+
+  const toggleTariff = (name: string) =>
+    setTariffFilter((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+    );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((i) => {
       if (!matchesFilter(i.status_id, filter)) return false;
+      if (tariffFilter.length && !(i.tariff && tariffFilter.includes(i.tariff.name)))
+        return false;
       if (q && !(i.name || '').toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [items, filter, search]);
+  }, [items, filter, tariffFilter, search]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       <AdminHeader showOnlyHome />
       <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <button
-              onClick={() => navigate('/admin/manager')}
-              className="text-gray-400 hover:text-gray-700 transition-colors"
-            >
-              <Icon name="ArrowLeft" size={20} />
-            </button>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Icon name="Users" size={24} className="text-purple-600" />
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-start justify-between gap-3 mb-6 flex-wrap">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/admin/manager')}
+                className="text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <Icon name="ArrowLeft" size={20} />
+              </button>
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Icon name="Users" size={24} className="text-purple-600" />
+              </div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Ученики</h1>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Ученики</h1>
+
+            {(tab === 'main' || tab === 'progress') && (
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Статус */}
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value as StatusFilter)}
+                  className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  {STATUS_FILTERS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Абонемент (мультиселект) */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-700 inline-flex items-center gap-1.5 hover:border-purple-300">
+                      <Icon name="Ticket" size={15} className="text-gray-400" />
+                      Абонемент
+                      {tariffFilter.length > 0 && (
+                        <span className="ml-0.5 text-xs bg-purple-600 text-white rounded-full px-1.5">
+                          {tariffFilter.length}
+                        </span>
+                      )}
+                      <Icon name="ChevronDown" size={14} className="text-gray-400" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-72 p-2 max-h-80 overflow-y-auto">
+                    {tariffFilter.length > 0 && (
+                      <button
+                        onClick={() => setTariffFilter([])}
+                        className="w-full text-left text-xs text-purple-600 hover:underline px-2 py-1 mb-1"
+                      >
+                        Сбросить выбор
+                      </button>
+                    )}
+                    {tariffOptions.length === 0 ? (
+                      <p className="text-sm text-gray-400 px-2 py-1">Нет данных</p>
+                    ) : (
+                      tariffOptions.map((name) => (
+                        <label
+                          key={name}
+                          className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={tariffFilter.includes(name)}
+                            onCheckedChange={() => toggleTariff(name)}
+                            className="mt-0.5"
+                          />
+                          <span className="text-sm text-gray-700 leading-snug">{name}</span>
+                        </label>
+                      ))
+                    )}
+                  </PopoverContent>
+                </Popover>
+
+                {/* Поиск */}
+                <Input
+                  placeholder="Поиск по ФИО"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 w-44"
+                />
+              </div>
+            )}
           </div>
 
           {/* Навигация */}
@@ -251,31 +344,6 @@ const StudentsTablePage = () => {
 
           {(tab === 'main' || tab === 'progress') && (
             <>
-              {/* Фильтры */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-5 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {STATUS_FILTERS.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => setFilter(f.id)}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                        filter === f.id
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-600 hover:bg-purple-100'
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-                <Input
-                  placeholder="Поиск по ФИО"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="max-w-xs"
-                />
-              </div>
-
               {loading ? (
                 <p className="text-gray-500">Загрузка…</p>
               ) : error ? (
