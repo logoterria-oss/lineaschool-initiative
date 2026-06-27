@@ -71,11 +71,11 @@ const MainTable = ({ rows }: { rows: StudentRow[] }) => (
             <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
               <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
               <td className="px-3 py-3 align-top font-medium text-gray-900">
-                <span className="inline-flex items-start gap-1">
+                <span className="leading-snug">
                   {s.name}
                   <span
                     title={s.status_name}
-                    className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${statusDot(s.status_id)}`}
+                    className={`inline-block align-top ml-1 w-2 h-2 rounded-full ${statusDot(s.status_id)}`}
                   />
                 </span>
               </td>
