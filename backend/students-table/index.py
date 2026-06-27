@@ -111,14 +111,16 @@ def get_all_customers(token):
     return merged
 
 
-def get_done_lessons(token, date_from, date_to):
-    """Проведённые занятия (status=3) за период."""
+def get_lessons(token, date_from, date_to, status=3):
+    """Занятия за период. status=3 — проведённые, None — все."""
     url = f"{S20_HOST}/v2api/1/lesson/index"
     all_items = []
     page = 0
     while True:
         payload = {"date_from": date_from, "date_to": date_to,
-                   "status": 3, "page": page, "pageSize": 200}
+                   "page": page, "pageSize": 200}
+        if status is not None:
+            payload["status"] = status
         resp = requests.post(url, json=payload, headers=get_headers(token), timeout=30)
         resp.raise_for_status()
         data = resp.json()
@@ -128,6 +130,19 @@ def get_done_lessons(token, date_from, date_to):
             break
         page += 1
     return all_items
+
+
+def get_done_lessons(token, date_from, date_to):
+    return get_lessons(token, date_from, date_to, status=3)
+
+
+def get_customer_tariffs(token, customer_id):
+    """Абонементы ученика из CRM (customer-tariff)."""
+    url = f"{S20_HOST}/v2api/1/customer-tariff/index"
+    resp = requests.post(url, json={"customer_id": customer_id, "page": 0, "pageSize": 50},
+                         headers=get_headers(token), timeout=20)
+    resp.raise_for_status()
+    return resp.json().get("items", [])
 
 
 def lesson_customer_ids(ls):
@@ -322,5 +337,75 @@ def handler(event, context):
         return handle_statuses(token)
     if mode == "list":
         return handle_list(token)
+    if mode == "debug":
+        return handle_debug(token, params)
+    if mode == "tariff":
+        cid = int(params.get("customer_id", "0"))
+        try:
+            tariffs = get_customer_tariffs(token, cid)
+        except Exception as e:
+            return _json(502, {"error": str(e)})
+        return _json(200, {
+            "keys": sorted(tariffs[0].keys()) if tariffs else [],
+            "items": tariffs,
+        })
 
     return _json(400, {"error": "unknown mode"})
+
+
+def handle_debug(token, params):
+    """Разведка структуры: образцы уроков, диагностические уроки, абонемент, карточка."""
+    date_from = params.get("date_from", "2024-01-01")
+    date_to = params.get("date_to", date.today().strftime("%Y-%m-%d"))
+    out = {}
+
+    try:
+        lessons = get_lessons(token, date_from, date_to, status=None)
+    except Exception as e:
+        lessons = []
+        out["lessons_error"] = str(e)
+
+    out["lessons_total"] = len(lessons)
+    out["lesson_sample_keys"] = sorted(lessons[0].keys()) if lessons else []
+
+    # Уроки, у которых тема/тип содержит "диагност".
+    diag = []
+    for ls in lessons:
+        topic = (ls.get("topic") or "").lower()
+        ltype = (ls.get("lesson_type_name") or "").lower()
+        if "диагност" in topic or "диагност" in ltype:
+            diag.append({
+                "date": ls.get("date"),
+                "topic": ls.get("topic"),
+                "note": ls.get("note"),
+                "lesson_type_name": ls.get("lesson_type_name"),
+                "subject_id": ls.get("subject_id"),
+                "customer_ids": ls.get("customer_ids"),
+            })
+    out["diag_lessons_count"] = len(diag)
+    out["diag_lessons_sample"] = diag[:8]
+
+    # Распределение по lesson_type_name (чтобы понять, как называется диагностика).
+    types = {}
+    for ls in lessons:
+        t = ls.get("lesson_type_name")
+        types[t] = types.get(t, 0) + 1
+    out["lesson_types"] = types
+
+    # Карточка одного ученика + его абонементы (только ключи и компактно).
+    customers = get_all_customers(token)
+    if customers:
+        c = customers[0]
+        out["customer_sample_keys"] = sorted(c.keys())
+        out["customer_compact"] = {k: c.get(k) for k in
+                                   ("id", "name", "dob", "b_date", "age", "balance",
+                                    "paid_count", "next_lesson_date", "e_date",
+                                    "study_status_id")}
+        try:
+            tariffs = get_customer_tariffs(token, c.get("id"))
+            out["tariff_keys"] = sorted(tariffs[0].keys()) if tariffs else []
+            out["customer_tariffs_sample"] = tariffs[:5]
+        except Exception as e:
+            out["customer_tariffs_error"] = str(e)
+
+    return _json(200, out)
