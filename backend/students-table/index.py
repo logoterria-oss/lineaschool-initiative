@@ -201,6 +201,27 @@ def parse_crm_date(s):
     return None
 
 
+def age_from_customer(c):
+    """Возраст ученика из карточки CRM: готовое поле возраста или расчёт по дате рождения."""
+    # Готовое числовое поле возраста (в AlfaCRM встречается 'age').
+    for key in ("age",):
+        v = c.get(key)
+        if isinstance(v, (int, float)) and 0 < int(v) < 120:
+            return int(v)
+        if isinstance(v, str) and v.strip().isdigit():
+            n = int(v.strip())
+            if 0 < n < 120:
+                return n
+    # Дата рождения в AlfaCRM — поле 'dob' (b_date здесь = дата создания, не рождения).
+    bd = parse_crm_date(c.get("dob"))
+    if bd:
+        today = date.today()
+        n = today.year - bd.year - ((today.month, today.day) < (bd.month, bd.day))
+        if 0 < n < 120:
+            return n
+    return None
+
+
 def pick_actual_tariff(tariffs, tariff_names):
     """Актуальный абонемент: действует сейчас (e_date>=today), иначе последний по b_date."""
     if not tariffs:
@@ -474,6 +495,10 @@ def handle_list(token):
                 next_date = compute_next_diag(last_date, weeks)
             else:
                 next_date = plain_plus_3_months(last_date)
+
+        # Возраст: если из заключения нет — берём из карточки CRM (поле/дата рождения).
+        if age is None:
+            age = age_from_customer(c)
 
         # Абонемент
         tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
