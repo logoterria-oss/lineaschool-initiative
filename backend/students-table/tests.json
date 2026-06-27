@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Students list",
+      "method": "GET",
+      "path": "/?mode=list",
+      "expectedStatus": 200
+    }
+  ]
+}

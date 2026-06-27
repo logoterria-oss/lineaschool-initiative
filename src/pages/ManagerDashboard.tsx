@@ -14,6 +14,16 @@ const SECTIONS = [
     path: '/admin/payment-leads',
   },
   {
+    id: 'students',
+    label: 'Ученики',
+    description: 'Статусы и диагностики учеников',
+    icon: 'Users' as const,
+    color: 'border-purple-200 hover:border-purple-400',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+    path: '/admin/students',
+  },
+  {
     id: 'schedule',
     label: 'Расписание групп и свободные слоты',
     description: 'Групповые и индивидуальные занятия',
