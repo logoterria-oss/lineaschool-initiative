@@ -12,6 +12,7 @@ export interface StudentRow {
   status_id: number | null;
   status_name: string;
   age: number | null;
+  age_manual: boolean;
   conclusion: string;
   conclusion_manual: boolean;
   recommendations: string | null;
@@ -62,10 +63,10 @@ export const fetchStudents = async (): Promise<StudentRow[]> => {
   return data.items as StudentRow[];
 };
 
-// Сохранить ручную правку форм нарушений (приоритет над данными из заключения).
+// Сохранить ручную правку (формы нарушений и/или возраст) — приоритет над данными CRM.
 export const saveStudentOverride = async (
   studentId: number,
-  conclusion: string,
+  fields: { conclusion?: string; age?: number | null },
 ): Promise<void> => {
   const res = await fetch(API_URL, {
     method: 'POST',
@@ -73,7 +74,7 @@ export const saveStudentOverride = async (
     body: JSON.stringify({
       action: 'save_override',
       student_id: studentId,
-      conclusion,
+      ...fields,
     }),
   });
   if (!res.ok) throw new Error('Не удалось сохранить изменения');

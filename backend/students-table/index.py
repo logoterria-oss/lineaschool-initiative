@@ -335,13 +335,13 @@ def load_reports(report_ids):
 
 
 def load_overrides():
-    """Ручные правки: student_id -> {conclusion}."""
+    """Ручные правки: student_id -> {conclusion, age}."""
     conn = db()
     out = {}
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(f"SELECT student_id, conclusion FROM {SCHEMA}.student_overrides")
+        cur.execute(f"SELECT student_id, conclusion, age FROM {SCHEMA}.student_overrides")
         for r in cur.fetchall():
-            out[r["student_id"]] = {"conclusion": r.get("conclusion")}
+            out[r["student_id"]] = {"conclusion": r.get("conclusion"), "age": r.get("age")}
     conn.close()
     return out
 
@@ -350,17 +350,33 @@ def handle_save_override(body):
     student_id = body.get("student_id")
     if not student_id:
         return _json(400, {"error": "student_id required"})
-    conclusion = body.get("conclusion")
-    conclusion = conclusion.strip() if isinstance(conclusion, str) else None
+
+    fields = {}
+    if "conclusion" in body:
+        c = body.get("conclusion")
+        fields["conclusion"] = c.strip() if isinstance(c, str) and c.strip() else None
+    if "age" in body:
+        a = body.get("age")
+        try:
+            fields["age"] = int(a) if a not in (None, "") else None
+        except (TypeError, ValueError):
+            fields["age"] = None
+
+    if not fields:
+        return _json(400, {"error": "nothing to update"})
+
+    cols = ["student_id"] + list(fields.keys()) + ["updated_at"]
+    placeholders = ["%s"] * (len(fields) + 1) + ["NOW()"]
+    updates = ", ".join(f"{k} = EXCLUDED.{k}" for k in fields)
+    values = [int(student_id)] + list(fields.values())
 
     conn = db()
     with conn.cursor() as cur:
         cur.execute(
-            f"INSERT INTO {SCHEMA}.student_overrides (student_id, conclusion, updated_at) "
-            f"VALUES (%s, %s, NOW()) "
-            f"ON CONFLICT (student_id) DO UPDATE SET conclusion = EXCLUDED.conclusion, "
-            f"updated_at = NOW()",
-            (int(student_id), conclusion or None),
+            f"INSERT INTO {SCHEMA}.student_overrides ({', '.join(cols)}) "
+            f"VALUES ({', '.join(placeholders)}) "
+            f"ON CONFLICT (student_id) DO UPDATE SET {updates}, updated_at = NOW()",
+            values,
         )
         conn.commit()
     conn.close()
@@ -462,12 +478,16 @@ def handle_list(token):
         # Абонемент
         tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
 
-        # Ручная правка форм нарушений всегда в приоритете.
+        # Ручные правки (формы нарушений, возраст) всегда в приоритете.
         ov = overrides.get(cid)
         conclusion_manual = False
+        age_manual = False
         if ov and ov.get("conclusion") is not None:
             conclusion = ov["conclusion"]
             conclusion_manual = True
+        if ov and ov.get("age") is not None:
+            age = ov["age"]
+            age_manual = True
 
         items.append({
             "id": cid,
@@ -475,6 +495,7 @@ def handle_list(token):
             "status_id": status_id,
             "status_name": STATUS_NAMES.get(status_id, "—"),
             "age": age,
+            "age_manual": age_manual,
             "conclusion": conclusion,
             "conclusion_manual": conclusion_manual,
             "recommendations": recommendations,

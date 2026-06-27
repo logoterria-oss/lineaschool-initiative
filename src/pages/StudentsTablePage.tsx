@@ -90,6 +90,78 @@ const NameWithDot = ({
   );
 };
 
+const AgeCell = ({
+  s,
+  onSave,
+}: {
+  s: StudentRow;
+  onSave: (id: number, age: number | null) => Promise<void>;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(s.age != null ? String(s.age) : '');
+  const [saving, setSaving] = useState(false);
+
+  const start = () => {
+    setValue(s.age != null ? String(s.age) : '');
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const trimmed = value.trim();
+      await onSave(s.id, trimmed === '' ? null : Number(trimmed));
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <td className="px-3 py-3 align-top">
+        <Input
+          type="number"
+          min={1}
+          max={120}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="h-9 w-20 text-sm"
+          placeholder="Лет"
+        />
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" onClick={save} disabled={saving}>
+            {saving ? '…' : 'ОК'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setEditing(false)} disabled={saving}>
+            Отмена
+          </Button>
+        </div>
+      </td>
+    );
+  }
+
+  return (
+    <td className="px-3 py-3 text-gray-700 whitespace-nowrap align-top group">
+      <div className="flex items-center gap-2">
+        <span>
+          {s.age ? ageLabel(s.age) : '—'}
+          {s.age_manual && (
+            <span className="ml-1 text-[10px] text-purple-500 align-middle">(вручную)</span>
+          )}
+        </span>
+        <button
+          onClick={start}
+          title="Редактировать возраст"
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity"
+        >
+          <Icon name="Pencil" size={14} />
+        </button>
+      </div>
+    </td>
+  );
+};
+
 const ConclusionCell = ({
   s,
   onSave,
@@ -162,9 +234,11 @@ const ConclusionCell = ({
 const MainTable = ({
   rows,
   onSaveConclusion,
+  onSaveAge,
 }: {
   rows: StudentRow[];
   onSaveConclusion: (id: number, value: string) => Promise<void>;
+  onSaveAge: (id: number, age: number | null) => Promise<void>;
 }) => (
   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
     <div className="overflow-x-auto">
@@ -185,9 +259,7 @@ const MainTable = ({
               <td className="px-3 py-3 align-top font-medium text-gray-900">
                 <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
               </td>
-              <td className="px-3 py-3 text-gray-700 whitespace-nowrap align-top">
-                {s.age ? ageLabel(s.age) : '—'}
-              </td>
+              <AgeCell s={s} onSave={onSaveAge} />
               <ConclusionCell s={s} onSave={onSaveConclusion} />
               <td className="px-3 py-3 align-top">
                 {s.tariff ? (
@@ -303,10 +375,20 @@ const StudentsTablePage = () => {
 
   // Ручная правка форм нарушений: сохраняем и обновляем строку локально.
   const handleSaveConclusion = async (id: number, value: string) => {
-    await saveStudentOverride(id, value);
+    await saveStudentOverride(id, { conclusion: value });
     setItems((prev) =>
       prev.map((it) =>
         it.id === id ? { ...it, conclusion: value.trim(), conclusion_manual: true } : it,
+      ),
+    );
+  };
+
+  // Ручная правка возраста: сохраняем и обновляем строку локально.
+  const handleSaveAge = async (id: number, age: number | null) => {
+    await saveStudentOverride(id, { age });
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, age, age_manual: age != null } : it,
       ),
     );
   };
@@ -441,7 +523,11 @@ const StudentsTablePage = () => {
                   Учеников по выбранному фильтру нет
                 </div>
               ) : tab === 'main' ? (
-                <MainTable rows={filtered} onSaveConclusion={handleSaveConclusion} />
+                <MainTable
+                  rows={filtered}
+                  onSaveConclusion={handleSaveConclusion}
+                  onSaveAge={handleSaveAge}
+                />
               ) : (
                 <ProgressTable rows={filtered} />
               )}
