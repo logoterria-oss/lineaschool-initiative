@@ -53,6 +53,34 @@ const ageLabel = (age: number | null) => {
   return `${age} лет`;
 };
 
+// Точка-статус ведёт себя как последняя буква имени: приклеена к последнему слову,
+// поэтому не отрывается и не съезжает при переносе ФИ на несколько строк.
+const NameWithDot = ({
+  name,
+  statusId,
+  statusName,
+}: {
+  name: string;
+  statusId: number | null;
+  statusName: string;
+}) => {
+  const parts = (name || '').trim().split(' ');
+  const last = parts.pop() || '';
+  const head = parts.join(' ');
+  return (
+    <span className="leading-snug">
+      {head && `${head} `}
+      <span className="whitespace-nowrap">
+        {last}
+        <span
+          title={statusName}
+          className={`inline-block ml-1 w-2 h-2 rounded-full ${statusDot(statusId)}`}
+        />
+      </span>
+    </span>
+  );
+};
+
 const MainTable = ({ rows }: { rows: StudentRow[] }) => (
   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
     <div className="overflow-x-auto">
@@ -71,13 +99,7 @@ const MainTable = ({ rows }: { rows: StudentRow[] }) => (
             <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
               <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
               <td className="px-3 py-3 align-top font-medium text-gray-900">
-                <span className="leading-snug">
-                  {s.name}
-                  <span
-                    title={s.status_name}
-                    className={`inline-block align-top ml-1 w-2 h-2 rounded-full ${statusDot(s.status_id)}`}
-                  />
-                </span>
+                <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
               </td>
               <td className="px-3 py-3 text-gray-700 whitespace-nowrap align-top">
                 {s.age ? ageLabel(s.age) : '—'}
