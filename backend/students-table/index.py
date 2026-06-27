@@ -332,6 +332,39 @@ def load_reports(report_ids):
     return out
 
 
+def load_overrides():
+    """Ручные правки: student_id -> {conclusion}."""
+    conn = db()
+    out = {}
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(f"SELECT student_id, conclusion FROM {SCHEMA}.student_overrides")
+        for r in cur.fetchall():
+            out[r["student_id"]] = {"conclusion": r.get("conclusion")}
+    conn.close()
+    return out
+
+
+def handle_save_override(body):
+    student_id = body.get("student_id")
+    if not student_id:
+        return _json(400, {"error": "student_id required"})
+    conclusion = body.get("conclusion")
+    conclusion = conclusion.strip() if isinstance(conclusion, str) else None
+
+    conn = db()
+    with conn.cursor() as cur:
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.student_overrides (student_id, conclusion, updated_at) "
+            f"VALUES (%s, %s, NOW()) "
+            f"ON CONFLICT (student_id) DO UPDATE SET conclusion = EXCLUDED.conclusion, "
+            f"updated_at = NOW()",
+            (int(student_id), conclusion or None),
+        )
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True})
+
+
 def handle_statuses(token):
     statuses = get_study_statuses(token)
     customers = get_all_customers(token)
@@ -392,6 +425,7 @@ def handle_list(token):
     # Заключения из БД для всех найденных report_id.
     report_ids = {d["report_id"] for d in diag_by_student.values() if d.get("report_id")}
     reports = load_reports(report_ids)
+    overrides = load_overrides()
 
     items = []
     for c in customers:
@@ -425,6 +459,13 @@ def handle_list(token):
         # Абонемент
         tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
 
+        # Ручная правка форм нарушений всегда в приоритете.
+        ov = overrides.get(cid)
+        conclusion_manual = False
+        if ov and ov.get("conclusion") is not None:
+            conclusion = ov["conclusion"]
+            conclusion_manual = True
+
         items.append({
             "id": cid,
             "name": surname_first(c.get("name")),
@@ -432,6 +473,7 @@ def handle_list(token):
             "status_name": STATUS_NAMES.get(status_id, "—"),
             "age": age,
             "conclusion": conclusion,
+            "conclusion_manual": conclusion_manual,
             "recommendations": recommendations,
             "last_diagnostic": str(last_date) if last_date else None,
             "next_diagnostic": str(next_date) if next_date else None,
@@ -446,6 +488,12 @@ def handle_list(token):
 def handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
+
+    if event.get("httpMethod") == "POST":
+        body = json.loads(event.get("body") or "{}")
+        if body.get("action") == "save_override":
+            return handle_save_override(body)
+        return _json(400, {"error": "unknown action"})
 
     params = event.get("queryStringParameters") or {}
     mode = params.get("mode", "list")

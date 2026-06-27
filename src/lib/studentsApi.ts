@@ -13,6 +13,7 @@ export interface StudentRow {
   status_name: string;
   age: number | null;
   conclusion: string;
+  conclusion_manual: boolean;
   recommendations: string | null;
   last_diagnostic: string | null;
   next_diagnostic: string | null;
@@ -59,4 +60,21 @@ export const fetchStudents = async (): Promise<StudentRow[]> => {
   if (!res.ok) throw new Error('Не удалось загрузить учеников');
   const data = await res.json();
   return data.items as StudentRow[];
+};
+
+// Сохранить ручную правку форм нарушений (приоритет над данными из заключения).
+export const saveStudentOverride = async (
+  studentId: number,
+  conclusion: string,
+): Promise<void> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'save_override',
+      student_id: studentId,
+      conclusion,
+    }),
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить изменения');
 };

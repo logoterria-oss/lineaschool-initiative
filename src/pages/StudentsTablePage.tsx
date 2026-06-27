@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
@@ -15,6 +17,7 @@ import {
   STATUS_FILTERS,
   matchesFilter,
   fetchStudents,
+  saveStudentOverride,
 } from '@/lib/studentsApi';
 
 type Tab = 'main' | 'progress' | 'vacations';
@@ -87,7 +90,82 @@ const NameWithDot = ({
   );
 };
 
-const MainTable = ({ rows }: { rows: StudentRow[] }) => (
+const ConclusionCell = ({
+  s,
+  onSave,
+}: {
+  s: StudentRow;
+  onSave: (id: number, value: string) => Promise<void>;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(s.conclusion);
+  const [saving, setSaving] = useState(false);
+
+  const start = () => {
+    setValue(s.conclusion);
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await onSave(s.id, value);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <td className="px-3 py-3 align-top">
+        <Textarea
+          rows={3}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="text-sm"
+          placeholder="Формы нарушений чтения и письма"
+        />
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" onClick={save} disabled={saving}>
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setEditing(false)} disabled={saving}>
+            Отмена
+          </Button>
+        </div>
+      </td>
+    );
+  }
+
+  return (
+    <td className="px-3 py-3 text-gray-700 align-top group">
+      <div className="flex items-start gap-2">
+        <span className="flex-1">
+          {s.conclusion || '—'}
+          {s.conclusion_manual && (
+            <span className="ml-1 text-[10px] text-purple-500 align-middle">(вручную)</span>
+          )}
+        </span>
+        <button
+          onClick={start}
+          title="Редактировать"
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0"
+        >
+          <Icon name="Pencil" size={14} />
+        </button>
+      </div>
+    </td>
+  );
+};
+
+const MainTable = ({
+  rows,
+  onSaveConclusion,
+}: {
+  rows: StudentRow[];
+  onSaveConclusion: (id: number, value: string) => Promise<void>;
+}) => (
   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -110,7 +188,7 @@ const MainTable = ({ rows }: { rows: StudentRow[] }) => (
               <td className="px-3 py-3 text-gray-700 whitespace-nowrap align-top">
                 {s.age ? ageLabel(s.age) : '—'}
               </td>
-              <td className="px-3 py-3 text-gray-700 align-top">{s.conclusion || '—'}</td>
+              <ConclusionCell s={s} onSave={onSaveConclusion} />
               <td className="px-3 py-3 align-top">
                 {s.tariff ? (
                   <div className="flex flex-col">
@@ -222,6 +300,16 @@ const StudentsTablePage = () => {
     setTariffFilter((prev) =>
       prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
     );
+
+  // Ручная правка форм нарушений: сохраняем и обновляем строку локально.
+  const handleSaveConclusion = async (id: number, value: string) => {
+    await saveStudentOverride(id, value);
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, conclusion: value.trim(), conclusion_manual: true } : it,
+      ),
+    );
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -353,7 +441,7 @@ const StudentsTablePage = () => {
                   Учеников по выбранному фильтру нет
                 </div>
               ) : tab === 'main' ? (
-                <MainTable rows={filtered} />
+                <MainTable rows={filtered} onSaveConclusion={handleSaveConclusion} />
               ) : (
                 <ProgressTable rows={filtered} />
               )}

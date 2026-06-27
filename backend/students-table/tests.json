@@ -11,6 +11,15 @@
       "method": "GET",
       "path": "/?mode=list",
       "expectedStatus": 200
+    },
+    {
+      "name": "Save override",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "save_override", "student_id": 999999, "conclusion": "тестовая форма"},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
     }
   ]
 }
