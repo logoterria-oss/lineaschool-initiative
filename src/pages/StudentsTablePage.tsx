@@ -33,6 +33,16 @@ const statusBadge = (statusId: number | null) => {
   return 'bg-gray-100 text-gray-600';
 };
 
+// Цвет точки статуса: зелёная-активен, жёлтая-каникулы, голубая-каникулы(заморожен),
+// красная-бросил/завершил.
+const statusDot = (statusId: number | null) => {
+  if (statusId === 1) return 'bg-green-500';
+  if (statusId === 5) return 'bg-amber-400';
+  if (statusId === 4) return 'bg-sky-400';
+  if (statusId === 3 || statusId === 2) return 'bg-red-500';
+  return 'bg-gray-300';
+};
+
 const ageLabel = (age: number | null) => {
   if (!age) return '';
   const n = age % 100;
@@ -51,7 +61,6 @@ const MainTable = ({ rows }: { rows: StudentRow[] }) => (
           <tr className="bg-gray-50 text-gray-500 text-left">
             <th className="px-3 py-3 font-semibold w-12">№</th>
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
-            <th className="px-3 py-3 font-semibold">Статус</th>
             <th className="px-3 py-3 font-semibold">Возраст</th>
             <th className="px-3 py-3 font-semibold">Формы нарушений чтения и письма</th>
             <th className="px-3 py-3 font-semibold">Абонемент</th>
@@ -61,12 +70,13 @@ const MainTable = ({ rows }: { rows: StudentRow[] }) => (
           {rows.map((s, i) => (
             <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
               <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
-              <td className="px-3 py-3 align-top font-medium text-gray-900">{s.name}</td>
-              <td className="px-3 py-3 align-top">
-                <span
-                  className={`inline-block text-[11px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge(s.status_id)}`}
-                >
-                  {s.status_name?.toLowerCase()}
+              <td className="px-3 py-3 align-top font-medium text-gray-900">
+                <span className="inline-flex items-start gap-1">
+                  {s.name}
+                  <span
+                    title={s.status_name}
+                    className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${statusDot(s.status_id)}`}
+                  />
                 </span>
               </td>
               <td className="px-3 py-3 text-gray-700 whitespace-nowrap align-top">
