@@ -4,6 +4,7 @@ export interface StudentTariff {
   name: string;
   e_date: string | null;
   is_active: boolean;
+  shared_with_siblings?: boolean;
 }
 
 export interface StudentRow {

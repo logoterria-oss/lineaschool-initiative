@@ -267,6 +267,36 @@ def surname_first(name):
     return name
 
 
+def split_siblings(name):
+    """Разбивает запись сиблингов на отдельных учеников.
+
+    'Марк и Сеня Константиновы' -> [('Константиновы Марк', True), ('Константиновы Сеня', True)].
+    Для обычного клиента возвращает один элемент с флагом is_sibling=False.
+    Имена соединяются союзом 'и' (или запятой), общая фамилия — последнее слово.
+    """
+    raw = (name or "").strip()
+    if not raw:
+        return [(surname_first(raw), False)]
+
+    parts = raw.split()
+    lower = [p.lower() for p in parts]
+    if "и" not in lower:
+        return [(surname_first(raw), False)]
+
+    surname = parts[-1]
+    # Имена — всё до фамилии, без союзов 'и' и запятых.
+    given = []
+    for p in parts[:-1]:
+        token = p.strip(",")
+        if not token or token.lower() == "и":
+            continue
+        given.append(token)
+    if not given:
+        return [(surname_first(raw), False)]
+
+    return [(f"{surname} {g}", True) for g in given]
+
+
 def lesson_customer_ids(ls):
     cids = set()
     for key in ("customer_ids", "client_ids", "student_ids"):
@@ -503,32 +533,46 @@ def handle_list(token):
         # Абонемент
         tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
 
-        # Ручные правки (формы нарушений, возраст) всегда в приоритете.
-        ov = overrides.get(cid)
-        conclusion_manual = False
-        age_manual = False
-        if ov and ov.get("conclusion") is not None:
-            conclusion = ov["conclusion"]
-            conclusion_manual = True
-        if ov and ov.get("age") is not None:
-            age = ov["age"]
-            age_manual = True
+        # Сиблинги: одна CRM-запись ('Марк и Сеня Константиновы') -> несколько учеников.
+        siblings = split_siblings(c.get("name"))
+        for idx, (display_name, is_sibling) in enumerate(siblings):
+            # Уникальный id: одиночный = cid, сиблинг = cid*1000 + (idx+1).
+            row_id = cid if not is_sibling else cid * 1000 + (idx + 1)
 
-        items.append({
-            "id": cid,
-            "name": surname_first(c.get("name")),
-            "status_id": status_id,
-            "status_name": STATUS_NAMES.get(status_id, "—"),
-            "age": age,
-            "age_manual": age_manual,
-            "conclusion": conclusion,
-            "conclusion_manual": conclusion_manual,
-            "recommendations": recommendations,
-            "last_diagnostic": str(last_date) if last_date else None,
-            "next_diagnostic": str(next_date) if next_date else None,
-            "report_link": report_link,
-            "tariff": tariff,
-        })
+            row_age = age
+            row_conclusion = conclusion
+            conclusion_manual = False
+            age_manual = False
+
+            # Ручные правки (формы нарушений, возраст) всегда в приоритете.
+            ov = overrides.get(row_id)
+            if ov and ov.get("conclusion") is not None:
+                row_conclusion = ov["conclusion"]
+                conclusion_manual = True
+            if ov and ov.get("age") is not None:
+                row_age = ov["age"]
+                age_manual = True
+
+            row_tariff = tariff
+            if is_sibling and tariff:
+                # Абонемент общий — помечаем, что он разделён между сиблингами.
+                row_tariff = {**tariff, "shared_with_siblings": True}
+
+            items.append({
+                "id": row_id,
+                "name": display_name,
+                "status_id": status_id,
+                "status_name": STATUS_NAMES.get(status_id, "—"),
+                "age": row_age,
+                "age_manual": age_manual,
+                "conclusion": row_conclusion,
+                "conclusion_manual": conclusion_manual,
+                "recommendations": recommendations,
+                "last_diagnostic": str(last_date) if last_date else None,
+                "next_diagnostic": str(next_date) if next_date else None,
+                "report_link": report_link,
+                "tariff": row_tariff,
+            })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
     return _json(200, {"items": items})

@@ -185,6 +185,9 @@ const MainTable = ({
                       className={`text-xs ${s.tariff.is_active ? 'text-green-600' : 'text-gray-400'}`}
                     >
                       {s.tariff.is_active ? 'актуален' : 'закончен'}
+                      {s.tariff.shared_with_siblings && (
+                        <span className="text-purple-500"> · разделён между сиблингами</span>
+                      )}
                     </span>
                   </div>
                 ) : (
