@@ -1,15 +1,23 @@
 const API_URL = 'https://functions.poehali.dev/c0e33e31-3223-49c3-96e6-b90391728c1e';
 
+export interface StudentTariff {
+  name: string;
+  e_date: string | null;
+  is_active: boolean;
+}
+
 export interface StudentRow {
   id: number;
   name: string;
   status_id: number | null;
   status_name: string;
+  age: number | null;
+  conclusion: string;
+  recommendations: string | null;
   last_diagnostic: string | null;
-  last_recommendations: string | null;
-  last_report_link: string | null;
   next_diagnostic: string | null;
-  diagnostics_count: number;
+  report_link: string | null;
+  tariff: StudentTariff | null;
 }
 
 export type StatusFilter =
@@ -51,22 +59,4 @@ export const fetchStudents = async (): Promise<StudentRow[]> => {
   if (!res.ok) throw new Error('Не удалось загрузить учеников');
   const data = await res.json();
   return data.items as StudentRow[];
-};
-
-export interface SaveDiagInput {
-  student_id: number;
-  student_name: string;
-  diagnostic_date: string;
-  recommendations?: string;
-  report_link?: string;
-  is_first?: boolean;
-}
-
-export const saveDiagnostic = async (input: SaveDiagInput): Promise<void> => {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'save_diag', ...input }),
-  });
-  if (!res.ok) throw new Error('Не удалось сохранить диагностику');
 };

@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -7,21 +8,21 @@ from datetime import datetime, timedelta, date
 
 """
 Таблица учеников для кабинета администратора.
-Источник: AlfaCRM S20 (статусы, занятия). Диагностики — таблица student_diagnostics.
+Источник: AlfaCRM S20 (статусы, занятия, абонементы) + БД заключений (speech_therapy_reports).
 
-Режимы:
-  GET ?mode=statuses : справочник статусов обучения из CRM + распределение
-  GET ?mode=list     : ученики со статусом, последней и следующей диагностикой
-  POST {action:'save_diag', student_id, student_name, diagnostic_date,
-        recommendations, report_link, is_first}
+Диагностики берутся из CRM-уроков типа "Диагностика":
+  topic = ссылка на заключение (https://lineaschool.ru/diag/{id}),
+  note  = рекомендации, date = дата диагностики.
+Заключение (типы дислексии/дисграфии/дизорфографии) и возраст — из speech_therapy_reports по id.
+Абонемент — из customer-tariff (актуальный по e_date) + справочник tariff (название).
+
+Режимы: GET ?mode=list | ?mode=statuses
 """
 
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
 SCHEMA = "t_p93118852_lineaschool_initiati"
 
-# Маппинг кодов статусов CRM (study_status_id) на названия.
-# 1=Активен, 2=Завершил, 3=Бросил, 4=Каникулы-заморожен, 5=Каникулы
 STATUS_NAMES = {1: "Активен", 2: "Завершил", 3: "Бросил",
                 4: "Каникулы (заморожен)", 5: "Каникулы"}
 
@@ -112,7 +113,6 @@ def get_all_customers(token):
 
 
 def get_lessons(token, date_from, date_to, status=3):
-    """Занятия за период. status=3 — проведённые, None — все."""
     url = f"{S20_HOST}/v2api/1/lesson/index"
     all_items = []
     page = 0
@@ -132,17 +132,100 @@ def get_lessons(token, date_from, date_to, status=3):
     return all_items
 
 
-def get_done_lessons(token, date_from, date_to):
-    return get_lessons(token, date_from, date_to, status=3)
+def get_tariffs(token):
+    """Справочник абонементов: id -> name."""
+    url = f"{S20_HOST}/v2api/1/tariff/index"
+    result = {}
+    page = 0
+    while True:
+        try:
+            resp = requests.post(url, json={"page": page, "pageSize": 200},
+                                 headers=get_headers(token), timeout=20)
+            if resp.status_code != 200:
+                break
+            data = resp.json()
+            items = data.get("items", [])
+            for t in items:
+                result[t.get("id")] = t.get("name")
+            if len(result) >= data.get("total", 0) or not items:
+                break
+            page += 1
+        except Exception as e:
+            print(f"tariff fetch failed: {e}")
+            break
+    return result
 
 
 def get_customer_tariffs(token, customer_id):
-    """Абонементы ученика из CRM (customer-tariff)."""
-    url = f"{S20_HOST}/v2api/1/customer-tariff/index"
-    resp = requests.post(url, json={"customer_id": customer_id, "page": 0, "pageSize": 50},
-                         headers=get_headers(token), timeout=20)
-    resp.raise_for_status()
-    return resp.json().get("items", [])
+    """Абонементы одного клиента (customer_id в query string)."""
+    url = f"{S20_HOST}/v2api/1/customer-tariff/index?customer_id={customer_id}"
+    try:
+        resp = requests.post(url, json={"page": 0, "pageSize": 50},
+                             headers=get_headers(token), timeout=15)
+        if resp.status_code != 200:
+            return []
+        return resp.json().get("items", [])
+    except Exception as e:
+        print(f"customer-tariff failed {customer_id}: {e}")
+        return []
+
+
+def get_all_customer_tariffs(token, customer_ids):
+    """Абонементы всех клиентов параллельно -> {customer_id: [items]}."""
+    from concurrent.futures import ThreadPoolExecutor
+    out = {}
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        futures = {ex.submit(get_customer_tariffs, token, cid): cid
+                   for cid in customer_ids}
+        for f in futures:
+            cid = futures[f]
+            try:
+                out[cid] = f.result()
+            except Exception:
+                out[cid] = []
+    return out
+
+
+def parse_crm_date(s):
+    """CRM-даты бывают 'DD.MM.YYYY' или 'YYYY-MM-DD [HH:MM:SS]'."""
+    if not s:
+        return None
+    s = s.strip()
+    for fmt in ("%d.%m.%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s[:10], fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def pick_actual_tariff(tariffs, tariff_names):
+    """Актуальный абонемент: действует сейчас (e_date>=today), иначе последний по b_date."""
+    if not tariffs:
+        return None
+    today = date.today()
+
+    def label(t):
+        name = tariff_names.get(t.get("tariff_id"), f"Абонемент #{t.get('tariff_id')}")
+        return name
+
+    actual = []
+    for t in tariffs:
+        e = parse_crm_date(t.get("e_date"))
+        b = parse_crm_date(t.get("b_date"))
+        actual.append((b or date.min, e, t))
+
+    # сначала действующие
+    live = [x for x in actual if x[1] is None or x[1] >= today]
+    pool = live if live else actual
+    pool.sort(key=lambda x: x[0], reverse=True)
+    b, e, t = pool[0]
+    is_live = bool(live) and (e is None or e >= today)
+    return {
+        "name": label(t),
+        "e_date": str(e) if e else None,
+        "is_active": is_live,
+    }
 
 
 def lesson_customer_ids(ls):
@@ -166,15 +249,15 @@ def iso_week_key(d):
 
 
 def compute_next_diag(prev_date, active_week_keys):
-    """Предыдущая дата + 3 месяца чистого обучения. Дни в неделях без занятий
-    (перерыв неделя или более) не засчитываются в срок."""
+    """Предыдущая дата + 3 месяца чистого обучения. Недели без занятий не засчитываются.
+    Ограничение: не дальше 6 календарных месяцев от предыдущей диагностики, чтобы
+    при неполных данных по занятиям дата не уезжала на годы вперёд."""
     target_active_days = 90
+    hard_limit = prev_date + timedelta(days=185)
     cur = prev_date
     active_days = 0
-    guard = 0
-    while active_days < target_active_days and guard < 365 * 3:
+    while active_days < target_active_days and cur < hard_limit:
         cur = cur + timedelta(days=1)
-        guard += 1
         if iso_week_key(cur) in active_week_keys:
             active_days += 1
     return cur
@@ -186,6 +269,51 @@ def plain_plus_3_months(prev):
     mm = m % 12 + 1
     day = min(prev.day, 28)
     return date(y, mm, day)
+
+
+def extract_report_id(topic):
+    """Из темы урока достаём id заключения: .../diag/{id}."""
+    if not topic:
+        return None
+    m = re.search(r"/diag/(\d+)", topic)
+    return int(m.group(1)) if m else None
+
+
+def load_reports(report_ids):
+    """id -> {conclusion, age, link} из speech_therapy_reports."""
+    if not report_ids:
+        return {}
+    ids = ",".join(str(int(i)) for i in report_ids)
+    conn = db()
+    out = {}
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, student_age, form_data FROM {SCHEMA}.speech_therapy_reports "
+            f"WHERE id IN ({ids})"
+        )
+        for r in cur.fetchall():
+            conclusion = ""
+            age = r.get("student_age")
+            fd = r.get("form_data")
+            if fd:
+                try:
+                    data = json.loads(fd)
+                    parts = []
+                    for key in ("dyslexiaTypes", "dysgraphiaTypes"):
+                        val = data.get(key)
+                        if isinstance(val, list):
+                            parts.extend([str(x).strip() for x in val if str(x).strip()])
+                        elif isinstance(val, str) and val.strip():
+                            parts.append(val.strip())
+                    conclusion = ", ".join(parts)
+                    if not age:
+                        a = data.get("age")
+                        age = int(a) if str(a).isdigit() else age
+                except Exception as e:
+                    print(f"form_data parse failed for {r['id']}: {e}")
+            out[r["id"]] = {"conclusion": conclusion, "age": age}
+    conn.close()
+    return out
 
 
 def handle_statuses(token):
@@ -202,128 +330,106 @@ def handle_statuses(token):
     })
 
 
-def load_diagnostics():
-    """student_id -> [rows] (по убыванию даты)."""
-    conn = db()
-    by_student = {}
-    with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(
-            f"SELECT id, student_id, student_name, diagnostic_date, recommendations, "
-            f"report_link, is_first FROM {SCHEMA}.student_diagnostics "
-            f"ORDER BY diagnostic_date DESC, id DESC"
-        )
-        for r in cur.fetchall():
-            d = dict(r)
-            d["diagnostic_date"] = str(d["diagnostic_date"])
-            by_student.setdefault(r["student_id"], []).append(d)
-    conn.close()
-    return by_student
-
-
 def handle_list(token):
     customers = get_all_customers(token)
-    diags = load_diagnostics()
+    tariff_names = get_tariffs(token)
+    tariffs_by_customer = get_all_customer_tariffs(token, [c.get("id") for c in customers])
 
-    earliest = None
-    for rows in diags.values():
-        for r in rows:
-            dd = datetime.strptime(r["diagnostic_date"], "%Y-%m-%d").date()
-            if earliest is None or dd < earliest:
-                earliest = dd
+    today = date.today()
+    date_from = "2024-01-01"
+    date_to = (today + timedelta(days=1)).strftime("%Y-%m-%d")
 
+    # Все уроки за период (все статусы) — для диагностик и для расчёта активных недель.
+    try:
+        all_lessons = get_lessons(token, date_from, date_to, status=None)
+    except Exception as e:
+        print(f"lessons fetch failed: {e}")
+        all_lessons = []
+
+    # Диагностические уроки по ученику: {cid: {date, note, report_id}}.
+    diag_by_student = {}
     active_weeks_by_student = {}
-    if earliest:
-        today = date.today()
-        date_from = earliest.strftime("%Y-%m-%d")
-        date_to = (today + timedelta(days=180)).strftime("%Y-%m-%d")
-        try:
-            lessons = get_done_lessons(token, date_from, date_to)
-            for ls in lessons:
-                ld = (ls.get("date") or "")[:10]
-                if not ld:
-                    continue
-                try:
-                    ldate = datetime.strptime(ld, "%Y-%m-%d").date()
-                except ValueError:
-                    continue
-                wk = iso_week_key(ldate)
-                for cid in lesson_customer_ids(ls):
-                    active_weeks_by_student.setdefault(cid, set()).add(wk)
-        except Exception as e:
-            print(f"lessons fetch failed: {e}")
+    for ls in all_lessons:
+        ld = parse_crm_date(ls.get("date"))
+        if not ld:
+            continue
+        ltype = (ls.get("lesson_type_name") or "").lower()
+        cids = lesson_customer_ids(ls)
+
+        # активные недели — по проведённым занятиям (status=3)
+        if ls.get("status") == 3:
+            wk = iso_week_key(ld)
+            for cid in cids:
+                active_weeks_by_student.setdefault(cid, set()).add(wk)
+
+        if "диагност" in ltype:
+            report_id = extract_report_id(ls.get("topic"))
+            for cid in cids:
+                prev = diag_by_student.get(cid)
+                if prev is None or ld > prev["date"]:
+                    diag_by_student[cid] = {
+                        "date": ld,
+                        "note": (ls.get("note") or "").strip(),
+                        "report_id": report_id,
+                    }
+
+    # Заключения из БД для всех найденных report_id.
+    report_ids = {d["report_id"] for d in diag_by_student.values() if d.get("report_id")}
+    reports = load_reports(report_ids)
 
     items = []
     for c in customers:
-        sid = c.get("id")
+        cid = c.get("id")
         status_id = c.get("study_status_id")
-        student_diags = diags.get(sid, [])
-        last = student_diags[0] if student_diags else None
+        diag = diag_by_student.get(cid)
 
+        last_date = None
         next_date = None
-        if last:
-            prev = datetime.strptime(last["diagnostic_date"], "%Y-%m-%d").date()
-            weeks = active_weeks_by_student.get(sid, set())
+        conclusion = ""
+        age = None
+        report_link = None
+        recommendations = None
+
+        if diag:
+            last_date = diag["date"]
+            recommendations = diag.get("note") or None
+            rid = diag.get("report_id")
+            if rid:
+                report_link = f"https://lineaschool.ru/diag/{rid}"
+                rep = reports.get(rid)
+                if rep:
+                    conclusion = rep.get("conclusion") or ""
+                    age = rep.get("age")
+            weeks = active_weeks_by_student.get(cid, set())
             if weeks:
-                next_date = compute_next_diag(prev, weeks).strftime("%Y-%m-%d")
+                next_date = compute_next_diag(last_date, weeks)
             else:
-                next_date = plain_plus_3_months(prev).strftime("%Y-%m-%d")
+                next_date = plain_plus_3_months(last_date)
+
+        # Абонемент
+        tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
 
         items.append({
-            "id": sid,
+            "id": cid,
             "name": c.get("name"),
             "status_id": status_id,
             "status_name": STATUS_NAMES.get(status_id, "—"),
-            "last_diagnostic": last["diagnostic_date"] if last else None,
-            "last_recommendations": last["recommendations"] if last else None,
-            "last_report_link": last["report_link"] if last else None,
-            "next_diagnostic": next_date,
-            "diagnostics_count": len(student_diags),
+            "age": age,
+            "conclusion": conclusion,
+            "recommendations": recommendations,
+            "last_diagnostic": str(last_date) if last_date else None,
+            "next_diagnostic": str(next_date) if next_date else None,
+            "report_link": report_link,
+            "tariff": tariff,
         })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
     return _json(200, {"items": items})
 
 
-def handle_save_diag(body):
-    student_id = body.get("student_id")
-    student_name = (body.get("student_name") or "").strip()
-    diagnostic_date = (body.get("diagnostic_date") or "").strip()
-    recommendations = (body.get("recommendations") or "").strip() or None
-    report_link = (body.get("report_link") or "").strip() or None
-    is_first = bool(body.get("is_first"))
-
-    if not student_id or not student_name:
-        return _json(400, {"error": "student required"})
-    if not diagnostic_date:
-        return _json(400, {"error": "diagnostic_date required"})
-
-    conn = db()
-    with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(
-            f"INSERT INTO {SCHEMA}.student_diagnostics "
-            f"(student_id, student_name, diagnostic_date, recommendations, report_link, is_first) "
-            f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (int(student_id), student_name, diagnostic_date, recommendations,
-             report_link, is_first),
-        )
-        new_id = cur.fetchone()["id"]
-        conn.commit()
-    conn.close()
-    return _json(200, {"success": True, "id": new_id})
-
-
 def handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
-
-    method = event.get("httpMethod", "GET")
-
-    if method == "POST":
-        body = json.loads(event.get("body") or "{}")
-        action = body.get("action")
-        if action == "save_diag":
-            return handle_save_diag(body)
-        return _json(400, {"error": "unknown action"})
 
     params = event.get("queryStringParameters") or {}
     mode = params.get("mode", "list")
@@ -337,75 +443,5 @@ def handler(event, context):
         return handle_statuses(token)
     if mode == "list":
         return handle_list(token)
-    if mode == "debug":
-        return handle_debug(token, params)
-    if mode == "tariff":
-        cid = int(params.get("customer_id", "0"))
-        try:
-            tariffs = get_customer_tariffs(token, cid)
-        except Exception as e:
-            return _json(502, {"error": str(e)})
-        return _json(200, {
-            "keys": sorted(tariffs[0].keys()) if tariffs else [],
-            "items": tariffs,
-        })
 
     return _json(400, {"error": "unknown mode"})
-
-
-def handle_debug(token, params):
-    """Разведка структуры: образцы уроков, диагностические уроки, абонемент, карточка."""
-    date_from = params.get("date_from", "2024-01-01")
-    date_to = params.get("date_to", date.today().strftime("%Y-%m-%d"))
-    out = {}
-
-    try:
-        lessons = get_lessons(token, date_from, date_to, status=None)
-    except Exception as e:
-        lessons = []
-        out["lessons_error"] = str(e)
-
-    out["lessons_total"] = len(lessons)
-    out["lesson_sample_keys"] = sorted(lessons[0].keys()) if lessons else []
-
-    # Уроки, у которых тема/тип содержит "диагност".
-    diag = []
-    for ls in lessons:
-        topic = (ls.get("topic") or "").lower()
-        ltype = (ls.get("lesson_type_name") or "").lower()
-        if "диагност" in topic or "диагност" in ltype:
-            diag.append({
-                "date": ls.get("date"),
-                "topic": ls.get("topic"),
-                "note": ls.get("note"),
-                "lesson_type_name": ls.get("lesson_type_name"),
-                "subject_id": ls.get("subject_id"),
-                "customer_ids": ls.get("customer_ids"),
-            })
-    out["diag_lessons_count"] = len(diag)
-    out["diag_lessons_sample"] = diag[:8]
-
-    # Распределение по lesson_type_name (чтобы понять, как называется диагностика).
-    types = {}
-    for ls in lessons:
-        t = ls.get("lesson_type_name")
-        types[t] = types.get(t, 0) + 1
-    out["lesson_types"] = types
-
-    # Карточка одного ученика + его абонементы (только ключи и компактно).
-    customers = get_all_customers(token)
-    if customers:
-        c = customers[0]
-        out["customer_sample_keys"] = sorted(c.keys())
-        out["customer_compact"] = {k: c.get(k) for k in
-                                   ("id", "name", "dob", "b_date", "age", "balance",
-                                    "paid_count", "next_lesson_date", "e_date",
-                                    "study_status_id")}
-        try:
-            tariffs = get_customer_tariffs(token, c.get("id"))
-            out["tariff_keys"] = sorted(tariffs[0].keys()) if tariffs else []
-            out["customer_tariffs_sample"] = tariffs[:5]
-        except Exception as e:
-            out["customer_tariffs_error"] = str(e)
-
-    return _json(200, out)
