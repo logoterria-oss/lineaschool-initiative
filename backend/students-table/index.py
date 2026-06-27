@@ -106,6 +106,8 @@ def get_all_customers(token):
                 if cid in seen:
                     continue
                 seen.add(cid)
+                # Помечаем архивных: клиент из выборки removed=1 считается в архиве.
+                it["_archived"] = bool(removed_flag)
                 merged.append(it)
         except Exception as e:
             print(f"customers fetch failed: {e}")
@@ -370,7 +372,7 @@ def handle_statuses(token):
     customers = get_all_customers(token)
     dist = {}
     for c in customers:
-        sid = c.get("study_status_id")
+        sid = 3 if (c.get("_archived") or c.get("removed")) else c.get("study_status_id")
         dist[sid] = dist.get(sid, 0) + 1
     return _json(200, {
         "statuses": [{"id": s.get("id"), "name": s.get("name")} for s in statuses],
@@ -430,7 +432,8 @@ def handle_list(token):
     items = []
     for c in customers:
         cid = c.get("id")
-        status_id = c.get("study_status_id")
+        # Архивный клиент всегда считается "Бросил" (статус 3).
+        status_id = 3 if (c.get("_archived") or c.get("removed")) else c.get("study_status_id")
         diag = diag_by_student.get(cid)
 
         last_date = None
