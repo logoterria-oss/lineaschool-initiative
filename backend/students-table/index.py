@@ -228,6 +228,22 @@ def pick_actual_tariff(tariffs, tariff_names):
     }
 
 
+def surname_first(name):
+    """CRM хранит 'Имя Фамилия' -> возвращаем 'Фамилия Имя'.
+    Имена сиблингов с союзом 'и' оставляем как есть."""
+    name = (name or "").strip()
+    if not name:
+        return name
+    parts = name.split()
+    if "и" in [p.lower() for p in parts]:
+        return name
+    if len(parts) == 2:
+        return f"{parts[1]} {parts[0]}"
+    if len(parts) >= 3:
+        return f"{parts[-1]} {' '.join(parts[:-1])}"
+    return name
+
+
 def lesson_customer_ids(ls):
     cids = set()
     for key in ("customer_ids", "client_ids", "student_ids"):
@@ -411,7 +427,7 @@ def handle_list(token):
 
         items.append({
             "id": cid,
-            "name": c.get("name"),
+            "name": surname_first(c.get("name")),
             "status_id": status_id,
             "status_name": STATUS_NAMES.get(status_id, "—"),
             "age": age,
