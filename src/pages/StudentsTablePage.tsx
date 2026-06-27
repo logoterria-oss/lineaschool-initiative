@@ -51,6 +51,7 @@ const MainTable = ({ rows }: { rows: StudentRow[] }) => (
           <tr className="bg-gray-50 text-gray-500 text-left">
             <th className="px-3 py-3 font-semibold w-12">№</th>
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
+            <th className="px-3 py-3 font-semibold">Статус</th>
             <th className="px-3 py-3 font-semibold">Возраст</th>
             <th className="px-3 py-3 font-semibold">Формы нарушений чтения и письма</th>
             <th className="px-3 py-3 font-semibold">Абонемент</th>
@@ -60,15 +61,13 @@ const MainTable = ({ rows }: { rows: StudentRow[] }) => (
           {rows.map((s, i) => (
             <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
               <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
+              <td className="px-3 py-3 align-top font-medium text-gray-900">{s.name}</td>
               <td className="px-3 py-3 align-top">
-                <div className="flex flex-col">
-                  <span
-                    className={`self-start text-[10px] px-2 py-0.5 rounded-full mb-1 ${statusBadge(s.status_id)}`}
-                  >
-                    {s.status_name?.toLowerCase()}
-                  </span>
-                  <span className="font-medium text-gray-900">{s.name}</span>
-                </div>
+                <span
+                  className={`inline-block text-[11px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge(s.status_id)}`}
+                >
+                  {s.status_name?.toLowerCase()}
+                </span>
               </td>
               <td className="px-3 py-3 text-gray-700 whitespace-nowrap align-top">
                 {s.age ? ageLabel(s.age) : '—'}
