@@ -141,12 +141,18 @@ const DateCell = ({
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? '');
+  const [displayed, setDisplayed] = useState(value);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     setSaving(true);
-    try { await onSave(draft || null); setEditing(false); }
-    finally { setSaving(false); }
+    try {
+      await onSave(draft || null);
+      setDisplayed(draft || null);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (editing) {
@@ -164,9 +170,9 @@ const DateCell = ({
   return (
     <td className="px-3 py-3 align-top text-sm text-gray-700 group">
       <div className="flex items-center gap-2">
-        <span>{value ? fmtDate(value) : <span className="text-gray-400 text-xs italic">{placeholder}</span>}</span>
+        <span>{displayed ? fmtDate(displayed) : <span className="text-gray-400 text-xs italic">{placeholder}</span>}</span>
         <button
-          onClick={() => { setDraft(value ?? ''); setEditing(true); }}
+          onClick={() => { setDraft(displayed ?? ''); setEditing(true); }}
           className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0"
           title="Редактировать"
         >
