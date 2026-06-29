@@ -23,6 +23,7 @@ const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => {
   <div className="relative inline-block">
     <span
       onClick={() => clickable && setOpen((v) => !v)}
+      title={clickable ? 'Нажмите, чтобы открыть результаты диагностики' : undefined}
       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap ${
         clickable ? 'cursor-pointer' : 'cursor-default'
       } ${bubbleStyle(d.type)}`}
@@ -80,6 +81,10 @@ const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => {
 
 const ProgressTable = ({ rows }: { rows: StudentRow[] }) => (
   <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+    <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-gray-500 border-b border-gray-100">
+      <Icon name="Info" size={14} className="text-purple-500" />
+      Нажмите на дату диагностики, чтобы открыть её результаты
+    </div>
     <div>
       <table className="w-full text-sm">
         <thead>
