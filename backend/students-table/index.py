@@ -318,18 +318,38 @@ def iso_week_key(d):
 
 
 def compute_next_diag(prev_date, active_week_keys):
-    """Предыдущая дата + 3 месяца чистого обучения. Недели без занятий не засчитываются.
-    Ограничение: не дальше 6 календарных месяцев от предыдущей диагностики, чтобы
-    при неполных данных по занятиям дата не уезжала на годы вперёд."""
-    target_active_days = 90
+    """Рекомендуемая дата = предыдущая диагностика + 3 месяца, сдвинутые на перерывы.
+
+    Базово: prev_date + 3 месяца. Каждая полная неделя без занятий (перерыв)
+    в интервале от prev_date до итоговой даты добавляет +7 дней. Считаем
+    итеративно, т.к. сдвиг может захватить новые пустые недели.
+    Ограничение: не дальше 6 календарных месяцев от предыдущей диагностики.
+    """
+    base = plain_plus_3_months(prev_date)
     hard_limit = prev_date + timedelta(days=185)
-    cur = prev_date
-    active_days = 0
-    while active_days < target_active_days and cur < hard_limit:
-        cur = cur + timedelta(days=1)
-        if iso_week_key(cur) in active_week_keys:
-            active_days += 1
-    return cur
+
+    def empty_weeks_until(end_date):
+        """Число полных ISO-недель без занятий в интервале (prev_date, end_date)."""
+        weeks = set()
+        cur = prev_date + timedelta(days=1)
+        while cur < end_date:
+            weeks.add(iso_week_key(cur))
+            cur = cur + timedelta(days=1)
+        # неделю, в которую попадает сама диагностика, считаем рабочей
+        weeks.discard(iso_week_key(prev_date))
+        return len([w for w in weeks if w not in active_week_keys])
+
+    target = base
+    prev_empty = -1
+    while True:
+        empty = empty_weeks_until(target)
+        if empty == prev_empty:
+            break
+        prev_empty = empty
+        target = base + timedelta(days=7 * empty)
+        if target >= hard_limit:
+            return hard_limit
+    return min(target, hard_limit)
 
 
 def plain_plus_3_months(prev):
