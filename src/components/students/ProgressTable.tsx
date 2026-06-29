@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { StudentRow, DiagnosticBubble } from '@/lib/studentsApi';
-import { fmtDate } from './studentsTableHelpers';
+import { fmtDate, NameWithDot } from './studentsTableHelpers';
 
 const bubbleStyle = (type: DiagnosticBubble['type']) => {
   if (type === 'primary') return 'bg-sky-100 text-sky-700 border-sky-300';
@@ -99,7 +99,7 @@ const ProgressTable = ({ rows }: { rows: StudentRow[] }) => (
             <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
               <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
               <td className="px-3 py-3 font-medium text-gray-900 align-top whitespace-nowrap">
-                {s.name}
+                <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
               </td>
               <td className="px-3 py-3 align-top">
                 {s.diagnostics && s.diagnostics.length > 0 ? (

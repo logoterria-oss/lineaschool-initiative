@@ -551,7 +551,6 @@ def handle_list(token, name_filter=None):
     # Все диагностики ученика: {cid: [ {date, note, topic, report_id} ]}.
     all_diags_by_student = {}
     active_weeks_by_student = {}
-    lessons_by_student = {}  # все занятия по ученику для debug
     # Дата самого раннего занятия любого типа по ученику — для определения первичной диагностики.
     first_lesson_by_student = {}
     for ls in all_lessons:
@@ -560,11 +559,6 @@ def handle_list(token, name_filter=None):
             continue
         ltype = (ls.get("lesson_type_name") or "").lower()
         cids = lesson_customer_ids(ls)
-
-        for cid in cids:
-            lessons_by_student.setdefault(cid, []).append({
-                "date": str(ld), "status": ls.get("status"), "week": list(iso_week_key(ld))
-            })
 
         # активные недели — по любым занятиям (проведённым и запланированным),
         # кроме отменённых. Перерыв считается только если занятий не было совсем.
@@ -696,12 +690,6 @@ def handle_list(token, name_filter=None):
     if name_filter:
         nf = name_filter.lower()
         items = [it for it in items if nf in (it.get("name") or "").lower()]
-        for it in items:
-            cid = it["id"] if it["id"] < 10000 else it["id"] // 1000
-            it["_lessons"] = sorted(
-                lessons_by_student.get(cid, []), key=lambda x: x["date"]
-            )
-            it["_active_weeks"] = sorted([list(w) for w in active_weeks_by_student.get(cid, set())])
     return _json(200, {"items": items})
 
 
