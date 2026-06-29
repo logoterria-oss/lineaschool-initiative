@@ -239,19 +239,22 @@ def pick_actual_tariff(tariffs, tariff_names):
     def label(t):
         return tariff_names.get(t.get("tariff_id"), f"Абонемент #{t.get('tariff_id')}")
 
-    # Последний абонемент по дате начала — для названия, e_date и остатка занятий.
+    # Сортируем все абонементы по дате начала (новые первые).
     actual = []
     for t in tariffs:
         e = parse_crm_date(t.get("e_date"))
         b = parse_crm_date(t.get("b_date"))
-        actual.append((b or date.min, e, t))
+        try:
+            paid = int(t.get("paid_lesson_count") or 0)
+        except (TypeError, ValueError):
+            paid = 0
+        actual.append((b or date.min, e, paid, t))
     actual.sort(key=lambda x: x[0], reverse=True)
-    b, e, t = actual[0]
 
-    try:
-        paid_left = int(t.get("paid_lesson_count") or 0)
-    except (TypeError, ValueError):
-        paid_left = 0
+    # Приоритет: берём абонемент с ненулевым остатком занятий (ближайший к последнему).
+    # Если у всех остаток 0 — берём последний по дате начала.
+    chosen = next((x for x in actual if x[2] > 0), actual[0])
+    b, e, paid_left, t = chosen
 
     return {
         "name": label(t),
