@@ -128,6 +128,55 @@ const VacationEditor = ({
   );
 };
 
+// ────── DateCell (универсальная редактируемая ячейка с датой) ────────────────
+
+const DateCell = ({
+  value,
+  placeholder,
+  onSave,
+}: {
+  value: string | null;
+  placeholder: string;
+  onSave: (date: string | null) => Promise<void>;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try { await onSave(draft || null); setEditing(false); }
+    finally { setSaving(false); }
+  };
+
+  if (editing) {
+    return (
+      <td className="px-3 py-3 align-top">
+        <Input type="date" value={draft} onChange={e => setDraft(e.target.value)} className="h-8 text-xs w-36" />
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" onClick={save} disabled={saving} className="h-7 text-xs">{saving ? '…' : 'ОК'}</Button>
+          <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="h-7 text-xs">Отмена</Button>
+        </div>
+      </td>
+    );
+  }
+
+  return (
+    <td className="px-3 py-3 align-top text-sm text-gray-700 group">
+      <div className="flex items-center gap-2">
+        <span>{value ? fmtDate(value) : <span className="text-gray-400 text-xs italic">{placeholder}</span>}</span>
+        <button
+          onClick={() => { setDraft(value ?? ''); setEditing(true); }}
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0"
+          title="Редактировать"
+        >
+          <Icon name="Pencil" size={13} />
+        </button>
+      </div>
+    </td>
+  );
+};
+
 // ────── VacationCell ─────────────────────────────────────────────────────────
 
 const VacationCell = ({
@@ -158,7 +207,7 @@ const VacationCell = ({
   return (
     <td className="px-3 py-3 align-top text-sm text-gray-700 group">
       <div className="flex items-start gap-2">
-        <span>{v ? formatVacationEnd(v) : <span className="text-gray-400">не указано</span>}</span>
+        <span>{v ? formatVacationEnd(v) : <span className="text-gray-400 text-xs italic">не указано</span>}</span>
         <button
           onClick={() => setEditing(true)}
           className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0 mt-0.5"
@@ -269,6 +318,7 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
           <tr className="bg-gray-50 text-gray-500 text-left">
             <th className="px-3 py-3 font-semibold w-10">№</th>
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
+            <th className="px-3 py-3 font-semibold">Начало каникул</th>
             <th className="px-3 py-3 font-semibold">Конец каникул</th>
             <th className="px-3 py-3 font-semibold">Первый урок после каникул</th>
           </tr>
@@ -280,13 +330,29 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
               <td className="px-3 py-3 font-medium text-gray-900 align-top whitespace-nowrap">
                 <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
               </td>
+              <DateCell
+                value={s.vacation?.date_from ?? null}
+                placeholder="не указано"
+                onSave={async (d) => {
+                  const v = s.vacation;
+                  await saveVacation(s.id, {
+                    date_from: d,
+                    date_to: v?.date_to ?? null,
+                    vacation_end_type: v?.vacation_end_type ?? 'exact',
+                    first_lesson_date: v?.first_lesson_date ?? null,
+                    first_lesson_status: v?.first_lesson_status ?? 'not_agreed',
+                    note: v?.note ?? '',
+                  });
+                  handleUpdate(s.id, { ...(v ?? { id: 0, date_to: null, vacation_end_type: 'exact', first_lesson_date: null, first_lesson_status: 'not_agreed', note: '' }), date_from: d });
+                }}
+              />
               <VacationCell s={s} onUpdate={handleUpdate} />
               <FirstLessonCell s={s} onUpdate={handleUpdate} />
             </tr>
           ))}
           {enriched.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-3 py-8 text-center text-gray-400">
+              <td colSpan={5} className="px-3 py-8 text-center text-gray-400">
                 Нет учеников на каникулах
               </td>
             </tr>
