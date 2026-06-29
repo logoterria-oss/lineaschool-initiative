@@ -4,8 +4,19 @@ import Icon from "@/components/ui/icon";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import BookingModal from "@/components/BookingModal";
 
+const getPromoDeadline = () => {
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const months = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря",
+  ];
+  return `${lastDay.getDate()} ${months[lastDay.getMonth()]}`;
+};
+
 export default function HeroSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const promoDeadline = getPromoDeadline();
   return (
     <section className="relative py-4 sm:py-6 md:py-8 lg:py-12 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
@@ -21,7 +32,7 @@ export default function HeroSection() {
                 {/* Шильдик акции */}
                 <div className="absolute -top-3 right-2 sm:right-4 z-20">
                   <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold shadow-lg whitespace-nowrap">
-                    <span className="drop-shadow-[0_0_2px_white]">🔥</span> Акция до 30 июня
+                    <span className="drop-shadow-[0_0_2px_white]">🔥</span> Акция до {promoDeadline}
                   </div>
                 </div>
                 
