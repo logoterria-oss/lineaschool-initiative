@@ -479,6 +479,23 @@ def load_overrides():
     return out
 
 
+# date_from/date_to в таблице NOT NULL, поэтому "пустую" дату храним сентинелом.
+SENTINEL_DATE = "1900-01-01"
+
+
+def _date_in(v):
+    """None/'' -> сентинел (для записи в NOT NULL колонку)."""
+    return v if v else SENTINEL_DATE
+
+
+def _date_out(v):
+    """Сентинел/None -> None, иначе строка даты."""
+    if not v:
+        return None
+    s = str(v)
+    return None if s == SENTINEL_DATE else s
+
+
 def load_vacations():
     """Каникулы: {student_id: {id, date_from, date_to, vacation_end_type,
                                first_lesson_date, first_lesson_status, note}}.
@@ -497,10 +514,10 @@ def load_vacations():
             sid = r["student_id"]
             out[sid] = {
                 "id": r["id"],
-                "date_from": str(r["date_from"]) if r["date_from"] else None,
-                "date_to": str(r["date_to"]) if r["date_to"] else None,
+                "date_from": _date_out(r["date_from"]),
+                "date_to": _date_out(r["date_to"]),
                 "vacation_end_type": r["vacation_end_type"] or "exact",
-                "first_lesson_date": str(r["first_lesson_date"]) if r["first_lesson_date"] else None,
+                "first_lesson_date": _date_out(r["first_lesson_date"]),
                 "first_lesson_status": r["first_lesson_status"] or "not_agreed",
                 "note": r["note"] or "",
             }
@@ -518,8 +535,8 @@ def handle_save_vacation(body):
     student_id = body.get("student_id")
     if not student_id:
         return _json(400, {"error": "student_id required"})
-    date_from = body.get("date_from") or None
-    date_to = body.get("date_to") or None
+    date_from = _date_in(body.get("date_from"))
+    date_to = _date_in(body.get("date_to"))
     vacation_end_type = body.get("vacation_end_type", "exact")
     first_lesson_date = body.get("first_lesson_date") or None
     first_lesson_status = body.get("first_lesson_status", "not_agreed")
