@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { StudentRow, DiagnosticBubble } from '@/lib/studentsApi';
 import { fmtDate } from './studentsTableHelpers';
@@ -14,20 +15,32 @@ const bubbleLabel = (type: DiagnosticBubble['type']) => {
   return 'Запланирована';
 };
 
-const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => (
-  <div className="relative group/bub inline-block">
+const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => {
+  const [open, setOpen] = useState(false);
+  const clickable = d.type !== 'planned';
+
+  return (
+  <div className="relative inline-block">
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap cursor-default ${bubbleStyle(
-        d.type,
-      )}`}
+      onClick={() => clickable && setOpen((v) => !v)}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap ${
+        clickable ? 'cursor-pointer' : 'cursor-default'
+      } ${bubbleStyle(d.type)}`}
     >
       {d.type === 'planned' && <Icon name="Clock" size={12} />}
       {fmtDate(d.date)}
     </span>
 
-    {d.type !== 'planned' && (
-      <div className="invisible opacity-0 group-hover/bub:visible group-hover/bub:opacity-100 transition-opacity absolute left-0 bottom-full mb-2 z-30 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-left">
-        <p className="text-xs font-semibold text-gray-900 mb-1">
+    {clickable && open && (
+      <div className="absolute left-0 bottom-full mb-2 z-30 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-left">
+        <button
+          onClick={() => setOpen(false)}
+          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 transition-colors"
+          title="Закрыть"
+        >
+          <Icon name="X" size={16} />
+        </button>
+        <p className="text-xs font-semibold text-gray-900 mb-1 pr-5">
           {bubbleLabel(d.type)} · {fmtDate(d.date)}
         </p>
 
@@ -62,7 +75,8 @@ const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => (
       </div>
     )}
   </div>
-);
+  );
+};
 
 const ProgressTable = ({ rows }: { rows: StudentRow[] }) => (
   <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
