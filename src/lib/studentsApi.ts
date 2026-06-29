@@ -7,6 +7,15 @@ export interface StudentTariff {
   shared_with_siblings?: boolean;
 }
 
+export interface DiagnosticBubble {
+  date: string;
+  type: 'primary' | 'followup' | 'planned';
+  link: string | null;
+  conclusion: string;
+  topic: string;
+  note: string;
+}
+
 export interface StudentRow {
   id: number;
   name: string;
@@ -21,6 +30,7 @@ export interface StudentRow {
   next_diagnostic: string | null;
   report_link: string | null;
   tariff: StudentTariff | null;
+  diagnostics: DiagnosticBubble[];
 }
 
 export type StatusFilter =

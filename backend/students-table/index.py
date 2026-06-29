@@ -340,6 +340,60 @@ def plain_plus_3_months(prev):
     return date(y, mm, day)
 
 
+def build_diagnostics(diags, first_lesson_date, active_weeks, reports):
+    """Список пузырьков диагностик ученика для вкладки 'Мониторинг прогресса'.
+
+    Тип пузырька:
+      - 'primary'   — первичная (первое занятие ученика само является диагностикой);
+      - 'followup'  — последующие диагностики;
+      - 'planned'   — запланированная (последняя диагностика + 3 месяца чистого обучения).
+    Тултип:
+      - первичная: ссылка на заключение (link) + рекомендации педагогу (note);
+      - последующие: прогресс (topic) + рекомендации педагогу (note).
+    """
+    if not diags:
+        return []
+
+    ordered = sorted(diags, key=lambda d: d["date"])
+    bubbles = []
+    for i, d in enumerate(ordered):
+        is_first_lesson_diag = (
+            first_lesson_date is not None and ordered[0]["date"] == first_lesson_date
+        )
+        is_primary = (i == 0 and is_first_lesson_diag)
+        rid = d.get("report_id")
+        link = f"https://lineaschool.ru/diag/{rid}" if rid else None
+        conclusion = ""
+        if rid:
+            rep = reports.get(rid)
+            if rep:
+                conclusion = rep.get("conclusion") or ""
+        bubbles.append({
+            "date": str(d["date"]),
+            "type": "primary" if is_primary else "followup",
+            "link": link,
+            "conclusion": conclusion,
+            "topic": d.get("topic") or "",
+            "note": d.get("note") or "",
+        })
+
+    # Запланированная диагностика: последняя + 3 месяца чистого обучения.
+    last_date = ordered[-1]["date"]
+    if active_weeks:
+        next_date = compute_next_diag(last_date, active_weeks)
+    else:
+        next_date = plain_plus_3_months(last_date)
+    bubbles.append({
+        "date": str(next_date),
+        "type": "planned",
+        "link": None,
+        "conclusion": "",
+        "topic": "",
+        "note": "",
+    })
+    return bubbles
+
+
 def extract_report_id(topic):
     """Из темы урока достаём id заключения: .../diag/{id}."""
     if not topic:
@@ -466,7 +520,11 @@ def handle_list(token):
 
     # Диагностические уроки по ученику: {cid: {date, note, report_id}}.
     diag_by_student = {}
+    # Все диагностики ученика: {cid: [ {date, note, topic, report_id} ]}.
+    all_diags_by_student = {}
     active_weeks_by_student = {}
+    # Дата самого раннего занятия любого типа по ученику — для определения первичной диагностики.
+    first_lesson_by_student = {}
     for ls in all_lessons:
         ld = parse_crm_date(ls.get("date"))
         if not ld:
@@ -480,9 +538,21 @@ def handle_list(token):
             for cid in cids:
                 active_weeks_by_student.setdefault(cid, set()).add(wk)
 
+        # самое раннее занятие любого типа
+        for cid in cids:
+            prev_first = first_lesson_by_student.get(cid)
+            if prev_first is None or ld < prev_first:
+                first_lesson_by_student[cid] = ld
+
         if "диагност" in ltype:
             report_id = extract_report_id(ls.get("topic"))
             for cid in cids:
+                all_diags_by_student.setdefault(cid, []).append({
+                    "date": ld,
+                    "note": (ls.get("note") or "").strip(),
+                    "topic": (ls.get("topic") or "").strip(),
+                    "report_id": report_id,
+                })
                 prev = diag_by_student.get(cid)
                 if prev is None or ld > prev["date"]:
                     diag_by_student[cid] = {
@@ -491,8 +561,12 @@ def handle_list(token):
                         "report_id": report_id,
                     }
 
-    # Заключения из БД для всех найденных report_id.
-    report_ids = {d["report_id"] for d in diag_by_student.values() if d.get("report_id")}
+    # Заключения из БД для всех найденных report_id (по всем диагностикам).
+    report_ids = set()
+    for diags in all_diags_by_student.values():
+        for d in diags:
+            if d.get("report_id"):
+                report_ids.add(d["report_id"])
     reports = load_reports(report_ids)
     overrides = load_overrides()
 
@@ -533,6 +607,14 @@ def handle_list(token):
         # Абонемент
         tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
 
+        # Все диагностики ученика (пузырьки для 'Мониторинг прогресса').
+        diagnostics = build_diagnostics(
+            all_diags_by_student.get(cid, []),
+            first_lesson_by_student.get(cid),
+            active_weeks_by_student.get(cid, set()),
+            reports,
+        )
+
         # Сиблинги: одна CRM-запись ('Марк и Сеня Константиновы') -> несколько учеников.
         siblings = split_siblings(c.get("name"))
         for idx, (display_name, is_sibling) in enumerate(siblings):
@@ -572,6 +654,7 @@ def handle_list(token):
                 "next_diagnostic": str(next_date) if next_date else None,
                 "report_link": report_link,
                 "tariff": row_tariff,
+                "diagnostics": diagnostics,
             })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())

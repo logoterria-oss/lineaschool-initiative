@@ -73,14 +73,16 @@ const StudentsTablePage = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    // Вкладка "Мониторинг прогресса" показывает учеников из "Все действующие".
+    const effectiveFilter = tab === 'progress' ? 'all_active' : filter;
     return items.filter((i) => {
-      if (!matchesFilter(i.status_id, filter)) return false;
+      if (!matchesFilter(i.status_id, effectiveFilter)) return false;
       if (tariffFilter.length && !(i.tariff && tariffFilter.includes(i.tariff.name)))
         return false;
       if (q && !(i.name || '').toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [items, filter, tariffFilter, search]);
+  }, [items, filter, tariffFilter, search, tab]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
@@ -111,6 +113,7 @@ const StudentsTablePage = () => {
                 tariffOptions={tariffOptions}
                 search={search}
                 setSearch={setSearch}
+                compact={tab === 'progress'}
               />
             )}
           </div>

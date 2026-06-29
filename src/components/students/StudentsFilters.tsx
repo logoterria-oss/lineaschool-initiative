@@ -17,6 +17,7 @@ const StudentsFilters = ({
   tariffOptions,
   search,
   setSearch,
+  compact = false,
 }: {
   filter: StatusFilter;
   setFilter: (f: StatusFilter) => void;
@@ -26,22 +27,26 @@ const StudentsFilters = ({
   tariffOptions: string[];
   search: string;
   setSearch: (v: string) => void;
+  compact?: boolean;
 }) => (
   <div className="flex flex-wrap items-center gap-2">
     {/* Статус */}
-    <select
-      value={filter}
-      onChange={(e) => setFilter(e.target.value as StatusFilter)}
-      className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
-    >
-      {STATUS_FILTERS.map((f) => (
-        <option key={f.id} value={f.id}>
-          {f.label}
-        </option>
-      ))}
-    </select>
+    {!compact && (
+      <select
+        value={filter}
+        onChange={(e) => setFilter(e.target.value as StatusFilter)}
+        className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+      >
+        {STATUS_FILTERS.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.label}
+          </option>
+        ))}
+      </select>
+    )}
 
     {/* Абонемент (мультиселект) */}
+    {!compact && (
     <Popover>
       <PopoverTrigger asChild>
         <button className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-700 inline-flex items-center gap-1.5 hover:border-purple-300">
@@ -83,6 +88,7 @@ const StudentsFilters = ({
         )}
       </PopoverContent>
     </Popover>
+    )}
 
     {/* Поиск */}
     <Input
