@@ -65,8 +65,8 @@ const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => (
 );
 
 const ProgressTable = ({ rows }: { rows: StudentRow[] }) => (
-  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-    <div className="overflow-x-auto">
+  <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+    <div>
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 text-gray-500 text-left">
