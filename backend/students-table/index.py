@@ -716,20 +716,27 @@ def handler(event, context):
     if mode == "list":
         return handle_list(token, params.get("q"))
     if mode == "debug_pauses":
+        results = {}
+        # Кастомные поля клиентов
+        for path in ["customer-field", "field", "custom-field", "customer/fields",
+                     "customer-pause", "customer-holiday-period"]:
+            url = f"{S20_HOST}/v2api/1/{path}/index"
+            try:
+                r = requests.post(url, json={"page": 0, "pageSize": 5},
+                                  headers=get_headers(token), timeout=8)
+                results[path] = {"status": r.status_code,
+                                 "body": r.json() if r.status_code == 200 else r.text[:150]}
+            except Exception as e:
+                results[path] = {"err": str(e)}
+        # Попробуем получить одного клиента через customer/view
         customers_raw = fetch_customers_raw(token, is_study=1, removed=0)
-        on_vacation = [c for c in customers_raw if c.get("study_status_id") in (4, 5)][:5]
-        result = []
-        for c in on_vacation:
-            cid = c.get("id")
-            tariffs = get_customer_tariffs(token, cid)
-            result.append({
-                "id": cid, "name": c.get("name"),
-                "status": c.get("study_status_id"),
-                "last_attend_date": c.get("last_attend_date"),
-                "paid_till": c.get("paid_till"),
-                "next_lesson_date": c.get("next_lesson_date"),
-                "tariffs_b_e": [{"b": t.get("b_date"), "e": t.get("e_date"), "note": t.get("note")} for t in tariffs],
-            })
-        return _json(200, {"vacation_customers": result})
+        frozen = [c for c in customers_raw if c.get("study_status_id") in (4, 5)]
+        if frozen:
+            cid = frozen[0]["id"]
+            r2 = requests.post(f"{S20_HOST}/v2api/1/customer/view",
+                               json={"id": cid}, headers=get_headers(token), timeout=10)
+            results["customer_view_keys"] = sorted(r2.json().keys()) if r2.status_code == 200 else r2.text[:200]
+            results["customer_view_sample"] = r2.json() if r2.status_code == 200 else {}
+        return _json(200, results)
 
     return _json(400, {"error": "unknown mode"})
