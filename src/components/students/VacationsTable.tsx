@@ -2,173 +2,295 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
-import { StudentRow, StudentVacation, saveVacation, deleteVacation } from '@/lib/studentsApi';
+import {
+  StudentRow,
+  StudentVacation,
+  VacationEndType,
+  FirstLessonStatus,
+  saveVacation,
+} from '@/lib/studentsApi';
 import { NameWithDot, fmtDate } from './studentsTableHelpers';
 
-const MIN_DAYS = 8; // более 1 недели = 8+ дней
+// ────── helpers ──────────────────────────────────────────────────────────────
 
-const daysDiff = (from: string, to: string) => {
-  const a = new Date(from);
-  const b = new Date(to);
-  return Math.round((b.getTime() - a.getTime()) / 86400000);
+const MONTHS_RU = [
+  'январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
+  'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре',
+];
+
+const formatVacationEnd = (v: StudentVacation): string => {
+  if (!v.date_to) return '—';
+  const d = new Date(v.date_to);
+  if (v.vacation_end_type === 'mid_month')
+    return `до середины ${MONTHS_RU[d.getMonth()]} ${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() : ''}`.trim();
+  if (v.vacation_end_type === 'end_month')
+    return `до конца ${MONTHS_RU[d.getMonth()]} ${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() : ''}`.trim();
+  return fmtDate(v.date_to);
 };
 
-const VacationRow = ({
-  v,
-  onDelete,
-}: {
-  v: StudentVacation;
-  onDelete: (id: number) => void;
-}) => {
-  const [deleting, setDeleting] = useState(false);
-  const days = daysDiff(v.date_from, v.date_to);
-  const today = new Date().toISOString().slice(0, 10);
-  const active = v.date_to >= today;
-
-  const handleDelete = async () => {
-    if (!confirm('Удалить эту запись каникул?')) return;
-    setDeleting(true);
-    try {
-      await deleteVacation(v.id);
-      onDelete(v.id);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  return (
-    <div className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm ${active ? 'bg-amber-50' : 'bg-gray-50'}`}>
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${active ? 'bg-amber-400' : 'bg-gray-300'}`} />
-      <span className="text-gray-700 whitespace-nowrap">
-        {fmtDate(v.date_from)} — {fmtDate(v.date_to)}
-      </span>
-      <span className="text-xs text-gray-400">{days} дн.</span>
-      {v.note && <span className="text-xs text-gray-500 flex-1 truncate">{v.note}</span>}
-      <button
-        onClick={handleDelete}
-        disabled={deleting}
-        className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
-        title="Удалить"
-      >
-        <Icon name="X" size={14} />
-      </button>
-    </div>
-  );
+const firstLessonBadge = (status: FirstLessonStatus) => {
+  if (status === 'paid') return 'bg-green-100 text-green-700';
+  if (status === 'agreed') return 'bg-gray-100 text-gray-600';
+  return '';
 };
 
-const AddVacationForm = ({
+// ────── VacationEditor ───────────────────────────────────────────────────────
+
+const VacationEditor = ({
   studentId,
-  onAdded,
+  initial,
+  onSaved,
 }: {
   studentId: number;
-  onAdded: (v: StudentVacation) => void;
+  initial: StudentVacation | null;
+  onSaved: (v: StudentVacation) => void;
 }) => {
-  const [open, setOpen] = useState(false);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [note, setNote] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+  const [dateTo, setDateTo] = useState(initial?.date_to ?? '');
+  const [endType, setEndType] = useState<VacationEndType>(initial?.vacation_end_type ?? 'exact');
+  const [flDate, setFlDate] = useState(initial?.first_lesson_date ?? '');
+  const [flStatus, setFlStatus] = useState<FirstLessonStatus>(initial?.first_lesson_status ?? 'not_agreed');
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleSave = async () => {
-    setError('');
-    if (!from || !to) { setError('Укажите обе даты'); return; }
-    if (to <= from) { setError('Дата окончания должна быть позже начала'); return; }
-    if (daysDiff(from, to) < MIN_DAYS) { setError('Приостановка должна быть более 1 недели'); return; }
+  const save = async (patch: Partial<Omit<StudentVacation, 'id'>>) => {
     setSaving(true);
     try {
-      await saveVacation(studentId, { date_from: from, date_to: to, note });
-      // Создаём фейковый id для локального обновления, reload подтянет реальный
-      onAdded({ id: Date.now(), date_from: from, date_to: to, note });
-      setFrom(''); setTo(''); setNote(''); setOpen(false);
-    } catch {
-      setError('Ошибка сохранения');
+      const merged: Partial<Omit<StudentVacation, 'id'>> = {
+        date_from: initial?.date_from ?? today,
+        date_to: dateTo || null,
+        vacation_end_type: endType,
+        first_lesson_date: flDate || null,
+        first_lesson_status: flStatus,
+        note: initial?.note ?? '',
+        ...patch,
+      };
+      await saveVacation(studentId, merged);
+      onSaved({ id: initial?.id ?? 0, ...merged } as StudentVacation);
     } finally {
       setSaving(false);
     }
   };
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="text-xs text-purple-600 hover:underline inline-flex items-center gap-1 mt-1"
-      >
-        <Icon name="Plus" size={12} /> Добавить
-      </button>
-    );
-  }
-
   return (
-    <div className="mt-2 space-y-1.5">
+    <div className="space-y-2">
+      {/* ── конец каникул ── */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Input type="date" value={from} onChange={e => setFrom(e.target.value)} className="h-8 text-xs w-36" />
-        <span className="text-gray-400 text-xs">—</span>
-        <Input type="date" value={to} onChange={e => setTo(e.target.value)} className="h-8 text-xs w-36" />
-        <Input placeholder="Примечание" value={note} onChange={e => setNote(e.target.value)} className="h-8 text-xs flex-1 min-w-24" />
+        <span className="text-xs text-gray-500 w-28">Конец каникул:</span>
+        <select
+          value={endType}
+          onChange={e => {
+            setEndType(e.target.value as VacationEndType);
+            save({ vacation_end_type: e.target.value as VacationEndType });
+          }}
+          className="h-8 px-2 rounded border border-gray-200 text-xs text-gray-700"
+        >
+          <option value="exact">Конкретная дата</option>
+          <option value="mid_month">До середины месяца</option>
+          <option value="end_month">До конца месяца</option>
+        </select>
+        <Input
+          type="date"
+          value={dateTo}
+          onChange={e => setDateTo(e.target.value)}
+          onBlur={() => save({ date_to: dateTo || null, vacation_end_type: endType })}
+          className="h-8 text-xs w-36"
+        />
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      <div className="flex gap-2">
-        <Button size="sm" onClick={handleSave} disabled={saving} className="h-7 text-xs">
-          {saving ? '…' : 'Сохранить'}
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => { setOpen(false); setError(''); }} className="h-7 text-xs">
-          Отмена
-        </Button>
+
+      {/* ── первый урок ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-gray-500 w-28">Первый урок:</span>
+        <Input
+          type="date"
+          value={flDate}
+          onChange={e => setFlDate(e.target.value)}
+          onBlur={() => save({ first_lesson_date: flDate || null, first_lesson_status: flStatus })}
+          className="h-8 text-xs w-36"
+          placeholder="дата"
+        />
+        {flDate && (
+          <select
+            value={flStatus}
+            onChange={e => {
+              setFlStatus(e.target.value as FirstLessonStatus);
+              save({ first_lesson_date: flDate || null, first_lesson_status: e.target.value as FirstLessonStatus });
+            }}
+            className="h-8 px-2 rounded border border-gray-200 text-xs text-gray-700"
+          >
+            <option value="paid">Оплачен</option>
+            <option value="agreed">Согласован</option>
+            <option value="not_agreed">Не согласован</option>
+          </select>
+        )}
+        {saving && <span className="text-xs text-gray-400">…</span>}
       </div>
     </div>
   );
 };
 
+// ────── VacationCell ─────────────────────────────────────────────────────────
+
+const VacationCell = ({
+  s,
+  onUpdate,
+}: {
+  s: StudentRow;
+  onUpdate: (id: number, v: StudentVacation) => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const v = s.vacation;
+
+  if (editing) {
+    return (
+      <td className="px-3 py-3 align-top" colSpan={1}>
+        <VacationEditor
+          studentId={s.id}
+          initial={v}
+          onSaved={saved => { onUpdate(s.id, saved); setEditing(false); }}
+        />
+        <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="mt-2 h-7 text-xs text-gray-400">
+          Закрыть
+        </Button>
+      </td>
+    );
+  }
+
+  return (
+    <td className="px-3 py-3 align-top text-sm text-gray-700 group">
+      <div className="flex items-start gap-2">
+        <span>{v ? formatVacationEnd(v) : <span className="text-gray-400">не указано</span>}</span>
+        <button
+          onClick={() => setEditing(true)}
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0 mt-0.5"
+          title="Редактировать"
+        >
+          <Icon name="Pencil" size={13} />
+        </button>
+      </div>
+    </td>
+  );
+};
+
+const FirstLessonCell = ({ s, onUpdate }: { s: StudentRow; onUpdate: (id: number, v: StudentVacation) => void }) => {
+  const v = s.vacation;
+  const [editing, setEditing] = useState(false);
+  const [date, setDate] = useState(v?.first_lesson_date ?? '');
+  const [status, setStatus] = useState<FirstLessonStatus>(v?.first_lesson_status ?? 'not_agreed');
+  const [saving, setSaving] = useState(false);
+
+  const save = async (d: string, st: FirstLessonStatus) => {
+    setSaving(true);
+    try {
+      const merged: Partial<Omit<StudentVacation, 'id'>> = {
+        date_from: v?.date_from ?? new Date().toISOString().slice(0, 10),
+        date_to: v?.date_to ?? null,
+        vacation_end_type: v?.vacation_end_type ?? 'exact',
+        first_lesson_date: d || null,
+        first_lesson_status: st,
+        note: v?.note ?? '',
+      };
+      await saveVacation(s.id, merged);
+      onUpdate(s.id, { id: v?.id ?? 0, ...merged } as StudentVacation);
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <td className="px-3 py-3 align-top">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-8 text-xs w-36" />
+          <select
+            value={status}
+            onChange={e => setStatus(e.target.value as FirstLessonStatus)}
+            className="h-8 px-2 rounded border border-gray-200 text-xs"
+          >
+            <option value="paid">Оплачен</option>
+            <option value="agreed">Согласован</option>
+            <option value="not_agreed">Не согласован</option>
+          </select>
+        </div>
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" onClick={() => save(date, status)} disabled={saving} className="h-7 text-xs">
+            {saving ? '…' : 'ОК'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="h-7 text-xs">
+            Отмена
+          </Button>
+        </div>
+      </td>
+    );
+  }
+
+  const fl = v?.first_lesson_date;
+  const st = v?.first_lesson_status ?? 'not_agreed';
+  return (
+    <td className="px-3 py-3 align-top group">
+      <div className="flex items-center gap-2">
+        {fl ? (
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${firstLessonBadge(st)}`}>
+            {st === 'paid' && <Icon name="CheckCircle" size={12} />}
+            {fmtDate(fl)}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400 italic">дата не согласована</span>
+        )}
+        <button
+          onClick={() => setEditing(true)}
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0"
+          title="Редактировать"
+        >
+          <Icon name="Pencil" size={13} />
+        </button>
+      </div>
+    </td>
+  );
+};
+
+// ────── VacationsTable ───────────────────────────────────────────────────────
+
 const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
-  const [vacMap, setVacMap] = useState<Record<number, StudentVacation[]>>(
-    Object.fromEntries(rows.map(s => [s.id, s.vacations ?? []]))
+  const [vacMap, setVacMap] = useState<Record<number, StudentVacation | null>>(
+    Object.fromEntries(rows.map(s => [s.id, s.vacation ?? null]))
   );
 
-  const handleAdded = (studentId: number, v: StudentVacation) => {
-    setVacMap(prev => ({ ...prev, [studentId]: [...(prev[studentId] ?? []), v] }));
+  const handleUpdate = (studentId: number, v: StudentVacation) => {
+    setVacMap(prev => ({ ...prev, [studentId]: v }));
   };
 
-  const handleDeleted = (studentId: number, vacId: number) => {
-    setVacMap(prev => ({
-      ...prev,
-      [studentId]: (prev[studentId] ?? []).filter(v => v.id !== vacId),
-    }));
-  };
+  const enriched = rows.map(s => ({ ...s, vacation: vacMap[s.id] ?? s.vacation }));
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 text-gray-500 text-left">
-            <th className="px-3 py-3 font-semibold w-12">№</th>
+            <th className="px-3 py-3 font-semibold w-10">№</th>
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
-            <th className="px-3 py-3 font-semibold">Каникулы / Приостановка</th>
+            <th className="px-3 py-3 font-semibold">Конец каникул</th>
+            <th className="px-3 py-3 font-semibold">Первый урок после каникул</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((s, i) => {
-            const vacs = vacMap[s.id] ?? [];
-            return (
-              <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
-                <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
-                <td className="px-3 py-3 font-medium text-gray-900 align-top whitespace-nowrap">
-                  <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
-                </td>
-                <td className="px-3 py-3 align-top">
-                  <div className="space-y-1">
-                    {vacs.map(v => (
-                      <VacationRow key={v.id} v={v} onDelete={id => handleDeleted(s.id, id)} />
-                    ))}
-                    {vacs.length === 0 && (
-                      <span className="text-gray-400 text-sm">—</span>
-                    )}
-                  </div>
-                  <AddVacationForm studentId={s.id} onAdded={v => handleAdded(s.id, v)} />
-                </td>
-              </tr>
-            );
-          })}
+          {enriched.map((s, i) => (
+            <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
+              <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
+              <td className="px-3 py-3 font-medium text-gray-900 align-top whitespace-nowrap">
+                <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
+              </td>
+              <VacationCell s={s} onUpdate={handleUpdate} />
+              <FirstLessonCell s={s} onUpdate={handleUpdate} />
+            </tr>
+          ))}
+          {enriched.length === 0 && (
+            <tr>
+              <td colSpan={4} className="px-3 py-8 text-center text-gray-400">
+                Нет учеников на каникулах
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

@@ -480,50 +480,64 @@ def load_overrides():
 
 
 def load_vacations():
-    """Каникулы: {student_id: [{id, date_from, date_to, note}]}."""
-    today = date.today()
+    """Каникулы: {student_id: {id, date_from, date_to, vacation_end_type,
+                               first_lesson_date, first_lesson_status, note}}.
+    Берём последнюю актуальную запись по student_id (date_to >= today или NULL).
+    """
     conn = db()
     out = {}
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        # Берём только действующие и будущие (date_to >= today)
         cur.execute(
-            f"SELECT id, student_id, date_from, date_to, note "
-            f"FROM {SCHEMA}.student_vacations WHERE date_to >= %s ORDER BY date_from",
-            (today,)
+            f"SELECT DISTINCT ON (student_id) id, student_id, date_from, date_to, "
+            f"  vacation_end_type, first_lesson_date, first_lesson_status, note "
+            f"FROM {SCHEMA}.student_vacations "
+            f"ORDER BY student_id, date_from DESC"
         )
         for r in cur.fetchall():
             sid = r["student_id"]
-            out.setdefault(sid, []).append({
+            out[sid] = {
                 "id": r["id"],
-                "date_from": str(r["date_from"]),
-                "date_to": str(r["date_to"]),
+                "date_from": str(r["date_from"]) if r["date_from"] else None,
+                "date_to": str(r["date_to"]) if r["date_to"] else None,
+                "vacation_end_type": r["vacation_end_type"] or "exact",
+                "first_lesson_date": str(r["first_lesson_date"]) if r["first_lesson_date"] else None,
+                "first_lesson_status": r["first_lesson_status"] or "not_agreed",
                 "note": r["note"] or "",
-            })
+            }
     conn.close()
     return out
 
 
 def handle_save_vacation(body):
-    """Сохранить или обновить запись каникул."""
+    """Upsert записи каникул для ученика.
+
+    Поля: student_id (обязательно), date_from, date_to, vacation_end_type,
+    first_lesson_date, first_lesson_status, note.
+    Если запись для student_id уже есть — обновляем, иначе создаём.
+    """
     student_id = body.get("student_id")
-    date_from = body.get("date_from")
-    date_to = body.get("date_to")
-    if not student_id or not date_from or not date_to:
-        return _json(400, {"error": "student_id, date_from, date_to required"})
+    if not student_id:
+        return _json(400, {"error": "student_id required"})
+    date_from = body.get("date_from") or None
+    date_to = body.get("date_to") or None
+    vacation_end_type = body.get("vacation_end_type", "exact")
+    first_lesson_date = body.get("first_lesson_date") or None
+    first_lesson_status = body.get("first_lesson_status", "not_agreed")
     note = body.get("note", "")
-    vac_id = body.get("id")
     conn = db()
     with conn.cursor() as cur:
-        if vac_id:
-            cur.execute(
-                f"UPDATE {SCHEMA}.student_vacations SET date_from=%s, date_to=%s, note=%s, updated_at=NOW() WHERE id=%s",
-                (date_from, date_to, note, int(vac_id))
-            )
-        else:
-            cur.execute(
-                f"INSERT INTO {SCHEMA}.student_vacations (student_id, date_from, date_to, note) VALUES (%s,%s,%s,%s)",
-                (int(student_id), date_from, date_to, note)
-            )
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.student_vacations "
+            f"(student_id, date_from, date_to, vacation_end_type, first_lesson_date, first_lesson_status, note) "
+            f"VALUES (%s,%s,%s,%s,%s,%s,%s) "
+            f"ON CONFLICT (student_id) DO UPDATE SET "
+            f"date_from=EXCLUDED.date_from, date_to=EXCLUDED.date_to, "
+            f"vacation_end_type=EXCLUDED.vacation_end_type, "
+            f"first_lesson_date=EXCLUDED.first_lesson_date, "
+            f"first_lesson_status=EXCLUDED.first_lesson_status, "
+            f"note=EXCLUDED.note, updated_at=NOW()",
+            (int(student_id), date_from, date_to, vacation_end_type, first_lesson_date, first_lesson_status, note)
+        )
         conn.commit()
     conn.close()
     return _json(200, {"success": True})
@@ -748,7 +762,7 @@ def handle_list(token, name_filter=None):
                 "report_link": report_link,
                 "tariff": row_tariff,
                 "diagnostics": diagnostics,
-                "vacations": vacations.get(row_id, vacations.get(cid, [])),
+                "vacation": vacations.get(row_id) or vacations.get(cid),
             })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())

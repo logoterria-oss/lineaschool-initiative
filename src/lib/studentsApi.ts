@@ -16,10 +16,16 @@ export interface DiagnosticBubble {
   note: string;
 }
 
+export type VacationEndType = 'exact' | 'mid_month' | 'end_month';
+export type FirstLessonStatus = 'paid' | 'agreed' | 'not_agreed';
+
 export interface StudentVacation {
   id: number;
-  date_from: string;
-  date_to: string;
+  date_from: string | null;
+  date_to: string | null;
+  vacation_end_type: VacationEndType;
+  first_lesson_date: string | null;
+  first_lesson_status: FirstLessonStatus;
   note: string;
 }
 
@@ -38,7 +44,7 @@ export interface StudentRow {
   report_link: string | null;
   tariff: StudentTariff | null;
   diagnostics: DiagnosticBubble[];
-  vacations: StudentVacation[];
+  vacation: StudentVacation | null;
 }
 
 export type StatusFilter =
@@ -84,7 +90,7 @@ export const fetchStudents = async (): Promise<StudentRow[]> => {
 
 export const saveVacation = async (
   studentId: number,
-  fields: { id?: number; date_from: string; date_to: string; note?: string },
+  fields: Partial<Omit<StudentVacation, 'id'>>,
 ): Promise<void> => {
   const res = await fetch(API_URL, {
     method: 'POST',
@@ -92,15 +98,6 @@ export const saveVacation = async (
     body: JSON.stringify({ action: 'save_vacation', student_id: studentId, ...fields }),
   });
   if (!res.ok) throw new Error('Не удалось сохранить каникулы');
-};
-
-export const deleteVacation = async (id: number): Promise<void> => {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'delete_vacation', id }),
-  });
-  if (!res.ok) throw new Error('Не удалось удалить каникулы');
 };
 
 // Сохранить ручную правку (формы нарушений и/или возраст) — приоритет над данными CRM.

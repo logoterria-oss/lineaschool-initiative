@@ -82,12 +82,13 @@ const StudentsTablePage = () => {
     });
   }, [items, filter, tariffFilter, search]);
 
-  // Вкладка "Даты каникул": ученики с действующими/будущими приостановками > 1 недели.
+  // Вкладка "Даты каникул": ученики со статусом "Каникулы" или "Заморожен" (4/5).
   const vacationsRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((i) => {
+      if (i.status_id !== 4 && i.status_id !== 5) return false;
       if (q && !(i.name || '').toLowerCase().includes(q)) return false;
-      return (i.vacations ?? []).length > 0;
+      return true;
     });
   }, [items, search]);
 
