@@ -159,17 +159,26 @@ def get_tariffs(token):
 
 
 def get_customer_tariffs(token, customer_id):
-    """Абонементы одного клиента (customer_id в query string)."""
+    """Все абонементы клиента: активные + архивные (removed не фильтруем)."""
     url = f"{S20_HOST}/v2api/1/customer-tariff/index?customer_id={customer_id}"
-    try:
-        resp = requests.post(url, json={"page": 0, "pageSize": 50},
-                             headers=get_headers(token), timeout=15)
-        if resp.status_code != 200:
-            return []
-        return resp.json().get("items", [])
-    except Exception as e:
-        print(f"customer-tariff failed {customer_id}: {e}")
-        return []
+    all_items = []
+    page = 0
+    while True:
+        try:
+            resp = requests.post(url, json={"page": page, "pageSize": 100},
+                                 headers=get_headers(token), timeout=15)
+            if resp.status_code != 200:
+                break
+            data = resp.json()
+            items = data.get("items", [])
+            all_items.extend(items)
+            if len(all_items) >= data.get("total", 0) or not items:
+                break
+            page += 1
+        except Exception as e:
+            print(f"customer-tariff failed {customer_id}: {e}")
+            break
+    return all_items
 
 
 def get_all_customer_tariffs(token, customer_ids):
