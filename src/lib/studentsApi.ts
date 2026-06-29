@@ -4,6 +4,7 @@ export interface StudentTariff {
   name: string;
   e_date: string | null;
   is_active: boolean;
+  paid_lessons_left: number;
   shared_with_siblings?: boolean;
 }
 

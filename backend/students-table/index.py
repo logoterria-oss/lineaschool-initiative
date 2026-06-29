@@ -257,6 +257,7 @@ def pick_actual_tariff(tariffs, tariff_names):
         "name": label(t),
         "e_date": str(e) if e else None,
         "is_active": paid_left > 0,
+        "paid_lessons_left": paid_left,
     }
 
 
