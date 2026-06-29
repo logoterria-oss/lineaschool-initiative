@@ -318,38 +318,46 @@ def iso_week_key(d):
 
 
 def compute_next_diag(prev_date, active_week_keys):
-    """Рекомендуемая дата = предыдущая диагностика + 3 месяца, сдвинутые на перерывы.
+    """Рекомендуемая дата следующей диагностики.
 
-    Базово: prev_date + 3 месяца. Каждая полная неделя без занятий (перерыв)
-    в интервале от prev_date до итоговой даты добавляет +7 дней. Считаем
-    итеративно, т.к. сдвиг может захватить новые пустые недели.
-    Ограничение: не дальше 6 календарных месяцев от предыдущей диагностики.
+    Правила:
+    - База: 3 месяца чистого обучения после prev_date (≈ 13 недель занятий).
+    - Полная неделя без занятий (перерыв) сдвигает дату на +7 дней.
+    - Если перерыв длится 6 недель и более подряд — диагностику проводим
+      сразу после перерыва (на первой неделе возобновления занятий).
+    - Будущие недели (позже сегодняшней), где занятий ещё нет в расписании,
+      считаем рабочими — предполагаем продолжение обучения.
     """
     base = plain_plus_3_months(prev_date)
-    hard_limit = prev_date + timedelta(days=185)
+    today_week = iso_week_key(date.today())
+    diag_week = iso_week_key(prev_date)
 
-    def empty_weeks_until(end_date):
-        """Число полных ISO-недель без занятий в интервале (prev_date, end_date)."""
-        weeks = set()
-        cur = prev_date + timedelta(days=1)
-        while cur < end_date:
-            weeks.add(iso_week_key(cur))
-            cur = cur + timedelta(days=1)
-        # неделю, в которую попадает сама диагностика, считаем рабочей
-        weeks.discard(iso_week_key(prev_date))
-        return len([w for w in weeks if w not in active_week_keys])
+    # Перерыв — полная завершённая неделя без занятий МЕЖДУ двумя занятиями.
+    # Отсчёт начинаем с первого занятия ПОСЛЕ недели диагностики (саму неделю
+    # диагностики и недели до старта обучения не штрафуем). Текущая
+    # (незавершённая) неделя тоже не штрафуется.
+    shift_days = 0
+    gap_run = 0
+    started = False
+    cur = prev_date + timedelta(days=7)  # начинаем со следующей недели
+    safety = 0
+    while iso_week_key(cur) < today_week and safety < 520:
+        safety += 1
+        wk = iso_week_key(cur)
+        if wk == diag_week:
+            cur = cur + timedelta(days=7)
+            continue
+        if wk in active_week_keys:
+            if started and gap_run >= 6:
+                return cur
+            started = True
+            gap_run = 0
+        elif started:
+            gap_run += 1
+            shift_days += 7
+        cur = cur + timedelta(days=7)
 
-    target = base
-    prev_empty = -1
-    while True:
-        empty = empty_weeks_until(target)
-        if empty == prev_empty:
-            break
-        prev_empty = empty
-        target = base + timedelta(days=7 * empty)
-        if target >= hard_limit:
-            return hard_limit
-    return min(target, hard_limit)
+    return base + timedelta(days=shift_days)
 
 
 def plain_plus_3_months(prev):
@@ -522,7 +530,7 @@ def handle_statuses(token):
     })
 
 
-def handle_list(token):
+def handle_list(token, name_filter=None):
     customers = get_all_customers(token)
     tariff_names = get_tariffs(token)
     tariffs_by_customer = get_all_customer_tariffs(token, [c.get("id") for c in customers])
@@ -552,8 +560,9 @@ def handle_list(token):
         ltype = (ls.get("lesson_type_name") or "").lower()
         cids = lesson_customer_ids(ls)
 
-        # активные недели — по проведённым занятиям (status=3)
-        if ls.get("status") == 3:
+        # активные недели — по любым занятиям (проведённым и запланированным),
+        # кроме отменённых. Перерыв считается только если занятий не было совсем.
+        if ls.get("status") != 4:  # 4 = отменён
             wk = iso_week_key(ld)
             for cid in cids:
                 active_weeks_by_student.setdefault(cid, set()).add(wk)
@@ -678,6 +687,9 @@ def handle_list(token):
             })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
+    if name_filter:
+        nf = name_filter.lower()
+        items = [it for it in items if nf in (it.get("name") or "").lower()]
     return _json(200, {"items": items})
 
 
@@ -702,6 +714,6 @@ def handler(event, context):
     if mode == "statuses":
         return handle_statuses(token)
     if mode == "list":
-        return handle_list(token)
+        return handle_list(token, params.get("q"))
 
     return _json(400, {"error": "unknown mode"})
