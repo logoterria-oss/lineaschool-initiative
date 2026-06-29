@@ -135,7 +135,7 @@ def get_lessons(token, date_from, date_to, status=3):
 
 
 def get_tariffs(token):
-    """Справочник абонементов: id -> name."""
+    """Справочник абонементов: id -> {name, price, lessons_count}."""
     url = f"{S20_HOST}/v2api/1/tariff/index"
     result = {}
     page = 0
@@ -148,7 +148,11 @@ def get_tariffs(token):
             data = resp.json()
             items = data.get("items", [])
             for t in items:
-                result[t.get("id")] = t.get("name")
+                result[t.get("id")] = {
+                    "name": t.get("name"),
+                    "price": t.get("price"),
+                    "lessons_count": t.get("lessons_count"),
+                }
             if len(result) >= data.get("total", 0) or not items:
                 break
             page += 1
@@ -231,42 +235,53 @@ def age_from_customer(c):
     return None
 
 
-def pick_actual_tariff(tariffs, tariff_names):
-    """Актуальный абонемент. Название и статус — по последнему абонементу.
+def _to_float(v):
+    try:
+        return float(str(v).replace(",", "."))
+    except (TypeError, ValueError):
+        return 0.0
 
-    Статус "актуален/закончен" определяется по остатку ОПЛАЧЕННЫХ занятий
-    последнего абонемента (поле paid_lesson_count абонемента — CRM пересчитывает
-    его из остатка денег на балансе ученика):
-    - "актуален" (is_active=True), если оплаченных занятий > 0 (хватает денег
-      хотя бы на одно занятие), даже если занятия не запланированы и абонемент
-      в архиве/завершён по дате;
-    - "закончен" (is_active=False), если оплаченных занятий не осталось.
+
+def pick_actual_tariff(tariffs, tariff_dict, balance):
+    """Актуальный абонемент. Название и e_date — по последнему абонементу.
+
+    Остаток оплаченных занятий считаем сами:
+        остаток = floor( деньги_на_балансе / цена_одного_занятия ),
+    где цена_одного_занятия = price_абонемента / lessons_count_абонемента
+    из справочника тарифов. Цену берём по ПОСЛЕДНЕМУ (текущему) абонементу.
+
+    - "актуален" (is_active=True), если остаток > 0 — денег хватает хотя бы
+      на одно занятие (даже если абонемент в архиве/завершён по дате);
+    - "закончен" (is_active=False), если денег не хватает ни на одно занятие.
     """
     if not tariffs:
         return None
 
-    def label(t):
-        return tariff_names.get(t.get("tariff_id"), f"Абонемент #{t.get('tariff_id')}")
+    def label(tid):
+        info = tariff_dict.get(tid)
+        return (info or {}).get("name") or f"Абонемент #{tid}"
 
-    # Сортируем все абонементы по дате начала (новые первые).
+    # Последний абонемент по дате начала.
     actual = []
     for t in tariffs:
         e = parse_crm_date(t.get("e_date"))
         b = parse_crm_date(t.get("b_date"))
-        try:
-            paid = int(t.get("paid_lesson_count") or 0)
-        except (TypeError, ValueError):
-            paid = 0
-        actual.append((b or date.min, e, paid, t))
+        actual.append((b or date.min, e, t))
     actual.sort(key=lambda x: x[0], reverse=True)
+    b, e, t = actual[0]
+    tid = t.get("tariff_id")
 
-    # Приоритет: берём абонемент с ненулевым остатком занятий (ближайший к последнему).
-    # Если у всех остаток 0 — берём последний по дате начала.
-    chosen = next((x for x in actual if x[2] > 0), actual[0])
-    b, e, paid_left, t = chosen
+    # Цена одного занятия по последнему абонементу.
+    info = tariff_dict.get(tid) or {}
+    price = _to_float(info.get("price"))
+    lessons = _to_float(info.get("lessons_count"))
+    lesson_price = (price / lessons) if (price > 0 and lessons > 0) else 0
+
+    money = _to_float(balance)
+    paid_left = int(money // lesson_price) if lesson_price > 0 else 0
 
     return {
-        "name": label(t),
+        "name": label(tid),
         "e_date": str(e) if e else None,
         "is_active": paid_left > 0,
         "paid_lessons_left": paid_left,
@@ -750,9 +765,9 @@ def handle_list(token, name_filter=None):
         if age is None:
             age = age_from_customer(c)
 
-        # Абонемент. Статус "актуален/закончен" — по остатку оплаченных занятий
-        # последнего абонемента (CRM считает его из остатка денег на балансе).
-        tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
+        # Абонемент. Остаток занятий = баланс / цена занятия по последнему абонементу.
+        tariff = pick_actual_tariff(
+            tariffs_by_customer.get(cid, []), tariff_names, c.get("balance"))
 
         # Все диагностики ученика (пузырьки для 'Мониторинг прогресса').
         diagnostics = build_diagnostics(
@@ -839,5 +854,4 @@ def handler(event, context):
         return handle_statuses(token)
     if mode == "list":
         return handle_list(token, params.get("q"))
-
     return _json(400, {"error": "unknown mode"})
