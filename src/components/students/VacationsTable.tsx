@@ -13,18 +13,20 @@ import { NameWithDot, fmtDate } from './studentsTableHelpers';
 
 // ────── helpers ──────────────────────────────────────────────────────────────
 
-const MONTHS_RU = [
-  'январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
-  'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре',
+// Родительный падеж: «до середины июля», «до конца августа».
+const MONTHS_GEN = [
+  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
 ];
 
 const formatVacationEnd = (v: StudentVacation): string => {
   if (!v.date_to) return '—';
   const d = new Date(v.date_to);
+  const yearSuffix = d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : '';
   if (v.vacation_end_type === 'mid_month')
-    return `до середины ${MONTHS_RU[d.getMonth()]} ${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() : ''}`.trim();
+    return `до середины ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
   if (v.vacation_end_type === 'end_month')
-    return `до конца ${MONTHS_RU[d.getMonth()]} ${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() : ''}`.trim();
+    return `до конца ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
   return fmtDate(v.date_to);
 };
 
@@ -34,35 +36,61 @@ const firstLessonBadge = (status: FirstLessonStatus) => {
   return '';
 };
 
-// ────── VacationEditor ───────────────────────────────────────────────────────
+// ────── VacationEndEditor ────────────────────────────────────────────────────
 
-const VacationEditor = ({
+const MONTHS_SELECT = [
+  'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+  'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',
+];
+
+// Режим: exact (конкретная дата) | approx (ориентировочная: месяц + часть месяца)
+type EndMode = 'exact' | 'approx';
+
+const VacationEndEditor = ({
   studentId,
   initial,
   onSaved,
+  onCancel,
 }: {
   studentId: number;
   initial: StudentVacation | null;
   onSaved: (v: StudentVacation) => void;
+  onCancel: () => void;
 }) => {
-  const today = new Date().toISOString().slice(0, 10);
-  const [dateTo, setDateTo] = useState(initial?.date_to ?? '');
-  const [endType, setEndType] = useState<VacationEndType>(initial?.vacation_end_type ?? 'exact');
-  const [flDate, setFlDate] = useState(initial?.first_lesson_date ?? '');
-  const [flStatus, setFlStatus] = useState<FirstLessonStatus>(initial?.first_lesson_status ?? 'not_agreed');
+  const today = new Date();
+  const initApprox = initial?.vacation_end_type === 'mid_month' || initial?.vacation_end_type === 'end_month';
+  const initDate = initial?.date_to ? new Date(initial.date_to) : null;
+
+  const [mode, setMode] = useState<EndMode>(initApprox ? 'approx' : 'exact');
+  const [exactDate, setExactDate] = useState(!initApprox && initial?.date_to ? initial.date_to : '');
+  const [month, setMonth] = useState<number>(initDate ? initDate.getMonth() : today.getMonth());
+  const [year, setYear] = useState<number>(initDate ? initDate.getFullYear() : today.getFullYear());
+  const [part, setPart] = useState<VacationEndType>(
+    initial?.vacation_end_type === 'end_month' ? 'end_month' : 'mid_month',
+  );
   const [saving, setSaving] = useState(false);
 
-  const save = async (patch: Partial<Omit<StudentVacation, 'id'>>) => {
+  const save = async () => {
     setSaving(true);
     try {
+      let date_to: string | null;
+      let vacation_end_type: VacationEndType;
+      if (mode === 'exact') {
+        date_to = exactDate || null;
+        vacation_end_type = 'exact';
+      } else {
+        // Храним первое число выбранного месяца, тип = mid/end.
+        const mm = String(month + 1).padStart(2, '0');
+        date_to = `${year}-${mm}-01`;
+        vacation_end_type = part;
+      }
       const merged: Partial<Omit<StudentVacation, 'id'>> = {
-        date_from: initial?.date_from ?? today,
-        date_to: dateTo || null,
-        vacation_end_type: endType,
-        first_lesson_date: flDate || null,
-        first_lesson_status: flStatus,
+        date_from: initial?.date_from ?? null,
+        date_to,
+        vacation_end_type,
+        first_lesson_date: initial?.first_lesson_date ?? null,
+        first_lesson_status: initial?.first_lesson_status ?? 'not_agreed',
         note: initial?.note ?? '',
-        ...patch,
       };
       await saveVacation(studentId, merged);
       onSaved({ id: initial?.id ?? 0, ...merged } as StudentVacation);
@@ -71,58 +99,63 @@ const VacationEditor = ({
     }
   };
 
+  const years = [today.getFullYear(), today.getFullYear() + 1];
+
   return (
     <div className="space-y-2">
-      {/* ── конец каникул ── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-gray-500 w-28">Конец каникул:</span>
-        <select
-          value={endType}
-          onChange={e => {
-            setEndType(e.target.value as VacationEndType);
-            save({ vacation_end_type: e.target.value as VacationEndType });
-          }}
-          className="h-8 px-2 rounded border border-gray-200 text-xs text-gray-700"
-        >
-          <option value="exact">Конкретная дата</option>
-          <option value="mid_month">До середины месяца</option>
-          <option value="end_month">До конца месяца</option>
-        </select>
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={e => setDateTo(e.target.value)}
-          onBlur={() => save({ date_to: dateTo || null, vacation_end_type: endType })}
-          className="h-8 text-xs w-36"
-        />
+      {/* Тип конца каникул */}
+      <div className="flex items-center gap-3 text-xs">
+        <label className="inline-flex items-center gap-1 cursor-pointer">
+          <input type="radio" checked={mode === 'exact'} onChange={() => setMode('exact')} />
+          Конкретная дата
+        </label>
+        <label className="inline-flex items-center gap-1 cursor-pointer">
+          <input type="radio" checked={mode === 'approx'} onChange={() => setMode('approx')} />
+          Ориентировочная дата
+        </label>
       </div>
 
-      {/* ── первый урок ── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-gray-500 w-28">Первый урок:</span>
+      {mode === 'exact' ? (
         <Input
           type="date"
-          value={flDate}
-          onChange={e => setFlDate(e.target.value)}
-          onBlur={() => save({ first_lesson_date: flDate || null, first_lesson_status: flStatus })}
+          value={exactDate}
+          onChange={e => setExactDate(e.target.value)}
           className="h-8 text-xs w-36"
-          placeholder="дата"
         />
-        {flDate && (
+      ) : (
+        <div className="flex items-center gap-2 flex-wrap">
           <select
-            value={flStatus}
-            onChange={e => {
-              setFlStatus(e.target.value as FirstLessonStatus);
-              save({ first_lesson_date: flDate || null, first_lesson_status: e.target.value as FirstLessonStatus });
-            }}
-            className="h-8 px-2 rounded border border-gray-200 text-xs text-gray-700"
+            value={part}
+            onChange={e => setPart(e.target.value as VacationEndType)}
+            className="h-8 px-2 rounded border border-gray-200 text-xs"
           >
-            <option value="paid">Оплачен</option>
-            <option value="agreed">Согласован</option>
-            <option value="not_agreed">Не согласован</option>
+            <option value="mid_month">До середины</option>
+            <option value="end_month">До конца</option>
           </select>
-        )}
-        {saving && <span className="text-xs text-gray-400">…</span>}
+          <select
+            value={month}
+            onChange={e => setMonth(Number(e.target.value))}
+            className="h-8 px-2 rounded border border-gray-200 text-xs"
+          >
+            {MONTHS_SELECT.map((m, i) => (
+              <option key={i} value={i}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={year}
+            onChange={e => setYear(Number(e.target.value))}
+            className="h-8 px-2 rounded border border-gray-200 text-xs"
+          >
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <Button size="sm" onClick={save} disabled={saving} className="h-7 text-xs">
+          {saving ? '…' : 'ОК'}
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel} className="h-7 text-xs">Отмена</Button>
       </div>
     </div>
   );
@@ -193,19 +226,17 @@ const VacationCell = ({
   onUpdate: (id: number, v: StudentVacation) => void;
 }) => {
   const [editing, setEditing] = useState(false);
-  const v = s.vacation;
+  const [displayed, setDisplayed] = useState<StudentVacation | null>(s.vacation);
 
   if (editing) {
     return (
       <td className="px-3 py-3 align-top" colSpan={1}>
-        <VacationEditor
+        <VacationEndEditor
           studentId={s.id}
-          initial={v}
-          onSaved={saved => { onUpdate(s.id, saved); setEditing(false); }}
+          initial={displayed}
+          onSaved={saved => { setDisplayed(saved); onUpdate(s.id, saved); setEditing(false); }}
+          onCancel={() => setEditing(false)}
         />
-        <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="mt-2 h-7 text-xs text-gray-400">
-          Закрыть
-        </Button>
       </td>
     );
   }
@@ -213,7 +244,11 @@ const VacationCell = ({
   return (
     <td className="px-3 py-3 align-top text-sm text-gray-700 group">
       <div className="flex items-start gap-2">
-        <span>{v ? formatVacationEnd(v) : <span className="text-gray-400 text-xs italic">не указано</span>}</span>
+        <span>
+          {displayed && displayed.date_to
+            ? formatVacationEnd(displayed)
+            : <span className="text-gray-400 text-xs italic">не указано</span>}
+        </span>
         <button
           onClick={() => setEditing(true)}
           className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0 mt-0.5"
