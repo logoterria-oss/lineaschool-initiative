@@ -222,13 +222,16 @@ def age_from_customer(c):
     return None
 
 
-def pick_actual_tariff(tariffs, tariff_names, paid_lessons_left=None):
-    """Актуальный абонемент. Название берём по последнему абонементу.
+def pick_actual_tariff(tariffs, tariff_names):
+    """Актуальный абонемент. Название и статус — по последнему абонементу.
 
-    Статус определяется по остатку ОПЛАЧЕННЫХ занятий ученика:
-    - "актуален" (is_active=True), если оплаченных занятий ещё больше 0
-      (даже если они не запланированы);
-    - "закончен" (is_active=False), если оплаченные занятия закончились.
+    Статус "актуален/закончен" определяется по остатку ОПЛАЧЕННЫХ занятий
+    последнего абонемента (поле paid_lesson_count абонемента — CRM пересчитывает
+    его из остатка денег на балансе ученика):
+    - "актуален" (is_active=True), если оплаченных занятий > 0 (хватает денег
+      хотя бы на одно занятие), даже если занятия не запланированы и абонемент
+      в архиве/завершён по дате;
+    - "закончен" (is_active=False), если оплаченных занятий не осталось.
     """
     if not tariffs:
         return None
@@ -236,7 +239,7 @@ def pick_actual_tariff(tariffs, tariff_names, paid_lessons_left=None):
     def label(t):
         return tariff_names.get(t.get("tariff_id"), f"Абонемент #{t.get('tariff_id')}")
 
-    # Последний абонемент по дате начала — для названия и e_date.
+    # Последний абонемент по дате начала — для названия, e_date и остатка занятий.
     actual = []
     for t in tariffs:
         e = parse_crm_date(t.get("e_date"))
@@ -245,11 +248,15 @@ def pick_actual_tariff(tariffs, tariff_names, paid_lessons_left=None):
     actual.sort(key=lambda x: x[0], reverse=True)
     b, e, t = actual[0]
 
-    is_active = (paid_lessons_left or 0) > 0
+    try:
+        paid_left = int(t.get("paid_lesson_count") or 0)
+    except (TypeError, ValueError):
+        paid_left = 0
+
     return {
         "name": label(t),
         "e_date": str(e) if e else None,
-        "is_active": is_active,
+        "is_active": paid_left > 0,
     }
 
 
@@ -730,13 +737,9 @@ def handle_list(token, name_filter=None):
         if age is None:
             age = age_from_customer(c)
 
-        # Абонемент. Статус "актуален/закончен" — по остатку оплаченных занятий клиента.
-        paid_lessons_left = c.get("paid_lesson_count") or 0
-        try:
-            paid_lessons_left = int(paid_lessons_left)
-        except (TypeError, ValueError):
-            paid_lessons_left = 0
-        tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names, paid_lessons_left)
+        # Абонемент. Статус "актуален/закончен" — по остатку оплаченных занятий
+        # последнего абонемента (CRM считает его из остатка денег на балансе).
+        tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
 
         # Все диагностики ученика (пузырьки для 'Мониторинг прогресса').
         diagnostics = build_diagnostics(
