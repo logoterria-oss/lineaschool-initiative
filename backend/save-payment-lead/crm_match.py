@@ -32,6 +32,7 @@ NAME_GROUPS = [
     ["михаил", "миша", "мишка"],
     ["никита", "ник"],
     ["ольга", "оля"],
+    ["павел", "паша", "пашка", "павлик"],
     ["петр", "пётр", "петя", "петенька"],
     ["полина", "поля"],
     ["савелий", "савва", "сава", "савелик"],
@@ -106,9 +107,15 @@ def match_name(raw_name: str) -> str:
         for e in entries:
             ew = e['words']
             ew_roots = {_surname_root(w) for w in ew}
+            ew_names = {w for w in ew if w in NAME_ALIAS.values()}
             common_surname = surname_roots & ew_roots
             common_name = name_words & ew
             if not common_surname:
+                continue
+            # Если у обеих сторон есть распознанные имена, но они не пересекаются —
+            # это разные люди (напр. "Павел Беляев" vs "Павел Черепанов"),
+            # совпадение только по фамилии-корню недостаточно.
+            if name_words and ew_names and not common_name:
                 continue
             score = 2.0 if common_name else 1.0
             score += len(common_surname) * 0.1 + len(common_name) * 0.1
