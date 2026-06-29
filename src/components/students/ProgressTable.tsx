@@ -26,7 +26,7 @@ const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => (
     </span>
 
     {d.type !== 'planned' && (
-      <div className="invisible opacity-0 group-hover/bub:visible group-hover/bub:opacity-100 transition-opacity absolute left-0 top-full mt-2 z-30 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-left">
+      <div className="invisible opacity-0 group-hover/bub:visible group-hover/bub:opacity-100 transition-opacity absolute left-0 bottom-full mb-2 z-30 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-left">
         <p className="text-xs font-semibold text-gray-900 mb-1">
           {bubbleLabel(d.type)} · {fmtDate(d.date)}
         </p>
