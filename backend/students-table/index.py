@@ -222,32 +222,34 @@ def age_from_customer(c):
     return None
 
 
-def pick_actual_tariff(tariffs, tariff_names):
-    """Актуальный абонемент: действует сейчас (e_date>=today), иначе последний по b_date."""
+def pick_actual_tariff(tariffs, tariff_names, paid_lessons_left=None):
+    """Актуальный абонемент. Название берём по последнему абонементу.
+
+    Статус определяется по остатку ОПЛАЧЕННЫХ занятий ученика:
+    - "актуален" (is_active=True), если оплаченных занятий ещё больше 0
+      (даже если они не запланированы);
+    - "закончен" (is_active=False), если оплаченные занятия закончились.
+    """
     if not tariffs:
         return None
-    today = date.today()
 
     def label(t):
-        name = tariff_names.get(t.get("tariff_id"), f"Абонемент #{t.get('tariff_id')}")
-        return name
+        return tariff_names.get(t.get("tariff_id"), f"Абонемент #{t.get('tariff_id')}")
 
+    # Последний абонемент по дате начала — для названия и e_date.
     actual = []
     for t in tariffs:
         e = parse_crm_date(t.get("e_date"))
         b = parse_crm_date(t.get("b_date"))
         actual.append((b or date.min, e, t))
+    actual.sort(key=lambda x: x[0], reverse=True)
+    b, e, t = actual[0]
 
-    # сначала действующие
-    live = [x for x in actual if x[1] is None or x[1] >= today]
-    pool = live if live else actual
-    pool.sort(key=lambda x: x[0], reverse=True)
-    b, e, t = pool[0]
-    is_live = bool(live) and (e is None or e >= today)
+    is_active = (paid_lessons_left or 0) > 0
     return {
         "name": label(t),
         "e_date": str(e) if e else None,
-        "is_active": is_live,
+        "is_active": is_active,
     }
 
 
@@ -728,8 +730,13 @@ def handle_list(token, name_filter=None):
         if age is None:
             age = age_from_customer(c)
 
-        # Абонемент
-        tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names)
+        # Абонемент. Статус "актуален/закончен" — по остатку оплаченных занятий клиента.
+        paid_lessons_left = c.get("paid_lesson_count") or 0
+        try:
+            paid_lessons_left = int(paid_lessons_left)
+        except (TypeError, ValueError):
+            paid_lessons_left = 0
+        tariff = pick_actual_tariff(tariffs_by_customer.get(cid, []), tariff_names, paid_lessons_left)
 
         # Все диагностики ученика (пузырьки для 'Мониторинг прогресса').
         diagnostics = build_diagnostics(
