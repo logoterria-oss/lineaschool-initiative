@@ -20,6 +20,15 @@
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Save vacation",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "save_vacation", "student_id": 999999, "date_from": "2026-07-01", "date_to": "2026-08-31"},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
     }
   ]
 }

@@ -479,6 +479,69 @@ def load_overrides():
     return out
 
 
+def load_vacations():
+    """Каникулы: {student_id: [{id, date_from, date_to, note}]}."""
+    today = date.today()
+    conn = db()
+    out = {}
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # Берём только действующие и будущие (date_to >= today)
+        cur.execute(
+            f"SELECT id, student_id, date_from, date_to, note "
+            f"FROM {SCHEMA}.student_vacations WHERE date_to >= %s ORDER BY date_from",
+            (today,)
+        )
+        for r in cur.fetchall():
+            sid = r["student_id"]
+            out.setdefault(sid, []).append({
+                "id": r["id"],
+                "date_from": str(r["date_from"]),
+                "date_to": str(r["date_to"]),
+                "note": r["note"] or "",
+            })
+    conn.close()
+    return out
+
+
+def handle_save_vacation(body):
+    """Сохранить или обновить запись каникул."""
+    student_id = body.get("student_id")
+    date_from = body.get("date_from")
+    date_to = body.get("date_to")
+    if not student_id or not date_from or not date_to:
+        return _json(400, {"error": "student_id, date_from, date_to required"})
+    note = body.get("note", "")
+    vac_id = body.get("id")
+    conn = db()
+    with conn.cursor() as cur:
+        if vac_id:
+            cur.execute(
+                f"UPDATE {SCHEMA}.student_vacations SET date_from=%s, date_to=%s, note=%s, updated_at=NOW() WHERE id=%s",
+                (date_from, date_to, note, int(vac_id))
+            )
+        else:
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.student_vacations (student_id, date_from, date_to, note) VALUES (%s,%s,%s,%s)",
+                (int(student_id), date_from, date_to, note)
+            )
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True})
+
+
+def handle_delete_vacation(body):
+    """Удалить запись каникул по id."""
+    vac_id = body.get("id")
+    if not vac_id:
+        return _json(400, {"error": "id required"})
+    conn = db()
+    with conn.cursor() as cur:
+        cur.execute(f"DELETE FROM {SCHEMA}.student_vacations WHERE id=%s", (int(vac_id),))
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True})
+
+
 def handle_save_override(body):
     student_id = body.get("student_id")
     if not student_id:
@@ -598,6 +661,7 @@ def handle_list(token, name_filter=None):
                 report_ids.add(d["report_id"])
     reports = load_reports(report_ids)
     overrides = load_overrides()
+    vacations = load_vacations()
 
     items = []
     for c in customers:
@@ -684,6 +748,7 @@ def handle_list(token, name_filter=None):
                 "report_link": report_link,
                 "tariff": row_tariff,
                 "diagnostics": diagnostics,
+                "vacations": vacations.get(row_id, vacations.get(cid, [])),
             })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
@@ -699,8 +764,13 @@ def handler(event, context):
 
     if event.get("httpMethod") == "POST":
         body = json.loads(event.get("body") or "{}")
-        if body.get("action") == "save_override":
+        action = body.get("action")
+        if action == "save_override":
             return handle_save_override(body)
+        if action == "save_vacation":
+            return handle_save_vacation(body)
+        if action == "delete_vacation":
+            return handle_delete_vacation(body)
         return _json(400, {"error": "unknown action"})
 
     params = event.get("queryStringParameters") or {}
@@ -715,28 +785,5 @@ def handler(event, context):
         return handle_statuses(token)
     if mode == "list":
         return handle_list(token, params.get("q"))
-    if mode == "debug_pauses":
-        results = {}
-        # Кастомные поля клиентов
-        for path in ["customer-field", "field", "custom-field", "customer/fields",
-                     "customer-pause", "customer-holiday-period"]:
-            url = f"{S20_HOST}/v2api/1/{path}/index"
-            try:
-                r = requests.post(url, json={"page": 0, "pageSize": 5},
-                                  headers=get_headers(token), timeout=8)
-                results[path] = {"status": r.status_code,
-                                 "body": r.json() if r.status_code == 200 else r.text[:150]}
-            except Exception as e:
-                results[path] = {"err": str(e)}
-        # Попробуем получить одного клиента через customer/view
-        customers_raw = fetch_customers_raw(token, is_study=1, removed=0)
-        frozen = [c for c in customers_raw if c.get("study_status_id") in (4, 5)]
-        if frozen:
-            cid = frozen[0]["id"]
-            r2 = requests.post(f"{S20_HOST}/v2api/1/customer/view",
-                               json={"id": cid}, headers=get_headers(token), timeout=10)
-            results["customer_view_keys"] = sorted(r2.json().keys()) if r2.status_code == 200 else r2.text[:200]
-            results["customer_view_sample"] = r2.json() if r2.status_code == 200 else {}
-        return _json(200, results)
 
     return _json(400, {"error": "unknown mode"})

@@ -12,10 +12,10 @@ import {
 import {
   Tab,
   TABS,
-  Placeholder,
 } from '@/components/students/studentsTableHelpers';
 import MainTable from '@/components/students/MainTable';
 import ProgressTable from '@/components/students/ProgressTable';
+import VacationsTable from '@/components/students/VacationsTable';
 import StudentsFilters from '@/components/students/StudentsFilters';
 
 const StudentsTablePage = () => {
@@ -82,6 +82,15 @@ const StudentsTablePage = () => {
     });
   }, [items, filter, tariffFilter, search]);
 
+  // Вкладка "Даты каникул": ученики с действующими/будущими приостановками > 1 недели.
+  const vacationsRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((i) => {
+      if (q && !(i.name || '').toLowerCase().includes(q)) return false;
+      return (i.vacations ?? []).length > 0;
+    });
+  }, [items, search]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       <AdminHeader showOnlyHome />
@@ -113,6 +122,19 @@ const StudentsTablePage = () => {
                 setSearch={setSearch}
               />
             )}
+            {tab === 'vacations' && (
+              <StudentsFilters
+                filter={filter}
+                setFilter={setFilter}
+                tariffFilter={tariffFilter}
+                setTariffFilter={setTariffFilter}
+                toggleTariff={toggleTariff}
+                tariffOptions={tariffOptions}
+                search={search}
+                setSearch={setSearch}
+                compact
+              />
+            )}
           </div>
 
           {/* Навигация */}
@@ -133,7 +155,17 @@ const StudentsTablePage = () => {
             ))}
           </div>
 
-          {tab === 'vacations' && <Placeholder icon="CalendarOff" title="Даты каникул" />}
+          {tab === 'vacations' && (
+            <>
+              {loading ? (
+                <p className="text-gray-500">Загрузка…</p>
+              ) : error ? (
+                <p className="text-red-600">{error}</p>
+              ) : (
+                <VacationsTable rows={vacationsRows} />
+              )}
+            </>
+          )}
 
           {(tab === 'main' || tab === 'progress') && (
             <>

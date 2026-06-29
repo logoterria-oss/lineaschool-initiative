@@ -16,6 +16,13 @@ export interface DiagnosticBubble {
   note: string;
 }
 
+export interface StudentVacation {
+  id: number;
+  date_from: string;
+  date_to: string;
+  note: string;
+}
+
 export interface StudentRow {
   id: number;
   name: string;
@@ -31,6 +38,7 @@ export interface StudentRow {
   report_link: string | null;
   tariff: StudentTariff | null;
   diagnostics: DiagnosticBubble[];
+  vacations: StudentVacation[];
 }
 
 export type StatusFilter =
@@ -72,6 +80,27 @@ export const fetchStudents = async (): Promise<StudentRow[]> => {
   if (!res.ok) throw new Error('Не удалось загрузить учеников');
   const data = await res.json();
   return data.items as StudentRow[];
+};
+
+export const saveVacation = async (
+  studentId: number,
+  fields: { id?: number; date_from: string; date_to: string; note?: string },
+): Promise<void> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'save_vacation', student_id: studentId, ...fields }),
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить каникулы');
+};
+
+export const deleteVacation = async (id: number): Promise<void> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete_vacation', id }),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить каникулы');
 };
 
 // Сохранить ручную правку (формы нарушений и/или возраст) — приоритет над данными CRM.
