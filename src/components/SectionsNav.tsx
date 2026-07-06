@@ -1,5 +1,3 @@
-import Icon from "@/components/ui/icon";
-
 const schoolLinks = [
   { label: "Методика", href: "#methodology" },
   { label: "Преимущества", href: "#features" },
@@ -9,36 +7,48 @@ const schoolLinks = [
   { label: "Вопросы", href: "#faq" },
 ];
 
+const studiesLinks = [{ label: "О центре", href: "/lineastudies" }];
+
+function NavDropdown({
+  title,
+  links,
+}: {
+  title: string;
+  links: { label: string; href: string }[];
+}) {
+  return (
+    <details className="group relative">
+      <summary className="list-none cursor-pointer select-none text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1">
+        {title}
+        <span className="text-[10px] text-gray-400 transition-transform group-open:rotate-180">
+          ▼
+        </span>
+      </summary>
+      <div className="absolute left-0 top-full mt-2 min-w-[200px] bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+        {links.map((l) => (
+          <a
+            key={l.href}
+            href={l.href}
+            className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          >
+            {l.label}
+          </a>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export default function SectionsNav() {
   return (
-    <div className="bg-white/90 backdrop-blur-sm border-b border-green-100 sticky top-14 sm:top-16 md:top-20 lg:top-24 z-40">
+    <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-14 sm:top-16 md:top-20 lg:top-24 z-40">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6 py-2 gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 text-green-700 font-semibold text-sm">
-              <Icon name="GraduationCap" size={18} className="text-green-600" />
-              Онлайн-школа ЛинэяСкул
-            </span>
-            <nav className="flex items-center gap-3 flex-wrap ml-1">
-              {schoolLinks.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  className="text-[13px] text-gray-500 hover:text-green-600 transition-colors"
-                >
-                  {l.label}
-                </a>
-              ))}
-            </nav>
-          </div>
-
-          <a
-            href="/lineastudies"
-            className="inline-flex items-center gap-1.5 text-gray-500 hover:text-blue-600 transition-colors text-sm font-medium sm:ml-auto"
-          >
-            <Icon name="FlaskConical" size={18} className="text-blue-500" />
-            Научно-исследовательский центр ЛинэяСтадис
-          </a>
+        <div className="flex items-center gap-6 py-2.5">
+          <NavDropdown title="Онлайн-школа ЛинэяСкул" links={schoolLinks} />
+          <NavDropdown
+            title="Научно-исследовательский центр ЛинэяСтадис"
+            links={studiesLinks}
+          />
         </div>
       </div>
     </div>
