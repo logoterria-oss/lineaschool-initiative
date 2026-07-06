@@ -18,7 +18,7 @@ function NavDropdown({
 }) {
   return (
     <details className="group relative">
-      <summary className="list-none cursor-pointer select-none text-sm font-medium lowercase text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1">
+      <summary className="list-none cursor-pointer select-none text-sm font-medium lowercase text-gray-500 hover:text-gray-800 transition-colors flex items-center gap-1">
         {title}
         <span className="text-[10px] text-gray-400 transition-transform group-open:rotate-180">
           ▼
@@ -43,7 +43,7 @@ export default function SectionsNav() {
   return (
     <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-14 sm:top-16 md:top-20 lg:top-24 z-40">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="flex items-center justify-center gap-6 py-2.5">
+        <div className="flex items-center justify-center gap-12 py-2.5">
           <NavDropdown
             title="Онлайн-школа коррекции дислексии и дисграфии"
             links={schoolLinks}
