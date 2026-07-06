@@ -55,24 +55,9 @@ export default function HeroSection() {
               </div>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 mb-3 xs:mb-4 sm:mb-5 text-gray-500 text-[11px] xs:text-[12px] sm:text-sm">
+            <div className="inline-flex items-center gap-1.5 text-gray-500 text-[11px] xs:text-[12px] sm:text-sm">
               <Icon name="BadgeCheck" size={16} className="text-green-600 flex-shrink-0" />
               <span>Образовательная лицензия № Л035-01199-54/05474513</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 lg:gap-8 w-full items-center">
-              <div className="text-center px-0.5">
-                <div className="text-[1.2rem] xs:text-[1.5rem] sm:text-xl md:text-2xl lg:text-2xl font-bold text-green-600 leading-tight">200+</div>
-                <div className="text-[11px] xs:text-[13px] sm:text-xs lg:text-sm text-gray-600 leading-tight mt-0.5">довольных семей</div>
-              </div>
-              <div className="text-center px-0.5">
-                <div className="text-[1.2rem] xs:text-[1.5rem] sm:text-xl md:text-2xl lg:text-2xl font-bold text-green-600 leading-tight whitespace-nowrap">от 970₽</div>
-                <div className="text-[11px] xs:text-[13px] sm:text-xs lg:text-sm text-gray-600 leading-tight mt-0.5">за урок</div>
-              </div>
-              <div className="text-center px-0.5">
-                <div className="text-[1.2rem] xs:text-[1.5rem] sm:text-xl md:text-2xl lg:text-2xl font-bold text-green-600 leading-tight">98%</div>
-                <div className="text-[11px] xs:text-[13px] sm:text-xs lg:text-sm text-gray-600 leading-tight mt-0.5">успешных кейсов</div>
-              </div>
             </div>
           </div>
           
