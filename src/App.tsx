@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Обычные импорты вместо lazy loading для стабильности
 import Index from "./pages/Index";
+import LineaStudies from "./pages/LineaStudies";
 import Pricing from "./pages/Pricing";
 import OfferPage from "./pages/OfferPage";
 import Privacy from "./pages/Privacy";
@@ -46,6 +47,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/lineastudies" element={<LineaStudies />} />
             <Route path="/price" element={<Pricing />} />
             <Route path="/oferta_2025" element={<OfferPage />} />
             <Route path="/privacy" element={<Privacy />} />

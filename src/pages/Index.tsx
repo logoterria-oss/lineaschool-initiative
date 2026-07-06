@@ -2,6 +2,7 @@ import SEOHead from "@/components/SEOHead";
 import YandexMetaTags from "@/components/YandexMetaTags";
 import { organizationSchema, serviceSchema, faqSchema, webPageSchema } from "@/utils/structuredData";
 import Navigation from "@/components/Navigation";
+import SectionsNav from "@/components/SectionsNav";
 import HeroSection from "@/components/HeroSection";
 import MethodologySection from "@/components/MethodologySection";
 import FeaturesSection from "@/components/FeaturesSection";
@@ -41,15 +42,16 @@ export default function Index() {
       <div className="min-h-screen bg-white relative">
         <MobileOptimizedSpirals />
         <Navigation />
+        <SectionsNav />
         <HeroSection />
-        <MethodologySection />
-        <FeaturesSection />
-        <DiagnosticSection />
+        <div id="methodology"><MethodologySection /></div>
+        <div id="features"><FeaturesSection /></div>
+        <div id="diagnostic"><DiagnosticSection /></div>
         <WhyNotTeacherSection />
 
-        <TestimonialsSection />
-        <PricingOverview />
-        <FAQSection />
+        <div id="testimonials"><TestimonialsSection /></div>
+        <div id="pricing"><PricingOverview /></div>
+        <div id="faq"><FAQSection /></div>
         <CTASection />
         <Footer />
         <MobileFloatingButtons />
