@@ -44,7 +44,10 @@ export default function SectionsNav() {
     <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-14 sm:top-16 md:top-20 lg:top-24 z-40">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex items-center gap-6 py-2.5">
-          <NavDropdown title="Онлайн-школа ЛинэяСкул" links={schoolLinks} />
+          <NavDropdown
+            title="Онлайн-школа коррекции дислексии и дисграфии"
+            links={schoolLinks}
+          />
           <NavDropdown
             title="Научно-исследовательский центр ЛинэяСтадис"
             links={studiesLinks}
