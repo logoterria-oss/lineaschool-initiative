@@ -1,6 +1,5 @@
 const schoolLinks = [
   { label: "Методика", href: "#methodology" },
-  { label: "Преимущества", href: "#features" },
   { label: "Диагностика", href: "#diagnostic" },
   { label: "Отзывы", href: "#testimonials" },
   { label: "Цены", href: "#pricing" },
