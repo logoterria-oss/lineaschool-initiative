@@ -49,7 +49,7 @@ export default function SectionsNav() {
             links={schoolLinks}
           />
           <NavDropdown
-            title="Научно-исследовательский центр ЛинэяСтадис"
+            title="Институт прикладных исследований чтения и письма"
             links={studiesLinks}
           />
         </div>
