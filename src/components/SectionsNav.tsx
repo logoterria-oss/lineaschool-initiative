@@ -40,7 +40,7 @@ function NavDropdown({
 
 export default function SectionsNav() {
   return (
-    <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-14 sm:top-16 md:top-20 lg:top-24 z-40">
+    <div className="hidden md:block bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-14 sm:top-16 md:top-20 lg:top-24 z-40">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-center gap-12 py-2.5">
           <NavDropdown
