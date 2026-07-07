@@ -27,7 +27,7 @@ export default function HeroSection() {
               Онлайн-коррекция дислексии и дисграфии
             </h1>
             
-            <div className="mb-3 xs:mb-4 sm:mb-6 md:mb-8 w-full">
+            <div className="mb-2 xs:mb-2 sm:mb-3 md:mb-3 w-full">
               <div className="relative">
                 {/* Шильдик акции */}
                 <div className="absolute -top-3 right-2 sm:right-4 z-20">
