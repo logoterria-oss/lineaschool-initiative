@@ -18,7 +18,7 @@ export default function HeroSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const promoDeadline = getPromoDeadline();
   return (
-    <section className="relative py-4 sm:py-6 md:py-8 lg:py-12 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
+    <section className="relative pt-4 sm:pt-6 md:pt-8 lg:pt-12 pb-2 sm:pb-3 md:pb-4 lg:pb-5 bg-gradient-to-bl from-green-50 via-white to-green-50/30 overflow-hidden" translate="no">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
           <div className="px-0">
