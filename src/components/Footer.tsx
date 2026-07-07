@@ -31,6 +31,10 @@ export default function Footer() {
           <div className="md:col-span-1">
             <h3 className="font-semibold text-gray-900 mb-4">Документы</h3>
             <div className="space-y-3">
+              <a href="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/documents/educational-license.pdf" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-600 hover:text-green-500 text-sm">
+                <Icon name="FileCheck" size={16} />
+                <span>Образовательная лицензия</span>
+              </a>
               <a href="/oferta_2025" className="block text-gray-600 hover:text-green-500 text-sm">Договор оферты</a>
               <a href="/privacy" className="block text-gray-600 hover:text-green-500 text-sm">Политика конфиденциальности</a>
               <a href="/price" className="block text-gray-600 hover:text-green-500 text-sm">Стоимость услуг</a>
