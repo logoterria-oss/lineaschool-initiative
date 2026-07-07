@@ -109,7 +109,7 @@ const ExportPdfPreview = ({
                     <div key={i} style={{ fontSize: 18, color: '#4b5563', paddingLeft: 12 }}>
                       {x.time} — {x.teacher} (свободно {x.free} из {MAX_GROUP_SIZE})
                       {x.ageLabel && (
-                        <span style={{ color: '#0f766e', fontWeight: 600 }}> — {x.ageLabel}</span>
+                        <span style={{ color: '#0f766e', fontWeight: 600, fontSize: 14 }}> — {x.ageLabel}</span>
                       )}
                       {x.fromDate && (
                         <span style={{ color: '#b45309', fontWeight: 600 }}> ({fmtFrom(x.fromDate)})</span>

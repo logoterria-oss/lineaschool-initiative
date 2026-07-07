@@ -371,8 +371,8 @@ export const useScheduleData = () => {
     if (ages.length === 0) return '';
     const avg = ages.reduce((a, b) => a + b, 0) / ages.length;
     const avgRounded = Math.round(avg);
-    const from = Math.max(7, avgRounded - 1);
-    const to = avgRounded + 1;
+    const from = Math.max(7, avgRounded - 2);
+    const to = avgRounded + 2;
     return `рекомендуется для детей от ${from} до ${to} лет`;
   };
 
