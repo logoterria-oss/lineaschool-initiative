@@ -333,7 +333,13 @@ export const useScheduleData = () => {
       const row = week.find((r) => r.time === c.time && r.teacher_id === c.teacherId);
       const cell = row?.cells[String(c.dayOffset)];
       const free = cell?.free ?? 0;
-      const ageLabel = groupAgeLabel(cell?.student_ids || []);
+      const weekday = weekdayOf(c.dayOffset); // 0=ПН..6=ВС
+      const isMatveyTueThu = /мацвей|матвей/i.test(c.teacherName)
+        && (weekday === 1 || weekday === 3)
+        && c.time.slice(0, 5) === '18:45';
+      const ageLabel = isMatveyTueThu
+        ? 'рекомендуется для детей от 14 до 18 лет'
+        : groupAgeLabel(cell?.student_ids || []);
       const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 
       byDay[c.dayOffset] ||= [];
