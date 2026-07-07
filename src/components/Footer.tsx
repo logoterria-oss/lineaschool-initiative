@@ -34,8 +34,6 @@ export default function Footer() {
               <a href="https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/documents/educational-license.pdf" target="_blank" rel="noopener noreferrer" className="block text-gray-600 hover:text-green-500 text-sm">Образовательная лицензия</a>
               <a href="/oferta_2025" className="block text-gray-600 hover:text-green-500 text-sm">Договор оферты</a>
               <a href="/privacy" className="block text-gray-600 hover:text-green-500 text-sm">Политика конфиденциальности</a>
-              <a href="/price" className="block text-gray-600 hover:text-green-500 text-sm">Стоимость услуг</a>
-              <a href="/diag_form" className="block text-gray-600 hover:text-green-500 text-sm">Диагностическая форма (для специалистов)</a>
 
             </div>
           </div>
