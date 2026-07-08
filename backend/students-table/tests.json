@@ -31,6 +31,15 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Save vacation partial (only date_to keeps date_from)",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "save_vacation", "student_id": 999999, "date_to": "2026-09-15", "vacation_end_type": "exact"},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "CRM admins",
       "method": "GET",
       "path": "/?mode=admins",

@@ -610,25 +610,40 @@ def handle_save_vacation(body):
     student_id = body.get("student_id")
     if not student_id:
         return _json(400, {"error": "student_id required"})
+    # Значения для вставки новой записи (если записи ещё нет).
     date_from = _date_in(body.get("date_from"))
     date_to = _date_in(body.get("date_to"))
     vacation_end_type = body.get("vacation_end_type", "exact")
     first_lesson_date = body.get("first_lesson_date") or None
     first_lesson_status = body.get("first_lesson_status", "not_agreed")
     note = body.get("note", "")
+
+    # Для UPDATE обновляем ТОЛЬКО те поля, которые реально переданы в запросе,
+    # чтобы редактирование одного поля не затирало остальные.
+    update_map = {
+        "date_from": _date_in(body["date_from"]) if "date_from" in body else None,
+        "date_to": _date_in(body["date_to"]) if "date_to" in body else None,
+        "vacation_end_type": body.get("vacation_end_type") if "vacation_end_type" in body else None,
+        "first_lesson_date": (body.get("first_lesson_date") or None) if "first_lesson_date" in body else None,
+        "first_lesson_status": body.get("first_lesson_status") if "first_lesson_status" in body else None,
+        "note": body.get("note") if "note" in body else None,
+    }
+    set_parts = ["updated_at=NOW()"]
+    set_vals = []
+    for col in ("date_from", "date_to", "vacation_end_type",
+                "first_lesson_date", "first_lesson_status", "note"):
+        if col in body:
+            set_parts.append(f"{col}=%s")
+            set_vals.append(update_map[col])
     conn = db()
     with conn.cursor() as cur:
         cur.execute(
             f"INSERT INTO {SCHEMA}.student_vacations "
             f"(student_id, date_from, date_to, vacation_end_type, first_lesson_date, first_lesson_status, note) "
             f"VALUES (%s,%s,%s,%s,%s,%s,%s) "
-            f"ON CONFLICT (student_id) DO UPDATE SET "
-            f"date_from=EXCLUDED.date_from, date_to=EXCLUDED.date_to, "
-            f"vacation_end_type=EXCLUDED.vacation_end_type, "
-            f"first_lesson_date=EXCLUDED.first_lesson_date, "
-            f"first_lesson_status=EXCLUDED.first_lesson_status, "
-            f"note=EXCLUDED.note, updated_at=NOW()",
-            (int(student_id), date_from, date_to, vacation_end_type, first_lesson_date, first_lesson_status, note)
+            f"ON CONFLICT (student_id) DO UPDATE SET " + ", ".join(set_parts),
+            (int(student_id), date_from, date_to, vacation_end_type,
+             first_lesson_date, first_lesson_status, note, *set_vals)
         )
         conn.commit()
     conn.close()

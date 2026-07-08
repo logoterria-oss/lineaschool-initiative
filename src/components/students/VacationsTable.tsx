@@ -145,16 +145,16 @@ const VacationEndEditor = ({
         date_to = `${year}-${mm}-01`;
         vacation_end_type = part;
       }
-      const merged: Partial<Omit<StudentVacation, 'id'>> = {
+      await saveVacation(studentId, { date_to, vacation_end_type });
+      onSaved({
+        id: initial?.id ?? 0,
         date_from: initial?.date_from ?? null,
         date_to,
         vacation_end_type,
         first_lesson_date: initial?.first_lesson_date ?? null,
         first_lesson_status: initial?.first_lesson_status ?? 'not_agreed',
         note: initial?.note ?? '',
-      };
-      await saveVacation(studentId, merged);
-      onSaved({ id: initial?.id ?? 0, ...merged } as StudentVacation);
+      } as StudentVacation);
     } finally {
       setSaving(false);
     }
@@ -327,16 +327,16 @@ const VacationCell = ({
   const color = returnColor(displayed);
 
   const clear = async () => {
-    const merged: Omit<StudentVacation, 'id'> = {
+    await saveVacation(s.id, { date_to: null, vacation_end_type: 'exact' });
+    const saved = {
+      id: displayed?.id ?? 0,
       date_from: displayed?.date_from ?? null,
       date_to: null,
       vacation_end_type: 'exact',
       first_lesson_date: displayed?.first_lesson_date ?? null,
       first_lesson_status: displayed?.first_lesson_status ?? 'not_agreed',
       note: displayed?.note ?? '',
-    };
-    await saveVacation(s.id, merged);
-    const saved = { id: displayed?.id ?? 0, ...merged } as StudentVacation;
+    } as StudentVacation;
     setDisplayed(saved);
     onUpdate(s.id, saved);
   };
@@ -429,14 +429,7 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
                 placeholder="не указано"
                 onSave={async (d) => {
                   const v = s.vacation;
-                  await saveVacation(s.id, {
-                    date_from: d,
-                    date_to: v?.date_to ?? null,
-                    vacation_end_type: v?.vacation_end_type ?? 'exact',
-                    first_lesson_date: v?.first_lesson_date ?? null,
-                    first_lesson_status: v?.first_lesson_status ?? 'not_agreed',
-                    note: v?.note ?? '',
-                  });
+                  await saveVacation(s.id, { date_from: d });
                   handleUpdate(s.id, { ...(v ?? { id: 0, date_to: null, vacation_end_type: 'exact', first_lesson_date: null, first_lesson_status: 'not_agreed', note: '' }), date_from: d });
                 }}
               />
