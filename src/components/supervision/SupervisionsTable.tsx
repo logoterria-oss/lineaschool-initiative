@@ -105,6 +105,15 @@ const SupervisionsTable = () => {
     return ALL_TEACHERS;
   }, [formFilter]);
 
+  // Уникальные имена учеников для подсказок в фильтре.
+  const studentOptions = useMemo(() => {
+    const names = new Set<string>();
+    items.forEach((i) => {
+      if (i.student_name) names.add(i.student_name.trim());
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [items]);
+
   // Средний балл считаем отдельно по групповым и индивидуальным.
   const avgByForm = useMemo(() => {
     const calc = (form: LessonForm) => {
@@ -172,11 +181,17 @@ const SupervisionsTable = () => {
             <div className="relative">
               <input
                 type="text"
+                list="supervision-student-options"
                 className={`${selectCls} pr-8`}
                 placeholder="Имя ученика"
                 value={studentFilter}
                 onChange={(e) => setStudentFilter(e.target.value)}
               />
+              <datalist id="supervision-student-options">
+                {studentOptions.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
               {studentFilter && (
                 <button
                   type="button"
