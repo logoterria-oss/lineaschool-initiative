@@ -34,8 +34,11 @@ const CommentForm = ({
 }) => {
   const [d, setD] = useState<Draft>(initial);
   const [saving, setSaving] = useState(false);
+  const [execOpen, setExecOpen] = useState(false);
 
   const set = (k: keyof Draft, v: string | number | null) => setD((p) => ({ ...p, [k]: v }));
+
+  const selectedExec = admins.find((a) => a.id === d.executor_id) || null;
 
   const submit = async () => {
     setSaving(true);
@@ -51,16 +54,37 @@ const CommentForm = ({
   return (
     <div className="bg-purple-50/60 border border-purple-100 rounded-lg p-2.5 space-y-2">
       <div className="flex gap-2">
-        <select
-          value={d.executor_id ?? ''}
-          onChange={(e) => set('executor_id', e.target.value ? Number(e.target.value) : null)}
-          className={`${field} flex-1 ${d.executor_id ? '' : 'border-purple-400 ring-1 ring-purple-300'}`}
-        >
-          <option value="">Исполнитель</option>
-          {admins.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
+        <div className="relative flex-1">
+          <button
+            type="button"
+            onClick={() => setExecOpen((o) => !o)}
+            className={`w-full flex items-center justify-between gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-white transition-colors ${
+              selectedExec ? '' : 'bg-purple-600 hover:bg-purple-700'
+            }`}
+            style={selectedExec ? { backgroundColor: selectedExec.color } : undefined}
+          >
+            <span className="truncate">{selectedExec ? selectedExec.name : 'Исполнитель'}</span>
+            <Icon name="ChevronDown" size={14} />
+          </button>
+          {execOpen && (
+            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
+              {admins.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => { set('executor_id', a.id); setExecOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-purple-50"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: a.color }} />
+                  {a.name}
+                </button>
+              ))}
+              {admins.length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-400">Список пуст</div>
+              )}
+            </div>
+          )}
+        </div>
         <input
           type="date"
           value={d.comment_date}
