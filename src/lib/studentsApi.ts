@@ -17,7 +17,7 @@ export interface DiagnosticBubble {
   note: string;
 }
 
-export type VacationEndType = 'exact' | 'mid_month' | 'end_month';
+export type VacationEndType = 'exact' | 'start_month' | 'mid_month' | 'end_month';
 export type FirstLessonStatus = 'paid' | 'agreed' | 'not_agreed';
 
 export interface StudentVacation {

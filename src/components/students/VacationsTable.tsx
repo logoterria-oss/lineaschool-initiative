@@ -15,21 +15,62 @@ import CommentsCell from './CommentsCell';
 
 // ────── helpers ──────────────────────────────────────────────────────────────
 
-// Родительный падеж: «до середины июля», «до конца августа».
+// Родительный падеж: «с середины июля», «с конца августа».
 const MONTHS_GEN = [
   'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
   'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
 ];
 
+// Часть месяца по числу: 0 — начало (1–10), 1 — середина (11–20), 2 — конец (21–31).
+const partOfMonth = (day: number): 0 | 1 | 2 => (day <= 10 ? 0 : day <= 20 ? 1 : 2);
+
+const PART_WORD = ['с начала', 'с середины', 'с конца'];
+
+// Индекс возвращения: чем раньше — тем меньше. Месяц * 3 + часть месяца.
+const returnIndex = (v: StudentVacation | null): number => {
+  if (!v || !v.date_to) return Number.MAX_SAFE_INTEGER;
+  const d = new Date(v.date_to);
+  let part: 0 | 1 | 2;
+  if (v.vacation_end_type === 'start_month') part = 0;
+  else if (v.vacation_end_type === 'mid_month') part = 1;
+  else if (v.vacation_end_type === 'end_month') part = 2;
+  else part = partOfMonth(d.getDate());
+  return (d.getFullYear() * 12 + d.getMonth()) * 3 + part;
+};
+
+// Цвет по спектру: зелёный (раннее возвращение) → жёлтый → оранжевый (позднее).
+// Ключевые точки берём внутри одного учебного сезона (июнь..сентябрь), но
+// работает для любого месяца через плавную интерполяцию.
+const RETURN_COLORS: { bg: string; text: string }[] = [
+  { bg: '#16a34a', text: '#ffffff' }, // насыщенно-зелёный
+  { bg: '#4ade80', text: '#065f46' }, // зелёный
+  { bg: '#a3e635', text: '#3f6212' }, // салатовый
+  { bg: '#facc15', text: '#713f12' }, // жёлтый
+  { bg: '#fbbf24', text: '#78350f' }, // янтарный
+  { bg: '#f97316', text: '#ffffff' }, // оранжевый
+];
+
+// Возвращает цвет для даты возврата. Базовая точка спектра — начало июня.
+const returnColor = (v: StudentVacation | null): { bg: string; text: string } | null => {
+  if (!v || !v.date_to) return null;
+  const idx = returnIndex(v);
+  const base = (new Date().getFullYear() * 12 + 5) * 3; // июнь (месяц 5) текущего года, часть 0
+  const step = Math.max(0, Math.min(RETURN_COLORS.length - 1, idx - base));
+  return RETURN_COLORS[step];
+};
+
 const formatVacationEnd = (v: StudentVacation): string => {
   if (!v.date_to) return '—';
   const d = new Date(v.date_to);
   const yearSuffix = d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : '';
+  if (v.vacation_end_type === 'start_month')
+    return `с начала ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
   if (v.vacation_end_type === 'mid_month')
-    return `до середины ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
+    return `с середины ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
   if (v.vacation_end_type === 'end_month')
-    return `до конца ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
-  return fmtDate(v.date_to);
+    return `с конца ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
+  // Конкретная дата: показываем дату + подсказку части месяца.
+  return `${fmtDate(v.date_to)} (${PART_WORD[partOfMonth(d.getDate())]})`;
 };
 
 // ────── VacationEndEditor ────────────────────────────────────────────────────
@@ -54,7 +95,8 @@ const VacationEndEditor = ({
   onCancel: () => void;
 }) => {
   const today = new Date();
-  const initApprox = initial?.vacation_end_type === 'mid_month' || initial?.vacation_end_type === 'end_month';
+  const approxTypes: VacationEndType[] = ['start_month', 'mid_month', 'end_month'];
+  const initApprox = !!initial && approxTypes.includes(initial.vacation_end_type);
   const initDate = initial?.date_to ? new Date(initial.date_to) : null;
 
   const [mode, setMode] = useState<EndMode>(initApprox ? 'approx' : 'exact');
@@ -62,7 +104,7 @@ const VacationEndEditor = ({
   const [month, setMonth] = useState<number>(initDate ? initDate.getMonth() : today.getMonth());
   const [year, setYear] = useState<number>(initDate ? initDate.getFullYear() : today.getFullYear());
   const [part, setPart] = useState<VacationEndType>(
-    initial?.vacation_end_type === 'end_month' ? 'end_month' : 'mid_month',
+    initApprox ? (initial!.vacation_end_type as VacationEndType) : 'start_month',
   );
   const [saving, setSaving] = useState(false);
 
@@ -125,8 +167,9 @@ const VacationEndEditor = ({
             onChange={e => setPart(e.target.value as VacationEndType)}
             className="h-8 px-2 rounded border border-gray-200 text-xs"
           >
-            <option value="mid_month">До середины</option>
-            <option value="end_month">До конца</option>
+            <option value="start_month">С начала</option>
+            <option value="mid_month">С середины</option>
+            <option value="end_month">С конца</option>
           </select>
           <select
             value={month}
@@ -237,14 +280,21 @@ const VacationCell = ({
     );
   }
 
+  const color = returnColor(displayed);
+
   return (
     <td className="px-3 py-3 align-top text-sm text-gray-700 group">
       <div className="flex items-start gap-2">
-        <span>
-          {displayed && displayed.date_to
-            ? formatVacationEnd(displayed)
-            : <span className="text-gray-400 text-xs italic">не указано</span>}
-        </span>
+        {displayed && displayed.date_to ? (
+          <span
+            className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
+            style={color ? { backgroundColor: color.bg, color: color.text } : undefined}
+          >
+            {formatVacationEnd(displayed)}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-xs italic">не указано</span>
+        )}
         <button
           onClick={() => setEditing(true)}
           className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0 mt-0.5"
@@ -273,7 +323,14 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
     setVacMap(prev => ({ ...prev, [studentId]: v }));
   };
 
-  const enriched = rows.map(s => ({ ...s, vacation: vacMap[s.id] ?? s.vacation }));
+  const enriched = rows
+    .map(s => ({ ...s, vacation: vacMap[s.id] ?? s.vacation }))
+    .sort((a, b) => {
+      const ra = returnIndex(a.vacation);
+      const rb = returnIndex(b.vacation);
+      if (ra !== rb) return ra - rb;
+      return (a.name || '').localeCompare(b.name || '', 'ru');
+    });
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -283,7 +340,7 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
             <th className="px-3 py-3 font-semibold w-10">№</th>
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
             <th className="px-3 py-3 font-semibold">Начало каникул</th>
-            <th className="px-3 py-3 font-semibold">Конец каникул</th>
+            <th className="px-3 py-3 font-semibold">Вернутся к занятиям</th>
             <th className="px-3 py-3 font-semibold">Комментарии</th>
           </tr>
         </thead>
