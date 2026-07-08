@@ -5,7 +5,7 @@ type BonusRow = { score: string; bonus: string; total: string };
 const GROUP_BONUS_ROWS: BonusRow[] = [
   { score: 'от 24 до 28', bonus: '+ 100 ₽', total: '400 ₽' },
   { score: 'от 29 до 32', bonus: '+ 200 ₽', total: '500 ₽' },
-  { score: 'от 33 до 34', bonus: '+ 350 ₽', total: '650 ₽' },
+  { score: 'от 33 до 35', bonus: '+ 350 ₽', total: '650 ₽' },
 ];
 
 const PERIODS = ['январь – март', 'апрель – июнь', 'июль – сентябрь', 'октябрь – декабрь'];
