@@ -56,7 +56,7 @@ const CommentForm = ({
           onChange={(e) => set('executor_id', e.target.value ? Number(e.target.value) : null)}
           className={`${field} flex-1 ${d.executor_id ? '' : 'border-purple-400 ring-1 ring-purple-300'}`}
         >
-          <option value="">Исполняющий…</option>
+          <option value="">Исполнитель</option>
           {admins.map((a) => (
             <option key={a.id} value={a.id}>{a.name}</option>
           ))}
