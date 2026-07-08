@@ -62,19 +62,20 @@ const hsvToHex = (h: number, s: number, val: number): string => {
   return `#${to(r)}${to(g)}${to(b)}`;
 };
 
-// Цвет по цветовому кругу. Опорные точки (s=1, v=1):
-//   начало июня → hue 353, начало сентября → 263, начало декабря → 173, начало марта → 83.
-// Т.е. hue = 353 − 30°*(месяц−5) − 10°*(часть месяца), по модулю 360.
+// Цвет по цветовому кругу (36 меток = 12 месяцев × 3 части). Шаг −10° на часть месяца.
+// Сезоны ложатся по кругу: весна (март..) — зелёные, лето — жёлто-красные,
+// осень — красно-розово-фиолетовые, зима — голубой/синий.
+// Опорная точка: начало марта (month=2, part=0) → hue 120° (чистый зелёный).
 const returnColor = (v: StudentVacation | null): { bg: string; text: string } | null => {
   if (!v || !v.date_to) return null;
   const d = new Date(v.date_to);
-  const monthsFromJune = d.getMonth() - 5; // июнь = 0
+  const monthsFromMarch = d.getMonth() - 2; // март = 0
   const part = returnPart(v);
-  let hue = 353.4 - 30 * monthsFromJune - 10 * part;
+  let hue = 120 - 30 * monthsFromMarch - 10 * part;
   hue = ((hue % 360) + 360) % 360;
   const bg = hsvToHex(hue, 1, 1);
-  // Яркость по восприятию: жёлто-зелёные тона тёмный текст, остальные — белый.
-  const yellowish = hue >= 45 && hue <= 200;
+  // Тёмный текст на жёлто-зелёно-циановых тонах, белый — на остальных.
+  const yellowish = hue >= 40 && hue <= 200;
   return { bg, text: yellowish ? '#1f2937' : '#ffffff' };
 };
 
@@ -258,6 +259,17 @@ const DateCell = ({
     );
   }
 
+  const clear = async () => {
+    setSaving(true);
+    try {
+      await onSave(null);
+      setDisplayed(null);
+      setDraft('');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <td className="px-3 py-3 align-top text-sm text-gray-700 group">
       <div className="flex items-center gap-2">
@@ -269,6 +281,16 @@ const DateCell = ({
         >
           <Icon name="Pencil" size={13} />
         </button>
+        {displayed && (
+          <button
+            onClick={clear}
+            disabled={saving}
+            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity flex-shrink-0"
+            title="Удалить дату"
+          >
+            <Icon name="Trash2" size={13} />
+          </button>
+        )}
       </div>
     </td>
   );
@@ -301,6 +323,21 @@ const VacationCell = ({
 
   const color = returnColor(displayed);
 
+  const clear = async () => {
+    const merged: Omit<StudentVacation, 'id'> = {
+      date_from: displayed?.date_from ?? null,
+      date_to: null,
+      vacation_end_type: 'exact',
+      first_lesson_date: displayed?.first_lesson_date ?? null,
+      first_lesson_status: displayed?.first_lesson_status ?? 'not_agreed',
+      note: displayed?.note ?? '',
+    };
+    await saveVacation(s.id, merged);
+    const saved = { id: displayed?.id ?? 0, ...merged } as StudentVacation;
+    setDisplayed(saved);
+    onUpdate(s.id, saved);
+  };
+
   return (
     <td className="px-3 py-3 align-top text-sm text-gray-700 group">
       <div className="flex items-start gap-2">
@@ -321,6 +358,15 @@ const VacationCell = ({
         >
           <Icon name="Pencil" size={13} />
         </button>
+        {displayed && displayed.date_to && (
+          <button
+            onClick={clear}
+            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity flex-shrink-0 mt-0.5"
+            title="Удалить дату"
+          >
+            <Icon name="Trash2" size={13} />
+          </button>
+        )}
       </div>
     </td>
   );
