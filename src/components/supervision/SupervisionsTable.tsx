@@ -40,6 +40,7 @@ const SupervisionsTable = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [teacherFilter, setTeacherFilter] = useState<number | ''>('');
+  const [studentFilter, setStudentFilter] = useState('');
   const [formFilter, setFormFilter] = useState<'' | LessonForm>('');
   const now = new Date();
   const [periodMode, setPeriodMode] = useState<PeriodMode>('quarter');
@@ -86,12 +87,16 @@ const SupervisionsTable = () => {
       items.filter((i) => {
         if (teacherFilter && i.teacher_id !== teacherFilter) return false;
         if (formFilter && i.lesson_form !== formFilter) return false;
+        if (studentFilter.trim()) {
+          if (!(i.student_name || '').toLowerCase().includes(studentFilter.trim().toLowerCase()))
+            return false;
+        }
         if (periodEnabled) {
           if (i.supervision_date < period.from || i.supervision_date > period.to) return false;
         }
         return true;
       }),
-    [items, teacherFilter, formFilter, periodEnabled, period],
+    [items, teacherFilter, formFilter, studentFilter, periodEnabled, period],
   );
 
   const teacherOptions = useMemo(() => {
@@ -160,6 +165,29 @@ const SupervisionsTable = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">Ученик</label>
+            <div className="relative">
+              <input
+                type="text"
+                className={`${selectCls} pr-8`}
+                placeholder="Имя ученика"
+                value={studentFilter}
+                onChange={(e) => setStudentFilter(e.target.value)}
+              />
+              {studentFilter && (
+                <button
+                  type="button"
+                  onClick={() => setStudentFilter('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  title="Очистить"
+                >
+                  <Icon name="X" size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           <label className="flex items-center gap-2 text-sm text-gray-600 pb-2 cursor-pointer">
