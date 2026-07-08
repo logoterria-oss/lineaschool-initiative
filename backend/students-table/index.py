@@ -75,51 +75,18 @@ def get_study_statuses(token):
     return resp.json().get("items", [])
 
 
-def get_crm_admins(token):
-    """Сотрудники CRM с ролью 'администратор'.
+# Исполнители комментариев (администраторы CRM). Каждому — свой цвет для наглядности.
+# При необходимости список пополняется здесь.
+ADMINS = [
+    {"id": 1, "name": "Абраменко Виктория", "color": "#7c3aed"},
+    {"id": 2, "name": "Федорова Анастасия", "color": "#0d9488"},
+    {"id": 3, "name": "Зинченко Ирина", "color": "#db2777"},
+]
 
-    В AlfaCRM сотрудники лежат в customer/index при is_study=0 не подходят —
-    берём из /company/index (сотрудники филиала). Роль администратора
-    определяется по названию должности/роли (содержит 'админ').
-    Возвращаем [{id, name}] отсортированные по имени.
-    """
-    candidates = []
-    for path in ("/v2api/1/teacher/index",):
-        try:
-            url = f"{S20_HOST}{path}"
-            resp = requests.post(url, json={"page": 0, "pageSize": 200},
-                                 headers=get_headers(token), timeout=20)
-            print(f"admins [{path}] -> {resp.status_code}")
-            if resp.status_code != 200:
-                continue
-            items = resp.json().get("items", [])
-            if items:
-                print(f"admins [{path}] names: {[i.get('name') for i in items]}")
-                candidates = items
-                break
-        except Exception as e:
-            print(f"admins fetch failed [{path}]: {e}")
 
-    admins = []
-    seen = set()
-    for it in candidates:
-        # Администратор в AlfaCRM = ранг 999. Учитываем разные имена поля ранга/роли.
-        rank_val = None
-        for k in ("rank", "role", "role_id", "access", "access_level", "level", "weight"):
-            if it.get(k) is not None:
-                rank_val = it.get(k)
-                break
-        role_txt = " ".join(str(v) for v in it.values()).lower()
-        is_admin = (str(rank_val) == "999") or ("админ" in role_txt) or ("admin" in role_txt)
-        if not is_admin:
-            continue
-        aid = it.get("id")
-        if aid in seen:
-            continue
-        seen.add(aid)
-        admins.append({"id": aid, "name": (it.get("name") or "").strip()})
-    admins.sort(key=lambda a: (a["name"] or "").lower())
-    return admins
+def get_crm_admins(token=None):
+    """Список исполнителей (администраторов) для выбора в комментариях."""
+    return ADMINS
 
 
 def load_comments():
@@ -773,9 +740,9 @@ def handle_delete_comment(body):
     return _json(200, {"success": True})
 
 
-def handle_admins(token):
-    """Список администраторов CRM для выбора исполнителя комментария."""
-    return _json(200, {"admins": get_crm_admins(token)})
+def handle_admins():
+    """Список администраторов для выбора исполнителя комментария."""
+    return _json(200, {"admins": get_crm_admins()})
 
 
 def handle_statuses(token):
@@ -982,6 +949,9 @@ def handler(event, context):
     params = event.get("queryStringParameters") or {}
     mode = params.get("mode", "list")
 
+    if mode == "admins":
+        return handle_admins()
+
     try:
         token = get_token()
     except Exception as e:
@@ -989,8 +959,6 @@ def handler(event, context):
 
     if mode == "statuses":
         return handle_statuses(token)
-    if mode == "admins":
-        return handle_admins(token)
     if mode == "list":
         return handle_list(token, params.get("q"))
     return _json(400, {"error": "unknown mode"})

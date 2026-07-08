@@ -30,6 +30,22 @@ export interface StudentVacation {
   note: string;
 }
 
+export interface StudentComment {
+  id: number;
+  executor_id: number | null;
+  executor_name: string | null;
+  comment_date: string | null;
+  done: string;
+  parent_reply: string;
+  extra: string;
+}
+
+export interface Admin {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export interface StudentRow {
   id: number;
   name: string;
@@ -46,6 +62,7 @@ export interface StudentRow {
   tariff: StudentTariff | null;
   diagnostics: DiagnosticBubble[];
   vacation: StudentVacation | null;
+  comments: StudentComment[];
 }
 
 export type StatusFilter =
@@ -99,6 +116,44 @@ export const saveVacation = async (
     body: JSON.stringify({ action: 'save_vacation', student_id: studentId, ...fields }),
   });
   if (!res.ok) throw new Error('Не удалось сохранить каникулы');
+};
+
+export const fetchAdmins = async (): Promise<Admin[]> => {
+  const res = await fetch(`${API_URL}?mode=admins`);
+  if (!res.ok) throw new Error('Не удалось загрузить исполнителей');
+  const data = await res.json();
+  return (data.admins || []) as Admin[];
+};
+
+export const saveComment = async (
+  studentId: number,
+  fields: {
+    id?: number;
+    executor_id?: number | null;
+    executor_name?: string | null;
+    comment_date?: string | null;
+    done?: string;
+    parent_reply?: string;
+    extra?: string;
+  },
+): Promise<number> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'save_comment', student_id: studentId, ...fields }),
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить комментарий');
+  const data = await res.json();
+  return data.id as number;
+};
+
+export const deleteComment = async (id: number): Promise<void> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete_comment', id }),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить комментарий');
 };
 
 // Сохранить ручную правку (формы нарушений и/или возраст) — приоритет над данными CRM.

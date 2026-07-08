@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
@@ -6,9 +6,12 @@ import {
   StudentRow,
   StudentVacation,
   VacationEndType,
+  Admin,
   saveVacation,
+  fetchAdmins,
 } from '@/lib/studentsApi';
 import { NameWithDot, fmtDate } from './studentsTableHelpers';
+import CommentsCell from './CommentsCell';
 
 // ────── helpers ──────────────────────────────────────────────────────────────
 
@@ -260,6 +263,11 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
   const [vacMap, setVacMap] = useState<Record<number, StudentVacation | null>>(
     Object.fromEntries(rows.map(s => [s.id, s.vacation ?? null]))
   );
+  const [admins, setAdmins] = useState<Admin[]>([]);
+
+  useEffect(() => {
+    fetchAdmins().then(setAdmins).catch(() => setAdmins([]));
+  }, []);
 
   const handleUpdate = (studentId: number, v: StudentVacation) => {
     setVacMap(prev => ({ ...prev, [studentId]: v }));
@@ -276,6 +284,7 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
             <th className="px-3 py-3 font-semibold">Начало каникул</th>
             <th className="px-3 py-3 font-semibold">Конец каникул</th>
+            <th className="px-3 py-3 font-semibold">Комментарии</th>
           </tr>
         </thead>
         <tbody>
@@ -302,11 +311,12 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
                 }}
               />
               <VacationCell s={s} onUpdate={handleUpdate} />
+              <CommentsCell studentId={s.id} initial={s.comments || []} admins={admins} />
             </tr>
           ))}
           {enriched.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-3 py-8 text-center text-gray-400">
+              <td colSpan={5} className="px-3 py-8 text-center text-gray-400">
                 Нет учеников на каникулах
               </td>
             </tr>
