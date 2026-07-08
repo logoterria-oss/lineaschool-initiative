@@ -6,7 +6,6 @@ import {
   StudentRow,
   StudentVacation,
   VacationEndType,
-  FirstLessonStatus,
   saveVacation,
 } from '@/lib/studentsApi';
 import { NameWithDot, fmtDate } from './studentsTableHelpers';
@@ -28,12 +27,6 @@ const formatVacationEnd = (v: StudentVacation): string => {
   if (v.vacation_end_type === 'end_month')
     return `до конца ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
   return fmtDate(v.date_to);
-};
-
-const firstLessonBadge = (status: FirstLessonStatus) => {
-  if (status === 'paid') return 'bg-green-100 text-green-700';
-  if (status === 'agreed') return 'bg-gray-100 text-gray-600';
-  return '';
 };
 
 // ────── VacationEndEditor ────────────────────────────────────────────────────
@@ -261,84 +254,6 @@ const VacationCell = ({
   );
 };
 
-const FirstLessonCell = ({ s, onUpdate }: { s: StudentRow; onUpdate: (id: number, v: StudentVacation) => void }) => {
-  const v = s.vacation;
-  const [editing, setEditing] = useState(false);
-  const [date, setDate] = useState(v?.first_lesson_date ?? '');
-  const [status, setStatus] = useState<FirstLessonStatus>(v?.first_lesson_status ?? 'not_agreed');
-  const [saving, setSaving] = useState(false);
-
-  const save = async (d: string, st: FirstLessonStatus) => {
-    setSaving(true);
-    try {
-      const merged: Partial<Omit<StudentVacation, 'id'>> = {
-        date_from: v?.date_from ?? new Date().toISOString().slice(0, 10),
-        date_to: v?.date_to ?? null,
-        vacation_end_type: v?.vacation_end_type ?? 'exact',
-        first_lesson_date: d || null,
-        first_lesson_status: st,
-        note: v?.note ?? '',
-      };
-      await saveVacation(s.id, merged);
-      onUpdate(s.id, { id: v?.id ?? 0, ...merged } as StudentVacation);
-    } finally {
-      setSaving(false);
-      setEditing(false);
-    }
-  };
-
-  if (editing) {
-    return (
-      <td className="px-3 py-3 align-top">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-8 text-xs w-36" />
-          <select
-            value={status}
-            onChange={e => setStatus(e.target.value as FirstLessonStatus)}
-            className="h-8 px-2 rounded border border-gray-200 text-xs"
-          >
-            <option value="paid">Оплачен</option>
-            <option value="agreed">Согласован</option>
-            <option value="not_agreed">Не согласован</option>
-          </select>
-        </div>
-        <div className="flex gap-2 mt-2">
-          <Button size="sm" onClick={() => save(date, status)} disabled={saving} className="h-7 text-xs">
-            {saving ? '…' : 'ОК'}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="h-7 text-xs">
-            Отмена
-          </Button>
-        </div>
-      </td>
-    );
-  }
-
-  const fl = v?.first_lesson_date;
-  const st = v?.first_lesson_status ?? 'not_agreed';
-  return (
-    <td className="px-3 py-3 align-top group">
-      <div className="flex items-center gap-2">
-        {fl ? (
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${firstLessonBadge(st)}`}>
-            {st === 'paid' && <Icon name="CheckCircle" size={12} />}
-            {fmtDate(fl)}
-          </span>
-        ) : (
-          <span className="text-xs text-gray-400 italic">дата не согласована</span>
-        )}
-        <button
-          onClick={() => setEditing(true)}
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0"
-          title="Редактировать"
-        >
-          <Icon name="Pencil" size={13} />
-        </button>
-      </div>
-    </td>
-  );
-};
-
 // ────── VacationsTable ───────────────────────────────────────────────────────
 
 const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
@@ -361,7 +276,6 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
             <th className="px-3 py-3 font-semibold">Начало каникул</th>
             <th className="px-3 py-3 font-semibold">Конец каникул</th>
-            <th className="px-3 py-3 font-semibold">Первый урок после каникул</th>
           </tr>
         </thead>
         <tbody>
@@ -388,12 +302,11 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
                 }}
               />
               <VacationCell s={s} onUpdate={handleUpdate} />
-              <FirstLessonCell s={s} onUpdate={handleUpdate} />
             </tr>
           ))}
           {enriched.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-3 py-8 text-center text-gray-400">
+              <td colSpan={4} className="px-3 py-8 text-center text-gray-400">
                 Нет учеников на каникулах
               </td>
             </tr>
