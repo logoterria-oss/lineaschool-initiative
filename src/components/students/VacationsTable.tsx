@@ -38,25 +38,44 @@ const returnIndex = (v: StudentVacation | null): number => {
   return (d.getFullYear() * 12 + d.getMonth()) * 3 + part;
 };
 
-// Цвет по спектру: зелёный (раннее возвращение) → жёлтый → оранжевый (позднее).
-// Ключевые точки берём внутри одного учебного сезона (июнь..сентябрь), но
-// работает для любого месяца через плавную интерполяцию.
-const RETURN_COLORS: { bg: string; text: string }[] = [
-  { bg: '#16a34a', text: '#ffffff' }, // насыщенно-зелёный
-  { bg: '#4ade80', text: '#065f46' }, // зелёный
-  { bg: '#a3e635', text: '#3f6212' }, // салатовый
-  { bg: '#facc15', text: '#713f12' }, // жёлтый
-  { bg: '#fbbf24', text: '#78350f' }, // янтарный
-  { bg: '#f97316', text: '#ffffff' }, // оранжевый
-];
+// Часть месяца выбранной даты возврата (0/1/2) — независимо от типа.
+const returnPart = (v: StudentVacation): 0 | 1 | 2 => {
+  if (v.vacation_end_type === 'start_month') return 0;
+  if (v.vacation_end_type === 'mid_month') return 1;
+  if (v.vacation_end_type === 'end_month') return 2;
+  return partOfMonth(new Date(v.date_to as string).getDate());
+};
 
-// Возвращает цвет для даты возврата. Базовая точка спектра — начало июня.
+// HSV → hex (s,v в 0..1, h в градусах).
+const hsvToHex = (h: number, s: number, val: number): string => {
+  const c = val * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = val - c;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const to = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+};
+
+// Цвет по цветовому кругу. Опорные точки (s=1, v=1):
+//   начало июня → hue 353, начало сентября → 263, начало декабря → 173, начало марта → 83.
+// Т.е. hue = 353 − 30°*(месяц−5) − 10°*(часть месяца), по модулю 360.
 const returnColor = (v: StudentVacation | null): { bg: string; text: string } | null => {
   if (!v || !v.date_to) return null;
-  const idx = returnIndex(v);
-  const base = (new Date().getFullYear() * 12 + 5) * 3; // июнь (месяц 5) текущего года, часть 0
-  const step = Math.max(0, Math.min(RETURN_COLORS.length - 1, idx - base));
-  return RETURN_COLORS[step];
+  const d = new Date(v.date_to);
+  const monthsFromJune = d.getMonth() - 5; // июнь = 0
+  const part = returnPart(v);
+  let hue = 353.4 - 30 * monthsFromJune - 10 * part;
+  hue = ((hue % 360) + 360) % 360;
+  const bg = hsvToHex(hue, 1, 1);
+  // Яркость по восприятию: жёлто-зелёные тона тёмный текст, остальные — белый.
+  const yellowish = hue >= 45 && hue <= 200;
+  return { bg, text: yellowish ? '#1f2937' : '#ffffff' };
 };
 
 const formatVacationEnd = (v: StudentVacation): string => {

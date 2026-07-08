@@ -54,7 +54,7 @@ const CommentForm = ({
         <select
           value={d.executor_id ?? ''}
           onChange={(e) => set('executor_id', e.target.value ? Number(e.target.value) : null)}
-          className={`${field} flex-1`}
+          className={`${field} flex-1 ${d.executor_id ? '' : 'border-purple-400 ring-1 ring-purple-300'}`}
         >
           <option value="">Исполняющий…</option>
           {admins.map((a) => (
@@ -89,8 +89,11 @@ const CommentForm = ({
         rows={1}
         className={field}
       />
+      {!d.executor_id && (
+        <div className="text-[11px] text-purple-600">Выберите исполняющего</div>
+      )}
       <div className="flex gap-2">
-        <Button size="sm" onClick={submit} disabled={saving} className="h-7 text-xs">
+        <Button size="sm" onClick={submit} disabled={saving || !d.executor_id} className="h-7 text-xs">
           {saving ? '…' : 'Сохранить'}
         </Button>
         <Button size="sm" variant="outline" onClick={onCancel} className="h-7 text-xs">Отмена</Button>
