@@ -93,6 +93,11 @@ const StudentsTablePage = () => {
     });
   }, [items, search]);
 
+  const vacationsNoDate = useMemo(
+    () => vacationsRows.filter((i) => !i.vacation?.date_to).length,
+    [vacationsRows],
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       <AdminHeader showOnlyHome />
@@ -166,9 +171,17 @@ const StudentsTablePage = () => {
                 <p className="text-red-600">{error}</p>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-gray-600 mb-3">
-                    Всего: {vacationsRows.length}
-                  </p>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-sm font-semibold text-gray-600">
+                      Всего: {vacationsRows.length}
+                    </span>
+                    {vacationsNoDate > 0 && (
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2.5 py-0.5">
+                        <Icon name="TriangleAlert" size={14} />
+                        Нет данных: {vacationsNoDate}
+                      </span>
+                    )}
+                  </div>
                   <VacationsTable rows={vacationsRows} />
                 </>
               )}

@@ -24,26 +24,29 @@ const MONTHS_GEN = [
 // Часть месяца по числу: 0 — начало (1–10), 1 — середина (11–20), 2 — конец (21–31).
 const partOfMonth = (day: number): 0 | 1 | 2 => (day <= 10 ? 0 : day <= 20 ? 1 : 2);
 
-const PART_WORD = ['с начала', 'с середины', 'с конца'];
+// «Декадный» индекс момента (год*36 + месяц*3 + часть месяца) — абсолютная шкала времени.
+const decadeIndex = (year: number, month: number, part: 0 | 1 | 2): number =>
+  (year * 12 + month) * 3 + part;
 
-// Индекс возвращения: чем раньше — тем меньше. Месяц * 3 + часть месяца.
-const returnIndex = (v: StudentVacation | null): number => {
-  if (!v || !v.date_to) return Number.MAX_SAFE_INTEGER;
-  const d = new Date(v.date_to);
-  let part: 0 | 1 | 2;
-  if (v.vacation_end_type === 'start_month') part = 0;
-  else if (v.vacation_end_type === 'mid_month') part = 1;
-  else if (v.vacation_end_type === 'end_month') part = 2;
-  else part = partOfMonth(d.getDate());
-  return (d.getFullYear() * 12 + d.getMonth()) * 3 + part;
-};
-
-// Часть месяца выбранной даты возврата (0/1/2) — независимо от типа.
-const returnPart = (v: StudentVacation): 0 | 1 | 2 => {
+// Часть месяца записи возврата (0/1/2) — независимо от типа.
+const vacPart = (v: StudentVacation): 0 | 1 | 2 => {
   if (v.vacation_end_type === 'start_month') return 0;
   if (v.vacation_end_type === 'mid_month') return 1;
   if (v.vacation_end_type === 'end_month') return 2;
   return partOfMonth(new Date(v.date_to as string).getDate());
+};
+
+// Индекс сортировки — отсчёт от СЕГОДНЯ. Ближайшая будущая дата возврата → меньше.
+// Прошедшие даты трактуем как следующий годовой цикл (уезжают в конец списка).
+const returnIndex = (v: StudentVacation | null): number => {
+  if (!v || !v.date_to) return Number.MAX_SAFE_INTEGER;
+  const now = new Date();
+  const todayIdx = decadeIndex(now.getFullYear(), now.getMonth(), partOfMonth(now.getDate()));
+  const d = new Date(v.date_to);
+  let idx = decadeIndex(d.getFullYear(), d.getMonth(), vacPart(v));
+  // Если дата уже прошла — сдвигаем на год вперёд (ближайшее будущее наступление).
+  while (idx < todayIdx) idx += 36;
+  return idx - todayIdx;
 };
 
 // HSV → hex (s,v в 0..1, h в градусах).
@@ -70,7 +73,7 @@ const returnColor = (v: StudentVacation | null): { bg: string; text: string } | 
   if (!v || !v.date_to) return null;
   const d = new Date(v.date_to);
   const monthsFromMarch = d.getMonth() - 2; // март = 0
-  const part = returnPart(v);
+  const part = vacPart(v);
   let hue = 120 - 30 * monthsFromMarch - 10 * part;
   hue = ((hue % 360) + 360) % 360;
   const bg = hsvToHex(hue, 1, 1);
@@ -89,8 +92,8 @@ const formatVacationEnd = (v: StudentVacation): string => {
     return `с середины ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
   if (v.vacation_end_type === 'end_month')
     return `с конца ${MONTHS_GEN[d.getMonth()]}${yearSuffix}`;
-  // Конкретная дата: показываем дату + подсказку части месяца.
-  return `${fmtDate(v.date_to)} (${PART_WORD[partOfMonth(d.getDate())]})`;
+  // Конкретная дата — без подсказки части месяца.
+  return fmtDate(v.date_to);
 };
 
 // ────── VacationEndEditor ────────────────────────────────────────────────────
@@ -411,7 +414,12 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
         </thead>
         <tbody>
           {enriched.map((s, i) => (
-            <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
+            <tr
+              key={s.id}
+              className={`border-t border-gray-100 hover:bg-purple-50/50 ${
+                s.vacation?.date_to ? '' : 'blink-no-date'
+              }`}
+            >
               <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
               <td className="px-3 py-3 font-medium text-gray-900 align-top whitespace-nowrap">
                 <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
