@@ -17,6 +17,7 @@ import MainTable from '@/components/students/MainTable';
 import ProgressTable from '@/components/students/ProgressTable';
 import VacationsTable from '@/components/students/VacationsTable';
 import StudentsFilters from '@/components/students/StudentsFilters';
+import StatusLegend from '@/components/students/StatusLegend';
 
 const StudentsTablePage = () => {
   const navigate = useNavigate();
@@ -158,18 +159,25 @@ const StudentsTablePage = () => {
 
           {tab === 'vacations' && (
             <>
+              <StatusLegend />
               {loading ? (
                 <p className="text-gray-500">Загрузка…</p>
               ) : error ? (
                 <p className="text-red-600">{error}</p>
               ) : (
-                <VacationsTable rows={vacationsRows} />
+                <>
+                  <p className="text-sm font-semibold text-gray-600 mb-3">
+                    Всего: {vacationsRows.length}
+                  </p>
+                  <VacationsTable rows={vacationsRows} />
+                </>
               )}
             </>
           )}
 
           {(tab === 'main' || tab === 'progress') && (
             <>
+              <StatusLegend />
               {loading ? (
                 <p className="text-gray-500">Загрузка…</p>
               ) : error ? (
@@ -178,14 +186,21 @@ const StudentsTablePage = () => {
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
                   Учеников по выбранному фильтру нет
                 </div>
-              ) : tab === 'main' ? (
-                <MainTable
-                  rows={filtered}
-                  onSaveConclusion={handleSaveConclusion}
-                  onSaveAge={handleSaveAge}
-                />
               ) : (
-                <ProgressTable rows={filtered} />
+                <>
+                  <p className="text-sm font-semibold text-gray-600 mb-3">
+                    Всего: {filtered.length}
+                  </p>
+                  {tab === 'main' ? (
+                    <MainTable
+                      rows={filtered}
+                      onSaveConclusion={handleSaveConclusion}
+                      onSaveAge={handleSaveAge}
+                    />
+                  ) : (
+                    <ProgressTable rows={filtered} />
+                  )}
+                </>
               )}
             </>
           )}
