@@ -75,6 +75,78 @@ def get_study_statuses(token):
     return resp.json().get("items", [])
 
 
+def get_crm_admins(token):
+    """Сотрудники CRM с ролью 'администратор'.
+
+    В AlfaCRM сотрудники лежат в customer/index при is_study=0 не подходят —
+    берём из /company/index (сотрудники филиала). Роль администратора
+    определяется по названию должности/роли (содержит 'админ').
+    Возвращаем [{id, name}] отсортированные по имени.
+    """
+    admins = []
+    seen = set()
+    for path in ("/v2api/1/company/index", "/v2api/company/index",
+                 "/v2api/1/employee/index", "/v2api/1/staff/index"):
+        try:
+            url = f"{S20_HOST}{path}"
+            resp = requests.post(url, json={"page": 0, "pageSize": 200},
+                                 headers=get_headers(token), timeout=20)
+            print(f"admins [{path}] -> {resp.status_code}")
+            if resp.status_code != 200:
+                continue
+            items = resp.json().get("items", [])
+            if items:
+                print(f"admins [{path}] sample keys: {list(items[0].keys())}")
+                print(f"admins [{path}] sample: {json.dumps(items[0], ensure_ascii=False, default=str)[:800]}")
+            for it in items:
+                # Признак администратора: любое роль/должность содержит 'админ'
+                role_txt = " ".join(str(v) for v in it.values()).lower()
+                is_admin = "админ" in role_txt or "admin" in role_txt
+                aid = it.get("id")
+                if aid in seen:
+                    continue
+                seen.add(aid)
+                admins.append({
+                    "id": aid,
+                    "name": (it.get("name") or "").strip(),
+                    "is_admin": is_admin,
+                })
+            if items:
+                break
+        except Exception as e:
+            print(f"admins fetch failed [{path}]: {e}")
+    only_admins = [a for a in admins if a.get("is_admin")]
+    result = only_admins if only_admins else admins
+    for a in result:
+        a.pop("is_admin", None)
+    result.sort(key=lambda a: (a["name"] or "").lower())
+    return result
+
+
+def load_comments():
+    """Комментарии администраторов по ученикам: {student_id: [ {...} ]}."""
+    out = {}
+    conn = db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, student_id, executor_id, executor_name, comment_date, "
+            f"done, parent_reply, extra FROM {SCHEMA}.student_comments "
+            f"ORDER BY comment_date DESC NULLS LAST, id DESC"
+        )
+        for r in cur.fetchall():
+            out.setdefault(r["student_id"], []).append({
+                "id": r["id"],
+                "executor_id": r["executor_id"],
+                "executor_name": r["executor_name"],
+                "comment_date": r["comment_date"],
+                "done": r["done"] or "",
+                "parent_reply": r["parent_reply"] or "",
+                "extra": r["extra"] or "",
+            })
+    conn.close()
+    return out
+
+
 def fetch_customers_raw(token, is_study=None, removed=None):
     url = f"{S20_HOST}/v2api/1/customer/index"
     all_items = []
@@ -647,6 +719,66 @@ def handle_save_override(body):
     return _json(200, {"success": True})
 
 
+def handle_save_comment(body):
+    """Создать или обновить комментарий администратора по ученику."""
+    student_id = body.get("student_id")
+    if not student_id:
+        return _json(400, {"error": "student_id required"})
+    comment_id = body.get("id")
+    executor_id = body.get("executor_id")
+    try:
+        executor_id = int(executor_id) if executor_id not in (None, "") else None
+    except (TypeError, ValueError):
+        executor_id = None
+    executor_name = (body.get("executor_name") or "").strip() or None
+    comment_date = _date_in(body.get("comment_date"))
+    done = (body.get("done") or "").strip()
+    parent_reply = (body.get("parent_reply") or "").strip()
+    extra = (body.get("extra") or "").strip()
+
+    conn = db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        if comment_id:
+            cur.execute(
+                f"UPDATE {SCHEMA}.student_comments SET "
+                f"executor_id=%s, executor_name=%s, comment_date=%s, "
+                f"done=%s, parent_reply=%s, extra=%s, updated_at=NOW() "
+                f"WHERE id=%s RETURNING id",
+                (executor_id, executor_name, comment_date, done,
+                 parent_reply, extra, int(comment_id))
+            )
+        else:
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.student_comments "
+                f"(student_id, executor_id, executor_name, comment_date, done, parent_reply, extra) "
+                f"VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                (int(student_id), executor_id, executor_name, comment_date,
+                 done, parent_reply, extra)
+            )
+        new_id = cur.fetchone()["id"]
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True, "id": new_id})
+
+
+def handle_delete_comment(body):
+    """Удалить комментарий по id."""
+    comment_id = body.get("id")
+    if not comment_id:
+        return _json(400, {"error": "id required"})
+    conn = db()
+    with conn.cursor() as cur:
+        cur.execute(f"DELETE FROM {SCHEMA}.student_comments WHERE id=%s", (int(comment_id),))
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True})
+
+
+def handle_admins(token):
+    """Список администраторов CRM для выбора исполнителя комментария."""
+    return _json(200, {"admins": get_crm_admins(token)})
+
+
 def handle_statuses(token):
     statuses = get_study_statuses(token)
     customers = get_all_customers(token)
@@ -730,6 +862,7 @@ def handle_list(token, name_filter=None):
     reports = load_reports(report_ids)
     overrides = load_overrides()
     vacations = load_vacations()
+    comments = load_comments()
 
     items = []
     for c in customers:
@@ -818,6 +951,7 @@ def handle_list(token, name_filter=None):
                 "tariff": row_tariff,
                 "diagnostics": diagnostics,
                 "vacation": vacations.get(row_id) or vacations.get(cid),
+                "comments": comments.get(row_id) or comments.get(cid) or [],
             })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
@@ -840,6 +974,10 @@ def handler(event, context):
             return handle_save_vacation(body)
         if action == "delete_vacation":
             return handle_delete_vacation(body)
+        if action == "save_comment":
+            return handle_save_comment(body)
+        if action == "delete_comment":
+            return handle_delete_comment(body)
         return _json(400, {"error": "unknown action"})
 
     params = event.get("queryStringParameters") or {}
@@ -852,6 +990,8 @@ def handler(event, context):
 
     if mode == "statuses":
         return handle_statuses(token)
+    if mode == "admins":
+        return handle_admins(token)
     if mode == "list":
         return handle_list(token, params.get("q"))
     return _json(400, {"error": "unknown mode"})

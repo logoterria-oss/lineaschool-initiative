@@ -29,6 +29,30 @@
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "CRM admins",
+      "method": "GET",
+      "path": "/?mode=admins",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Save comment",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "save_comment", "student_id": 999999, "comment_date": "2026-07-08", "done": "тест", "parent_reply": "ок", "extra": "—"},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Delete comment (nonexistent)",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "delete_comment", "id": 999999999},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
     }
   ]
 }
