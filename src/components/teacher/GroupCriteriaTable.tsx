@@ -243,7 +243,7 @@ const GroupCriteriaTable = () => (
     </div>
 
     <div className="mt-4 bg-gray-900 text-white rounded-xl px-4 py-3 font-semibold text-sm md:text-base">
-      Общая сумма баллов (max) - 35
+      Общая сумма баллов (max) - 34
     </div>
   </>
 );
