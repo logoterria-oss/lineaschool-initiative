@@ -83,10 +83,8 @@ def get_crm_admins(token):
     определяется по названию должности/роли (содержит 'админ').
     Возвращаем [{id, name}] отсортированные по имени.
     """
-    admins = []
-    seen = set()
-    for path in ("/v2api/1/company/index", "/v2api/company/index",
-                 "/v2api/1/employee/index", "/v2api/1/staff/index"):
+    candidates = []
+    for path in ("/v2api/1/teacher/index",):
         try:
             url = f"{S20_HOST}{path}"
             resp = requests.post(url, json={"page": 0, "pageSize": 200},
@@ -96,31 +94,32 @@ def get_crm_admins(token):
                 continue
             items = resp.json().get("items", [])
             if items:
-                print(f"admins [{path}] sample keys: {list(items[0].keys())}")
-                print(f"admins [{path}] sample: {json.dumps(items[0], ensure_ascii=False, default=str)[:800]}")
-            for it in items:
-                # Признак администратора: любое роль/должность содержит 'админ'
-                role_txt = " ".join(str(v) for v in it.values()).lower()
-                is_admin = "админ" in role_txt or "admin" in role_txt
-                aid = it.get("id")
-                if aid in seen:
-                    continue
-                seen.add(aid)
-                admins.append({
-                    "id": aid,
-                    "name": (it.get("name") or "").strip(),
-                    "is_admin": is_admin,
-                })
-            if items:
+                print(f"admins [{path}] names: {[i.get('name') for i in items]}")
+                candidates = items
                 break
         except Exception as e:
             print(f"admins fetch failed [{path}]: {e}")
-    only_admins = [a for a in admins if a.get("is_admin")]
-    result = only_admins if only_admins else admins
-    for a in result:
-        a.pop("is_admin", None)
-    result.sort(key=lambda a: (a["name"] or "").lower())
-    return result
+
+    admins = []
+    seen = set()
+    for it in candidates:
+        # Администратор в AlfaCRM = ранг 999. Учитываем разные имена поля ранга/роли.
+        rank_val = None
+        for k in ("rank", "role", "role_id", "access", "access_level", "level", "weight"):
+            if it.get(k) is not None:
+                rank_val = it.get(k)
+                break
+        role_txt = " ".join(str(v) for v in it.values()).lower()
+        is_admin = (str(rank_val) == "999") or ("админ" in role_txt) or ("admin" in role_txt)
+        if not is_admin:
+            continue
+        aid = it.get("id")
+        if aid in seen:
+            continue
+        seen.add(aid)
+        admins.append({"id": aid, "name": (it.get("name") or "").strip()})
+    admins.sort(key=lambda a: (a["name"] or "").lower())
+    return admins
 
 
 def load_comments():
