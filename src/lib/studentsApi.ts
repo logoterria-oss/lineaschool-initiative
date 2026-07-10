@@ -55,6 +55,7 @@ export interface StudentInteraction {
   request_date: string | null;
   request_text: string;
   done: boolean;
+  done_text: string;
   replies: InteractionReply[];
 }
 
@@ -184,6 +185,7 @@ export const saveInteraction = async (
     request_date: string | null;
     request_text: string;
     done: boolean;
+    done_text: string;
     replies: InteractionReply[];
   },
 ): Promise<{ id: number; replies: InteractionReply[] }> => {

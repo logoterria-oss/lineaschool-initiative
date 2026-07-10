@@ -567,7 +567,7 @@ def load_interactions():
     conn = db()
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT id, student_id, request_source, request_date, request_text, done "
+            f"SELECT id, student_id, request_source, request_date, request_text, done, done_text "
             f"FROM {SCHEMA}.student_interactions "
             f"ORDER BY request_date DESC NULLS LAST, id DESC"
         )
@@ -580,6 +580,7 @@ def load_interactions():
                 "request_date": str(r["request_date"]) if r["request_date"] else None,
                 "request_text": r["request_text"] or "",
                 "done": bool(r["done"]),
+                "done_text": r["done_text"] or "",
                 "replies": [],
             }
             by_id[r["id"]] = item
@@ -828,6 +829,7 @@ def handle_save_interaction(body):
     request_date = body.get("request_date") or None
     request_text = (body.get("request_text") or "").strip()
     done = bool(body.get("done"))
+    done_text = (body.get("done_text") or "").strip()
     replies = body.get("replies") or []
 
     conn = db()
@@ -835,16 +837,16 @@ def handle_save_interaction(body):
         if interaction_id:
             cur.execute(
                 f"UPDATE {SCHEMA}.student_interactions SET "
-                f"request_source=%s, request_date=%s, request_text=%s, done=%s, updated_at=NOW() "
+                f"request_source=%s, request_date=%s, request_text=%s, done=%s, done_text=%s, updated_at=NOW() "
                 f"WHERE id=%s RETURNING id",
-                (request_source, request_date, request_text, done, int(interaction_id))
+                (request_source, request_date, request_text, done, done_text, int(interaction_id))
             )
         else:
             cur.execute(
                 f"INSERT INTO {SCHEMA}.student_interactions "
-                f"(student_id, request_source, request_date, request_text, done) "
-                f"VALUES (%s,%s,%s,%s,%s) RETURNING id",
-                (int(student_id), request_source, request_date, request_text, done)
+                f"(student_id, request_source, request_date, request_text, done, done_text) "
+                f"VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
+                (int(student_id), request_source, request_date, request_text, done, done_text)
             )
         new_id = cur.fetchone()["id"]
 

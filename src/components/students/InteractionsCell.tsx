@@ -26,6 +26,7 @@ interface Draft {
   request_date: string;
   request_text: string;
   done: boolean;
+  done_text: string;
   replies: InteractionReply[];
 }
 
@@ -34,6 +35,7 @@ const emptyDraft = (): Draft => ({
   request_date: today(),
   request_text: '',
   done: false,
+  done_text: '',
   replies: [],
 });
 
@@ -169,15 +171,25 @@ const InteractionForm = ({
       </div>
 
       {/* Сделано */}
-      <label className="inline-flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={d.done}
-          onChange={(e) => set('done', e.target.checked)}
-          className="w-4 h-4 accent-green-600"
+      <div className="space-y-1.5">
+        <div className="text-[11px] font-semibold text-gray-500">Сделано</div>
+        <textarea
+          value={d.done_text}
+          onChange={(e) => set('done_text', e.target.value)}
+          placeholder="Что сделано"
+          rows={2}
+          className={field}
         />
-        Сделано
-      </label>
+        <label className="inline-flex items-center gap-2 text-xs font-semibold text-green-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={d.done}
+            onChange={(e) => set('done', e.target.checked)}
+            className="w-4 h-4 accent-green-600"
+          />
+          Готово
+        </label>
+      </div>
 
       <div className="flex gap-2">
         <Button size="sm" onClick={submit} disabled={saving} className="h-7 text-xs">
@@ -201,10 +213,49 @@ const InteractionView = ({
   onDelete: () => void;
 }) => {
   const rq = srcMeta(it.request_source);
+  // Готовые взаимодействия по умолчанию свёрнуты в одну строку.
+  const [expanded, setExpanded] = useState(!it.done);
+
+  const collapsed = it.done && !expanded;
+
+  if (collapsed) {
+    return (
+      <div
+        className="border-l-2 pl-2 py-1 group/it flex items-center gap-1.5"
+        style={{ borderColor: rq.color }}
+      >
+        <button
+          onClick={() => setExpanded(true)}
+          className="text-gray-400 hover:text-purple-600 flex-shrink-0"
+          title="Развернуть историю"
+        >
+          <Icon name="ChevronRight" size={14} />
+        </button>
+        <Icon name="CircleCheck" size={14} className="text-green-600 flex-shrink-0" />
+        <span
+          className="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold text-white flex-shrink-0"
+          style={{ backgroundColor: rq.color }}
+        >
+          {rq.label}
+        </span>
+        <span className="text-xs text-gray-600 truncate">{it.request_text || '—'}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="border-l-2 pl-2 py-1 group/it" style={{ borderColor: rq.color }}>
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1.5 min-w-0">
+          {it.done && (
+            <button
+              onClick={() => setExpanded(false)}
+              className="text-gray-400 hover:text-purple-600 flex-shrink-0"
+              title="Свернуть"
+            >
+              <Icon name="ChevronDown" size={14} />
+            </button>
+          )}
           <span
             className="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold text-white"
             style={{ backgroundColor: rq.color }}
@@ -218,7 +269,7 @@ const InteractionView = ({
           )}
           {it.done && (
             <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-green-600">
-              <Icon name="Check" size={12} /> сделано
+              <Icon name="Check" size={12} /> готово
             </span>
           )}
         </div>
@@ -252,6 +303,11 @@ const InteractionView = ({
           })}
         </div>
       )}
+      {it.done_text && (
+        <div className="text-xs text-gray-600 mt-1">
+          <span className="font-semibold text-green-700">Сделано:</span> {it.done_text}
+        </div>
+      )}
     </div>
   );
 };
@@ -281,6 +337,7 @@ const InteractionsCell = ({
       request_date: d.request_date || null,
       request_text: d.request_text,
       done: d.done,
+      done_text: d.done_text,
       replies: d.replies,
     });
     const saved: StudentInteraction = {
@@ -289,6 +346,7 @@ const InteractionsCell = ({
       request_date: d.request_date || null,
       request_text: d.request_text,
       done: d.done,
+      done_text: d.done_text,
       replies,
     };
     const exists = list.some((x) => x.id === id);
@@ -315,6 +373,7 @@ const InteractionsCell = ({
                 request_date: it.request_date || today(),
                 request_text: it.request_text,
                 done: it.done,
+                done_text: it.done_text,
                 replies: it.replies.map((r) => ({ ...r })),
               }}
               onSave={handleSave}

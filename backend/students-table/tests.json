@@ -67,7 +67,7 @@
       "name": "Save interaction",
       "method": "POST",
       "path": "/",
-      "body": {"action": "save_interaction", "student_id": 999999, "request_source": "parent", "request_date": "2026-07-10", "request_text": "тест запрос", "done": false, "replies": [{"reply_source": "admin", "reply_date": "2026-07-11", "reply_text": "тест ответ"}]},
+      "body": {"action": "save_interaction", "student_id": 999999, "request_source": "parent", "request_date": "2026-07-10", "request_text": "тест запрос", "done": true, "done_text": "перезвонили родителю", "replies": [{"reply_source": "admin", "reply_date": "2026-07-11", "reply_text": "тест ответ"}]},
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"
