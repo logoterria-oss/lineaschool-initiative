@@ -62,6 +62,33 @@
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Save interaction",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "save_interaction", "student_id": 999999, "request_source": "parent", "request_date": "2026-07-10", "request_text": "тест запрос", "done": false, "replies": [{"reply_source": "admin", "reply_date": "2026-07-11", "reply_text": "тест ответ"}]},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set interaction ok",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "set_interaction_ok", "student_id": 999999, "ok": false},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Delete interaction (nonexistent)",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "delete_interaction", "id": 999999999},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
     }
   ]
 }

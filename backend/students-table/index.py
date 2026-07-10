@@ -543,13 +543,64 @@ def load_reports(report_ids):
 
 
 def load_overrides():
-    """Ручные правки: student_id -> {conclusion, age}."""
+    """Ручные правки: student_id -> {conclusion, age, interaction_ok}."""
     conn = db()
     out = {}
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(f"SELECT student_id, conclusion, age FROM {SCHEMA}.student_overrides")
+        cur.execute(
+            f"SELECT student_id, conclusion, age, interaction_ok "
+            f"FROM {SCHEMA}.student_overrides"
+        )
         for r in cur.fetchall():
-            out[r["student_id"]] = {"conclusion": r.get("conclusion"), "age": r.get("age")}
+            out[r["student_id"]] = {
+                "conclusion": r.get("conclusion"),
+                "age": r.get("age"),
+                "interaction_ok": r.get("interaction_ok"),
+            }
+    conn.close()
+    return out
+
+
+def load_interactions():
+    """Взаимодействия по ученикам: {student_id: [ {..., replies:[...]} ]}."""
+    out = {}
+    conn = db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, student_id, request_source, request_date, request_text, done "
+            f"FROM {SCHEMA}.student_interactions "
+            f"ORDER BY request_date DESC NULLS LAST, id DESC"
+        )
+        rows = cur.fetchall()
+        by_id = {}
+        for r in rows:
+            item = {
+                "id": r["id"],
+                "request_source": r["request_source"] or "parent",
+                "request_date": str(r["request_date"]) if r["request_date"] else None,
+                "request_text": r["request_text"] or "",
+                "done": bool(r["done"]),
+                "replies": [],
+            }
+            by_id[r["id"]] = item
+            out.setdefault(r["student_id"], []).append(item)
+        if by_id:
+            cur.execute(
+                f"SELECT id, interaction_id, reply_source, reply_date, reply_text "
+                f"FROM {SCHEMA}.student_interaction_replies "
+                f"WHERE interaction_id = ANY(%s) "
+                f"ORDER BY reply_date ASC NULLS LAST, id ASC",
+                (list(by_id.keys()),)
+            )
+            for r in cur.fetchall():
+                parent = by_id.get(r["interaction_id"])
+                if parent is not None:
+                    parent["replies"].append({
+                        "id": r["id"],
+                        "reply_source": r["reply_source"] or "parent",
+                        "reply_date": str(r["reply_date"]) if r["reply_date"] else None,
+                        "reply_text": r["reply_text"] or "",
+                    })
     conn.close()
     return out
 
@@ -755,6 +806,115 @@ def handle_delete_comment(body):
     return _json(200, {"success": True})
 
 
+_SRC_ALLOWED = ("parent", "teacher", "admin")
+
+
+def _src(v):
+    v = (v or "").strip()
+    return v if v in _SRC_ALLOWED else "parent"
+
+
+def handle_save_interaction(body):
+    """Создать или обновить взаимодействие с учеником вместе с ответами.
+
+    Поля: student_id, id(опц.), request_source, request_date, request_text,
+    done(bool), replies:[{reply_source, reply_date, reply_text}].
+    """
+    student_id = body.get("student_id")
+    if not student_id:
+        return _json(400, {"error": "student_id required"})
+    interaction_id = body.get("id")
+    request_source = _src(body.get("request_source"))
+    request_date = body.get("request_date") or None
+    request_text = (body.get("request_text") or "").strip()
+    done = bool(body.get("done"))
+    replies = body.get("replies") or []
+
+    conn = db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        if interaction_id:
+            cur.execute(
+                f"UPDATE {SCHEMA}.student_interactions SET "
+                f"request_source=%s, request_date=%s, request_text=%s, done=%s, updated_at=NOW() "
+                f"WHERE id=%s RETURNING id",
+                (request_source, request_date, request_text, done, int(interaction_id))
+            )
+        else:
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.student_interactions "
+                f"(student_id, request_source, request_date, request_text, done) "
+                f"VALUES (%s,%s,%s,%s,%s) RETURNING id",
+                (int(student_id), request_source, request_date, request_text, done)
+            )
+        new_id = cur.fetchone()["id"]
+
+        # Ответы пересобираем полностью (проще и надёжнее для UI).
+        cur.execute(
+            f"DELETE FROM {SCHEMA}.student_interaction_replies WHERE interaction_id=%s",
+            (new_id,)
+        )
+        saved_replies = []
+        for rep in replies:
+            r_src = _src(rep.get("reply_source"))
+            r_date = rep.get("reply_date") or None
+            r_text = (rep.get("reply_text") or "").strip()
+            if not r_text and not r_date:
+                continue
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.student_interaction_replies "
+                f"(interaction_id, reply_source, reply_date, reply_text) "
+                f"VALUES (%s,%s,%s,%s) RETURNING id",
+                (new_id, r_src, r_date, r_text)
+            )
+            rid = cur.fetchone()["id"]
+            saved_replies.append({
+                "id": rid, "reply_source": r_src,
+                "reply_date": r_date, "reply_text": r_text,
+            })
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True, "id": new_id, "replies": saved_replies})
+
+
+def handle_delete_interaction(body):
+    """Удалить взаимодействие вместе с ответами."""
+    iid = body.get("id")
+    if not iid:
+        return _json(400, {"error": "id required"})
+    conn = db()
+    with conn.cursor() as cur:
+        cur.execute(
+            f"DELETE FROM {SCHEMA}.student_interaction_replies WHERE interaction_id=%s",
+            (int(iid),)
+        )
+        cur.execute(
+            f"DELETE FROM {SCHEMA}.student_interactions WHERE id=%s", (int(iid),)
+        )
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True})
+
+
+def handle_set_interaction_ok(body):
+    """Ручной статус ок/не ок по ученику (student_overrides.interaction_ok)."""
+    student_id = body.get("student_id")
+    if not student_id:
+        return _json(400, {"error": "student_id required"})
+    ok = body.get("ok")
+    ok = None if ok is None else bool(ok)
+    conn = db()
+    with conn.cursor() as cur:
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.student_overrides (student_id, interaction_ok, updated_at) "
+            f"VALUES (%s,%s,NOW()) "
+            f"ON CONFLICT (student_id) DO UPDATE SET interaction_ok=EXCLUDED.interaction_ok, updated_at=NOW()",
+            (int(student_id), ok)
+        )
+        conn.commit()
+    conn.close()
+    return _json(200, {"success": True})
+
+
 def handle_admins():
     """Список администраторов для выбора исполнителя комментария."""
     return _json(200, {"admins": get_crm_admins()})
@@ -844,6 +1004,7 @@ def handle_list(token, name_filter=None):
     overrides = load_overrides()
     vacations = load_vacations()
     comments = load_comments()
+    interactions = load_interactions()
 
     items = []
     for c in customers:
@@ -933,6 +1094,8 @@ def handle_list(token, name_filter=None):
                 "diagnostics": diagnostics,
                 "vacation": vacations.get(row_id) or vacations.get(cid),
                 "comments": comments.get(row_id) or comments.get(cid) or [],
+                "interactions": interactions.get(row_id) or interactions.get(cid) or [],
+                "interaction_ok": ov.get("interaction_ok") if ov else None,
             })
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
@@ -959,6 +1122,12 @@ def handler(event, context):
             return handle_save_comment(body)
         if action == "delete_comment":
             return handle_delete_comment(body)
+        if action == "save_interaction":
+            return handle_save_interaction(body)
+        if action == "delete_interaction":
+            return handle_delete_interaction(body)
+        if action == "set_interaction_ok":
+            return handle_set_interaction_ok(body)
         return _json(400, {"error": "unknown action"})
 
     params = event.get("queryStringParameters") or {}

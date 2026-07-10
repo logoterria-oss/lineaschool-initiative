@@ -40,6 +40,24 @@ export interface StudentComment {
   extra: string;
 }
 
+export type InteractionSource = 'parent' | 'teacher' | 'admin';
+
+export interface InteractionReply {
+  id?: number;
+  reply_source: InteractionSource;
+  reply_date: string | null;
+  reply_text: string;
+}
+
+export interface StudentInteraction {
+  id: number;
+  request_source: InteractionSource;
+  request_date: string | null;
+  request_text: string;
+  done: boolean;
+  replies: InteractionReply[];
+}
+
 export interface Admin {
   id: number;
   name: string;
@@ -63,6 +81,8 @@ export interface StudentRow {
   diagnostics: DiagnosticBubble[];
   vacation: StudentVacation | null;
   comments: StudentComment[];
+  interactions: StudentInteraction[];
+  interaction_ok: boolean | null;
 }
 
 export type StatusFilter =
@@ -154,6 +174,48 @@ export const deleteComment = async (id: number): Promise<void> => {
     body: JSON.stringify({ action: 'delete_comment', id }),
   });
   if (!res.ok) throw new Error('Не удалось удалить комментарий');
+};
+
+export const saveInteraction = async (
+  studentId: number,
+  fields: {
+    id?: number;
+    request_source: InteractionSource;
+    request_date: string | null;
+    request_text: string;
+    done: boolean;
+    replies: InteractionReply[];
+  },
+): Promise<{ id: number; replies: InteractionReply[] }> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'save_interaction', student_id: studentId, ...fields }),
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить взаимодействие');
+  const data = await res.json();
+  return { id: data.id as number, replies: (data.replies || []) as InteractionReply[] };
+};
+
+export const deleteInteraction = async (id: number): Promise<void> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete_interaction', id }),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить взаимодействие');
+};
+
+export const setInteractionOk = async (
+  studentId: number,
+  ok: boolean | null,
+): Promise<void> => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'set_interaction_ok', student_id: studentId, ok }),
+  });
+  if (!res.ok) throw new Error('Не удалось изменить статус');
 };
 
 // Сохранить ручную правку (формы нарушений и/или возраст) — приоритет над данными CRM.

@@ -16,6 +16,7 @@ import {
 import MainTable from '@/components/students/MainTable';
 import ProgressTable from '@/components/students/ProgressTable';
 import VacationsTable from '@/components/students/VacationsTable';
+import InteractionsTable from '@/components/students/InteractionsTable';
 import StudentsFilters from '@/components/students/StudentsFilters';
 import StatusLegend from '@/components/students/StatusLegend';
 
@@ -117,7 +118,7 @@ const StudentsTablePage = () => {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Ученики</h1>
             </div>
 
-            {(tab === 'main' || tab === 'progress') && (
+            {(tab === 'main' || tab === 'progress' || tab === 'interactions') && (
               <StudentsFilters
                 filter={filter}
                 setFilter={setFilter}
@@ -188,7 +189,7 @@ const StudentsTablePage = () => {
             </>
           )}
 
-          {(tab === 'main' || tab === 'progress') && (
+          {(tab === 'main' || tab === 'progress' || tab === 'interactions') && (
             <>
               <StatusLegend />
               {loading ? (
@@ -204,15 +205,15 @@ const StudentsTablePage = () => {
                   <p className="text-sm font-semibold text-gray-600 mb-3">
                     Всего: {filtered.length}
                   </p>
-                  {tab === 'main' ? (
+                  {tab === 'main' && (
                     <MainTable
                       rows={filtered}
                       onSaveConclusion={handleSaveConclusion}
                       onSaveAge={handleSaveAge}
                     />
-                  ) : (
-                    <ProgressTable rows={filtered} />
                   )}
+                  {tab === 'progress' && <ProgressTable rows={filtered} />}
+                  {tab === 'interactions' && <InteractionsTable rows={filtered} />}
                 </>
               )}
             </>

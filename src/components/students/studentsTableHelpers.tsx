@@ -1,11 +1,12 @@
 import Icon from '@/components/ui/icon';
 
-export type Tab = 'main' | 'progress' | 'vacations';
+export type Tab = 'main' | 'progress' | 'vacations' | 'interactions';
 
 export const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'main', label: 'Основное', icon: 'User' },
   { id: 'progress', label: 'Мониторинг прогресса', icon: 'TrendingUp' },
   { id: 'vacations', label: 'Даты каникул', icon: 'CalendarOff' },
+  { id: 'interactions', label: 'Взаимодействия', icon: 'MessagesSquare' },
 ];
 
 export const fmtDate = (d: string | null) => {
