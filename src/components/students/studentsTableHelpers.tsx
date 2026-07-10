@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 
 export type Tab = 'main' | 'progress' | 'vacations' | 'interactions';
@@ -71,23 +72,37 @@ export const NameWithDot = ({
   );
 };
 
-// Бокс с подсказками, как работать с разделом.
-export const HintBox = ({ title, hints }: { title: string; hints: string[] }) => (
-  <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50/60 p-4">
-    <div className="flex items-center gap-2 mb-2">
-      <Icon name="Lightbulb" size={16} className="text-purple-600" />
-      <span className="text-sm font-semibold text-purple-800">{title}</span>
+// Бокс с подсказками, как работать с разделом. По умолчанию свёрнут.
+export const HintBox = ({ title, hints }: { title: string; hints: string[] }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50/60">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-2 p-3 text-left"
+      >
+        <Icon name="Lightbulb" size={16} className="text-purple-600 flex-shrink-0" />
+        <span className="text-sm font-semibold text-purple-800 flex-1">{title}</span>
+        <Icon
+          name="ChevronDown"
+          size={16}
+          className={`text-purple-500 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <ul className="space-y-1 px-4 pb-4">
+          {hints.map((h, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+              <Icon name="Check" size={14} className="text-purple-500 mt-0.5 flex-shrink-0" />
+              <span>{h}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
-    <ul className="space-y-1">
-      {hints.map((h, i) => (
-        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-          <Icon name="Check" size={14} className="text-purple-500 mt-0.5 flex-shrink-0" />
-          <span>{h}</span>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
+  );
+};
 
 export const Placeholder = ({ icon, title }: { icon: string; title: string }) => (
   <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">

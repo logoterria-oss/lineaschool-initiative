@@ -27,6 +27,7 @@ interface Draft {
   request_text: string;
   done: boolean;
   done_text: string;
+  admin_comment: string;
   replies: InteractionReply[];
 }
 
@@ -36,6 +37,7 @@ const emptyDraft = (): Draft => ({
   request_text: '',
   done: false,
   done_text: '',
+  admin_comment: '',
   replies: [],
 });
 
@@ -180,6 +182,13 @@ const InteractionForm = ({
           rows={2}
           className={field}
         />
+        <textarea
+          value={d.admin_comment}
+          onChange={(e) => set('admin_comment', e.target.value)}
+          placeholder="Комментарий администратора"
+          rows={2}
+          className={`${field} italic`}
+        />
         <label className="inline-flex items-center gap-2 text-xs font-semibold text-green-700 cursor-pointer">
           <input
             type="checkbox"
@@ -308,6 +317,9 @@ const InteractionView = ({
           <span className="font-semibold text-green-700">Сделано:</span> {it.done_text}
         </div>
       )}
+      {it.admin_comment && (
+        <div className="text-xs text-gray-500 italic mt-1">{it.admin_comment}</div>
+      )}
     </div>
   );
 };
@@ -338,6 +350,7 @@ const InteractionsCell = ({
       request_text: d.request_text,
       done: d.done,
       done_text: d.done_text,
+      admin_comment: d.admin_comment,
       replies: d.replies,
     });
     const saved: StudentInteraction = {
@@ -347,6 +360,7 @@ const InteractionsCell = ({
       request_text: d.request_text,
       done: d.done,
       done_text: d.done_text,
+      admin_comment: d.admin_comment,
       replies,
     };
     const exists = list.some((x) => x.id === id);
@@ -374,6 +388,7 @@ const InteractionsCell = ({
                 request_text: it.request_text,
                 done: it.done,
                 done_text: it.done_text,
+                admin_comment: it.admin_comment,
                 replies: it.replies.map((r) => ({ ...r })),
               }}
               onSave={handleSave}
