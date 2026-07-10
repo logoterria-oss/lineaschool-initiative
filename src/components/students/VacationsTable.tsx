@@ -401,8 +401,8 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
     });
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+      <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="bg-gray-50 text-gray-500 text-left">
             <th className="px-3 py-3 font-semibold w-10">№</th>
