@@ -42,60 +42,52 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [phoneError, setPhoneError] = useState("");
   const [messengerError, setMessengerError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneError("");
     setMessengerError("");
-    
-    try {
-      const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
-      const cleanPhone = formData.phone.replace(/\D/g, '');
-      const cleanTelegram = formData.telegram.replace('@', '').trim();
-      
-      if (cleanPhone.length < 11) {
-        setPhoneError("Введите номер телефона полностью");
-        return;
-      }
 
-      if (!formData.messengerTelegram && !formData.messengerMax) {
-        setMessengerError("Выберите хотя бы один мессенджер");
-        return;
-      }
-      
-      const messengers: string[] = [];
-      if (formData.messengerTelegram) messengers.push('Telegram');
-      if (formData.messengerMax) messengers.push('Max');
+    const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
+    const cleanPhone = formData.phone.replace(/\D/g, '');
+    const cleanTelegram = formData.telegram.replace('@', '').trim();
 
-      const payload = {
-        childName: formData.childName,
-        childBirthDate: formData.childBirthDate,
-        parentName: formData.parentName,
-        phone: cleanPhone,
-        telegram: formData.messengerTelegram && cleanTelegram ? `@${cleanTelegram}` : '',
-        messengers: messengers,
-        email: '',
-        date: '',
-        time: ''
-      };
-      
-      console.log('Отправка заявки:', JSON.stringify(payload));
-      
-      const response = await fetch(leadProcessorUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      const result = await response.json();
-      console.log('Ответ сервера:', response.status, JSON.stringify(result));
-    } catch (error) {
-      console.error('Ошибка отправки заявки:', error);
+    if (cleanPhone.length < 11) {
+      setPhoneError("Введите номер телефона полностью");
+      return;
     }
-    
+
+    if (!formData.messengerTelegram && !formData.messengerMax) {
+      setMessengerError("Выберите хотя бы один мессенджер");
+      return;
+    }
+
+    const messengers: string[] = [];
+    if (formData.messengerTelegram) messengers.push('Telegram');
+    if (formData.messengerMax) messengers.push('Max');
+
+    const payload = {
+      childName: formData.childName,
+      childBirthDate: formData.childBirthDate,
+      parentName: formData.parentName,
+      phone: cleanPhone,
+      telegram: formData.messengerTelegram && cleanTelegram ? `@${cleanTelegram}` : '',
+      messengers: messengers,
+      email: '',
+      date: '',
+      time: ''
+    };
+
+    // Показываем подтверждение сразу, заявку отправляем в фоне.
     onClose();
     setIsConfirmationOpen(true);
+
+    fetch(leadProcessorUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch((error) => {
+      console.error('Ошибка отправки заявки:', error);
+    });
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
