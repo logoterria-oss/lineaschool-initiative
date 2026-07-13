@@ -454,8 +454,24 @@ def build_diagnostics(diags, first_lesson_date, active_weeks, reports):
       - первичная: ссылка на заключение (link) + рекомендации педагогу (note);
       - последующие: прогресс (topic) + рекомендации педагогу (note).
     """
+    # Нет ни одной диагностики: планируем от первого занятия в CRM по тому же
+    # принципу (3 месяца чистого обучения). Первое занятие — это точка старта
+    # отсчёта (как «предыдущая диагностика»).
     if not diags:
-        return []
+        if first_lesson_date is None:
+            return []
+        if active_weeks:
+            next_date = compute_next_diag(first_lesson_date, active_weeks)
+        else:
+            next_date = plain_plus_3_months(first_lesson_date)
+        return [{
+            "date": str(next_date),
+            "type": "planned",
+            "link": None,
+            "conclusion": "",
+            "topic": "",
+            "note": "",
+        }]
 
     ordered = sorted(diags, key=lambda d: d["date"])
     bubbles = []
@@ -1055,6 +1071,13 @@ def handle_list(token, name_filter=None):
             active_weeks_by_student.get(cid, set()),
             reports,
         )
+
+        # Нет диагностик, но есть запланированная от первого занятия —
+        # используем её как дату следующей диагностики.
+        if next_date is None:
+            planned = next((d for d in diagnostics if d["type"] == "planned"), None)
+            if planned:
+                next_date = planned["date"]
 
         # Сиблинги: одна CRM-запись ('Марк и Сеня Константиновы') -> несколько учеников.
         siblings = split_siblings(c.get("name"))
