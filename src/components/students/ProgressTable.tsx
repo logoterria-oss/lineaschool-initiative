@@ -1,7 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { StudentRow, DiagnosticBubble } from '@/lib/studentsApi';
 import { fmtDate, NameWithDot } from './studentsTableHelpers';
+
+// Дата ближайшей запланированной («следующей») диагностики ученика, если она есть.
+const nextDiagnosticDate = (s: StudentRow): string | null => {
+  const planned = (s.diagnostics || [])
+    .filter((d) => d.type === 'planned' && d.date)
+    .map((d) => d.date)
+    .sort();
+  return planned[0] ?? null;
+};
 
 const bubbleStyle = (type: DiagnosticBubble['type']) => {
   if (type === 'primary') return 'bg-sky-100 text-sky-700 border-sky-300';
@@ -79,11 +88,49 @@ const DiagnosticBubbleView = ({ d }: { d: DiagnosticBubble }) => {
   );
 };
 
-const ProgressTable = ({ rows }: { rows: StudentRow[] }) => (
+const ProgressTable = ({ rows }: { rows: StudentRow[] }) => {
+  const [sortByNext, setSortByNext] = useState<'off' | 'asc' | 'desc'>('off');
+
+  const displayRows = useMemo(() => {
+    if (sortByNext === 'off') return rows;
+    const withDate = rows.filter((s) => nextDiagnosticDate(s));
+    const withoutDate = rows.filter((s) => !nextDiagnosticDate(s));
+    withDate.sort((a, b) => {
+      const da = nextDiagnosticDate(a) as string;
+      const db = nextDiagnosticDate(b) as string;
+      return sortByNext === 'asc' ? da.localeCompare(db) : db.localeCompare(da);
+    });
+    // Ученики без запланированной диагностики всегда в конце.
+    return [...withDate, ...withoutDate];
+  }, [rows, sortByNext]);
+
+  const cycleSort = () =>
+    setSortByNext((v) => (v === 'off' ? 'asc' : v === 'asc' ? 'desc' : 'off'));
+
+  return (
   <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-    <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-gray-500 border-b border-gray-100">
-      <Icon name="Info" size={14} className="text-purple-500" />
-      Нажмите на дату диагностики, чтобы открыть её результаты
+    <div className="flex items-center justify-between gap-2 px-3 py-2.5 text-xs text-gray-500 border-b border-gray-100">
+      <span className="flex items-center gap-2">
+        <Icon name="Info" size={14} className="text-purple-500" />
+        Нажмите на дату диагностики, чтобы открыть её результаты
+      </span>
+      <button
+        onClick={cycleSort}
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 font-semibold transition-colors ${
+          sortByNext === 'off'
+            ? 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
+            : 'bg-purple-600 text-white border-purple-600'
+        }`}
+        title="Сортировать по дате следующей диагностики"
+      >
+        <Icon
+          name={sortByNext === 'desc' ? 'ArrowDownWideNarrow' : 'ArrowUpNarrowWide'}
+          size={14}
+        />
+        По следующей диагностике
+        {sortByNext === 'asc' && ' (ближайшие)'}
+        {sortByNext === 'desc' && ' (дальние)'}
+      </button>
     </div>
     <div>
       <table className="w-full text-sm">
@@ -95,7 +142,7 @@ const ProgressTable = ({ rows }: { rows: StudentRow[] }) => (
           </tr>
         </thead>
         <tbody>
-          {rows.map((s, i) => (
+          {displayRows.map((s, i) => (
             <tr key={s.id} className="border-t border-gray-100 hover:bg-purple-50/50">
               <td className="px-3 py-3 text-gray-400 align-top">{i + 1}</td>
               <td className="px-3 py-3 font-medium text-gray-900 align-top whitespace-nowrap">
@@ -118,6 +165,7 @@ const ProgressTable = ({ rows }: { rows: StudentRow[] }) => (
       </table>
     </div>
   </div>
-);
+  );
+};
 
 export default ProgressTable;
