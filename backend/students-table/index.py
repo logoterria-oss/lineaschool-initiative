@@ -1043,33 +1043,20 @@ def handle_list(token, name_filter=None):
         if diag:
             last_date = diag["date"]
             recommendations = diag.get("note") or None
-            rid = diag.get("report_id")
-            if rid:
-                report_link = f"https://lineaschool.ru/diag/{rid}"
-                rep = reports.get(rid)
+
+            # Заключение (форма нарушения) берём ТОЛЬКО из первичной диагностики —
+            # самой ранней по дате диагностики ученика.
+            primary = None
+            student_diags = all_diags_by_student.get(cid, [])
+            if student_diags:
+                primary = min(student_diags, key=lambda x: x["date"])
+            p_rid = primary.get("report_id") if primary else None
+            if p_rid:
+                report_link = f"https://lineaschool.ru/diag/{p_rid}"
+                rep = reports.get(p_rid)
                 if rep:
                     conclusion = rep.get("conclusion") or ""
                     age = rep.get("age")
-
-            # Заключение (форма нарушения) могло быть в более ранней диагностике,
-            # если у последней его нет. Ищем последнее непустое заключение
-            # по всем диагностикам ученика (от свежих к старым).
-            if not conclusion:
-                for d in sorted(
-                    all_diags_by_student.get(cid, []),
-                    key=lambda x: x["date"], reverse=True,
-                ):
-                    d_rid = d.get("report_id")
-                    if not d_rid:
-                        continue
-                    d_rep = reports.get(d_rid)
-                    if d_rep and (d_rep.get("conclusion") or "").strip():
-                        conclusion = d_rep.get("conclusion") or ""
-                        if age is None:
-                            age = d_rep.get("age")
-                        if not report_link:
-                            report_link = f"https://lineaschool.ru/diag/{d_rid}"
-                        break
 
             weeks = active_weeks_by_student.get(cid, set())
             if weeks:
