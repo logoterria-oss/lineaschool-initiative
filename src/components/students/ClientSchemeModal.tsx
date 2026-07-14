@@ -223,14 +223,14 @@ const ClientSchemeModal = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export const ClientSchemeHint = () => {
+export const ClientSchemeHint = ({ className = 'mb-4' }: { className?: string }) => {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mb-4 flex w-full items-center gap-2 rounded-xl border border-purple-100 bg-purple-50/60 p-3 text-left hover:bg-purple-50"
+        className={`flex items-center gap-2 self-start rounded-xl border border-purple-100 bg-purple-50/60 p-3 text-left hover:bg-purple-50 ${className}`}
       >
         <Icon name="Network" size={16} className="text-purple-600 flex-shrink-0" />
         <span className="flex-1 text-sm font-semibold text-purple-800">

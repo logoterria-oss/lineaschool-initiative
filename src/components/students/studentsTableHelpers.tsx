@@ -73,10 +73,18 @@ export const NameWithDot = ({
 };
 
 // Бокс с подсказками, как работать с разделом. По умолчанию свёрнут.
-export const HintBox = ({ title, hints }: { title: string; hints: string[] }) => {
+export const HintBox = ({
+  title,
+  hints,
+  className = 'mb-4',
+}: {
+  title: string;
+  hints: string[];
+  className?: string;
+}) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50/60">
+    <div className={`self-start rounded-xl border border-purple-100 bg-purple-50/60 ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
