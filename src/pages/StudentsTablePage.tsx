@@ -20,6 +20,7 @@ import VacationsTable from '@/components/students/VacationsTable';
 import InteractionsTable from '@/components/students/InteractionsTable';
 import StudentsFilters from '@/components/students/StudentsFilters';
 import StatusLegend from '@/components/students/StatusLegend';
+import ClientSchemeHint from '@/components/students/ClientSchemeModal';
 
 const StudentsTablePage = () => {
   const navigate = useNavigate();
@@ -175,6 +176,7 @@ const StudentsTablePage = () => {
                   'В столбце «Комментарии» добавляйте заметки: выберите исполнителя и дату, опишите что сделано, ответ родителя и доп. комментарий. Записи можно редактировать и удалять.',
                 ]}
               />
+              <ClientSchemeHint />
               <StatusLegend />
               {loading ? (
                 <p className="text-gray-500">Загрузка…</p>
@@ -223,6 +225,7 @@ const StudentsTablePage = () => {
                   ]}
                 />
               )}
+              {(tab === 'interactions' || tab === 'progress') && <ClientSchemeHint />}
               <StatusLegend />
               {loading ? (
                 <p className="text-gray-500">Загрузка…</p>
