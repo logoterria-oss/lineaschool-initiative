@@ -1050,6 +1050,27 @@ def handle_list(token, name_filter=None):
                 if rep:
                     conclusion = rep.get("conclusion") or ""
                     age = rep.get("age")
+
+            # Заключение (форма нарушения) могло быть в более ранней диагностике,
+            # если у последней его нет. Ищем последнее непустое заключение
+            # по всем диагностикам ученика (от свежих к старым).
+            if not conclusion:
+                for d in sorted(
+                    all_diags_by_student.get(cid, []),
+                    key=lambda x: x["date"], reverse=True,
+                ):
+                    d_rid = d.get("report_id")
+                    if not d_rid:
+                        continue
+                    d_rep = reports.get(d_rid)
+                    if d_rep and (d_rep.get("conclusion") or "").strip():
+                        conclusion = d_rep.get("conclusion") or ""
+                        if age is None:
+                            age = d_rep.get("age")
+                        if not report_link:
+                            report_link = f"https://lineaschool.ru/diag/{d_rid}"
+                        break
+
             weeks = active_weeks_by_student.get(cid, set())
             if weeks:
                 next_date = compute_next_diag(last_date, weeks)
