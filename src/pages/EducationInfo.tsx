@@ -140,9 +140,6 @@ export default function EducationInfo() {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Сведения об образовательной организации
           </h1>
-          <p className="text-gray-500">
-            Нажмите на раздел, чтобы развернуть подробную информацию.
-          </p>
         </div>
 
         <div className="space-y-3">
