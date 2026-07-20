@@ -2,7 +2,7 @@ const schoolLinks = [
   { label: "Методика", href: "#methodology" },
   { label: "Диагностика", href: "#diagnostic" },
   { label: "Отзывы", href: "#testimonials" },
-  { label: "Цены", href: "#pricing" },
+  { label: "Стоимость обучения", href: "#pricing" },
   { label: "Вопросы", href: "#faq" },
   { label: "Сведения об образовательной организации", href: "/sveden" },
 ];
