@@ -99,7 +99,7 @@ def s20_employees(token):
     page = 0
     while True:
         r = requests.post(
-            f"{S20_HOST}/v2api/1/employee/index",
+            f"{S20_HOST}/v2api/1/teacher/index",
             json={"page": page, "pageSize": 200},
             headers=s20_headers(token), timeout=30)
         r.raise_for_status()
@@ -109,6 +109,7 @@ def s20_employees(token):
         if len(items) >= data.get("total", 0) or not chunk:
             break
         page += 1
+    return items
     return items
 
 
@@ -161,12 +162,6 @@ def handler(event: dict, context) -> dict:
         body = {}
     qs = event.get("queryStringParameters") or {}
     action = body.get("action") or qs.get("action")
-
-    if action == "debug_employees":
-        token = s20_token()
-        emps = s20_employees(token)
-        return resp(200, {"count": len(emps), "sample": emps[0] if emps else None,
-                          "keys": list(emps[0].keys()) if emps else []})
 
     conn = db()
     try:
