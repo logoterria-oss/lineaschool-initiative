@@ -35,6 +35,7 @@ import ExtensionPage from "./pages/ExtensionPage";
 import SchedulePage from "./pages/SchedulePage";
 import StudentsTablePage from "./pages/StudentsTablePage";
 import SettingsPage from "./pages/SettingsPage";
+import EducationInfo from "./pages/EducationInfo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/price" element={<Pricing />} />
             <Route path="/oferta_2025" element={<OfferPage />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/sveden" element={<EducationInfo />} />
             <Route path="/extension" element={<ExtensionPage />} />
             <Route path="/anketa" element={<ParentQuestionnaire />} />
             <Route path="/diag_form" element={<DiagForm />} />

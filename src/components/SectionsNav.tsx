@@ -4,6 +4,7 @@ const schoolLinks = [
   { label: "Отзывы", href: "#testimonials" },
   { label: "Цены", href: "#pricing" },
   { label: "Вопросы", href: "#faq" },
+  { label: "Сведения об образовательной организации", href: "/sveden" },
 ];
 
 const studiesLinks = [{ label: "О центре", href: "/lineastudies" }];
