@@ -1,6 +1,87 @@
 import Icon from "@/components/ui/icon";
 import NavigationWithoutBooking from "@/components/NavigationWithoutBooking";
 
+const mainInfoRows: { label: string; value: React.ReactNode }[] = [
+  {
+    label: "Полное и сокращённое наименование образовательной организации",
+    value:
+      "Индивидуальный предприниматель Абраменко Виктория Алексеевна (ИП Абраменко В.А.)",
+  },
+  { label: "Дата создания образовательной организации", value: "29.08.2025 г." },
+  {
+    label: "Сведения об учредителе, учредителях образовательной организации",
+    value: "нет",
+  },
+  {
+    label: "Место нахождения образовательной организации",
+    value:
+      "630051, Новосибирская область, г.о. город Новосибирск, г. Новосибирск, тер. СНТ Золотая Горка, д. 82н",
+  },
+  {
+    label: "Режим (график) работы",
+    value: "Пн–Пт, с 09:00 до 18:00; Сб, Вс — выходные",
+  },
+  {
+    label: "Контакты",
+    value: (
+      <>
+        Телефон:{" "}
+        <a href="tel:+79236251611" className="text-purple-700 hover:underline">
+          +7 (923) 625-1611
+        </a>
+        <br />
+        Адрес эл. почты:{" "}
+        <a
+          href="mailto:abram.viktoriya.00@mail.ru"
+          className="text-purple-700 hover:underline"
+        >
+          abram.viktoriya.00@mail.ru
+        </a>
+      </>
+    ),
+  },
+  {
+    label: "Места осуществления образовательной деятельности",
+    value:
+      "630051, Новосибирская область, г.о. город Новосибирск, г. Новосибирск, тер. СНТ Золотая Горка, д. 82н",
+  },
+  {
+    label: "Лицензия на осуществление образовательной деятельности",
+    value: (
+      <>
+        № Л035-01199-54/05474513 от 02 июля 2026 г.
+        <br />
+        Выписка из реестра лицензий на осуществление образовательной
+        деятельности:{" "}
+        <a
+          href="https://disk.yandex.ru/i/9slIQlh0Dc-uKQ"
+          target="_blank"
+          rel="noreferrer"
+          className="text-purple-700 hover:underline"
+        >
+          открыть
+        </a>
+      </>
+    ),
+  },
+];
+
+function MainInfo() {
+  return (
+    <dl className="divide-y divide-gray-100">
+      {mainInfoRows.map((row) => (
+        <div
+          key={row.label}
+          className="py-3 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:gap-4"
+        >
+          <dt className="font-semibold text-gray-700">{row.label}</dt>
+          <dd className="mt-1 sm:mt-0 text-gray-600">{row.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 const sections = [
   { id: "main", title: "Основные сведения", icon: "Info" },
   {
@@ -84,7 +165,7 @@ export default function EducationInfo() {
                 />
               </summary>
               <div className="px-4 sm:px-5 pb-5 pt-1 border-t border-gray-100 text-gray-500 text-sm leading-relaxed">
-                Информация появится позже.
+                {s.id === "main" ? <MainInfo /> : "Информация появится позже."}
               </div>
             </details>
           ))}
