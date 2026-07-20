@@ -7,11 +7,12 @@ const mobileMenu = [
   {
     title: "Онлайн-школа коррекции дислексии и дисграфии",
     links: [
-      { label: "Методика", href: "#methodology" },
-      { label: "Диагностика", href: "#diagnostic" },
-      { label: "Отзывы", href: "#testimonials" },
-      { label: "Цены", href: "#pricing" },
-      { label: "Вопросы", href: "#faq" },
+      { label: "Методика нейрологопедической коррекции", href: "#methodology" },
+      { label: "Диагностика процессов чтения и письма", href: "#diagnostic" },
+      { label: "Отзывы о школе", href: "#testimonials" },
+      { label: "Стоимость обучения", href: "#pricing" },
+      { label: "Часто задаваемые вопросы", href: "#faq" },
+      { label: "Сведения об образовательной организации", href: "/sveden" },
     ],
   },
   {
