@@ -156,6 +156,32 @@ const educationRows: { label: string; value: React.ReactNode }[] = [
   },
 ];
 
+const managementRows: { label: string; value: React.ReactNode }[] = [
+  {
+    label: "Руководитель образовательной организации",
+    value: "Абраменко Виктория Алексеевна",
+  },
+  {
+    label: "Контакты",
+    value: (
+      <>
+        Телефон:{" "}
+        <a href="tel:+79236251611" className="text-purple-700 hover:underline">
+          +7 (923) 625-1611
+        </a>
+        <br />
+        Адрес эл. почты:{" "}
+        <a
+          href="mailto:abram.viktoriya.00@mail.ru"
+          className="text-purple-700 hover:underline"
+        >
+          abram.viktoriya.00@mail.ru
+        </a>
+      </>
+    ),
+  },
+];
+
 function InfoRows({
   rows,
 }: {
@@ -264,6 +290,8 @@ export default function EducationInfo() {
                   <InfoRows rows={documentsRows} />
                 ) : s.id === "education" ? (
                   <InfoRows rows={educationRows} />
+                ) : s.id === "management" ? (
+                  <InfoRows rows={managementRows} />
                 ) : (
                   "Информация появится позже."
                 )}
