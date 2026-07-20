@@ -26,16 +26,16 @@ const mainInfoRows: { label: string; value: React.ReactNode }[] = [
     value: (
       <>
         Телефон:{" "}
-        <a href="tel:+79236251611" className="text-purple-700 hover:underline">
-          +7 (923) 625-1611
+        <a href="tel:+79169822876" className="text-purple-700 hover:underline">
+          +7 (916) 982-28-76
         </a>
         <br />
         Адрес эл. почты:{" "}
         <a
-          href="mailto:abram.viktoriya.00@mail.ru"
+          href="mailto:lineaschool@mail.ru"
           className="text-purple-700 hover:underline"
         >
-          abram.viktoriya.00@mail.ru
+          lineaschool@mail.ru
         </a>
       </>
     ),
