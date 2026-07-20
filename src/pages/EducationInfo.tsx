@@ -105,7 +105,79 @@ const documentsRows: { label: string; value: React.ReactNode }[] = [
   {
     label:
       "Локальные нормативные акты образовательной организации по основным вопросам организации и осуществления образовательной деятельности",
-    value: "информация появится позже",
+    value: (
+      <ul className="space-y-1.5">
+        {[
+          {
+            title: "Правила приёма обучающихся",
+            href: "https://disk.yandex.ru/i/7mmAzUDMEaENCQ",
+          },
+          {
+            title: "Положение о режиме и формах обучения",
+            href: "https://disk.yandex.ru/i/RkFLbhgYNO6P1Q",
+          },
+          {
+            title:
+              "Порядок оформления возникновения и прекращения отношений",
+            href: "https://disk.yandex.ru/i/dR1OlZuGhgw9RA",
+          },
+          {
+            title:
+              "Порядок ознакомления с документацией образовательной организации",
+            href: "https://disk.yandex.ru/i/E5qefHjkW46Ubg",
+          },
+          {
+            title:
+              "Положение о выдаче и учёте документов о дополнительном образовании",
+            href: "https://disk.yandex.ru/i/HCUh2JW1aZuJdw",
+          },
+          {
+            title: "Положение об официальном сайте",
+            href: "https://disk.yandex.ru/i/OFDb3imjTLUKgw",
+          },
+          {
+            title:
+              "Положение о профессиональной переподготовке и повышении квалификации работников",
+            href: "https://disk.yandex.ru/i/gZwLVwySRd6waA",
+          },
+          {
+            title: "Положение о порядке рассмотрения обращений граждан",
+            href: "https://disk.yandex.ru/i/dywKJMGcLjLocQ",
+          },
+          {
+            title:
+              "Положение о порядке применения электронного обучения и дистанционных образовательных технологий",
+            href: "https://disk.yandex.ru/i/lTimB4eSb1L9Pg",
+          },
+          {
+            title: "Положение о педагогическом совете",
+            href: "https://disk.yandex.ru/i/1C5WjcHnSNbBNQ",
+          },
+          {
+            title:
+              "Положение об обработке персональных данных работников",
+            href: "https://disk.yandex.ru/i/U8Dr0F6zCrhZZA",
+          },
+          {
+            title: "Положение об оплате труда работников",
+            href: "https://disk.yandex.ru/i/uAqWZmvY6xvENg",
+          },
+          {
+            title:
+              "Положение о защите персональных данных обучающихся",
+            href: "https://disk.yandex.ru/i/FmQGO8zeGIP5Ig",
+          },
+          {
+            title: "Должностная инструкция преподавателя",
+            href: "https://disk.yandex.ru/i/HTjTbsdJ8sNSHQ",
+          },
+        ].map((d) => (
+          <li key={d.href}>
+            {d.title} — <DocLink href={d.href} />
+          </li>
+        ))}
+      </ul>
+    ),
   },
   { label: "Отчёт о результатах самообследования", value: "в разработке" },
   {
