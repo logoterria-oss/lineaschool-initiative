@@ -5,10 +5,14 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta
 
+import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
+
+S20_HOST = "https://11086.s20.online"
+S20_EMAIL = os.environ.get("ALFACRM_EMAIL", "abram.viktoriya.00@mail.ru")
 
 CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -70,18 +74,103 @@ def public_staff(row):
     }
 
 
+def s20_headers(token=None):
+    h = {
+        "X-APP-KEY": os.environ["S20_X_APP_KEY"],
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    if token:
+        h["X-ALFACRM-TOKEN"] = token
+    return h
+
+
+def s20_token():
+    r = requests.post(
+        f"{S20_HOST}/v2api/auth/login",
+        json={"email": S20_EMAIL, "api_key": os.environ["S20_API_KEY"]},
+        headers=s20_headers(), timeout=20)
+    r.raise_for_status()
+    return r.json()["token"]
+
+
+def s20_employees(token):
+    items = []
+    page = 0
+    while True:
+        r = requests.post(
+            f"{S20_HOST}/v2api/1/employee/index",
+            json={"page": page, "pageSize": 200},
+            headers=s20_headers(token), timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        chunk = data.get("items", [])
+        items.extend(chunk)
+        if len(items) >= data.get("total", 0) or not chunk:
+            break
+        page += 1
+    return items
+
+
+def norm_name(s):
+    return re.sub(r"\s+", " ", (s or "").strip().lower())
+
+
+def _collect_strings(obj, out):
+    if isinstance(obj, str):
+        out.append(obj)
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            _collect_strings(v, out)
+    elif isinstance(obj, list):
+        for v in obj:
+            _collect_strings(v, out)
+
+
+def match_in_s20(full_name, phone):
+    """Ищем сотрудника в S20 по телефону ИЛИ ФИО. Возвращает True при совпадении.
+
+    Схема employee может отличаться, поэтому сканируем все строковые значения записи:
+    - телефон сравниваем по нормализованным цифрам,
+    - ФИО сравниваем по нормализованному имени (точное совпадение).
+    """
+    token = s20_token()
+    target_name = norm_name(full_name)
+    for emp in s20_employees(token):
+        strings = []
+        _collect_strings(emp, strings)
+        for s in strings:
+            digits = normalize_phone(s)
+            if len(digits) == 11 and digits == phone:
+                return True
+            if target_name and norm_name(s) == target_name:
+                return True
+    return False
+
+
 def handler(event: dict, context) -> dict:
     """Авторизация сотрудников: регистрация по телефону, вход, проверка сессии, смена пароля."""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
     method = event.get("httpMethod", "GET")
-    body = json.loads(event.get("body") or "{}")
-    action = body.get("action") or (event.get("queryStringParameters") or {}).get("action")
+    raw = event.get("body") or "{}"
+    try:
+        body = json.loads(raw)
+    except Exception:
+        body = {}
+    qs = event.get("queryStringParameters") or {}
+    action = body.get("action") or qs.get("action")
+
+    if action == "debug_employees":
+        token = s20_token()
+        emps = s20_employees(token)
+        return resp(200, {"count": len(emps), "sample": emps[0] if emps else None,
+                          "keys": list(emps[0].keys()) if emps else []})
 
     conn = db()
     try:
-        if method == "GET" or action == "me":
+        if action == "me" or (method == "GET" and not action):
             return handle_me(conn, event)
         if action == "register":
             return handle_register(conn, body)
@@ -115,15 +204,27 @@ def handle_register(conn, body):
         cur.execute(f"SELECT id FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
         if cur.fetchone():
             return resp(409, {"error": "phone_exists", "message": "Этот телефон уже зарегистрирован"})
+
+    # Проверяем совпадение в CRM S20 (по телефону ИЛИ ФИО).
+    try:
+        found = match_in_s20(full_name, phone)
+    except Exception:
+        return resp(502, {"error": "crm_unavailable",
+                          "message": "Не удалось проверить данные в CRM, попробуйте позже"})
+    if not found:
+        return resp(403, {"error": "no_crm_match",
+                          "message": "Нет совпадений в CRM. Проверьте телефон и ФИО или обратитесь к руководителю."})
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"INSERT INTO {SCHEMA}.staff (full_name, phone, password_hash, role, status) "
-            f"VALUES (%s, %s, %s, %s, 'pending') RETURNING id, full_name, phone, role, status",
+            f"VALUES (%s, %s, %s, %s, 'active') RETURNING id, full_name, phone, role, status",
             (full_name, phone, hash_password(password), role),
         )
         row = cur.fetchone()
         conn.commit()
     return resp(200, {"ok": True, "staff": public_staff(row),
-                      "message": "Заявка отправлена. Дождитесь подтверждения руководителя."})
+                      "message": "Регистрация подтверждена. Теперь войдите по телефону и паролю."})
 
 
 def handle_login(conn, body):
