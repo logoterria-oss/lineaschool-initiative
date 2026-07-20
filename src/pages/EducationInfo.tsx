@@ -19,7 +19,7 @@ const mainInfoRows: { label: string; value: React.ReactNode }[] = [
   },
   {
     label: "Режим (график) работы",
-    value: "Пн–Пт, с 09:00 до 18:00; Сб, Вс — выходные",
+    value: "Пн–Вс, с 8:00 до 21:00 (Мск, UTC+3)",
   },
   {
     label: "Контакты",
