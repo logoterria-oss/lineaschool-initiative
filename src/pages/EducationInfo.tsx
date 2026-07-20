@@ -1,5 +1,5 @@
 import Icon from "@/components/ui/icon";
-import NavigationWithoutBooking from "@/components/NavigationWithoutBooking";
+import Navigation from "@/components/Navigation";
 
 const mainInfoRows: { label: string; value: React.ReactNode }[] = [
   {
@@ -134,7 +134,7 @@ const sections = [
 export default function EducationInfo() {
   return (
     <div className="min-h-screen bg-gradient-to-bl from-purple-50 via-white to-purple-50/30">
-      <NavigationWithoutBooking />
+      <Navigation />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <div className="text-center mb-10">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
