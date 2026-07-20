@@ -1,9 +1,9 @@
 const schoolLinks = [
-  { label: "Методика", href: "#methodology" },
-  { label: "Диагностика", href: "#diagnostic" },
-  { label: "Отзывы", href: "#testimonials" },
+  { label: "Методика нейрологопедической коррекции", href: "#methodology" },
+  { label: "Диагностика процессов чтения и письма", href: "#diagnostic" },
+  { label: "Отзывы о школе", href: "#testimonials" },
   { label: "Стоимость обучения", href: "#pricing" },
-  { label: "Вопросы", href: "#faq" },
+  { label: "Часто задаваемые вопросы", href: "#faq" },
   { label: "Сведения об образовательной организации", href: "/sveden" },
 ];
 
