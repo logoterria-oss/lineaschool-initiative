@@ -228,6 +228,32 @@ function PaidServicesInfo() {
   );
 }
 
+const supportRows: { label: string; value: React.ReactNode }[] = [
+  {
+    label: "Наличие и условия предоставления обучающимся стипендий",
+    value: "не предусмотрено",
+  },
+  { label: "Меры социальной поддержки", value: "не предусмотрено" },
+  { label: "Наличие общежития, интерната", value: "не предусмотрено" },
+  {
+    label:
+      "Количество жилых помещений в общежитии, интернате для иногородних обучающихся",
+    value: "не предусмотрено",
+  },
+  {
+    label: "Формирование платы за проживание в общежитии",
+    value: "отсутствует, в связи с отсутствием общежитий",
+  },
+];
+
+const internationalRows: { label: string; value: React.ReactNode }[] = [
+  {
+    label:
+      "Заключённые и планируемые к заключению договоры с иностранными и (или) международными организациями по вопросам образования и науки",
+    value: "отсутствуют",
+  },
+];
+
 const vacanciesRows: { label: string; value: React.ReactNode }[] = [
   {
     label:
@@ -433,6 +459,12 @@ export default function EducationInfo() {
                   <InfoRows rows={financeRows} />
                 ) : s.id === "vacancies" ? (
                   <InfoRows rows={vacanciesRows} />
+                ) : s.id === "support" ? (
+                  <InfoRows rows={supportRows} />
+                ) : s.id === "international" ? (
+                  <InfoRows rows={internationalRows} />
+                ) : s.id === "meals" ? (
+                  "Питание не предусмотрено, в связи с осуществлением образовательной деятельности дистанционно, по сети Интернет."
                 ) : (
                   "Информация появится позже."
                 )}
