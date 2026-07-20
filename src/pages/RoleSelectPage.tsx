@@ -296,13 +296,23 @@ const RoleSelectPage = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center px-4">
-      <button
-        onClick={() => navigate('/admin/settings')}
-        title="Настройки"
-        className="absolute top-4 right-4 p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-400 shadow-sm transition-all duration-200"
-      >
-        <Icon name="Settings" size={20} />
-      </button>
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <button
+          onClick={handleLogout}
+          title="Выйти"
+          className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-300 shadow-sm transition-all duration-200"
+        >
+          <Icon name="LogOut" size={20} />
+          <span className="text-sm font-medium pr-1">Выйти</span>
+        </button>
+        <button
+          onClick={() => navigate('/admin/settings')}
+          title="Настройки"
+          className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-400 shadow-sm transition-all duration-200"
+        >
+          <Icon name="Settings" size={20} />
+        </button>
+      </div>
 
       <div className="mb-8 text-center">
         <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
