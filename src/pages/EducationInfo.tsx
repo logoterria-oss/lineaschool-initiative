@@ -202,6 +202,32 @@ function InfoRows({
   );
 }
 
+function PaidServicesInfo() {
+  return (
+    <div className="space-y-3">
+      <p>Образовательные услуги у ИП Абраменко В.А. являются платными.</p>
+      <InfoRows
+        rows={[
+          {
+            label: "Положение о порядке оказания платных услуг",
+            value: <DocLink href="https://disk.yandex.ru/i/euxuNY9do1H2Hw" />,
+          },
+          {
+            label:
+              "Образец договора об оказании платных образовательных услуг с физическим лицом",
+            value: <DocLink href="https://disk.yandex.ru/i/DBdR7roMz5FeGg" />,
+          },
+          {
+            label:
+              "Приказ об утверждении стоимости обучения по каждой образовательной программе",
+            value: <DocLink href="https://disk.yandex.ru/i/5gNZgQ34qJSMnQ" />,
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
 const facilitiesRows: { label: string; value: React.ReactNode }[] = [
   {
     label: "Наличие оборудованных учебных кабинетов",
@@ -365,6 +391,8 @@ export default function EducationInfo() {
                   <InfoRows rows={managementRows} />
                 ) : s.id === "facilities" ? (
                   <FacilitiesInfo />
+                ) : s.id === "paid-services" ? (
+                  <PaidServicesInfo />
                 ) : (
                   "Информация появится позже."
                 )}
