@@ -56,9 +56,6 @@ export default function EducationInfo() {
       <NavigationWithoutBooking />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-5 shadow-lg mx-auto">
-            <Icon name="School" size={32} className="text-white" />
-          </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Сведения об образовательной организации
           </h1>
