@@ -78,6 +78,19 @@ const RoleSelectPage = () => {
     setAuthed(true);
   };
 
+  const handleLogout = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem('admin_password');
+    sessionStorage.removeItem('staff_role');
+    sessionStorage.removeItem('staff_name');
+    localStorage.removeItem('staff_token');
+    setAuthed(false);
+    setMode('personal');
+    setPhone('');
+    setPassword('');
+    setPin('');
+  };
+
   const handleSharedLogin = () => {
     if (pin === ADMIN_PASSWORD) {
       sessionStorage.setItem('admin_password', pin);
