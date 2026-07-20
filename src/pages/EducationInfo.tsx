@@ -228,6 +228,19 @@ function PaidServicesInfo() {
   );
 }
 
+const vacanciesRows: { label: string; value: React.ReactNode }[] = [
+  {
+    label:
+      "Финансируемые за счёт бюджетных ассигнований федерального бюджета, бюджетов субъектов Российской Федерации, местных бюджетов",
+    value: "не предусмотрены",
+  },
+  {
+    label:
+      "Финансируемые по договорам об образовании за счёт средств физических и (или) юридических лиц",
+    value: "без ограничений, квоты и контрольные цифры не установлены",
+  },
+];
+
 const financeRows: { label: string; value: React.ReactNode }[] = [
   {
     label:
@@ -418,6 +431,8 @@ export default function EducationInfo() {
                   <PaidServicesInfo />
                 ) : s.id === "finance" ? (
                   <InfoRows rows={financeRows} />
+                ) : s.id === "vacancies" ? (
+                  <InfoRows rows={vacanciesRows} />
                 ) : (
                   "Информация появится позже."
                 )}
