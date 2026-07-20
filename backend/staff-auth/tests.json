@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Register validation - bad phone",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "register", "full_name": "Тест Тестов", "phone": "123", "password": "secret1", "role": "teacher"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "bad_phone"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Login bad credentials",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "login", "phone": "+70000000000", "password": "nope123"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "bad_credentials"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

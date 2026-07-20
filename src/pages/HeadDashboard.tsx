@@ -43,6 +43,16 @@ const SECTIONS = [
     iconColor: 'text-red-600',
     path: '/admin/head-staff-violations',
   },
+  {
+    id: 'staff',
+    label: 'Сотрудники',
+    description: 'Подтверждение регистраций, роли, доступы',
+    icon: 'Users' as const,
+    color: 'border-teal-200 hover:border-teal-400',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-600',
+    path: '/admin/staff',
+  },
 ];
 
 const HeadDashboard = () => {

@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
+import {
+  registerStaff,
+  loginStaff,
+  ROLE_LABELS,
+  StaffRole,
+} from '@/lib/staffApi';
 
 const ADMIN_PASSWORD = '426874';
 const SESSION_KEY = 'admin_authenticated';
@@ -48,18 +54,34 @@ const roles = [
   },
 ];
 
+const REG_ROLES: StaffRole[] = ['teacher', 'diag', 'admin', 'head'];
+
+type Mode = 'personal' | 'shared' | 'register';
+
 const RoleSelectPage = () => {
   const navigate = useNavigate();
   const [isAuth] = useState(() => sessionStorage.getItem(SESSION_KEY) === 'true');
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
   const [authed, setAuthed] = useState(isAuth);
 
-  const handleLogin = () => {
+  const [mode, setMode] = useState<Mode>('personal');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [regRole, setRegRole] = useState<StaffRole>('teacher');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const markAuthed = () => {
+    sessionStorage.setItem(SESSION_KEY, 'true');
+    setAuthed(true);
+  };
+
+  const handleSharedLogin = () => {
     if (pin === ADMIN_PASSWORD) {
-      sessionStorage.setItem(SESSION_KEY, 'true');
       sessionStorage.setItem('admin_password', pin);
-      setAuthed(true);
+      markAuthed();
       setError('');
     } else {
       setError('Неверный пароль');
@@ -67,34 +89,185 @@ const RoleSelectPage = () => {
     }
   };
 
+  const handlePersonalLogin = async () => {
+    setError('');
+    setInfo('');
+    setLoading(true);
+    try {
+      const r = await loginStaff(phone, password);
+      if (r.ok) {
+        const staff = r.data.staff;
+        sessionStorage.setItem('staff_role', staff.role);
+        sessionStorage.setItem('staff_name', staff.full_name);
+        markAuthed();
+      } else {
+        setError(r.data.message || 'Не удалось войти');
+      }
+    } catch {
+      setError('Ошибка сети, попробуйте ещё раз');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    setError('');
+    setInfo('');
+    setLoading(true);
+    try {
+      const r = await registerStaff({ full_name: fullName, phone, password, role: regRole });
+      if (r.ok) {
+        setInfo(r.data.message || 'Заявка отправлена. Дождитесь подтверждения руководителя.');
+        setMode('personal');
+        setFullName('');
+        setPassword('');
+      } else {
+        setError(r.data.message || 'Не удалось зарегистрироваться');
+      }
+    } catch {
+      setError('Ошибка сети, попробуйте ещё раз');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputCls =
+    'w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400 bg-white shadow-sm';
+
   if (!authed) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center px-4">
-        <div className="mb-8 text-center">
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center px-4 py-10">
+        <div className="mb-6 text-center">
           <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
             <Icon name="Lock" size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Вход в систему</h1>
-          <p className="text-gray-500 text-sm">Введите пароль для доступа</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Вход в систему</h1>
+          <p className="text-gray-500 text-sm">
+            {mode === 'register' ? 'Регистрация сотрудника' : 'Личный вход по телефону'}
+          </p>
         </div>
 
         <div className="w-full max-w-xs space-y-3">
-          <input
-            type="password"
-            value={pin}
-            onChange={(e) => { setPin(e.target.value); setError(''); }}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-            placeholder="Пароль"
-            autoFocus
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400 bg-white shadow-sm"
-          />
+          {mode === 'personal' && (
+            <>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => { setPhone(e.target.value); setError(''); }}
+                placeholder="Телефон, напр. +7 900 000-00-00"
+                autoFocus
+                className={inputCls}
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handlePersonalLogin()}
+                placeholder="Пароль"
+                className={inputCls}
+              />
+              <button
+                onClick={handlePersonalLogin}
+                disabled={loading}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
+              >
+                {loading ? 'Вхожу…' : 'Войти'}
+              </button>
+              <button
+                onClick={() => { setMode('register'); setError(''); setInfo(''); }}
+                className="w-full text-green-700 hover:text-green-800 text-sm font-medium py-1"
+              >
+                Регистрация нового сотрудника
+              </button>
+            </>
+          )}
+
+          {mode === 'register' && (
+            <>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => { setFullName(e.target.value); setError(''); }}
+                placeholder="ФИО"
+                autoFocus
+                className={inputCls}
+              />
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => { setPhone(e.target.value); setError(''); }}
+                placeholder="Телефон"
+                className={inputCls}
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                placeholder="Пароль (мин. 6 символов)"
+                className={inputCls}
+              />
+              <select
+                value={regRole}
+                onChange={(e) => setRegRole(e.target.value as StaffRole)}
+                className={inputCls}
+              >
+                {REG_ROLES.map((r) => (
+                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleRegister}
+                disabled={loading}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
+              >
+                {loading ? 'Отправляю…' : 'Зарегистрироваться'}
+              </button>
+              <button
+                onClick={() => { setMode('personal'); setError(''); }}
+                className="w-full text-gray-500 hover:text-gray-700 text-sm py-1"
+              >
+                Назад ко входу
+              </button>
+            </>
+          )}
+
+          {mode === 'shared' && (
+            <>
+              <input
+                type="password"
+                value={pin}
+                onChange={(e) => { setPin(e.target.value); setError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleSharedLogin()}
+                placeholder="Общий пароль"
+                autoFocus
+                className={`${inputCls} text-center tracking-widest`}
+              />
+              <button
+                onClick={handleSharedLogin}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
+              >
+                Войти
+              </button>
+              <button
+                onClick={() => { setMode('personal'); setError(''); }}
+                className="w-full text-gray-500 hover:text-gray-700 text-sm py-1"
+              >
+                Личный вход по телефону
+              </button>
+            </>
+          )}
+
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-          <button
-            onClick={handleLogin}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
-          >
-            Войти
-          </button>
+          {info && <p className="text-green-600 text-sm text-center">{info}</p>}
+
+          {mode !== 'shared' && mode !== 'register' && (
+            <button
+              onClick={() => { setMode('shared'); setError(''); setInfo(''); }}
+              className="w-full text-gray-400 hover:text-gray-600 text-xs py-1"
+            >
+              Войти по общему паролю
+            </button>
+          )}
         </div>
 
         <button

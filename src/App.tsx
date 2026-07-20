@@ -35,6 +35,8 @@ import ExtensionPage from "./pages/ExtensionPage";
 import SchedulePage from "./pages/SchedulePage";
 import StudentsTablePage from "./pages/StudentsTablePage";
 import SettingsPage from "./pages/SettingsPage";
+import StaffManagePage from "./pages/StaffManagePage";
+import StaffProfilePage from "./pages/StaffProfilePage";
 import EducationInfo from "./pages/EducationInfo";
 import NotFound from "./pages/NotFound";
 
@@ -79,6 +81,8 @@ const App = () => (
             <Route path="/admin/schedule" element={<SchedulePage />} />
             <Route path="/admin/students" element={<StudentsTablePage />} />
             <Route path="/admin/settings" element={<SettingsPage />} />
+            <Route path="/admin/staff" element={<StaffManagePage />} />
+            <Route path="/admin/profile" element={<StaffProfilePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
