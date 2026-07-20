@@ -74,11 +74,6 @@ export default function EducationInfo() {
                 <span className="flex-shrink-0 w-9 h-9 rounded-lg bg-purple-100 text-purple-700 font-semibold flex items-center justify-center text-sm">
                   {i + 1}
                 </span>
-                <Icon
-                  name={s.icon}
-                  size={18}
-                  className="text-purple-600 flex-shrink-0 hidden sm:block"
-                />
                 <span className="flex-1 text-sm sm:text-base font-semibold text-gray-800">
                   {s.title}
                 </span>
