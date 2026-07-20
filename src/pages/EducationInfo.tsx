@@ -66,10 +66,22 @@ const mainInfoRows: { label: string; value: React.ReactNode }[] = [
   },
 ];
 
-function MainInfo() {
+const structureInfoRows: { label: string; value: React.ReactNode }[] = [
+  {
+    label: "Руководитель образовательной организации",
+    value: "Абраменко Виктория Алексеевна",
+  },
+  { label: "Структурные подразделения и филиалы", value: "нет" },
+];
+
+function InfoRows({
+  rows,
+}: {
+  rows: { label: string; value: React.ReactNode }[];
+}) {
   return (
     <dl className="divide-y divide-gray-100">
-      {mainInfoRows.map((row) => (
+      {rows.map((row) => (
         <div
           key={row.label}
           className="py-3 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:gap-4"
@@ -162,7 +174,13 @@ export default function EducationInfo() {
                 />
               </summary>
               <div className="px-4 sm:px-5 pb-5 pt-1 border-t border-gray-100 text-gray-500 text-sm leading-relaxed">
-                {s.id === "main" ? <MainInfo /> : "Информация появится позже."}
+                {s.id === "main" ? (
+                  <InfoRows rows={mainInfoRows} />
+                ) : s.id === "structure" ? (
+                  <InfoRows rows={structureInfoRows} />
+                ) : (
+                  "Информация появится позже."
+                )}
               </div>
             </details>
           ))}
