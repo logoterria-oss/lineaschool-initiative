@@ -74,6 +74,47 @@ const structureInfoRows: { label: string; value: React.ReactNode }[] = [
   { label: "Структурные подразделения и филиалы", value: "нет" },
 ];
 
+function DocLink({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-purple-700 hover:underline"
+    >
+      открыть
+    </a>
+  );
+}
+
+const documentsRows: { label: string; value: React.ReactNode }[] = [
+  { label: "Устав образовательной организации", value: "не предусмотрен" },
+  {
+    label: "Выписка из ЕГРИП",
+    value: <DocLink href="https://disk.yandex.ru/i/Kbq2Vg-Df-u1xw" />,
+  },
+  {
+    label: "Правила внутреннего распорядка обучающихся",
+    value: <DocLink href="https://disk.yandex.ru/i/aEn2ia2n7WkwXQ" />,
+  },
+  {
+    label: "Правила внутреннего трудового распорядка",
+    value: <DocLink href="https://disk.yandex.ru/i/D_tR_y7_ul1LxA" />,
+  },
+  { label: "Коллективный договор", value: "не предусмотрен" },
+  {
+    label:
+      "Локальные нормативные акты образовательной организации по основным вопросам организации и осуществления образовательной деятельности",
+    value: "информация появится позже",
+  },
+  { label: "Отчёт о результатах самообследования", value: "в разработке" },
+  {
+    label:
+      "Предписания органов, осуществляющих государственный контроль (надзор) в сфере образования, отчёты об исполнении таких предписаний",
+    value: "не предусмотрены",
+  },
+];
+
 function InfoRows({
   rows,
 }: {
@@ -178,6 +219,8 @@ export default function EducationInfo() {
                   <InfoRows rows={mainInfoRows} />
                 ) : s.id === "structure" ? (
                   <InfoRows rows={structureInfoRows} />
+                ) : s.id === "documents" ? (
+                  <InfoRows rows={documentsRows} />
                 ) : (
                   "Информация появится позже."
                 )}
