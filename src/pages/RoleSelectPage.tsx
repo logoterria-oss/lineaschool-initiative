@@ -112,7 +112,7 @@ const RoleSelectPage = () => {
         const staff = r.data.staff;
         sessionStorage.setItem('staff_role', staff.role);
         sessionStorage.setItem('staff_name', staff.full_name);
-        markAuthed();
+        navigate('/admin/home');
       } else {
         setError(r.data.message || 'Не удалось войти');
       }
@@ -130,10 +130,17 @@ const RoleSelectPage = () => {
     try {
       const r = await registerStaff({ full_name: fullName, phone, password, role: regRole });
       if (r.ok) {
-        setInfo(r.data.message || 'Заявка отправлена. Дождитесь подтверждения руководителя.');
-        setMode('personal');
-        setFullName('');
-        setPassword('');
+        const login = await loginStaff(phone, password);
+        if (login.ok) {
+          const staff = login.data.staff;
+          sessionStorage.setItem('staff_role', staff.role);
+          sessionStorage.setItem('staff_name', staff.full_name);
+          navigate('/admin/home');
+        } else {
+          setInfo('Регистрация подтверждена. Теперь войдите по телефону и паролю.');
+          setMode('personal');
+          setPassword('');
+        }
       } else {
         setError(r.data.message || 'Не удалось зарегистрироваться');
       }
