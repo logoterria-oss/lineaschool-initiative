@@ -4,7 +4,7 @@ import { TOC } from './individualRegulationData';
 import IndividualRegulationContentPart1 from './IndividualRegulationContentPart1';
 import IndividualRegulationContentPart2 from './IndividualRegulationContentPart2';
 
-const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
+const IndividualRegulation = ({ onBack, hideHeader = false }: { onBack: () => void; hideHeader?: boolean }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [tocOpen, setTocOpen] = useState(false);
 
@@ -16,20 +16,22 @@ const IndividualRegulation = ({ onBack }: { onBack: () => void }) => {
   return (
     <div>
       {/* Шапка */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={onBack}
-          className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
-        >
-          <Icon name="ArrowLeft" size={20} />
-        </button>
-        <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-          <Icon name="BookOpen" size={22} className="text-blue-600" />
+      {!hideHeader && (
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={onBack}
+            className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
+          >
+            <Icon name="ArrowLeft" size={20} />
+          </button>
+          <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+            <Icon name="BookOpen" size={22} className="text-blue-600" />
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+            Индивидуальные занятия
+          </h1>
         </div>
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
-          Индивидуальные занятия
-        </h1>
-      </div>
+      )}
 
       {/* Оглавление */}
       <div className="bg-white rounded-2xl border border-gray-200 border-t-4 border-t-blue-500 shadow-sm mb-6 overflow-hidden">

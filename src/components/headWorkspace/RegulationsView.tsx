@@ -5,12 +5,11 @@ import GroupRegulation from '@/components/teacher/regulations/GroupRegulation';
 import IndividualCriteriaTable from '@/components/teacher/IndividualCriteriaTable';
 import GroupCriteriaTable from '@/components/teacher/GroupCriteriaTable';
 import GroupKpiInfo from '@/components/teacher/GroupKpiInfo';
-import GroupPenaltyInfo from '@/components/teacher/GroupPenaltyInfo';
 
-type IconName = 'Users' | 'User' | 'ListChecks' | 'BookOpen' | 'ShieldCheck' | 'BarChart2' | 'AlertTriangle';
+type IconName = 'Users' | 'User' | 'ShieldCheck';
 
 interface Block {
-  id: string;
+  id: 'individual' | 'group' | 'admin';
   label: string;
   icon: IconName;
   color: string;
@@ -36,14 +35,6 @@ const TOP_BLOCKS: Block[] = [
     border: 'border-purple-200 hover:border-purple-400',
   },
   {
-    id: 'criteria',
-    label: 'Критерии оценки и KPI',
-    icon: 'ListChecks',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-100',
-    border: 'border-emerald-200 hover:border-emerald-400',
-  },
-  {
     id: 'admin',
     label: 'Регламент администратора',
     icon: 'ShieldCheck',
@@ -53,30 +44,22 @@ const TOP_BLOCKS: Block[] = [
   },
 ];
 
-const SUBSECTIONS: Block[] = [
-  {
-    id: 'group',
-    label: 'Групповые',
-    icon: 'Users',
-    color: 'text-orange-600',
-    bg: 'bg-orange-100',
-    border: 'border-orange-200 hover:border-orange-400',
-  },
-  {
-    id: 'individual',
-    label: 'Индивидуальные',
-    icon: 'User',
-    color: 'text-teal-600',
-    bg: 'bg-teal-100',
-    border: 'border-teal-200 hover:border-teal-400',
-  },
-];
-
-const CRITERIA_TABS = [
+const TABS = [
+  { id: 'regulation', label: 'Регламент' },
   { id: 'criteria', label: 'Критерии оценки' },
   { id: 'kpi', label: 'KPI' },
-  { id: 'penalty', label: 'Штрафные баллы' },
 ];
+
+const INDIVIDUAL_KPI_PROPS = {
+  bonusRows: [
+    { score: 'от 30 до 34', bonus: '+ 100 ₽', total: '400 ₽' },
+    { score: 'от 35 до 40', bonus: '+ 200 ₽', total: '500 ₽' },
+    { score: 'от 41 до 45', bonus: '+ 350 ₽', total: '650 ₽' },
+  ],
+  exampleScore: 37,
+  exampleBonus: '200 ₽',
+  exampleTotal: '500 ₽',
+};
 
 const MenuButton = ({ item, onClick }: { item: Block; onClick: () => void }) => (
   <button
@@ -102,14 +85,16 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
 );
 
 const RegulationsView = () => {
-  const [block, setBlock] = useState<string | null>(null);
-  const [section, setSection] = useState<string | null>(null);
-  const [tab, setTab] = useState('criteria');
+  const [block, setBlock] = useState<'individual' | 'group' | 'admin' | null>(null);
+  const [tab, setTab] = useState('regulation');
 
-  const resetBlock = () => {
+  const openBlock = (id: 'individual' | 'group' | 'admin') => {
+    setBlock(id);
+    setTab('regulation');
+  };
+  const reset = () => {
     setBlock(null);
-    setSection(null);
-    setTab('criteria');
+    setTab('regulation');
   };
 
   // Уровень 1: меню
@@ -117,24 +102,17 @@ const RegulationsView = () => {
     return (
       <div className="space-y-3">
         {TOP_BLOCKS.map((b) => (
-          <MenuButton key={b.id} item={b} onClick={() => setBlock(b.id)} />
+          <MenuButton key={b.id} item={b} onClick={() => openBlock(b.id)} />
         ))}
       </div>
     );
   }
 
-  if (block === 'individual') {
-    return <IndividualRegulation onBack={resetBlock} />;
-  }
-
-  if (block === 'group') {
-    return <GroupRegulation onBack={resetBlock} />;
-  }
-
+  // Регламент администратора — заглушка
   if (block === 'admin') {
     return (
       <div>
-        <BackButton onClick={resetBlock} />
+        <BackButton onClick={reset} />
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
           <div className="inline-flex p-4 rounded-full bg-amber-100 mb-4">
             <Icon name="ShieldCheck" size={32} className="text-amber-600" />
@@ -147,27 +125,14 @@ const RegulationsView = () => {
     );
   }
 
-  // Критерии и KPI — уровень 2: выбор Групповые / Индивидуальные
-  if (!section) {
-    return (
-      <div>
-        <BackButton onClick={resetBlock} />
-        <div className="space-y-3">
-          {SUBSECTIONS.map((sub) => (
-            <MenuButton key={sub.id} item={sub} onClick={() => setSection(sub.id)} />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const isIndividual = block === 'individual';
 
-  // Уровень 3: табы Критерии / KPI / Штрафные баллы
   return (
     <div>
-      <BackButton onClick={() => { setSection(null); setTab('criteria'); }} />
+      <BackButton onClick={reset} />
 
       <div className="flex flex-wrap gap-2 mb-5">
-        {CRITERIA_TABS.map((t) => (
+        {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -182,35 +147,18 @@ const RegulationsView = () => {
         ))}
       </div>
 
-      {tab === 'criteria' ? (
-        section === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />
-      ) : tab === 'kpi' && section === 'group' ? (
-        <GroupKpiInfo />
-      ) : tab === 'kpi' && section === 'individual' ? (
-        <GroupKpiInfo
-          bonusRows={[
-            { score: 'от 30 до 34', bonus: '+ 100 ₽', total: '400 ₽' },
-            { score: 'от 35 до 40', bonus: '+ 200 ₽', total: '500 ₽' },
-            { score: 'от 41 до 45', bonus: '+ 350 ₽', total: '650 ₽' },
-          ]}
-          exampleScore={37}
-          exampleBonus="200 ₽"
-          exampleTotal="500 ₽"
-        />
-      ) : tab === 'penalty' && section === 'group' ? (
-        <GroupPenaltyInfo />
+      {tab === 'regulation' ? (
+        isIndividual ? (
+          <IndividualRegulation onBack={reset} hideHeader />
+        ) : (
+          <GroupRegulation onBack={reset} hideHeader />
+        )
+      ) : tab === 'criteria' ? (
+        isIndividual ? <IndividualCriteriaTable /> : <GroupCriteriaTable />
+      ) : isIndividual ? (
+        <GroupKpiInfo {...INDIVIDUAL_KPI_PROPS} />
       ) : (
-        <GroupPenaltyInfo
-          exampleBaseScore={37}
-          examplePenalty={3}
-          exampleFinalScore={34}
-          exampleBonus="+100 ₽/час"
-          exampleHigherBonus="+200"
-          exampleViolations={[
-            '1 раз не вышли на занятие без предупреждения (без уважительной причины) → штраф –2;',
-            '3 раза отправили ссылки после 10:00 → за это вам выставили –1 (половина от максимума).',
-          ]}
-        />
+        <GroupKpiInfo />
       )}
     </div>
   );

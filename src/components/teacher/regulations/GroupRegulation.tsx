@@ -16,7 +16,7 @@ const TOC = [
   { id: 'alfacrm', label: '4.1. Проведение занятия в AlfaCRM', indent: 1 },
 ];
 
-const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
+const GroupRegulation = ({ onBack, hideHeader = false }: { onBack: () => void; hideHeader?: boolean }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [tocOpen, setTocOpen] = useState(false);
 
@@ -28,20 +28,22 @@ const GroupRegulation = ({ onBack }: { onBack: () => void }) => {
   return (
     <div>
       {/* Шапка */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={onBack}
-          className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
-        >
-          <Icon name="ArrowLeft" size={20} />
-        </button>
-        <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
-          <Icon name="BookOpen" size={22} className="text-purple-600" />
+      {!hideHeader && (
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={onBack}
+            className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
+          >
+            <Icon name="ArrowLeft" size={20} />
+          </button>
+          <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+            <Icon name="BookOpen" size={22} className="text-purple-600" />
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+            Групповые занятия
+          </h1>
         </div>
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
-          Групповые занятия
-        </h1>
-      </div>
+      )}
 
       {/* Оглавление */}
       <div className="bg-white rounded-2xl border border-gray-200 border-t-4 border-t-purple-500 shadow-sm mb-6 overflow-hidden">
