@@ -11,7 +11,7 @@ const PaymentsView = () => {
     setSelectedDate, showReport, setShowReport, showManual, setShowManual, deletingId,
     togglingId, tab, setTab, blocked, unblockingId, handleUnblock, handleSync, handleDelete,
     handleTogglePaid, formatDate, deduplicated, filtered, paidCount, unpaidCount, fetchLeads,
-  } = usePaymentLeads();
+  } = usePaymentLeads(true);
 
   if (loading) {
     return <div className="text-gray-600 py-10 text-center">Загрузка...</div>;

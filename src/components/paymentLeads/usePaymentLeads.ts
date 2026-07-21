@@ -3,10 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { namesSimilar } from '@/lib/nameSimilarity';
 import { PaymentLead, BlockedPayment, GET_LEADS_URL, SYNC_URL, DELETE_URL, BLOCKLIST_URL } from './types';
 
-export function usePaymentLeads() {
+export function usePaymentLeads(forceHead = false) {
   const navigate = useNavigate();
   const location = useLocation();
-  const isHead = location.state?.from === '/admin/head';
+  // Режим руководителя: либо переход из старого кабинета (/admin/head),
+  // либо явное указание forceHead=true (новый кабинет руководителя).
+  const isHead = forceHead || location.state?.from === '/admin/head';
   const [leads, setLeads] = useState<PaymentLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
