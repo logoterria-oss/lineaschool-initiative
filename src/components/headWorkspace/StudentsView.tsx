@@ -152,7 +152,7 @@ const StudentsView = () => {
           </div>
           <StatusLegend />
           {loading ? (
-            <p className="text-gray-500">Загрузка…</p>
+            <p className="text-gray-500">Загружаем данные из AlfaCRM. Это может занять несколько минут...</p>
           ) : error ? (
             <p className="text-red-600">{error}</p>
           ) : (
@@ -207,7 +207,7 @@ const StudentsView = () => {
           )}
           <StatusLegend />
           {loading ? (
-            <p className="text-gray-500">Загрузка…</p>
+            <p className="text-gray-500">Загружаем данные из AlfaCRM. Это может занять несколько минут...</p>
           ) : error ? (
             <p className="text-red-600">{error}</p>
           ) : filtered.length === 0 ? (
