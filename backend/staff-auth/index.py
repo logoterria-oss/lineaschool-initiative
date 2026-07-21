@@ -114,7 +114,6 @@ def s20_employees(token):
             break
         page += 1
     return items
-    return items
 
 
 def norm_name(s):
@@ -151,6 +150,77 @@ def match_in_s20(full_name, phone):
             if target_name and norm_name(s) == target_name:
                 return True
     return False
+
+
+def find_employee_in_s20(token, full_name, phone):
+    """Находит объект сотрудника в S20 по телефону ИЛИ ФИО. Возвращает dict или None."""
+    target_name = norm_name(full_name)
+    by_name = None
+    for emp in s20_employees(token):
+        strings = []
+        _collect_strings(emp, strings)
+        for s in strings:
+            digits = normalize_phone(s)
+            if len(digits) == 11 and phone and digits == phone:
+                return emp
+        if target_name and by_name is None:
+            for s in strings:
+                if norm_name(s) == target_name:
+                    by_name = emp
+                    break
+    return by_name
+
+
+def s20_update_teacher_phone(token, emp, old_phone_11, new_phone_11):
+    """Обновляет телефон сотрудника в S20. Телефон хранится списком строк.
+
+    В списке заменяем номер, совпадающий со старым (по цифрам), на новый.
+    Если совпадений нет — просто добавляем новый номер первым.
+    """
+    emp_id = emp.get("id")
+    if not emp_id:
+        return False
+    pretty = f"+7{new_phone_11[1:]}"  # 7XXXXXXXXXX -> +7XXXXXXXXXX
+
+    current = emp.get("phone")
+    if isinstance(current, str):
+        current = [current]
+    elif not isinstance(current, list):
+        current = []
+
+    new_list = []
+    replaced = False
+    for item in current:
+        if old_phone_11 and normalize_phone(str(item)) == old_phone_11:
+            new_list.append(pretty)
+            replaced = True
+        else:
+            new_list.append(item)
+    if not replaced:
+        new_list = [pretty] + new_list
+
+    payload = {
+        "name": emp.get("name") or "",
+        "phone": new_list,
+        "branch_ids": emp.get("branch_ids") or [1],
+    }
+    r = requests.post(
+        f"{S20_HOST}/v2api/1/teacher/update?id={emp_id}",
+        json=payload, headers=s20_headers(token), timeout=30)
+    r.raise_for_status()
+    return True
+
+
+def sync_phone_to_s20(full_name, old_phone, new_phone):
+    """Меняет номер сотрудника в CRM. Ищем по СТАРОМУ номеру или ФИО. Тихо игнорируем сбои."""
+    try:
+        token = s20_token()
+        emp = find_employee_in_s20(token, full_name, old_phone)
+        if not emp:
+            return False
+        return s20_update_teacher_phone(token, emp, old_phone, new_phone)
+    except Exception:
+        return False
 
 
 def handler(event: dict, context) -> dict:
@@ -359,6 +429,7 @@ def handle_set_phone(conn, event, body):
     phone = normalize_phone(body.get("phone"))
     if len(phone) != 11:
         return resp(400, {"error": "bad_phone", "message": "Некорректный номер телефона"})
+    old_phone = row["phone"]
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"SELECT id FROM {SCHEMA}.staff WHERE phone = %s AND id <> %s",
@@ -370,7 +441,10 @@ def handle_set_phone(conn, event, body):
             f"UPDATE {SCHEMA}.staff SET phone = %s, updated_at = now() WHERE id = %s",
             (phone, row["id"]))
         conn.commit()
-    return resp(200, {"ok": True, "phone": phone, "message": "Телефон изменён"})
+
+    synced = sync_phone_to_s20(row["full_name"], old_phone, phone)
+    message = "Телефон изменён" + (" и обновлён в CRM" if synced else "")
+    return resp(200, {"ok": True, "phone": phone, "crm_synced": synced, "message": message})
 
 
 def handle_set_title(conn, event, body):
