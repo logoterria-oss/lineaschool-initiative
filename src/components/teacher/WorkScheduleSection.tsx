@@ -56,9 +56,10 @@ interface TeacherCardProps {
   onEdit: (t: { id: number; name: string }) => void;
   scheduleByTeacher: Record<number, ScheduleRow[]>;
   loading: boolean;
+  readOnly?: boolean;
 }
 
-const TeacherCard = ({ teacher, onEdit, scheduleByTeacher, loading }: TeacherCardProps) => {
+const TeacherCard = ({ teacher, onEdit, scheduleByTeacher, loading, readOnly }: TeacherCardProps) => {
   const rows = scheduleByTeacher[teacher.id] || [];
   const ws = rowsToWeekSchedule(rows);
   const hasDays = Object.keys(ws).length > 0;
@@ -67,13 +68,15 @@ const TeacherCard = ({ teacher, onEdit, scheduleByTeacher, loading }: TeacherCar
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="font-semibold text-gray-900">{teacher.name}</span>
-        <button
-          onClick={() => onEdit(teacher)}
-          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-          title="Редактировать"
-        >
-          <Icon name="Pencil" size={16} />
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => onEdit(teacher)}
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Редактировать"
+          >
+            <Icon name="Pencil" size={16} />
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -251,7 +254,7 @@ const EditModal = ({ teacher, initialWs, onClose, onSave }: EditModalProps) => {
   );
 };
 
-const WorkScheduleSection = () => {
+const WorkScheduleSection = ({ readOnly = false }: { readOnly?: boolean } = {}) => {
   const [scheduleByTeacher, setScheduleByTeacher] = useState<Record<number, ScheduleRow[]>>({});
   const [loading, setLoading] = useState(true);
   const [editingTeacher, setEditingTeacher] = useState<{ id: number; name: string } | null>(null);
@@ -304,6 +307,7 @@ const WorkScheduleSection = () => {
               onEdit={setEditingTeacher}
               scheduleByTeacher={scheduleByTeacher}
               loading={loading}
+              readOnly={readOnly}
             />
           ))}
         </div>
@@ -322,12 +326,13 @@ const WorkScheduleSection = () => {
               onEdit={setEditingTeacher}
               scheduleByTeacher={scheduleByTeacher}
               loading={loading}
+              readOnly={readOnly}
             />
           ))}
         </div>
       </div>
 
-      {editingTeacher && (
+      {editingTeacher && !readOnly && (
         <EditModal
           teacher={editingTeacher}
           initialWs={editingWs}

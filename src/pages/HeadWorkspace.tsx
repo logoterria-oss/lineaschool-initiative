@@ -12,6 +12,7 @@ import PaymentsView from '@/components/headWorkspace/PaymentsView';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
 import DocsView from '@/components/headWorkspace/DocsView';
 import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
+import WorkScheduleSection from '@/components/teacher/WorkScheduleSection';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
@@ -73,6 +74,7 @@ const HeadWorkspace = () => {
       case 'schedule': return <ScheduleView />;
       case 'reports': return <DocsView />;
       case 'homework': return <HomeworkControlSection />;
+      case 'worktime': return <WorkScheduleSection readOnly />;
       case 'supervisions': return <SupervisionsView />;
       case 'violations': return <TeacherViolationsManager withRole />;
       default: return <StubView label={active.label} />;
