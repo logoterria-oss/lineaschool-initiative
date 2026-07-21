@@ -38,6 +38,7 @@ import SettingsPage from "./pages/SettingsPage";
 import StaffManagePage from "./pages/StaffManagePage";
 import StaffProfilePage from "./pages/StaffProfilePage";
 import StaffHomePage from "./pages/StaffHomePage";
+import HeadWorkspace from "./pages/HeadWorkspace";
 import EducationInfo from "./pages/EducationInfo";
 import NotFound from "./pages/NotFound";
 
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/admin/staff" element={<StaffManagePage />} />
             <Route path="/admin/profile" element={<StaffProfilePage />} />
             <Route path="/admin/home" element={<StaffHomePage />} />
+            <Route path="/admin/head-workspace" element={<HeadWorkspace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
