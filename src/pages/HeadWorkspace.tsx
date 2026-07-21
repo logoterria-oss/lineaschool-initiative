@@ -7,6 +7,7 @@ import { HEAD_MENU, SubItem } from '@/components/headWorkspace/menu';
 import StudentsView from '@/components/headWorkspace/StudentsView';
 import PaymentsView from '@/components/headWorkspace/PaymentsView';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
+import DocsView from '@/components/headWorkspace/DocsView';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
@@ -63,6 +64,7 @@ const HeadWorkspace = () => {
       case 'students': return <StudentsView />;
       case 'payments': return <PaymentsView />;
       case 'schedule': return <ScheduleView />;
+      case 'reports': return <DocsView />;
       case 'supervisions': return <SupervisionsView />;
       case 'violations': return <TeacherViolationsManager withRole />;
       default: return <StubView label={active.label} />;
