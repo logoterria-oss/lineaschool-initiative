@@ -19,7 +19,7 @@ import TeacherViolationsManager from '@/components/violations/TeacherViolationsM
 const HeadWorkspace = () => {
   const navigate = useNavigate();
   const [me, setMe] = useState<Staff | null>(null);
-  const [openGroups, setOpenGroups] = useState<string[]>(['lessons', 'staff', 'administration', 'finance']);
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [active, setActive] = useState<SubItem | null>(null);
 
   const cachedName = sessionStorage.getItem('staff_name') || '';
@@ -135,7 +135,6 @@ const HeadWorkspace = () => {
                             : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
-                        <Icon name={item.icon as 'FileText'} size={16} className="flex-shrink-0 opacity-70" />
                         <span className="flex-1">{item.label}</span>
                         {item.kind === 'link' && <Icon name="ExternalLink" size={13} className="text-gray-300" />}
                       </button>
