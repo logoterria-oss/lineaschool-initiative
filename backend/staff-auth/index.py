@@ -429,12 +429,11 @@ def handle_set_phone(conn, event, body):
             (phone, row["id"]))
         conn.commit()
 
-    synced = sync_phone_to_s20(row["full_name"], old_phone, phone)
-    if synced:
-        message = "Телефон изменён. Новый номер добавлен в карточку CRM."
-    else:
-        message = "Телефон изменён."
-    return resp(200, {"ok": True, "phone": phone, "crm_synced": synced, "message": message})
+    return resp(200, {
+        "ok": True,
+        "phone": phone,
+        "message": "Телефон изменён. Не забудьте обновить номер в CRM вручную.",
+    })
 
 
 def handle_set_title(conn, event, body):

@@ -276,10 +276,10 @@ const StaffProfilePage = () => {
                   </div>
                 )}
                 {!editingPhone && phoneMsg && (
-                  <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
-                    <Icon name="Check" size={13} />
-                    {phoneMsg}
-                  </p>
+                  <div className="mt-2 flex items-start gap-2 text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-2.5 py-2">
+                    <Icon name="TriangleAlert" size={14} className="mt-0.5 flex-shrink-0" />
+                    <span>{phoneMsg}</span>
+                  </div>
                 )}
               </div>
               <div>
