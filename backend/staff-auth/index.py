@@ -172,36 +172,19 @@ def find_employee_in_s20(token, full_name, phone):
 
 
 def s20_update_teacher_phone(token, emp, old_phone_11, new_phone_11):
-    """Обновляет телефон сотрудника в S20. Телефон хранится списком строк.
+    """Устанавливает НОВЫЙ телефон сотрудника в S20 как единственный номер.
 
-    В списке заменяем номер, совпадающий со старым (по цифрам), на новый.
-    Если совпадений нет — просто добавляем новый номер первым.
+    AlfaCRM при update аккумулирует номера (объединяет присланный список с
+    существующим), поэтому чтобы номер действительно сменился, отправляем
+    список из одного нового номера — так старые номера очищаются.
     """
     emp_id = emp.get("id")
     if not emp_id:
         return False
     pretty = f"+7{new_phone_11[1:]}"  # 7XXXXXXXXXX -> +7XXXXXXXXXX
-
-    current = emp.get("phone")
-    if isinstance(current, str):
-        current = [current]
-    elif not isinstance(current, list):
-        current = []
-
-    new_list = []
-    replaced = False
-    for item in current:
-        if old_phone_11 and normalize_phone(str(item)) == old_phone_11:
-            new_list.append(pretty)
-            replaced = True
-        else:
-            new_list.append(item)
-    if not replaced:
-        new_list = [pretty] + new_list
-
     payload = {
         "name": emp.get("name") or "",
-        "phone": new_list,
+        "phone": [pretty],
         "branch_ids": emp.get("branch_ids") or [1],
     }
     r = requests.post(
@@ -217,9 +200,13 @@ def sync_phone_to_s20(full_name, old_phone, new_phone):
         token = s20_token()
         emp = find_employee_in_s20(token, full_name, old_phone)
         if not emp:
+            print(f"[s20 sync] employee NOT found: name={full_name!r} old_phone={old_phone!r}")
             return False
-        return s20_update_teacher_phone(token, emp, old_phone, new_phone)
-    except Exception:
+        ok = s20_update_teacher_phone(token, emp, old_phone, new_phone)
+        print(f"[s20 sync] updated emp_id={emp.get('id')} name={emp.get('name')!r} ok={ok}")
+        return ok
+    except Exception as e:
+        print(f"[s20 sync] ERROR: {e!r}")
         return False
 
 
