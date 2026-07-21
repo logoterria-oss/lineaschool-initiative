@@ -14,6 +14,7 @@ import DocsView from '@/components/headWorkspace/DocsView';
 import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
 import WorkScheduleSection from '@/components/teacher/WorkScheduleSection';
 import RegulationsView from '@/components/headWorkspace/RegulationsView';
+import ReportsFinView from '@/components/headWorkspace/ReportsFinView';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
@@ -72,6 +73,7 @@ const HeadWorkspace = () => {
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;
       case 'payments': return <PaymentsView />;
+      case 'reports-fin': return <ReportsFinView />;
       case 'schedule': return <ScheduleView />;
       case 'reports': return <DocsView />;
       case 'homework': return <HomeworkControlSection />;

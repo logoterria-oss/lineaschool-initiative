@@ -56,7 +56,7 @@ export const HEAD_MENU: MenuGroup[] = [
     icon: 'Coins',
     items: [
       { id: 'payments', label: 'Оплаты', kind: 'component', icon: 'CreditCard' },
-      { id: 'reports-fin', label: 'Отчёты', kind: 'link', icon: 'BarChart2', path: '/admin/head-reports' },
+      { id: 'reports-fin', label: 'Отчёты', kind: 'component', icon: 'BarChart2' },
       { id: 'calendar', label: 'Календарь регулярных платежей', kind: 'stub', icon: 'CalendarClock' },
     ],
   },
