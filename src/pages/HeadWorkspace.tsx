@@ -4,7 +4,10 @@ import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
 import { fetchMe, logoutStaff, Staff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
 import { HEAD_MENU, SubItem } from '@/components/headWorkspace/menu';
-import StudentsView from '@/components/headWorkspace/StudentsView';
+import StudentsListView from '@/components/headWorkspace/StudentsListView';
+import InteractionsView from '@/components/headWorkspace/InteractionsView';
+import VacationsView from '@/components/headWorkspace/VacationsView';
+import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
 import PaymentsView from '@/components/headWorkspace/PaymentsView';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
 import DocsView from '@/components/headWorkspace/DocsView';
@@ -16,7 +19,7 @@ import TeacherViolationsManager from '@/components/violations/TeacherViolationsM
 const HeadWorkspace = () => {
   const navigate = useNavigate();
   const [me, setMe] = useState<Staff | null>(null);
-  const [openGroups, setOpenGroups] = useState<string[]>(['lessons', 'staff', 'finance']);
+  const [openGroups, setOpenGroups] = useState<string[]>(['lessons', 'staff', 'administration', 'finance']);
   const [active, setActive] = useState<SubItem | null>(null);
 
   const cachedName = sessionStorage.getItem('staff_name') || '';
@@ -62,7 +65,10 @@ const HeadWorkspace = () => {
     if (!active) return null;
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
-      case 'students': return <StudentsView />;
+      case 'students-list': return <StudentsListView />;
+      case 'interactions': return <InteractionsView />;
+      case 'vacations': return <VacationsView />;
+      case 'progress': return <ProgressMonitoringView />;
       case 'payments': return <PaymentsView />;
       case 'schedule': return <ScheduleView />;
       case 'reports': return <DocsView />;
