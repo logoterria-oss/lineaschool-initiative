@@ -50,6 +50,24 @@
       "expectedStatus": 401,
       "expectedBody": {"error": "no_session"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Register bad email",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "register", "full_name": "Тест Тестов", "phone": "+79001112233", "email": "notanemail", "password": "secret1", "role": "teacher"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "bad_email"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Verify email not found",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "verify_email", "phone": "+70000000000", "code": "123456"},
+      "expectedStatus": 404,
+      "expectedBody": {"error": "not_found"},
+      "bodyMatcher": "partial"
     }
   ]
 }

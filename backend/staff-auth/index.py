@@ -230,6 +230,10 @@ def handler(event: dict, context) -> dict:
             return handle_me(conn, event)
         if action == "register":
             return handle_register(conn, body)
+        if action == "verify_email":
+            return handle_verify_email(conn, body)
+        if action == "resend_code":
+            return handle_resend_code(conn, body)
         if action == "login":
             return handle_login(conn, body)
         if action == "change_password":
@@ -247,24 +251,32 @@ def handler(event: dict, context) -> dict:
         conn.close()
 
 
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
 def handle_register(conn, body):
     full_name = (body.get("full_name") or "").strip()
     phone = normalize_phone(body.get("phone"))
     password = body.get("password") or ""
+    email = (body.get("email") or "").strip().lower()
     role = body.get("role") or "teacher"
 
     if not full_name:
         return resp(400, {"error": "no_name", "message": "Укажите ФИО"})
     if len(phone) != 11:
         return resp(400, {"error": "bad_phone", "message": "Некорректный номер телефона"})
+    if not EMAIL_RE.match(email):
+        return resp(400, {"error": "bad_email", "message": "Укажите корректный email"})
     if len(password) < 6:
         return resp(400, {"error": "weak_password", "message": "Пароль минимум 6 символов"})
     if role not in ROLES:
         return resp(400, {"error": "bad_role", "message": "Некорректная роль"})
 
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(f"SELECT id FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
-        if cur.fetchone():
+        cur.execute(
+            f"SELECT id, status FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
+        existing = cur.fetchone()
+        if existing and existing["status"] == "active":
             return resp(409, {"error": "phone_exists", "message": "Этот телефон уже зарегистрирован"})
 
     # Проверяем совпадение в CRM S20 (по телефону ИЛИ ФИО).
@@ -278,15 +290,133 @@ def handle_register(conn, body):
                           "message": "Нет совпадений в CRM. Проверьте телефон и ФИО или обратитесь к руководителю."})
 
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(
-            f"INSERT INTO {SCHEMA}.staff (full_name, phone, password_hash, role, status) "
-            f"VALUES (%s, %s, %s, %s, 'active') RETURNING id, full_name, phone, role, status",
-            (full_name, phone, hash_password(password), role),
-        )
-        row = cur.fetchone()
+        if existing:
+            # Повторная попытка для незавершённой регистрации — обновляем данные.
+            cur.execute(
+                f"UPDATE {SCHEMA}.staff SET full_name=%s, password_hash=%s, role=%s, "
+                f"email=%s, email_verified=false, status='pending', updated_at=now() "
+                f"WHERE id=%s RETURNING id",
+                (full_name, hash_password(password), role, email, existing["id"]))
+            staff_id = cur.fetchone()["id"]
+        else:
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.staff (full_name, phone, password_hash, role, status, email) "
+                f"VALUES (%s, %s, %s, %s, 'pending', %s) RETURNING id",
+                (full_name, phone, hash_password(password), role, email))
+            staff_id = cur.fetchone()["id"]
         conn.commit()
-    return resp(200, {"ok": True, "staff": public_staff(row),
-                      "message": "Регистрация подтверждена. Теперь войдите по телефону и паролю."})
+
+    ok = issue_and_send_code(conn, staff_id, email, full_name)
+    if not ok:
+        return resp(502, {"error": "mail_failed",
+                          "message": "Не удалось отправить письмо с кодом. Проверьте email и попробуйте позже."})
+    return resp(200, {"ok": True, "phone": phone, "email": email, "need_verify": True,
+                      "message": f"Код подтверждения отправлен на {email}"})
+
+
+def gen_code():
+    return f"{secrets.randbelow(1000000):06d}"
+
+
+def issue_and_send_code(conn, staff_id, email, full_name):
+    code = gen_code()
+    expires = datetime.utcnow() + timedelta(minutes=15)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"DELETE FROM {SCHEMA}.staff_email_codes WHERE staff_id = %s", (staff_id,))
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.staff_email_codes (staff_id, code_hash, expires_at) "
+            f"VALUES (%s, %s, %s)",
+            (staff_id, hash_password(code), expires))
+        conn.commit()
+    return send_code_email(email, full_name, code)
+
+
+def send_code_email(to_email, full_name, code):
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.utils import formataddr
+
+    user = os.environ.get("MAIL_LOGIN") or os.environ.get("MAIL_USER") or "abram.viktoriya.00@mail.ru"
+    password = os.environ.get("MAIL_PASSWORD")
+    if not password:
+        print("[email] MAIL_PASSWORD not set")
+        return False
+
+    subject = "Код подтверждения — Linea School"
+    text = (
+        f"Здравствуйте, {full_name}!\n\n"
+        f"Ваш код подтверждения регистрации: {code}\n"
+        f"Код действует 15 минут.\n\n"
+        f"Если вы не регистрировались, просто проигнорируйте это письмо."
+    )
+    msg = MIMEText(text, "plain", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = formataddr(("Linea School", user))
+    msg["To"] = to_email
+    try:
+        with smtplib.SMTP_SSL("smtp.mail.ru", 465, timeout=20) as server:
+            server.login(user, password)
+            server.sendmail(user, [to_email], msg.as_string())
+        return True
+    except Exception as e:
+        print(f"[email] send error: {e!r}")
+        return False
+
+
+def handle_verify_email(conn, body):
+    phone = normalize_phone(body.get("phone"))
+    code = (body.get("code") or "").strip()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, full_name, phone, role, status, avatar_url, job_title "
+            f"FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
+        staff = cur.fetchone()
+        if not staff:
+            return resp(404, {"error": "not_found", "message": "Регистрация не найдена"})
+        if staff["status"] == "active":
+            return resp(200, {"ok": True, "already": True,
+                              "message": "Аккаунт уже подтверждён. Войдите по телефону и паролю."})
+        cur.execute(
+            f"SELECT id, code_hash, expires_at, attempts FROM {SCHEMA}.staff_email_codes "
+            f"WHERE staff_id = %s ORDER BY id DESC LIMIT 1", (staff["id"],))
+        rec = cur.fetchone()
+        if not rec:
+            return resp(400, {"error": "no_code", "message": "Код не запрашивался. Отправьте код заново."})
+        if rec["expires_at"] < datetime.utcnow():
+            return resp(400, {"error": "expired", "message": "Код истёк. Запросите новый."})
+        if rec["attempts"] >= 5:
+            return resp(429, {"error": "too_many", "message": "Слишком много попыток. Запросите новый код."})
+        if not verify_password(code, rec["code_hash"]):
+            cur.execute(
+                f"UPDATE {SCHEMA}.staff_email_codes SET attempts = attempts + 1 WHERE id = %s",
+                (rec["id"],))
+            conn.commit()
+            return resp(400, {"error": "bad_code", "message": "Неверный код"})
+
+        cur.execute(
+            f"UPDATE {SCHEMA}.staff SET status='active', email_verified=true, updated_at=now() "
+            f"WHERE id = %s", (staff["id"],))
+        cur.execute(f"DELETE FROM {SCHEMA}.staff_email_codes WHERE staff_id = %s", (staff["id"],))
+        conn.commit()
+    return resp(200, {"ok": True,
+                      "message": "Email подтверждён. Теперь войдите по телефону и паролю."})
+
+
+def handle_resend_code(conn, body):
+    phone = normalize_phone(body.get("phone"))
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, full_name, email, status FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
+        staff = cur.fetchone()
+    if not staff or not staff["email"]:
+        return resp(404, {"error": "not_found", "message": "Регистрация не найдена"})
+    if staff["status"] == "active":
+        return resp(200, {"ok": True, "already": True, "message": "Аккаунт уже подтверждён."})
+    ok = issue_and_send_code(conn, staff["id"], staff["email"], staff["full_name"])
+    if not ok:
+        return resp(502, {"error": "mail_failed", "message": "Не удалось отправить письмо. Попробуйте позже."})
+    return resp(200, {"ok": True, "message": f"Новый код отправлен на {staff['email']}"})
 
 
 def handle_login(conn, body):
