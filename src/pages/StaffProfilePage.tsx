@@ -38,6 +38,7 @@ const StaffProfilePage = () => {
   const [phoneValue, setPhoneValue] = useState('');
   const [phoneSaving, setPhoneSaving] = useState(false);
   const [phoneErr, setPhoneErr] = useState('');
+  const [phoneMsg, setPhoneMsg] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -124,17 +125,20 @@ const StaffProfilePage = () => {
 
   const openPhoneEdit = () => {
     setPhoneErr('');
+    setPhoneMsg('');
     setPhoneValue(me?.phone || '');
     setEditingPhone(true);
   };
 
   const onSavePhone = async () => {
     setPhoneErr('');
+    setPhoneMsg('');
     setPhoneSaving(true);
     try {
       const r = await setPhone(phoneValue.trim());
       if (r.ok) {
         setMe((prev) => (prev ? { ...prev, phone: r.data.phone } : prev));
+        setPhoneMsg(r.data.message || 'Телефон изменён');
         setEditingPhone(false);
       } else {
         setPhoneErr(r.data.message || 'Не удалось изменить номер');
@@ -270,6 +274,12 @@ const StaffProfilePage = () => {
                       Изменить
                     </button>
                   </div>
+                )}
+                {!editingPhone && phoneMsg && (
+                  <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                    <Icon name="Check" size={13} />
+                    {phoneMsg}
+                  </p>
                 )}
               </div>
               <div>
