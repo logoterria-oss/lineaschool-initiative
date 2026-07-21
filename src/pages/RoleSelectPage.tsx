@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import {
   registerStaff,
   loginStaff,
+  fetchMe,
+  getStaffToken,
   ROLE_LABELS,
   StaffRole,
 } from '@/lib/staffApi';
@@ -87,6 +89,28 @@ const RoleSelectPage = () => {
 
   const [verifyData, setVerifyData] = useState<{ phone: string; crmEmail: string } | null>(null);
   const [showForgot, setShowForgot] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(() => !!getStaffToken());
+
+  // Автовход: если есть действующая сессия (токен живёт 30 дней) — сразу в кабинет.
+  useEffect(() => {
+    if (!getStaffToken()) return;
+    (async () => {
+      try {
+        const staff = await fetchMe();
+        if (staff) {
+          sessionStorage.setItem(SESSION_KEY, 'true');
+          sessionStorage.setItem('staff_role', staff.role);
+          sessionStorage.setItem('staff_name', staff.full_name);
+          navigate(homePathForRole(staff.role), { replace: true });
+          return;
+        }
+      } catch {
+        /* игнорируем — покажем форму входа */
+      }
+      setCheckingSession(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const markAuthed = () => {
     sessionStorage.setItem(SESSION_KEY, 'true');
@@ -158,6 +182,14 @@ const RoleSelectPage = () => {
 
   const inputCls =
     'w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400 bg-white shadow-sm';
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
+        <Icon name="Loader2" size={28} className="text-green-600 animate-spin" />
+      </div>
+    );
+  }
 
   if (!authed) {
     return (
