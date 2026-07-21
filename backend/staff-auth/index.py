@@ -407,9 +407,9 @@ def send_code_email(to_email, full_name, code, purpose="verify"):
     from email.mime.text import MIMEText
     from email.utils import formataddr
 
-    user = os.environ.get("MAIL_LOGIN") or os.environ.get("MAIL_USER") or "abram.viktoriya.00@mail.ru"
+    user = os.environ.get("MAIL_SMTP_LOGIN") or "lineaschool@mail.ru"
     # Для SMTP mail.ru требуется отдельный «пароль приложения» (не IMAP-пароль).
-    password = os.environ.get("MAIL_SMTP_PASSWORD") or os.environ.get("MAIL_PASSWORD")
+    password = os.environ.get("MAIL_SMTP_PASSWORD")
     if not password:
         print("[email] SMTP password not set")
         return False
