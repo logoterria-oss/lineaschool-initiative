@@ -13,6 +13,7 @@ const BOX = 260; // размер области предпросмотра (px)
 
 const AvatarCropper = ({ file, onCancel, onDone, uploading }: Props) => {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
+  const [src, setSrc] = useState('');
   const [scale, setScale] = useState(1);
   const [minScale, setMinScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -20,21 +21,23 @@ const AvatarCropper = ({ file, onCancel, onDone, uploading }: Props) => {
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      const m = BOX / Math.min(image.width, image.height);
-      setImg(image);
-      setMinScale(m);
-      setScale(m);
-      setOffset({ x: 0, y: 0 });
-      URL.revokeObjectURL(url);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const image = new Image();
+      image.onload = () => {
+        const m = BOX / Math.min(image.width, image.height);
+        setImg(image);
+        setSrc(dataUrl);
+        setMinScale(m);
+        setScale(m);
+        setOffset({ x: 0, y: 0 });
+      };
+      image.onerror = () => setError('Не удалось открыть изображение. Выберите другой файл.');
+      image.src = dataUrl;
     };
-    image.onerror = () => {
-      setError('Не удалось открыть изображение. Выберите другой файл.');
-      URL.revokeObjectURL(url);
-    };
-    image.src = url;
+    reader.onerror = () => setError('Не удалось прочитать файл. Выберите другой.');
+    reader.readAsDataURL(file);
   }, [file]);
 
   // Ограничиваем сдвиг, чтобы картинка всегда покрывала круг.
@@ -112,7 +115,7 @@ const AvatarCropper = ({ file, onCancel, onDone, uploading }: Props) => {
             >
               {img && (
                 <img
-                  src={img.src}
+                  src={src}
                   alt="Кадрирование"
                   draggable={false}
                   className="absolute top-1/2 left-1/2 max-w-none pointer-events-none"
