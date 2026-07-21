@@ -116,6 +116,45 @@ def s20_employees(token):
     return items
 
 
+def s20_users(token):
+    """Пользователи CRM (учётки) — здесь лежит настоящий email для входа."""
+    items = []
+    page = 0
+    while True:
+        r = requests.post(
+            f"{S20_HOST}/v2api/1/user/index",
+            json={"page": page, "pageSize": 200},
+            headers=s20_headers(token), timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        chunk = data.get("items", [])
+        items.extend(chunk)
+        if len(items) >= data.get("total", 0) or not chunk:
+            break
+        page += 1
+    return items
+
+
+def find_user_email(full_name, phone):
+    """Ищет email учётки CRM по ФИО ИЛИ телефону. Возвращает email или None."""
+    try:
+        token = s20_token()
+    except Exception:
+        return None
+    target_name = norm_name(full_name)
+    by_name = None
+    for u in s20_users(token):
+        email = (u.get("email") or "").strip()
+        if not email:
+            continue
+        u_phone = normalize_phone(str(u.get("phone") or ""))
+        if phone and len(u_phone) == 11 and u_phone == phone:
+            return email
+        if target_name and by_name is None and norm_name(u.get("name")) == target_name:
+            by_name = email
+    return by_name
+
+
 def norm_name(s):
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
@@ -224,44 +263,22 @@ def handler(event: dict, context) -> dict:
     qs = event.get("queryStringParameters") or {}
     action = body.get("action") or qs.get("action")
 
-    if action == "debug_emails":
-        token = s20_token()
-        emps = s20_employees(token)
-        return resp(200, {"employees": [
-            {"id": e.get("id"), "name": e.get("name"), "email": e.get("email")}
-            for e in emps]})
-
-    if action == "debug_card":
-        token = s20_token()
-        emp_id = (qs.get("id") or body.get("id") or "1")
-        report = []
-        for p in [f"/v2api/1/teacher/{emp_id}", f"/v2api/1/teacher/index?id={emp_id}"]:
-            try:
-                r = requests.post(f"{S20_HOST}{p}", json={"id": int(emp_id)},
-                                  headers=s20_headers(token), timeout=30)
-                report.append({"path": p, "status": r.status_code, "body": r.text[:800]})
-            except Exception as e:
-                report.append({"path": p, "error": str(e)})
-        # фильтр index по id
-        try:
-            r2 = requests.post(f"{S20_HOST}/v2api/1/teacher/index",
-                               json={"id": int(emp_id), "page": 0, "pageSize": 5},
-                               headers=s20_headers(token), timeout=30)
-            report.append({"path": "index+id-filter", "status": r2.status_code, "body": r2.text[:800]})
-        except Exception as e:
-            report.append({"path": "index+id-filter", "error": str(e)})
-        return resp(200, {"report": report})
-
     conn = db()
     try:
         if action == "me" or (method == "GET" and not action):
             return handle_me(conn, event)
         if action == "register":
             return handle_register(conn, body)
+        if action == "confirm_email":
+            return handle_confirm_email(conn, body)
         if action == "verify_email":
             return handle_verify_email(conn, body)
         if action == "resend_code":
             return handle_resend_code(conn, body)
+        if action == "forgot_password":
+            return handle_forgot_password(conn, body)
+        if action == "reset_password":
+            return handle_reset_password(conn, body)
         if action == "login":
             return handle_login(conn, body)
         if action == "change_password":
@@ -283,18 +300,19 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def handle_register(conn, body):
+    """Шаг 1: проверяем телефон + CRM, создаём pending-запись и подтягиваем email из CRM.
+
+    Код НЕ отправляем: сначала сотрудник подтвердит/исправит email (action=confirm_email).
+    """
     full_name = (body.get("full_name") or "").strip()
     phone = normalize_phone(body.get("phone"))
     password = body.get("password") or ""
-    email = (body.get("email") or "").strip().lower()
     role = body.get("role") or "teacher"
 
     if not full_name:
         return resp(400, {"error": "no_name", "message": "Укажите ФИО"})
     if len(phone) != 11:
         return resp(400, {"error": "bad_phone", "message": "Некорректный номер телефона"})
-    if not EMAIL_RE.match(email):
-        return resp(400, {"error": "bad_email", "message": "Укажите корректный email"})
     if len(password) < 6:
         return resp(400, {"error": "weak_password", "message": "Пароль минимум 6 символов"})
     if role not in ROLES:
@@ -317,27 +335,51 @@ def handle_register(conn, body):
         return resp(403, {"error": "no_crm_match",
                           "message": "Нет совпадений в CRM. Проверьте телефон и ФИО или обратитесь к руководителю."})
 
+    crm_email = find_user_email(full_name, phone) or ""
+
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         if existing:
-            # Повторная попытка для незавершённой регистрации — обновляем данные.
             cur.execute(
                 f"UPDATE {SCHEMA}.staff SET full_name=%s, password_hash=%s, role=%s, "
                 f"email=%s, email_verified=false, status='pending', updated_at=now() "
-                f"WHERE id=%s RETURNING id",
-                (full_name, hash_password(password), role, email, existing["id"]))
-            staff_id = cur.fetchone()["id"]
+                f"WHERE id=%s",
+                (full_name, hash_password(password), role, crm_email or None, existing["id"]))
         else:
             cur.execute(
                 f"INSERT INTO {SCHEMA}.staff (full_name, phone, password_hash, role, status, email) "
-                f"VALUES (%s, %s, %s, %s, 'pending', %s) RETURNING id",
-                (full_name, phone, hash_password(password), role, email))
-            staff_id = cur.fetchone()["id"]
+                f"VALUES (%s, %s, %s, %s, 'pending', %s)",
+                (full_name, phone, hash_password(password), role, crm_email or None))
         conn.commit()
 
-    ok = issue_and_send_code(conn, staff_id, email, full_name)
+    return resp(200, {"ok": True, "phone": phone, "crm_email": crm_email,
+                      "need_confirm_email": True,
+                      "message": "Подтвердите адрес электронной почты для получения кода."})
+
+
+def handle_confirm_email(conn, body):
+    """Шаг 2: сотрудник подтвердил/исправил email — сохраняем и отправляем код."""
+    phone = normalize_phone(body.get("phone"))
+    email = (body.get("email") or "").strip().lower()
+    if not EMAIL_RE.match(email):
+        return resp(400, {"error": "bad_email", "message": "Укажите корректный email"})
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, full_name, status FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
+        staff = cur.fetchone()
+        if not staff:
+            return resp(404, {"error": "not_found", "message": "Регистрация не найдена"})
+        if staff["status"] == "active":
+            return resp(200, {"ok": True, "already": True,
+                              "message": "Аккаунт уже подтверждён."})
+        cur.execute(
+            f"UPDATE {SCHEMA}.staff SET email=%s, updated_at=now() WHERE id=%s",
+            (email, staff["id"]))
+        conn.commit()
+
+    ok = issue_and_send_code(conn, staff["id"], email, staff["full_name"])
     if not ok:
         return resp(502, {"error": "mail_failed",
-                          "message": "Не удалось отправить письмо с кодом. Проверьте email и попробуйте позже."})
+                          "message": "Не удалось отправить письмо. Проверьте email и попробуйте позже."})
     return resp(200, {"ok": True, "phone": phone, "email": email, "need_verify": True,
                       "message": f"Код подтверждения отправлен на {email}"})
 
@@ -346,50 +388,77 @@ def gen_code():
     return f"{secrets.randbelow(1000000):06d}"
 
 
-def issue_and_send_code(conn, staff_id, email, full_name):
+def issue_and_send_code(conn, staff_id, email, full_name, purpose="verify"):
     code = gen_code()
     expires = datetime.utcnow() + timedelta(minutes=15)
     with conn.cursor() as cur:
         cur.execute(
             f"DELETE FROM {SCHEMA}.staff_email_codes WHERE staff_id = %s", (staff_id,))
         cur.execute(
-            f"INSERT INTO {SCHEMA}.staff_email_codes (staff_id, code_hash, expires_at) "
-            f"VALUES (%s, %s, %s)",
-            (staff_id, hash_password(code), expires))
+            f"INSERT INTO {SCHEMA}.staff_email_codes (staff_id, code_hash, expires_at, purpose) "
+            f"VALUES (%s, %s, %s, %s)",
+            (staff_id, hash_password(code), expires, purpose))
         conn.commit()
-    return send_code_email(email, full_name, code)
+    return send_code_email(email, full_name, code, purpose)
 
 
-def send_code_email(to_email, full_name, code):
+def send_code_email(to_email, full_name, code, purpose="verify"):
     import smtplib
     from email.mime.text import MIMEText
     from email.utils import formataddr
 
     user = os.environ.get("MAIL_LOGIN") or os.environ.get("MAIL_USER") or "abram.viktoriya.00@mail.ru"
-    password = os.environ.get("MAIL_PASSWORD")
+    # Для SMTP mail.ru требуется отдельный «пароль приложения» (не IMAP-пароль).
+    password = os.environ.get("MAIL_SMTP_PASSWORD") or os.environ.get("MAIL_PASSWORD")
     if not password:
-        print("[email] MAIL_PASSWORD not set")
+        print("[email] SMTP password not set")
         return False
 
-    subject = "Код подтверждения — Linea School"
+    if purpose == "reset":
+        subject = "Восстановление пароля — Linea School"
+        line = f"Ваш код для восстановления пароля: {code}"
+        tail = "Если вы не запрашивали восстановление, проигнорируйте это письмо."
+    else:
+        subject = "Код подтверждения — Linea School"
+        line = f"Ваш код подтверждения регистрации: {code}"
+        tail = "Если вы не регистрировались, просто проигнорируйте это письмо."
+
     text = (
         f"Здравствуйте, {full_name}!\n\n"
-        f"Ваш код подтверждения регистрации: {code}\n"
+        f"{line}\n"
         f"Код действует 15 минут.\n\n"
-        f"Если вы не регистрировались, просто проигнорируйте это письмо."
+        f"{tail}"
     )
     msg = MIMEText(text, "plain", "utf-8")
     msg["Subject"] = subject
     msg["From"] = formataddr(("Linea School", user))
     msg["To"] = to_email
+    global _LAST_MAIL_ERROR
     try:
         with smtplib.SMTP_SSL("smtp.mail.ru", 465, timeout=20) as server:
             server.login(user, password)
             server.sendmail(user, [to_email], msg.as_string())
+        _LAST_MAIL_ERROR = None
         return True
     except Exception as e:
+        _LAST_MAIL_ERROR = f"{type(e).__name__}: {e}"
         print(f"[email] send error: {e!r}")
         return False
+
+
+_LAST_MAIL_ERROR = None
+
+
+def mask_email(email):
+    try:
+        name, domain = email.split("@", 1)
+    except ValueError:
+        return email
+    if len(name) <= 2:
+        masked = name[0] + "*"
+    else:
+        masked = name[0] + "*" * (len(name) - 2) + name[-1]
+    return f"{masked}@{domain}"
 
 
 def handle_verify_email(conn, body):
@@ -447,6 +516,60 @@ def handle_resend_code(conn, body):
     return resp(200, {"ok": True, "message": f"Новый код отправлен на {staff['email']}"})
 
 
+def handle_forgot_password(conn, body):
+    phone = normalize_phone(body.get("phone"))
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, full_name, email, status FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
+        staff = cur.fetchone()
+    # Не раскрываем, есть ли аккаунт: одинаковый ответ.
+    generic = {"ok": True, "message": "Если аккаунт существует, код для сброса отправлен на почту."}
+    if not staff or staff["status"] != "active" or not staff["email"]:
+        return resp(200, generic)
+    ok = issue_and_send_code(conn, staff["id"], staff["email"], staff["full_name"], purpose="reset")
+    if not ok:
+        return resp(502, {"error": "mail_failed", "message": "Не удалось отправить письмо. Попробуйте позже."})
+    return resp(200, {"ok": True, "email_masked": mask_email(staff["email"]),
+                      "message": f"Код для сброса пароля отправлен на {mask_email(staff['email'])}"})
+
+
+def handle_reset_password(conn, body):
+    phone = normalize_phone(body.get("phone"))
+    code = (body.get("code") or "").strip()
+    new_password = body.get("new_password") or ""
+    if len(new_password) < 6:
+        return resp(400, {"error": "weak_password", "message": "Пароль минимум 6 символов"})
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, status FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
+        staff = cur.fetchone()
+        if not staff:
+            return resp(404, {"error": "not_found", "message": "Аккаунт не найден"})
+        cur.execute(
+            f"SELECT id, code_hash, expires_at, attempts FROM {SCHEMA}.staff_email_codes "
+            f"WHERE staff_id = %s AND purpose = 'reset' ORDER BY id DESC LIMIT 1", (staff["id"],))
+        rec = cur.fetchone()
+        if not rec:
+            return resp(400, {"error": "no_code", "message": "Код не запрашивался. Запросите сброс заново."})
+        if rec["expires_at"] < datetime.utcnow():
+            return resp(400, {"error": "expired", "message": "Код истёк. Запросите новый."})
+        if rec["attempts"] >= 5:
+            return resp(429, {"error": "too_many", "message": "Слишком много попыток. Запросите новый код."})
+        if not verify_password(code, rec["code_hash"]):
+            cur.execute(
+                f"UPDATE {SCHEMA}.staff_email_codes SET attempts = attempts + 1 WHERE id = %s",
+                (rec["id"],))
+            conn.commit()
+            return resp(400, {"error": "bad_code", "message": "Неверный код"})
+
+        cur.execute(
+            f"UPDATE {SCHEMA}.staff SET password_hash=%s, updated_at=now() WHERE id=%s",
+            (hash_password(new_password), staff["id"]))
+        cur.execute(f"DELETE FROM {SCHEMA}.staff_email_codes WHERE staff_id = %s", (staff["id"],))
+        conn.commit()
+    return resp(200, {"ok": True, "message": "Пароль обновлён. Теперь войдите с новым паролем."})
+
+
 def handle_login(conn, body):
     phone = normalize_phone(body.get("phone"))
     password = body.get("password") or ""
@@ -459,7 +582,7 @@ def handle_login(conn, body):
         if not row or not verify_password(password, row["password_hash"]):
             return resp(401, {"error": "bad_credentials", "message": "Неверный телефон или пароль"})
         if row["status"] == "pending":
-            return resp(403, {"error": "pending", "message": "Аккаунт ожидает подтверждения руководителем"})
+            return resp(403, {"error": "pending", "message": "Подтвердите email — введите код из письма, чтобы завершить регистрацию"})
         if row["status"] == "blocked":
             return resp(403, {"error": "blocked", "message": "Аккаунт заблокирован"})
 

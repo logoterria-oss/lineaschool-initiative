@@ -52,10 +52,10 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Register bad email",
+      "name": "Confirm email bad address",
       "method": "POST",
       "path": "/",
-      "body": {"action": "register", "full_name": "Тест Тестов", "phone": "+79001112233", "email": "notanemail", "password": "secret1", "role": "teacher"},
+      "body": {"action": "confirm_email", "phone": "+79001112233", "email": "notanemail"},
       "expectedStatus": 400,
       "expectedBody": {"error": "bad_email"},
       "bodyMatcher": "partial"
@@ -67,6 +67,24 @@
       "body": {"action": "verify_email", "phone": "+70000000000", "code": "123456"},
       "expectedStatus": 404,
       "expectedBody": {"error": "not_found"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Reset password weak",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "reset_password", "phone": "+70000000000", "code": "123456", "new_password": "123"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "weak_password"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Forgot password generic",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "forgot_password", "phone": "+70000000000"},
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
       "bodyMatcher": "partial"
     }
   ]
