@@ -89,6 +89,10 @@ export async function setJobTitle(jobTitle: string) {
   return post(AUTH_URL, { action: 'set_title', job_title: jobTitle }, true);
 }
 
+export async function setPhone(phone: string) {
+  return post(AUTH_URL, { action: 'set_phone', phone }, true);
+}
+
 export async function uploadAvatar(file: Blob) {
   const base64: string = await new Promise((resolve, reject) => {
     const reader = new FileReader();

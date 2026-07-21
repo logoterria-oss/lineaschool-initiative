@@ -7,6 +7,7 @@ import {
   logoutStaff,
   uploadAvatar,
   setJobTitle,
+  setPhone,
   Staff,
   ROLE_LABELS,
 } from '@/lib/staffApi';
@@ -32,6 +33,11 @@ const StaffProfilePage = () => {
   const [titleValue, setTitleValue] = useState('');
   const [titleSaving, setTitleSaving] = useState(false);
   const [titleErr, setTitleErr] = useState('');
+
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneValue, setPhoneValue] = useState('');
+  const [phoneSaving, setPhoneSaving] = useState(false);
+  const [phoneErr, setPhoneErr] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -113,6 +119,30 @@ const StaffProfilePage = () => {
       setTitleErr('Ошибка сети');
     } finally {
       setTitleSaving(false);
+    }
+  };
+
+  const openPhoneEdit = () => {
+    setPhoneErr('');
+    setPhoneValue(me?.phone || '');
+    setEditingPhone(true);
+  };
+
+  const onSavePhone = async () => {
+    setPhoneErr('');
+    setPhoneSaving(true);
+    try {
+      const r = await setPhone(phoneValue.trim());
+      if (r.ok) {
+        setMe((prev) => (prev ? { ...prev, phone: r.data.phone } : prev));
+        setEditingPhone(false);
+      } else {
+        setPhoneErr(r.data.message || 'Не удалось изменить номер');
+      }
+    } catch {
+      setPhoneErr('Ошибка сети');
+    } finally {
+      setPhoneSaving(false);
     }
   };
 
@@ -198,7 +228,49 @@ const StaffProfilePage = () => {
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Телефон</div>
-                <div className="text-gray-700">{me.phone}</div>
+                {editingPhone ? (
+                  <div className="mt-1 space-y-2">
+                    <input
+                      type="tel"
+                      value={phoneValue}
+                      onChange={(e) => setPhoneValue(e.target.value)}
+                      placeholder="Новый номер, напр. +7 900 000-00-00"
+                      autoFocus
+                      className={inputCls}
+                    />
+                    <p className="text-xs text-gray-400">
+                      Новый номер будет использоваться для входа в систему.
+                    </p>
+                    {phoneErr && <p className="text-red-500 text-xs">{phoneErr}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={onSavePhone}
+                        disabled={phoneSaving}
+                        className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
+                      >
+                        {phoneSaving ? 'Сохраняю…' : 'Сохранить'}
+                      </button>
+                      <button
+                        onClick={() => setEditingPhone(false)}
+                        disabled={phoneSaving}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg transition-colors"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="text-gray-700">{me.phone}</div>
+                    <button
+                      onClick={openPhoneEdit}
+                      className="inline-flex items-center gap-1 text-green-700 hover:text-green-800 text-sm font-medium"
+                    >
+                      <Icon name="Pencil" size={13} />
+                      Изменить
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <div className="text-xs text-gray-400 uppercase tracking-wide">Должность</div>

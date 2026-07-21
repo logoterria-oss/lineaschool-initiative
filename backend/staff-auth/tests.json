@@ -41,6 +41,15 @@
       "expectedStatus": 401,
       "expectedBody": {"error": "no_session"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set phone without session",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "set_phone", "phone": "+79001234567"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "no_session"},
+      "bodyMatcher": "partial"
     }
   ]
 }

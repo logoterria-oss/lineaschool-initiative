@@ -181,6 +181,8 @@ def handler(event: dict, context) -> dict:
             return handle_set_avatar(conn, event, body)
         if action == "set_title":
             return handle_set_title(conn, event, body)
+        if action == "set_phone":
+            return handle_set_phone(conn, event, body)
         if action == "logout":
             return handle_logout(conn, event)
         return resp(400, {"error": "unknown_action"})
@@ -346,6 +348,29 @@ def handle_set_avatar(conn, event, body):
             (url, row["id"]))
         conn.commit()
     return resp(200, {"ok": True, "avatar_url": url, "message": "Аватар обновлён"})
+
+
+def handle_set_phone(conn, event, body):
+    row = session_staff(conn, event)
+    if not row:
+        return resp(401, {"error": "no_session"})
+    if row["status"] != "active":
+        return resp(403, {"error": row["status"]})
+    phone = normalize_phone(body.get("phone"))
+    if len(phone) != 11:
+        return resp(400, {"error": "bad_phone", "message": "Некорректный номер телефона"})
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id FROM {SCHEMA}.staff WHERE phone = %s AND id <> %s",
+            (phone, row["id"]))
+        if cur.fetchone():
+            return resp(409, {"error": "phone_exists",
+                              "message": "Этот телефон уже используется другим сотрудником"})
+        cur.execute(
+            f"UPDATE {SCHEMA}.staff SET phone = %s, updated_at = now() WHERE id = %s",
+            (phone, row["id"]))
+        conn.commit()
+    return resp(200, {"ok": True, "phone": phone, "message": "Телефон изменён"})
 
 
 def handle_set_title(conn, event, body):
