@@ -84,7 +84,7 @@ export async function changePassword(oldPassword: string, newPassword: string) {
   return post(AUTH_URL, { action: 'change_password', old_password: oldPassword, new_password: newPassword }, true);
 }
 
-export async function uploadAvatar(file: File) {
+export async function uploadAvatar(file: Blob) {
   const base64: string = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
@@ -93,7 +93,7 @@ export async function uploadAvatar(file: File) {
   });
   return post(
     AUTH_URL,
-    { action: 'set_avatar', content_type: file.type, image_base64: base64 },
+    { action: 'set_avatar', content_type: file.type || 'image/jpeg', image_base64: base64 },
     true,
   );
 }

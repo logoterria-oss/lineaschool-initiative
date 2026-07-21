@@ -9,6 +9,7 @@ import {
   Staff,
   ROLE_LABELS,
 } from '@/lib/staffApi';
+import AvatarCropper from '@/components/AvatarCropper';
 
 const StaffProfilePage = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const StaffProfilePage = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarErr, setAvatarErr] = useState('');
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -53,24 +55,26 @@ const StaffProfilePage = () => {
     }
   };
 
-  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (fileRef.current) fileRef.current.value = '';
     if (!file) return;
     setAvatarErr('');
-    if (!file.type.startsWith('image/')) {
-      setAvatarErr('Выберите изображение');
+    if (file.size > 15 * 1024 * 1024) {
+      setAvatarErr('Файл больше 15 МБ');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setAvatarErr('Файл больше 5 МБ');
-      return;
-    }
+    setCropFile(file);
+  };
+
+  const onCropDone = async (blob: Blob) => {
+    setAvatarErr('');
     setAvatarUploading(true);
     try {
-      const r = await uploadAvatar(file);
+      const r = await uploadAvatar(blob);
       if (r.ok && r.data.avatar_url) {
         setMe((prev) => (prev ? { ...prev, avatar_url: r.data.avatar_url } : prev));
+        setCropFile(null);
       } else {
         setAvatarErr(r.data.message || 'Не удалось загрузить фото');
       }
@@ -208,6 +212,15 @@ const StaffProfilePage = () => {
           </div>
         )}
       </div>
+
+      {cropFile && (
+        <AvatarCropper
+          file={cropFile}
+          uploading={avatarUploading}
+          onCancel={() => setCropFile(null)}
+          onDone={onCropDone}
+        />
+      )}
     </div>
   );
 };
