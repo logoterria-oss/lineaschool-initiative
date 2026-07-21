@@ -68,8 +68,12 @@ const StaffHomePage = () => {
 
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center mb-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="User" size={30} className="text-green-600" />
+          <div className="w-16 h-16 bg-green-100 rounded-full overflow-hidden flex items-center justify-center mx-auto mb-4">
+            {me?.avatar_url ? (
+              <img src={me.avatar_url} alt="Аватар" className="w-full h-full object-cover" />
+            ) : (
+              <Icon name="User" size={30} className="text-green-600" />
+            )}
           </div>
           <h1 className="text-xl font-bold text-gray-900">{fullName || 'Сотрудник'}</h1>
           {role && (

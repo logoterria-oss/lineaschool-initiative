@@ -1,10 +1,12 @@
 import json
 import os
 import re
+import base64
 import hashlib
 import secrets
 from datetime import datetime, timedelta
 
+import boto3
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -71,6 +73,7 @@ def public_staff(row):
         "phone": row["phone"],
         "role": row["role"],
         "status": row["status"],
+        "avatar_url": row.get("avatar_url"),
     }
 
 
@@ -173,6 +176,8 @@ def handler(event: dict, context) -> dict:
             return handle_login(conn, body)
         if action == "change_password":
             return handle_change_password(conn, event, body)
+        if action == "set_avatar":
+            return handle_set_avatar(conn, event, body)
         if action == "logout":
             return handle_logout(conn, event)
         return resp(400, {"error": "unknown_action"})
@@ -228,7 +233,7 @@ def handle_login(conn, body):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT id, full_name, phone, password_hash, role, status "
+            f"SELECT id, full_name, phone, password_hash, role, status, avatar_url "
             f"FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
         row = cur.fetchone()
         if not row or not verify_password(password, row["password_hash"]):
@@ -257,7 +262,7 @@ def session_staff(conn, event):
         return None
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT s.id, s.full_name, s.phone, s.role, s.status, s.password_hash "
+            f"SELECT s.id, s.full_name, s.phone, s.role, s.status, s.password_hash, s.avatar_url "
             f"FROM {SCHEMA}.staff_sessions ss JOIN {SCHEMA}.staff s ON s.id = ss.staff_id "
             f"WHERE ss.token = %s AND ss.expires_at > now()", (token,))
         return cur.fetchone()
@@ -288,6 +293,56 @@ def handle_change_password(conn, event, body):
             (hash_password(new), row["id"]))
         conn.commit()
     return resp(200, {"ok": True, "message": "Пароль изменён"})
+
+
+AVATAR_TYPES = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/webp": "webp",
+    "image/gif": "gif",
+}
+
+
+def handle_set_avatar(conn, event, body):
+    row = session_staff(conn, event)
+    if not row:
+        return resp(401, {"error": "no_session"})
+    if row["status"] != "active":
+        return resp(403, {"error": row["status"]})
+
+    content_type = (body.get("content_type") or "").lower()
+    data_b64 = body.get("image_base64") or ""
+    if content_type not in AVATAR_TYPES:
+        return resp(400, {"error": "bad_type",
+                          "message": "Поддерживаются PNG, JPG, WEBP или GIF"})
+    if not data_b64:
+        return resp(400, {"error": "no_image", "message": "Файл не передан"})
+
+    try:
+        raw = base64.b64decode(data_b64)
+    except Exception:
+        return resp(400, {"error": "bad_image", "message": "Не удалось прочитать файл"})
+    if len(raw) > 5 * 1024 * 1024:
+        return resp(400, {"error": "too_big", "message": "Файл больше 5 МБ"})
+
+    ext = AVATAR_TYPES[content_type]
+    key = f"avatars/{row['id']}_{secrets.token_hex(8)}.{ext}"
+    s3 = boto3.client(
+        "s3",
+        endpoint_url="https://bucket.poehali.dev",
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+    )
+    s3.put_object(Bucket="files", Key=key, Body=raw, ContentType=content_type)
+    url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+
+    with conn.cursor() as cur:
+        cur.execute(
+            f"UPDATE {SCHEMA}.staff SET avatar_url = %s, updated_at = now() WHERE id = %s",
+            (url, row["id"]))
+        conn.commit()
+    return resp(200, {"ok": True, "avatar_url": url, "message": "Аватар обновлён"})
 
 
 def handle_logout(conn, event):

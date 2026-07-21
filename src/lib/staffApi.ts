@@ -14,6 +14,7 @@ export interface Staff {
   phone: string;
   role: StaffRole;
   status: StaffStatus;
+  avatar_url?: string | null;
   created_at?: string;
 }
 
@@ -81,6 +82,20 @@ export async function fetchMe(): Promise<Staff | null> {
 
 export async function changePassword(oldPassword: string, newPassword: string) {
   return post(AUTH_URL, { action: 'change_password', old_password: oldPassword, new_password: newPassword }, true);
+}
+
+export async function uploadAvatar(file: File) {
+  const base64: string = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  return post(
+    AUTH_URL,
+    { action: 'set_avatar', content_type: file.type, image_base64: base64 },
+    true,
+  );
 }
 
 export async function logoutStaff() {

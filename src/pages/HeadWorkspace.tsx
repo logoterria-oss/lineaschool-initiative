@@ -73,8 +73,12 @@ const HeadWorkspace = () => {
     <aside className="w-full lg:w-80 flex-shrink-0 space-y-4">
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <Icon name="User" size={22} className="text-amber-600" />
+          <div className="w-11 h-11 bg-amber-100 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+            {me?.avatar_url ? (
+              <img src={me.avatar_url} alt="Аватар" className="w-full h-full object-cover" />
+            ) : (
+              <Icon name="User" size={22} className="text-amber-600" />
+            )}
           </div>
           <div className="min-w-0">
             <div className="font-semibold text-gray-900 truncate">{fullName}</div>

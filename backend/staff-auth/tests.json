@@ -23,6 +23,15 @@
       "expectedStatus": 401,
       "expectedBody": {"error": "bad_credentials"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set avatar without session",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "set_avatar", "content_type": "image/png", "image_base64": "AAAA"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "no_session"},
+      "bodyMatcher": "partial"
     }
   ]
 }
