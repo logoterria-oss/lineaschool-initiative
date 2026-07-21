@@ -121,11 +121,25 @@ export const matchesFilter = (statusId: number | null, filter: StatusFilter): bo
   }
 };
 
+// Регэксп эмодзи (смайлики, символы, флаги и модификаторы).
+const EMOJI_RE =
+  /(?:\p{Extended_Pictographic}(?:\uFE0F|\u200D|\p{Emoji_Modifier})*)+/gu;
+
+// Приводим ФИО к виду «Фамилия Имя <эмодзи>»: вырезаем все эмодзи из строки
+// и приклеиваем их в конец, не меняя порядок слов имени.
+export const normalizeStudentName = (raw: string): string => {
+  if (!raw) return raw;
+  const emojis = (raw.match(EMOJI_RE) || []).join('');
+  const text = raw.replace(EMOJI_RE, '').replace(/\s+/g, ' ').trim();
+  return emojis ? `${text} ${emojis}`.trim() : text;
+};
+
 export const fetchStudents = async (): Promise<StudentRow[]> => {
   const res = await fetch(`${API_URL}?mode=list`);
   if (!res.ok) throw new Error('Не удалось загрузить учеников');
   const data = await res.json();
-  return data.items as StudentRow[];
+  const items = (data.items as StudentRow[]) || [];
+  return items.map((it) => ({ ...it, name: normalizeStudentName(it.name) }));
 };
 
 export const saveVacation = async (
