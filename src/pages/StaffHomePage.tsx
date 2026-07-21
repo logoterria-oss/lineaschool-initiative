@@ -76,10 +76,10 @@ const StaffHomePage = () => {
             )}
           </div>
           <h1 className="text-xl font-bold text-gray-900">{fullName || 'Сотрудник'}</h1>
-          {role && (
+          {(me?.job_title || role) && (
             <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm font-medium">
               <Icon name="BadgeCheck" size={15} />
-              {ROLE_LABELS[role]}
+              {me?.job_title || (role && ROLE_LABELS[role])}
             </div>
           )}
         </div>

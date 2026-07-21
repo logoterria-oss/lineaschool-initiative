@@ -15,6 +15,7 @@ export interface Staff {
   role: StaffRole;
   status: StaffStatus;
   avatar_url?: string | null;
+  job_title?: string | null;
   created_at?: string;
 }
 
@@ -82,6 +83,10 @@ export async function fetchMe(): Promise<Staff | null> {
 
 export async function changePassword(oldPassword: string, newPassword: string) {
   return post(AUTH_URL, { action: 'change_password', old_password: oldPassword, new_password: newPassword }, true);
+}
+
+export async function setJobTitle(jobTitle: string) {
+  return post(AUTH_URL, { action: 'set_title', job_title: jobTitle }, true);
 }
 
 export async function uploadAvatar(file: Blob) {

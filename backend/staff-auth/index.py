@@ -74,6 +74,7 @@ def public_staff(row):
         "role": row["role"],
         "status": row["status"],
         "avatar_url": row.get("avatar_url"),
+        "job_title": row.get("job_title"),
     }
 
 
@@ -178,6 +179,8 @@ def handler(event: dict, context) -> dict:
             return handle_change_password(conn, event, body)
         if action == "set_avatar":
             return handle_set_avatar(conn, event, body)
+        if action == "set_title":
+            return handle_set_title(conn, event, body)
         if action == "logout":
             return handle_logout(conn, event)
         return resp(400, {"error": "unknown_action"})
@@ -233,7 +236,7 @@ def handle_login(conn, body):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT id, full_name, phone, password_hash, role, status, avatar_url "
+            f"SELECT id, full_name, phone, password_hash, role, status, avatar_url, job_title "
             f"FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
         row = cur.fetchone()
         if not row or not verify_password(password, row["password_hash"]):
@@ -262,7 +265,7 @@ def session_staff(conn, event):
         return None
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT s.id, s.full_name, s.phone, s.role, s.status, s.password_hash, s.avatar_url "
+            f"SELECT s.id, s.full_name, s.phone, s.role, s.status, s.password_hash, s.avatar_url, s.job_title "
             f"FROM {SCHEMA}.staff_sessions ss JOIN {SCHEMA}.staff s ON s.id = ss.staff_id "
             f"WHERE ss.token = %s AND ss.expires_at > now()", (token,))
         return cur.fetchone()
@@ -343,6 +346,24 @@ def handle_set_avatar(conn, event, body):
             (url, row["id"]))
         conn.commit()
     return resp(200, {"ok": True, "avatar_url": url, "message": "Аватар обновлён"})
+
+
+def handle_set_title(conn, event, body):
+    row = session_staff(conn, event)
+    if not row:
+        return resp(401, {"error": "no_session"})
+    if row["status"] != "active":
+        return resp(403, {"error": row["status"]})
+    title = (body.get("job_title") or "").strip()
+    if len(title) > 120:
+        return resp(400, {"error": "too_long", "message": "Не больше 120 символов"})
+    value = title or None
+    with conn.cursor() as cur:
+        cur.execute(
+            f"UPDATE {SCHEMA}.staff SET job_title = %s, updated_at = now() WHERE id = %s",
+            (value, row["id"]))
+        conn.commit()
+    return resp(200, {"ok": True, "job_title": value, "message": "Должность сохранена"})
 
 
 def handle_logout(conn, event):

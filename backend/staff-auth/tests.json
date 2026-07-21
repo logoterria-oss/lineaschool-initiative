@@ -32,6 +32,15 @@
       "expectedStatus": 401,
       "expectedBody": {"error": "no_session"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set title without session",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "set_title", "job_title": "Старший методист"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "no_session"},
+      "bodyMatcher": "partial"
     }
   ]
 }

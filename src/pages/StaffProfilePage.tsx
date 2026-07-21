@@ -6,6 +6,7 @@ import {
   changePassword,
   logoutStaff,
   uploadAvatar,
+  setJobTitle,
   Staff,
   ROLE_LABELS,
 } from '@/lib/staffApi';
@@ -26,6 +27,11 @@ const StaffProfilePage = () => {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarErr, setAvatarErr] = useState('');
   const [cropFile, setCropFile] = useState<File | null>(null);
+
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState('');
+  const [titleSaving, setTitleSaving] = useState(false);
+  const [titleErr, setTitleErr] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -82,6 +88,31 @@ const StaffProfilePage = () => {
       setAvatarErr('Ошибка сети');
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const openTitleEdit = () => {
+    setTitleErr('');
+    setTitleValue(me?.job_title || '');
+    setEditingTitle(true);
+  };
+
+  const onSaveTitle = async () => {
+    setTitleErr('');
+    setTitleSaving(true);
+    try {
+      const r = await setJobTitle(titleValue.trim());
+      if (r.ok) {
+        const jt = r.data.job_title ?? null;
+        setMe((prev) => (prev ? { ...prev, job_title: jt } : prev));
+        setEditingTitle(false);
+      } else {
+        setTitleErr(r.data.message || 'Не удалось сохранить');
+      }
+    } catch {
+      setTitleErr('Ошибка сети');
+    } finally {
+      setTitleSaving(false);
     }
   };
 
@@ -170,8 +201,51 @@ const StaffProfilePage = () => {
                 <div className="text-gray-700">{me.phone}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide">Роль</div>
-                <div className="text-gray-700">{ROLE_LABELS[me.role]}</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide">Должность</div>
+                {editingTitle ? (
+                  <div className="mt-1 space-y-2">
+                    <input
+                      type="text"
+                      value={titleValue}
+                      onChange={(e) => setTitleValue(e.target.value)}
+                      maxLength={120}
+                      placeholder={ROLE_LABELS[me.role]}
+                      autoFocus
+                      className={inputCls}
+                    />
+                    <p className="text-xs text-gray-400">
+                      Так должность отобразится в кабинете. Роль в системе не меняется.
+                    </p>
+                    {titleErr && <p className="text-red-500 text-xs">{titleErr}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={onSaveTitle}
+                        disabled={titleSaving}
+                        className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
+                      >
+                        {titleSaving ? 'Сохраняю…' : 'Сохранить'}
+                      </button>
+                      <button
+                        onClick={() => setEditingTitle(false)}
+                        disabled={titleSaving}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg transition-colors"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="text-gray-700">{me.job_title || ROLE_LABELS[me.role]}</div>
+                    <button
+                      onClick={openTitleEdit}
+                      className="inline-flex items-center gap-1 text-green-700 hover:text-green-800 text-sm font-medium"
+                    >
+                      <Icon name="Pencil" size={13} />
+                      Уточнить
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

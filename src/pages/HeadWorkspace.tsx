@@ -82,7 +82,11 @@ const HeadWorkspace = () => {
           </div>
           <div className="min-w-0">
             <div className="font-semibold text-gray-900 truncate">{fullName}</div>
-            {role && <div className="text-xs text-amber-700 font-medium">{ROLE_LABELS[role]}</div>}
+            {(me?.job_title || role) && (
+              <div className="text-xs text-amber-700 font-medium truncate">
+                {me?.job_title || (role && ROLE_LABELS[role])}
+              </div>
+            )}
           </div>
         </div>
         <button
