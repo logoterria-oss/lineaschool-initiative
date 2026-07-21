@@ -56,6 +56,16 @@ const roles = [
 
 const REG_ROLES: StaffRole[] = ['teacher', 'diag', 'admin', 'head'];
 
+const homePathForRole = (role: StaffRole): string => {
+  switch (role) {
+    case 'head': return '/admin/head-workspace';
+    case 'diag': return '/admin/diag';
+    case 'teacher': return '/admin/teacher';
+    case 'admin': return '/admin/manager';
+    default: return '/admin/home';
+  }
+};
+
 type Mode = 'personal' | 'shared' | 'register';
 
 const RoleSelectPage = () => {
@@ -112,7 +122,7 @@ const RoleSelectPage = () => {
         const staff = r.data.staff;
         sessionStorage.setItem('staff_role', staff.role);
         sessionStorage.setItem('staff_name', staff.full_name);
-        navigate('/admin/home');
+        navigate(homePathForRole(staff.role));
       } else {
         setError(r.data.message || 'Не удалось войти');
       }
@@ -135,7 +145,7 @@ const RoleSelectPage = () => {
           const staff = login.data.staff;
           sessionStorage.setItem('staff_role', staff.role);
           sessionStorage.setItem('staff_name', staff.full_name);
-          navigate('/admin/home');
+          navigate(homePathForRole(staff.role));
         } else {
           setInfo('Регистрация подтверждена. Теперь войдите по телефону и паролю.');
           setMode('personal');

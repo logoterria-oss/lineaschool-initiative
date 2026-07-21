@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
+import AdminHeader from '@/components/AdminHeader';
 import { fetchMe, logoutStaff, Staff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
 import { HEAD_MENU, SubItem } from '@/components/headWorkspace/menu';
 import StudentsView from '@/components/headWorkspace/StudentsView';
@@ -140,7 +141,8 @@ const HeadWorkspace = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+      <AdminHeader showOnlyHome />
       <div className="container mx-auto px-4 py-6 lg:py-8">
         {/* Мобилка: если выбран раздел — показываем контент с кнопкой назад */}
         <div className="lg:hidden">
