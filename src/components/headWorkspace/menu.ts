@@ -37,7 +37,7 @@ export const HEAD_MENU: MenuGroup[] = [
       { id: 'worktime', label: 'Рабочее время', kind: 'component', icon: 'Clock' },
       { id: 'supervisions', label: 'Супервизии', kind: 'component', icon: 'UserCheck' },
       { id: 'violations', label: 'Дисциплинарные нарушения', kind: 'component', icon: 'TriangleAlert' },
-      { id: 'regulations', label: 'Регламенты', kind: 'link', icon: 'ScrollText', path: '/admin/regulations' },
+      { id: 'regulations', label: 'Регламенты', kind: 'component', icon: 'ScrollText' },
     ],
   },
   {
