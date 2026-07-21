@@ -231,6 +231,27 @@ def handler(event: dict, context) -> dict:
             {"id": e.get("id"), "name": e.get("name"), "email": e.get("email")}
             for e in emps]})
 
+    if action == "debug_card":
+        token = s20_token()
+        emp_id = (qs.get("id") or body.get("id") or "1")
+        report = []
+        for p in [f"/v2api/1/teacher/{emp_id}", f"/v2api/1/teacher/index?id={emp_id}"]:
+            try:
+                r = requests.post(f"{S20_HOST}{p}", json={"id": int(emp_id)},
+                                  headers=s20_headers(token), timeout=30)
+                report.append({"path": p, "status": r.status_code, "body": r.text[:800]})
+            except Exception as e:
+                report.append({"path": p, "error": str(e)})
+        # фильтр index по id
+        try:
+            r2 = requests.post(f"{S20_HOST}/v2api/1/teacher/index",
+                               json={"id": int(emp_id), "page": 0, "pageSize": 5},
+                               headers=s20_headers(token), timeout=30)
+            report.append({"path": "index+id-filter", "status": r2.status_code, "body": r2.text[:800]})
+        except Exception as e:
+            report.append({"path": "index+id-filter", "error": str(e)})
+        return resp(200, {"report": report})
+
     conn = db()
     try:
         if action == "me" or (method == "GET" and not action):
