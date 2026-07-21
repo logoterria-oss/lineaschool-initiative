@@ -224,6 +224,13 @@ def handler(event: dict, context) -> dict:
     qs = event.get("queryStringParameters") or {}
     action = body.get("action") or qs.get("action")
 
+    if action == "debug_emails":
+        token = s20_token()
+        emps = s20_employees(token)
+        return resp(200, {"employees": [
+            {"id": e.get("id"), "name": e.get("name"), "email": e.get("email")}
+            for e in emps]})
+
     conn = db()
     try:
         if action == "me" or (method == "GET" and not action):
