@@ -7,6 +7,8 @@ import {
   ROLE_LABELS,
   StaffRole,
 } from '@/lib/staffApi';
+import EmailVerifyModal from '@/components/staffAuth/EmailVerifyModal';
+import ForgotPasswordModal from '@/components/staffAuth/ForgotPasswordModal';
 
 const ADMIN_PASSWORD = '426874';
 const SESSION_KEY = 'admin_authenticated';
@@ -83,6 +85,9 @@ const RoleSelectPage = () => {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [verifyData, setVerifyData] = useState<{ phone: string; crmEmail: string } | null>(null);
+  const [showForgot, setShowForgot] = useState(false);
+
   const markAuthed = () => {
     sessionStorage.setItem(SESSION_KEY, 'true');
     setAuthed(true);
@@ -140,17 +145,7 @@ const RoleSelectPage = () => {
     try {
       const r = await registerStaff({ full_name: fullName, phone, password, role: regRole });
       if (r.ok) {
-        const login = await loginStaff(phone, password);
-        if (login.ok) {
-          const staff = login.data.staff;
-          sessionStorage.setItem('staff_role', staff.role);
-          sessionStorage.setItem('staff_name', staff.full_name);
-          navigate(homePathForRole(staff.role));
-        } else {
-          setInfo('Регистрация подтверждена. Теперь войдите по телефону и паролю.');
-          setMode('personal');
-          setPassword('');
-        }
+        setVerifyData({ phone, crmEmail: r.data.crm_email || '' });
       } else {
         setError(r.data.message || 'Не удалось зарегистрироваться');
       }
@@ -202,6 +197,12 @@ const RoleSelectPage = () => {
                 className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
               >
                 {loading ? 'Вхожу…' : 'Войти'}
+              </button>
+              <button
+                onClick={() => { setShowForgot(true); setError(''); setInfo(''); }}
+                className="w-full text-gray-500 hover:text-gray-700 text-sm py-1"
+              >
+                Забыли пароль?
               </button>
               <button
                 onClick={() => { setMode('register'); setError(''); setInfo(''); }}
@@ -307,6 +308,32 @@ const RoleSelectPage = () => {
           <Icon name="ArrowLeft" size={15} />
           На главную
         </button>
+
+        {verifyData && (
+          <EmailVerifyModal
+            phone={verifyData.phone}
+            crmEmail={verifyData.crmEmail}
+            onClose={() => setVerifyData(null)}
+            onVerified={() => {
+              setVerifyData(null);
+              setMode('personal');
+              setPassword('');
+              setInfo('Email подтверждён. Теперь войдите по телефону и паролю.');
+            }}
+          />
+        )}
+        {showForgot && (
+          <ForgotPasswordModal
+            initialPhone={phone}
+            onClose={() => setShowForgot(false)}
+            onDone={() => {
+              setShowForgot(false);
+              setMode('personal');
+              setPassword('');
+              setInfo('Пароль обновлён. Войдите с новым паролем.');
+            }}
+          />
+        )}
       </div>
     );
   }

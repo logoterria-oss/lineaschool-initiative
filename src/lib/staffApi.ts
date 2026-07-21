@@ -64,6 +64,26 @@ export async function registerStaff(input: {
   return post(AUTH_URL, { action: 'register', ...input });
 }
 
+export async function confirmEmail(phone: string, email: string) {
+  return post(AUTH_URL, { action: 'confirm_email', phone, email });
+}
+
+export async function verifyEmailCode(phone: string, code: string) {
+  return post(AUTH_URL, { action: 'verify_email', phone, code });
+}
+
+export async function resendCode(phone: string) {
+  return post(AUTH_URL, { action: 'resend_code', phone });
+}
+
+export async function forgotPassword(phone: string) {
+  return post(AUTH_URL, { action: 'forgot_password', phone });
+}
+
+export async function resetPassword(phone: string, code: string, newPassword: string) {
+  return post(AUTH_URL, { action: 'reset_password', phone, code, new_password: newPassword });
+}
+
 export async function loginStaff(phone: string, password: string) {
   const r = await post(AUTH_URL, { action: 'login', phone, password });
   if (r.ok && r.data.token) setStaffToken(r.data.token);
