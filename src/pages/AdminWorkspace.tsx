@@ -54,6 +54,7 @@ const AdminWorkspace = () => {
 
   const content = useMemo(() => {
     if (!active) return null;
+    if (active.id === 'interaction-window') return <InteractionWindow />;
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'schedule': return <ScheduleView />;
