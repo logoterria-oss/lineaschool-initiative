@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "List dialogs",
+      "method": "GET",
+      "path": "/?action=dialogs",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Unknown action",
+      "method": "POST",
+      "path": "/",
+      "body": {"foo": "bar"},
+      "expectedStatus": 400
+    }
+  ]
+}

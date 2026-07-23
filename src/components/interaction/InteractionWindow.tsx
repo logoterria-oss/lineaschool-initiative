@@ -1,11 +1,34 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { MOCK_DIALOGS, CHANNEL_META, Dialog, Message, Channel } from './mockData';
+import {
+  DialogItem,
+  MessageItem,
+  fetchDialogs,
+  fetchMessages,
+  sendMessage,
+  assignDialog,
+} from '@/lib/interactionsApi';
 
 const ASSIGNEES = ['Ирина (РУО)', 'Ольга (админ)', 'Я'];
 
-const ChannelBadge = ({ channel, size = 14 }: { channel: Channel; size?: number }) => {
-  const meta = CHANNEL_META[channel];
+const CHANNEL_META: Record<string, { label: string; icon: string; color: string }> = {
+  max: { label: 'Max', icon: 'MessageCircle', color: 'text-blue-600 bg-blue-50' },
+  telegram: { label: 'Telegram', icon: 'Send', color: 'text-sky-600 bg-sky-50' },
+  call: { label: 'Звонок', icon: 'Phone', color: 'text-green-600 bg-green-50' },
+};
+
+const fmtTime = (iso: string | null) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  return sameDay
+    ? d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+};
+
+const ChannelBadge = ({ channel, size = 14 }: { channel: string; size?: number }) => {
+  const meta = CHANNEL_META[channel] || CHANNEL_META.max;
   return (
     <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${meta.color}`} title={meta.label}>
       <Icon name={meta.icon as 'Send'} size={size} />
@@ -13,7 +36,7 @@ const ChannelBadge = ({ channel, size = 14 }: { channel: Channel; size?: number 
   );
 };
 
-const MessageBubble = ({ msg }: { msg: Message }) => {
+const MessageBubble = ({ msg }: { msg: MessageItem }) => {
   const out = msg.direction === 'out';
   if (msg.isTranscript) {
     return (
@@ -22,7 +45,7 @@ const MessageBubble = ({ msg }: { msg: Message }) => {
           <div className="flex items-center gap-2 text-green-700 font-medium mb-1">
             <Icon name="Phone" size={14} />
             Расшифровка звонка
-            <span className="ml-auto text-xs text-gray-400 font-normal">{msg.time}</span>
+            <span className="ml-auto text-xs text-gray-400 font-normal">{fmtTime(msg.time)}</span>
           </div>
           {msg.text}
         </div>
@@ -33,47 +56,79 @@ const MessageBubble = ({ msg }: { msg: Message }) => {
     <div className={`flex ${out ? 'justify-end' : 'justify-start'} my-1.5`}>
       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${out ? 'bg-green-500 text-white' : 'bg-white border border-gray-200 text-gray-800'}`}>
         <div className={`text-xs mb-0.5 flex items-center gap-1.5 ${out ? 'text-green-50' : 'text-gray-400'}`}>
-          <Icon name={CHANNEL_META[msg.channel].icon as 'Send'} size={11} />
-          {out ? msg.author || 'Сотрудник' : CHANNEL_META[msg.channel].label}
+          <Icon name={(CHANNEL_META[msg.channel] || CHANNEL_META.max).icon as 'Send'} size={11} />
+          {out ? msg.author || 'Сотрудник' : (CHANNEL_META[msg.channel] || CHANNEL_META.max).label}
         </div>
         <div>{msg.text}</div>
-        <div className={`text-[11px] mt-1 text-right ${out ? 'text-green-100' : 'text-gray-400'}`}>{msg.time}</div>
+        <div className={`text-[11px] mt-1 text-right ${out ? 'text-green-100' : 'text-gray-400'}`}>{fmtTime(msg.time)}</div>
       </div>
     </div>
   );
 };
 
 const InteractionWindow = () => {
-  const [dialogs, setDialogs] = useState<Dialog[]>(MOCK_DIALOGS);
-  const [activeId, setActiveId] = useState<string>(MOCK_DIALOGS[0]?.id || '');
+  const [dialogs, setDialogs] = useState<DialogItem[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
   const [draft, setDraft] = useState('');
-  const [sendChannel, setSendChannel] = useState<Channel>('telegram');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeIdRef = useRef<number | null>(null);
+  activeIdRef.current = activeId;
 
   const active = dialogs.find((d) => d.id === activeId) || null;
+
+  const loadDialogs = async () => {
+    const list = await fetchDialogs();
+    setDialogs(list);
+    setLoading(false);
+    if (activeIdRef.current === null && list.length) setActiveId(list[0].id);
+  };
+
+  useEffect(() => {
+    loadDialogs();
+    const t = setInterval(loadDialogs, 15000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (activeId === null) return;
+    fetchMessages(activeId).then(setMessages);
+    const t = setInterval(() => fetchMessages(activeId).then(setMessages), 8000);
+    return () => clearInterval(t);
+  }, [activeId]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [messages]);
 
   const filtered = useMemo(
     () => dialogs.filter((d) => d.clientName.toLowerCase().includes(search.toLowerCase()) || d.phone.includes(search)),
     [dialogs, search],
   );
 
-  const send = () => {
-    if (!draft.trim() || !active) return;
-    const msg: Message = {
-      id: `m${Date.now()}`,
-      direction: 'out',
-      channel: sendChannel,
-      text: draft.trim(),
-      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-      author: 'Я',
-    };
-    setDialogs((prev) => prev.map((d) => (d.id === active.id ? { ...d, messages: [...d.messages, msg], lastTime: msg.time } : d)));
+  const send = async () => {
+    if (!draft.trim() || !active || sending) return;
+    setSending(true);
+    const text = draft.trim();
     setDraft('');
+    const ok = await sendMessage(active.id, text, 'Я');
+    if (ok) {
+      const msgs = await fetchMessages(active.id);
+      setMessages(msgs);
+    } else {
+      setDraft(text);
+    }
+    setSending(false);
   };
 
-  const reassign = (name: string) => {
+  const reassign = async (name: string) => {
     if (!active) return;
     setDialogs((prev) => prev.map((d) => (d.id === active.id ? { ...d, assignee: name } : d)));
+    await assignDialog(active.id, name);
   };
 
   return (
@@ -91,6 +146,12 @@ const InteractionWindow = () => {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
+          {loading && <div className="p-4 text-sm text-gray-400 text-center">Загрузка…</div>}
+          {!loading && filtered.length === 0 && (
+            <div className="p-6 text-sm text-gray-400 text-center">
+              Пока нет диалогов. Как только клиент напишет в Max, чат появится здесь.
+            </div>
+          )}
           {filtered.map((d) => {
             const isActive = d.id === activeId;
             return (
@@ -101,7 +162,7 @@ const InteractionWindow = () => {
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-gray-900 text-sm truncate flex-1">{d.clientName}</span>
-                  <span className="text-[11px] text-gray-400">{d.lastTime}</span>
+                  <span className="text-[11px] text-gray-400">{fmtTime(d.lastTime)}</span>
                   {d.unread > 0 && (
                     <span className="bg-green-500 text-white text-[11px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{d.unread}</span>
                   )}
@@ -127,30 +188,21 @@ const InteractionWindow = () => {
             </div>
             <div className="min-w-0">
               <div className="font-semibold text-gray-900 truncate">{active.clientName}</div>
-              <div className="text-xs text-gray-400">{active.phone}</div>
+              <div className="text-xs text-gray-400">{active.phone || active.chatId}</div>
             </div>
             <div className="ml-auto flex items-center gap-1.5">
               {active.channels.map((c) => <ChannelBadge key={c} channel={c} />)}
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
-            {active.messages.map((m) => <MessageBubble key={m.id} msg={m} />)}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
+            {messages.map((m) => <MessageBubble key={m.id} msg={m} />)}
           </div>
 
           <div className="border-t border-gray-100 p-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-xs text-gray-400">Отправить через:</span>
-              {(['telegram', 'max'] as Channel[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setSendChannel(c)}
-                  className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-colors ${sendChannel === c ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                  <Icon name={CHANNEL_META[c].icon as 'Send'} size={12} />
-                  {CHANNEL_META[c].label}
-                </button>
-              ))}
+            <div className="flex items-center gap-1.5 mb-2 text-xs text-gray-400">
+              <ChannelBadge channel="max" size={12} />
+              Ответ уйдёт в Max
             </div>
             <div className="flex items-end gap-2">
               <textarea
@@ -161,15 +213,19 @@ const InteractionWindow = () => {
                 placeholder="Напишите сообщение клиенту..."
                 className="flex-1 resize-none px-3 py-2.5 text-sm rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400 max-h-32"
               />
-              <button onClick={send} className="bg-green-500 hover:bg-green-600 text-white rounded-xl w-11 h-11 flex items-center justify-center flex-shrink-0 transition-colors">
-                <Icon name="Send" size={18} />
+              <button
+                onClick={send}
+                disabled={sending}
+                className="bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl w-11 h-11 flex items-center justify-center flex-shrink-0 transition-colors"
+              >
+                <Icon name={sending ? 'Loader' : 'Send'} size={18} className={sending ? 'animate-spin' : ''} />
               </button>
             </div>
           </div>
         </div>
       ) : (
         <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center text-gray-400">
-          Выберите диалог
+          {loading ? 'Загрузка…' : 'Выберите диалог'}
         </div>
       )}
 
@@ -178,7 +234,7 @@ const InteractionWindow = () => {
           <div>
             <div className="text-xs text-gray-400 mb-1">Клиент</div>
             <div className="font-semibold text-gray-900">{active.clientName}</div>
-            <div className="text-sm text-gray-500">{active.phone}</div>
+            <div className="text-sm text-gray-500">{active.phone || active.chatId}</div>
           </div>
           <div>
             <div className="text-xs text-gray-400 mb-1">Статус</div>
