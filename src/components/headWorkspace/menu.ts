@@ -51,14 +51,6 @@ export const HEAD_MENU: MenuGroup[] = [
     ],
   },
   {
-    id: 'site',
-    label: 'Сайт',
-    icon: 'Globe',
-    items: [
-      { id: 'users', label: 'Пользователи', kind: 'component', icon: 'Users' },
-    ],
-  },
-  {
     id: 'finance',
     label: 'Финансы',
     icon: 'Coins',
@@ -66,6 +58,14 @@ export const HEAD_MENU: MenuGroup[] = [
       { id: 'payments', label: 'Оплаты', kind: 'component', icon: 'CreditCard' },
       { id: 'reports-fin', label: 'Отчёты', kind: 'component', icon: 'BarChart2' },
       { id: 'calendar', label: 'Календарь регулярных платежей', kind: 'stub', icon: 'CalendarClock' },
+    ],
+  },
+  {
+    id: 'site',
+    label: 'Сайт',
+    icon: 'Globe',
+    items: [
+      { id: 'users', label: 'Пользователи', kind: 'component', icon: 'Users' },
     ],
   },
 ];
