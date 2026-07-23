@@ -83,9 +83,12 @@ const HeadWorkspace = () => {
       case 'regulations': return <RegulationsView />;
       case 'supervisions': return <SupervisionsView />;
       case 'violations': return <TeacherViolationsManager withRole />;
+      case 'interaction-window': return <StubView label="Окно взаимодействия" />;
       default: return <StubView label={active.label} />;
     }
   }, [active]);
+
+  const interactionActive = active?.id === 'interaction-window';
 
   const Sidebar = (
     <aside className="w-full lg:w-80 flex-shrink-0 space-y-4">
@@ -115,6 +118,16 @@ const HeadWorkspace = () => {
           Мой профиль
         </button>
       </div>
+
+      <button
+        onClick={() => setActive({ id: 'interaction-window', label: 'Окно взаимодействия', kind: 'stub', icon: 'MessagesSquare' })}
+        className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
+          interactionActive ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
+        }`}
+      >
+        <Icon name="MessagesSquare" size={18} />
+        Окно взаимодействия
+      </button>
 
       <nav className="bg-white rounded-2xl border border-gray-200 shadow-sm p-2">
         {HEAD_MENU.map((group) => {
