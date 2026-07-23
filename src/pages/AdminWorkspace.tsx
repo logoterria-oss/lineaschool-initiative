@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
 import { fetchMe, logoutStaff, Staff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
-import { ADMIN_MENU, AdminItem } from '@/components/adminWorkspace/menu';
+import { ADMIN_MENU, ADMIN_GROUPS, AdminItem } from '@/components/adminWorkspace/menu';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
 import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
@@ -19,6 +19,10 @@ const AdminWorkspace = () => {
   const navigate = useNavigate();
   const [me, setMe] = useState<Staff | null>(null);
   const [active, setActive] = useState<AdminItem | null>(null);
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
+
+  const toggleGroup = (id: string) =>
+    setOpenGroups((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
 
   const cachedName = sessionStorage.getItem('staff_name') || '';
   const cachedRole = (sessionStorage.getItem('staff_role') as StaffRole) || null;
@@ -108,6 +112,41 @@ const AdminWorkspace = () => {
               <Icon name={item.icon as 'CalendarDays'} size={18} className={isActive ? 'text-purple-600' : 'text-gray-400'} />
               <span className="flex-1">{item.label}</span>
             </button>
+          );
+        })}
+
+        {ADMIN_GROUPS.map((group) => {
+          const open = openGroups.includes(group.id);
+          return (
+            <div key={group.id}>
+              <button
+                onClick={() => toggleGroup(group.id)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Icon name={group.icon as 'ClipboardList'} size={18} className="text-gray-400 flex-shrink-0" />
+                <span className="flex-1 font-medium">{group.label}</span>
+                <Icon name={open ? 'ChevronDown' : 'ChevronRight'} size={16} className="text-gray-400" />
+              </button>
+              {open && (
+                <div className="mt-0.5 mb-1 pl-3 space-y-0.5">
+                  {group.items.map((item) => {
+                    const isActive = active?.id === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActive(item)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                          isActive ? 'bg-purple-50 text-purple-800 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon name={item.icon as 'GraduationCap'} size={16} className={isActive ? 'text-purple-600' : 'text-gray-400'} />
+                        <span className="flex-1">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
