@@ -237,11 +237,11 @@ const InteractionWindow = () => {
             </div>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
+          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50/50">
             {messages.map((m) => <MessageBubble key={m.id} msg={m} />)}
           </div>
 
-          <div className="border-t border-gray-100 p-3">
+          <div className="border-t border-gray-100 p-3 flex-shrink-0">
             <div className="flex items-center gap-1.5 mb-2 text-xs text-gray-400">
               <ChannelBadge channel="max" size={12} />
               Ответ уйдёт в Max
