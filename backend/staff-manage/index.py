@@ -246,11 +246,17 @@ def _first_phone(val):
     return normalize_phone(str(val or ""))
 
 
+def _scalar(v):
+    if isinstance(v, list):
+        v = v[0] if v else None
+    return str(v).strip() if v else None
+
+
 def _pick(d, keys):
     for k in keys:
-        v = d.get(k)
+        v = _scalar(d.get(k))
         if v:
-            return str(v).strip()
+            return v
     return None
 
 
@@ -266,7 +272,7 @@ def handle_import_crm(conn):
     email_by_phone = {}
     email_by_name = {}
     for u in users:
-        em = (u.get("email") or "").strip()
+        em = _scalar(u.get("email"))
         if not em:
             continue
         ph = _first_phone(u.get("phone"))
