@@ -117,14 +117,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         body = json.loads(event.get('body') or '{}')
 
+        if method == 'POST':
+            print(f"POST action={action} body={json.dumps(body, ensure_ascii=False)[:2000]}")
+
         # Входящий вебхук от Wappi (MAX)
-        if method == 'POST' and (action == 'webhook' or body.get('event') or body.get('message')):
-            msg = body.get('message') or body
-            chat_id = str(msg.get('chatId') or msg.get('chat_id') or msg.get('from') or '')
-            text = msg.get('body') or msg.get('text') or ''
-            name = msg.get('senderName') or msg.get('sender_name') or msg.get('chatName')
-            if not chat_id:
-                return _resp(200, {'ok': True, 'skipped': 'no_chat_id'})
+        is_webhook = action == 'webhook' or 'messages' in body or 'message' in body or body.get('event')
+        if method == 'POST' and is_webhook:
+            msg = body.get('message') or body.get('payload') or body
+            if isinstance(body.get('messages'), list) and body['messages']:
+                msg = body['messages'][0]
+
+            from_me = bool(msg.get('fromMe') or msg.get('from_me'))
+            chat_id = str(
+                msg.get('chatId') or msg.get('chat_id') or msg.get('senderId')
+                or msg.get('sender_id') or msg.get('from') or ''
+            )
+            text = msg.get('body') or msg.get('text') or msg.get('caption') or ''
+            name = (
+                msg.get('senderName') or msg.get('sender_name')
+                or msg.get('chatName') or msg.get('pushName')
+            )
+            if not chat_id or from_me:
+                return _resp(200, {'ok': True, 'skipped': 'no_chat_id_or_from_me'})
             dialog_id = _upsert_dialog(cur, chat_id, name, None)
             cur.execute(
                 "INSERT INTO interaction_messages (dialog_id, direction, channel, text) "
