@@ -173,21 +173,32 @@ def _collect_strings(obj, out):
 def match_in_s20(full_name, phone):
     """Ищем сотрудника в S20 по телефону ИЛИ ФИО. Возвращает True при совпадении.
 
-    Схема employee может отличаться, поэтому сканируем все строковые значения записи:
+    Проверяем два справочника CRM:
+    - педагоги (teacher/index),
+    - учётки-пользователи (user/index) — там заведены админы и руководители.
+    Схема записи может отличаться, поэтому сканируем все строковые значения:
     - телефон сравниваем по нормализованным цифрам,
     - ФИО сравниваем по нормализованному имени (точное совпадение).
     """
     token = s20_token()
     target_name = norm_name(full_name)
-    for emp in s20_employees(token):
-        strings = []
-        _collect_strings(emp, strings)
-        for s in strings:
-            digits = normalize_phone(s)
-            if len(digits) == 11 and digits == phone:
-                return True
-            if target_name and norm_name(s) == target_name:
-                return True
+
+    def _match_records(records):
+        for rec in records:
+            strings = []
+            _collect_strings(rec, strings)
+            for s in strings:
+                digits = normalize_phone(s)
+                if len(digits) == 11 and digits == phone:
+                    return True
+                if target_name and norm_name(s) == target_name:
+                    return True
+        return False
+
+    if _match_records(s20_employees(token)):
+        return True
+    if _match_records(s20_users(token)):
+        return True
     return False
 
 
