@@ -152,10 +152,14 @@ const HeadWorkspace = () => {
               >
                 <Icon name={group.icon as 'BookOpen'} size={18} className="text-gray-500 flex-shrink-0" />
                 <span className={`font-semibold text-sm text-left ${lbl}`}>{group.label}</span>
-                {!collapsed && <Icon name={open ? 'ChevronDown' : 'ChevronRight'} size={16} className="text-gray-400" />}
+                <Icon
+                  name={open ? 'ChevronDown' : 'ChevronRight'}
+                  size={16}
+                  className={`text-gray-400 ${collapsed ? 'opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[16px] transition-all duration-200' : ''}`}
+                />
               </button>
-              {open && !collapsed && (
-                <div className="mt-0.5 mb-1 pl-3 space-y-0.5">
+              {open && (
+                <div className={`mt-0.5 mb-1 pl-3 space-y-0.5 ${collapsed ? 'hidden lg:group-hover:block' : ''}`}>
                   {group.items.map((item) => {
                     const isActive = active?.id === item.id && item.kind !== 'link';
                     return (
