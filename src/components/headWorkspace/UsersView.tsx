@@ -9,6 +9,7 @@ import {
   listStaff,
   setStaffStatus,
   setStaffRole,
+  deleteStaff,
 } from '@/lib/staffApi';
 
 const STATUS_STYLE: Record<StaffStatus, string> = {
@@ -65,6 +66,18 @@ const UsersView = () => {
     setBusyId(null);
   };
 
+  const remove = async (id: number, name: string) => {
+    if (!confirm(`Удалить сотрудника «${name}»? Это действие нельзя отменить.`)) return;
+    setBusyId(id);
+    const r = await deleteStaff(id);
+    if (r.ok) {
+      setStaff((prev) => prev.filter((s) => s.id !== id));
+    } else {
+      alert(r.data?.message || 'Не удалось удалить сотрудника');
+    }
+    setBusyId(null);
+  };
+
   if (loading) {
     return <div className="text-gray-600 py-10 text-center">Загрузка...</div>;
   }
@@ -100,40 +113,43 @@ const UsersView = () => {
         {staff.map((s) => (
           <div
             key={s.id}
-            className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3 shadow-sm"
+            className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm"
           >
-            <div className="w-10 h-10 bg-amber-100 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
-              {s.avatar_url ? (
-                <img src={s.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <Icon name="User" size={18} className="text-amber-600" />
-              )}
-            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                {s.avatar_url ? (
+                  <img src={s.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Icon name="User" size={18} className="text-amber-600" />
+                )}
+              </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold text-gray-900 truncate">{s.full_name}</div>
-              <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                <span>{s.phone}</span>
-                <span>Регистрация: {formatDate(s.created_at)}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-semibold text-gray-900 truncate">{s.full_name}</span>
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLE[s.status]}`}>
+                    {STATUS_LABELS[s.status]}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                  <span>{s.phone}</span>
+                  <span>Регистрация: {formatDate(s.created_at)}</span>
+                </div>
               </div>
             </div>
 
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_STYLE[s.status]}`}>
-              {STATUS_LABELS[s.status]}
-            </span>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <select
+                value={s.role}
+                disabled={busyId === s.id}
+                onChange={(e) => changeRole(s.id, e.target.value as StaffRole)}
+                className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-60"
+              >
+                {ROLE_ORDER.map((r) => (
+                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                ))}
+              </select>
 
-            <select
-              value={s.role}
-              disabled={busyId === s.id}
-              onChange={(e) => changeRole(s.id, e.target.value as StaffRole)}
-              className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-60 flex-shrink-0"
-            >
-              {ROLE_ORDER.map((r) => (
-                <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-              ))}
-            </select>
-
-            <div className="flex gap-2 flex-shrink-0">
               {s.status !== 'active' && (
                 <button
                   onClick={() => changeStatus(s.id, 'active')}
@@ -154,6 +170,14 @@ const UsersView = () => {
                   Заблокировать
                 </button>
               )}
+              <button
+                onClick={() => remove(s.id, s.full_name)}
+                disabled={busyId === s.id}
+                className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 text-gray-500 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Icon name="Trash2" size={15} />
+                Удалить
+              </button>
             </div>
           </div>
         ))}

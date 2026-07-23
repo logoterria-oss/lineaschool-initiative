@@ -67,6 +67,8 @@ def handler(event: dict, context) -> dict:
             return handle_set_status(conn, body, me)
         if action == "set_role":
             return handle_set_role(conn, body)
+        if action == "delete":
+            return handle_delete(conn, body, me)
         return resp(400, {"error": "unknown_action"})
     finally:
         conn.close()
@@ -107,5 +109,16 @@ def handle_set_role(conn, body):
         cur.execute(
             f"UPDATE {SCHEMA}.staff SET role = %s, updated_at = now() WHERE id = %s",
             (role, staff_id))
+        conn.commit()
+    return resp(200, {"ok": True})
+
+
+def handle_delete(conn, body, me):
+    staff_id = body.get("id")
+    if staff_id == me["id"]:
+        return resp(400, {"error": "self", "message": "Нельзя удалить свой аккаунт"})
+    with conn.cursor() as cur:
+        cur.execute(f"DELETE FROM {SCHEMA}.staff_sessions WHERE staff_id = %s", (staff_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.staff WHERE id = %s", (staff_id,))
         conn.commit()
     return resp(200, {"ok": True})

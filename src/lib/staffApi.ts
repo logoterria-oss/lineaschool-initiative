@@ -147,3 +147,7 @@ export async function setStaffStatus(id: number, status: StaffStatus) {
 export async function setStaffRole(id: number, role: StaffRole) {
   return post(MANAGE_URL, { action: 'set_role', id, role }, true);
 }
+
+export async function deleteStaff(id: number) {
+  return post(MANAGE_URL, { action: 'delete', id }, true);
+}
