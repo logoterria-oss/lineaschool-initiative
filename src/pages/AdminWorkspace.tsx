@@ -73,8 +73,17 @@ const AdminWorkspace = () => {
 
   const interactionActive = active?.id === 'interaction-window';
 
+  const collapsed = interactionActive;
+  const lbl = collapsed
+    ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] lg:group-hover:ml-0 transition-all duration-200'
+    : 'flex-1';
+
   const Sidebar = (
-    <aside className="w-full lg:w-80 flex-shrink-0 space-y-4">
+    <aside
+      className={`group w-full flex-shrink-0 space-y-4 transition-[width] duration-200 ${
+        collapsed ? 'lg:w-20 lg:hover:w-80' : 'lg:w-80'
+      }`}
+    >
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-purple-100 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -84,7 +93,7 @@ const AdminWorkspace = () => {
               <Icon name="User" size={22} className="text-purple-600" />
             )}
           </div>
-          <div className="min-w-0">
+          <div className={`min-w-0 ${collapsed ? 'opacity-0 lg:group-hover:opacity-100 transition-opacity' : ''}`}>
             <div className="font-semibold text-gray-900 truncate">{fullName}</div>
             {(me?.job_title || role) && (
               <div className="text-xs text-purple-700 font-medium truncate">
@@ -97,8 +106,8 @@ const AdminWorkspace = () => {
           onClick={() => navigate('/admin/profile')}
           className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-2 rounded-lg transition-colors"
         >
-          <Icon name="UserCog" size={16} />
-          Мой профиль
+          <Icon name="UserCog" size={16} className="flex-shrink-0" />
+          <span className={lbl}>Мой профиль</span>
         </button>
       </div>
 
@@ -108,8 +117,8 @@ const AdminWorkspace = () => {
           interactionActive ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
         }`}
       >
-        <Icon name="MessagesSquare" size={18} />
-        Окно взаимодействия
+        <Icon name="MessagesSquare" size={18} className="flex-shrink-0" />
+        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
       </button>
 
       <nav className="bg-white rounded-2xl border border-gray-200 shadow-sm p-2">
@@ -119,12 +128,13 @@ const AdminWorkspace = () => {
             <button
               key={item.id}
               onClick={() => setActive(item)}
+              title={collapsed ? item.label : undefined}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
                 isActive ? 'bg-purple-50 text-purple-800 font-medium' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Icon name={item.icon as 'CalendarDays'} size={18} className={isActive ? 'text-purple-600' : 'text-gray-400'} />
-              <span className="flex-1">{item.label}</span>
+              <Icon name={item.icon as 'CalendarDays'} size={18} className={`flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+              <span className={lbl}>{item.label}</span>
             </button>
           );
         })}
@@ -135,13 +145,14 @@ const AdminWorkspace = () => {
             <div key={group.id}>
               <button
                 onClick={() => toggleGroup(group.id)}
+                title={collapsed ? group.label : undefined}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <Icon name={group.icon as 'ClipboardList'} size={18} className="text-gray-400 flex-shrink-0" />
-                <span className="flex-1 font-medium">{group.label}</span>
-                <Icon name={open ? 'ChevronDown' : 'ChevronRight'} size={16} className="text-gray-400" />
+                <span className={`${lbl} font-medium`}>{group.label}</span>
+                {!collapsed && <Icon name={open ? 'ChevronDown' : 'ChevronRight'} size={16} className="text-gray-400" />}
               </button>
-              {open && (
+              {open && !collapsed && (
                 <div className="mt-0.5 mb-1 pl-3 space-y-0.5">
                   {group.items.map((item) => {
                     const isActive = active?.id === item.id;
@@ -167,10 +178,11 @@ const AdminWorkspace = () => {
 
       <button
         onClick={onLogout}
+        title={collapsed ? 'Выйти' : undefined}
         className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-300 text-sm font-medium py-2.5 rounded-xl transition-colors shadow-sm"
       >
-        <Icon name="LogOut" size={16} />
-        Выйти
+        <Icon name="LogOut" size={16} className="flex-shrink-0" />
+        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Выйти</span>
       </button>
     </aside>
   );
