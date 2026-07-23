@@ -51,6 +51,14 @@ export const HEAD_MENU: MenuGroup[] = [
     ],
   },
   {
+    id: 'site',
+    label: 'Сайт',
+    icon: 'Globe',
+    items: [
+      { id: 'users', label: 'Пользователи', kind: 'component', icon: 'Users' },
+    ],
+  },
+  {
     id: 'finance',
     label: 'Финансы',
     icon: 'Coins',
