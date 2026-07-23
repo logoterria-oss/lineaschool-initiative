@@ -44,7 +44,7 @@ const roles = [
     color: 'border-purple-300 hover:border-purple-500',
     iconBg: 'bg-purple-100',
     iconColor: 'text-purple-600',
-    path: '/admin/manager',
+    path: '/admin/admin-workspace',
   },
   {
     key: 'head',
@@ -65,7 +65,7 @@ const homePathForRole = (role: StaffRole): string => {
     case 'head': return '/admin/head-workspace';
     case 'diag': return '/admin/diag';
     case 'teacher': return '/admin/teacher';
-    case 'admin': return '/admin/manager';
+    case 'admin': return '/admin/admin-workspace';
     default: return '/admin/home';
   }
 };

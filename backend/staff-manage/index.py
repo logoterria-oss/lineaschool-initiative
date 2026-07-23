@@ -54,12 +54,19 @@ def handler(event: dict, context) -> dict:
         me = caller(conn, event)
         if not me:
             return resp(401, {"error": "no_session"})
-        if me["status"] != "active" or me["role"] != "head":
-            return resp(403, {"error": "forbidden", "message": "Доступ только для руководителя"})
+        if me["status"] != "active":
+            return resp(403, {"error": "forbidden", "message": "Доступ запрещён"})
 
         method = event.get("httpMethod", "GET")
+        # Список сотрудников доступен руководителю и администратору (только чтение).
         if method == "GET":
+            if me["role"] not in ("head", "admin"):
+                return resp(403, {"error": "forbidden", "message": "Доступ запрещён"})
             return handle_list(conn)
+
+        # Изменяющие действия — только руководитель.
+        if me["role"] != "head":
+            return resp(403, {"error": "forbidden", "message": "Доступ только для руководителя"})
 
         body = json.loads(event.get("body") or "{}")
         action = body.get("action")

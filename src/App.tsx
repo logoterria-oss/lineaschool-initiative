@@ -39,6 +39,7 @@ import StaffManagePage from "./pages/StaffManagePage";
 import StaffProfilePage from "./pages/StaffProfilePage";
 import StaffHomePage from "./pages/StaffHomePage";
 import HeadWorkspace from "./pages/HeadWorkspace";
+import AdminWorkspace from "./pages/AdminWorkspace";
 import EducationInfo from "./pages/EducationInfo";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/admin/diag" element={<AdminDashboard />} />
             <Route path="/admin/teacher" element={<TeacherDashboard />} />
             <Route path="/admin/manager" element={<ManagerDashboard />} />
+            <Route path="/admin/admin-workspace" element={<AdminWorkspace />} />
             <Route path="/admin/head" element={<HeadDashboard />} />
             <Route path="/admin/head-reports" element={<HeadReportsPage />} />
             <Route path="/admin/head-supervisions" element={<HeadSupervisionsPage />} />

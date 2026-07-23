@@ -6,7 +6,7 @@ import { fetchMe, logoutStaff, Staff, StaffRole, ROLE_LABELS } from '@/lib/staff
 const ROLE_DASH: Record<StaffRole, { path: string; icon: string; label: string }> = {
   diag: { path: '/admin/diag', icon: 'Stethoscope', label: 'Кабинет диагноста' },
   teacher: { path: '/admin/teacher', icon: 'GraduationCap', label: 'Кабинет педагога' },
-  admin: { path: '/admin/manager', icon: 'ShieldCheck', label: 'Кабинет администратора' },
+  admin: { path: '/admin/admin-workspace', icon: 'ShieldCheck', label: 'Кабинет администратора' },
   head: { path: '/admin/head-workspace', icon: 'BarChart2', label: 'Кабинет руководителя' },
 };
 
