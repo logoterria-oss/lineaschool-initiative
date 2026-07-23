@@ -19,6 +19,7 @@ import UsersView from '@/components/headWorkspace/UsersView';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
+import InteractionWindow from '@/components/interaction/InteractionWindow';
 
 const HeadWorkspace = () => {
   const navigate = useNavigate();
@@ -83,7 +84,7 @@ const HeadWorkspace = () => {
       case 'regulations': return <RegulationsView />;
       case 'supervisions': return <SupervisionsView />;
       case 'violations': return <TeacherViolationsManager withRole />;
-      case 'interaction-window': return <StubView label="Окно взаимодействия" />;
+      case 'interaction-window': return <InteractionWindow />;
       default: return <StubView label={active.label} />;
     }
   }, [active]);

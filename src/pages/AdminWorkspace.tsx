@@ -13,6 +13,7 @@ import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import LeadsListView from '@/components/adminWorkspace/LeadsListView';
+import InteractionWindow from '@/components/interaction/InteractionWindow';
 
 const AdminWorkspace = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const AdminWorkspace = () => {
       case 'students-list': return <StudentsListView />;
       case 'leads-list': return <LeadsListView />;
       case 'staff-list': return <StubView label={active.label} />;
-      case 'interaction-window': return <StubView label="Окно взаимодействия" />;
+      case 'interaction-window': return <InteractionWindow />;
       default: return <StubView label={active.label} />;
     }
   }, [active]);
