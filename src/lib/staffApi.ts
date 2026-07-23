@@ -12,8 +12,11 @@ export interface Staff {
   id: number;
   full_name: string;
   phone: string;
+  email?: string | null;
   role: StaffRole;
   status: StaffStatus;
+  source?: 'crm' | 'manual';
+  crm_id?: number | null;
   avatar_url?: string | null;
   job_title?: string | null;
   created_at?: string;
@@ -150,4 +153,24 @@ export async function setStaffRole(id: number, role: StaffRole) {
 
 export async function deleteStaff(id: number) {
   return post(MANAGE_URL, { action: 'delete', id }, true);
+}
+
+export interface StaffInput {
+  full_name?: string;
+  phone?: string;
+  email?: string;
+  job_title?: string;
+  role?: StaffRole;
+}
+
+export async function createStaff(input: StaffInput) {
+  return post(MANAGE_URL, { action: 'create', ...input }, true);
+}
+
+export async function updateStaff(id: number, input: StaffInput) {
+  return post(MANAGE_URL, { action: 'update', id, ...input }, true);
+}
+
+export async function importStaffFromCrm() {
+  return post(MANAGE_URL, { action: 'import_crm' }, true);
 }

@@ -33,6 +33,7 @@ export const HEAD_MENU: MenuGroup[] = [
     label: 'Сотрудники',
     icon: 'Users',
     items: [
+      { id: 'staff-list', label: 'Список сотрудников', kind: 'component', icon: 'Contact' },
       { id: 'rate', label: 'Ставка', kind: 'stub', icon: 'Wallet' },
       { id: 'worktime', label: 'Рабочее время', kind: 'component', icon: 'Clock' },
       { id: 'supervisions', label: 'Супервизии', kind: 'component', icon: 'UserCheck' },
