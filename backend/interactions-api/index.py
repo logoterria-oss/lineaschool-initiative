@@ -6,12 +6,101 @@ Returns: JSON диалогов/сообщений либо статус отпр
 '''
 import json
 import os
+import re
 from typing import Dict, Any, Optional
 import urllib.request
 import urllib.parse
 import psycopg2
 
 WAPPI_BASE = 'https://api.wappi.pro'
+S20_HOST = 'https://11086.s20.online'
+S20_EMAIL = os.environ.get('ALFACRM_EMAIL', 'abram.viktoriya.00@mail.ru')
+
+STATUS_LABELS = {
+    'teacher': 'Педагог',
+    'client': 'Клиент',
+    'lead': 'Лид',
+    'unknown': 'Не найден в CRM',
+}
+
+
+def _norm_phone(raw: Optional[str]) -> str:
+    digits = re.sub(r'\D', '', raw or '')
+    if len(digits) == 11 and digits[0] == '8':
+        digits = '7' + digits[1:]
+    if len(digits) == 10:
+        digits = '7' + digits
+    return digits
+
+
+def _phone_from_chat(chat_id: str, phone: Optional[str]) -> str:
+    p = _norm_phone(phone)
+    if len(p) == 11:
+        return p
+    # В MAX chat_id часто равен номеру телефона
+    return _norm_phone(chat_id)
+
+
+def _s20_headers(token=None) -> Dict[str, str]:
+    h = {
+        'X-APP-KEY': os.environ['S20_X_APP_KEY'],
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
+    if token:
+        h['X-ALFACRM-TOKEN'] = token
+    return h
+
+
+def _s20_post(path: str, payload: dict, token=None, timeout: int = 20) -> dict:
+    req = urllib.request.Request(
+        f"{S20_HOST}{path}",
+        data=json.dumps(payload).encode('utf-8'),
+        headers=_s20_headers(token),
+        method='POST',
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode('utf-8'))
+
+
+def _s20_token() -> str:
+    data = _s20_post('/v2api/auth/login', {'email': S20_EMAIL, 'api_key': os.environ['S20_API_KEY']})
+    return data['token']
+
+
+def _resolve_crm(phone: str):
+    '''По телефону определяет: педагог / клиент / лид. Возвращает (status, name).'''
+    if len(phone) != 11:
+        return 'unknown', None
+    token = _s20_token()
+
+    # Педагоги
+    try:
+        emp = _s20_post('/v2api/1/teacher/index', {'page': 0, 'pageSize': 200}, token, 30)
+        for u in emp.get('items', []):
+            if _norm_phone(str(u.get('phone') or '')) == phone:
+                return 'teacher', u.get('name')
+    except Exception:
+        pass
+
+    # Клиенты (is_study=1) и лиды (is_study=0)
+    for is_study, status in ((1, 'client'), (0, 'lead')):
+        try:
+            data = _s20_post(
+                '/v2api/1/customer/index',
+                {'is_study': is_study, 'removed': 0, 'page': 0, 'pageSize': 50, 'phone': '+' + phone},
+                token, 30,
+            )
+            for c in data.get('items', []):
+                phones = c.get('phone') or []
+                if isinstance(phones, str):
+                    phones = [phones]
+                if any(_norm_phone(str(p)) == phone for p in phones):
+                    return status, c.get('name')
+        except Exception:
+            pass
+
+    return 'unknown', None
 
 
 def _resp(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
@@ -52,17 +141,21 @@ def _upsert_dialog(cur, chat_id: str, name: Optional[str], phone: Optional[str])
 def _list_dialogs(cur) -> list:
     cur.execute(
         "SELECT d.id, d.chat_id, d.client_name, d.phone, d.assignee, d.status, d.unread, "
-        "d.last_time, (SELECT text FROM interaction_messages m WHERE m.dialog_id = d.id "
+        "d.last_time, d.crm_status, d.crm_name, "
+        "(SELECT text FROM interaction_messages m WHERE m.dialog_id = d.id "
         "ORDER BY m.created_at DESC LIMIT 1) "
         "FROM interaction_dialogs d ORDER BY d.last_time DESC NULLS LAST"
     )
     out = []
     for r in cur.fetchall():
+        crm_status = r[8]
         out.append({
-            'id': r[0], 'chatId': r[1], 'clientName': r[2] or r[1], 'phone': r[3] or '',
+            'id': r[0], 'chatId': r[1], 'clientName': r[9] or r[2] or r[1], 'phone': r[3] or '',
             'assignee': r[4] or 'Не назначен', 'status': r[5], 'unread': r[6],
-            'lastTime': r[7].isoformat() if r[7] else None, 'preview': r[8] or '',
+            'lastTime': r[7].isoformat() if r[7] else None, 'preview': r[10] or '',
             'channels': ['max'],
+            'crmStatus': crm_status,
+            'crmLabel': STATUS_LABELS.get(crm_status or '', None),
         })
     return out
 
@@ -107,6 +200,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET' and action == 'dialogs':
             data = _list_dialogs(cur)
             return _resp(200, {'dialogs': data})
+
+        if method == 'GET' and action == 'resolve-crm':
+            dialog_id = int(params.get('dialog_id', '0'))
+            force = params.get('force') == '1'
+            cur.execute(
+                "SELECT chat_id, phone, crm_status, crm_checked_at FROM interaction_dialogs WHERE id = %s",
+                (dialog_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return _resp(404, {'error': 'dialog_not_found'})
+            chat_id, phone, cached_status, checked_at = row
+            if cached_status and not force:
+                return _resp(200, {
+                    'crmStatus': cached_status,
+                    'crmLabel': STATUS_LABELS.get(cached_status, None),
+                    'cached': True,
+                })
+            resolved_phone = _phone_from_chat(chat_id, phone)
+            status, name = _resolve_crm(resolved_phone)
+            cur.execute(
+                "UPDATE interaction_dialogs SET crm_status = %s, crm_name = COALESCE(%s, crm_name), "
+                "phone = COALESCE(NULLIF(phone, ''), %s), crm_checked_at = now() WHERE id = %s",
+                (status, name, resolved_phone or None, dialog_id),
+            )
+            conn.commit()
+            return _resp(200, {
+                'crmStatus': status,
+                'crmLabel': STATUS_LABELS.get(status, None),
+                'crmName': name,
+                'cached': False,
+            })
 
         if method == 'GET' and action == 'messages':
             dialog_id = int(params.get('dialog_id', '0'))

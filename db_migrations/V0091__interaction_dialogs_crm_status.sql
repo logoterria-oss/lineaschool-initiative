@@ -1,0 +1,3 @@
+ALTER TABLE interaction_dialogs ADD COLUMN IF NOT EXISTS crm_status VARCHAR(20);
+ALTER TABLE interaction_dialogs ADD COLUMN IF NOT EXISTS crm_name VARCHAR(255);
+ALTER TABLE interaction_dialogs ADD COLUMN IF NOT EXISTS crm_checked_at TIMESTAMP WITH TIME ZONE;

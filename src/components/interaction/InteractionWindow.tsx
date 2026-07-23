@@ -3,13 +3,33 @@ import Icon from '@/components/ui/icon';
 import {
   DialogItem,
   MessageItem,
+  CrmStatus,
   fetchDialogs,
   fetchMessages,
   sendMessage,
   assignDialog,
+  resolveCrm,
 } from '@/lib/interactionsApi';
 
 const ASSIGNEES = ['Ирина (РУО)', 'Ольга (админ)', 'Я'];
+
+const CRM_META: Record<CrmStatus, { label: string; icon: string; cls: string }> = {
+  teacher: { label: 'Педагог', icon: 'GraduationCap', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+  client: { label: 'Клиент', icon: 'UserCheck', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  lead: { label: 'Лид', icon: 'UserPlus', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  unknown: { label: 'Не в CRM', icon: 'UserX', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+};
+
+const CrmBadge = ({ status, small }: { status: CrmStatus | null; small?: boolean }) => {
+  if (!status) return null;
+  const m = CRM_META[status];
+  return (
+    <span className={`inline-flex items-center gap-1 border rounded-full font-medium ${m.cls} ${small ? 'text-[11px] px-1.5 py-0.5' : 'text-sm px-2.5 py-1'}`}>
+      <Icon name={m.icon as 'UserCheck'} size={small ? 11 : 14} />
+      {m.label}
+    </span>
+  );
+};
 
 const CHANNEL_META: Record<string, { label: string; icon: string; color: string }> = {
   max: { label: 'Max', icon: 'MessageCircle', color: 'text-blue-600 bg-blue-50' },
@@ -101,6 +121,21 @@ const InteractionWindow = () => {
     return () => clearInterval(t);
   }, [activeId]);
 
+  const [resolving, setResolving] = useState(false);
+
+  useEffect(() => {
+    if (activeId === null) return;
+    const d = dialogs.find((x) => x.id === activeId);
+    if (!d || d.crmStatus) return;
+    setResolving(true);
+    resolveCrm(activeId)
+      .then(({ crmStatus, crmLabel }) => {
+        setDialogs((prev) => prev.map((x) => (x.id === activeId ? { ...x, crmStatus, crmLabel } : x)));
+      })
+      .finally(() => setResolving(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
@@ -169,9 +204,9 @@ const InteractionWindow = () => {
                 </div>
                 <div className="flex items-center gap-1.5 mt-1.5">
                   {d.channels.map((c) => <ChannelBadge key={c} channel={c} size={12} />)}
-                  <span className={`ml-1 text-[11px] px-1.5 py-0.5 rounded-full ${d.status === 'lead' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                    {d.status === 'lead' ? 'Лид' : 'Клиент'}
-                  </span>
+                  {d.crmStatus ? <CrmBadge status={d.crmStatus} small /> : (
+                    <span className="ml-1 text-[11px] px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400">…</span>
+                  )}
                 </div>
                 <div className="text-[11px] text-gray-400 mt-1 truncate">{d.assignee}</div>
               </button>
@@ -190,7 +225,14 @@ const InteractionWindow = () => {
               <div className="font-semibold text-gray-900 truncate">{active.clientName}</div>
               <div className="text-xs text-gray-400">{active.phone || active.chatId}</div>
             </div>
-            <div className="ml-auto flex items-center gap-1.5">
+            <div className="ml-auto flex items-center gap-2">
+              {resolving && !active.crmStatus ? (
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <Icon name="Loader" size={12} className="animate-spin" /> CRM…
+                </span>
+              ) : (
+                <CrmBadge status={active.crmStatus} />
+              )}
               {active.channels.map((c) => <ChannelBadge key={c} channel={c} />)}
             </div>
           </div>
@@ -237,10 +279,28 @@ const InteractionWindow = () => {
             <div className="text-sm text-gray-500">{active.phone || active.chatId}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-400 mb-1">Статус</div>
-            <span className={`text-sm px-2 py-0.5 rounded-full ${active.status === 'lead' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
-              {active.status === 'lead' ? 'Лид' : 'Клиент'}
-            </span>
+            <div className="text-xs text-gray-400 mb-1.5 flex items-center gap-1">
+              Статус в CRM
+              <button
+                onClick={() => {
+                  setResolving(true);
+                  resolveCrm(active.id, true)
+                    .then(({ crmStatus, crmLabel }) =>
+                      setDialogs((prev) => prev.map((x) => (x.id === active.id ? { ...x, crmStatus, crmLabel } : x))),
+                    )
+                    .finally(() => setResolving(false));
+                }}
+                title="Обновить из CRM"
+                className="text-gray-300 hover:text-green-600"
+              >
+                <Icon name="RefreshCw" size={12} className={resolving ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            {active.crmStatus ? (
+              <CrmBadge status={active.crmStatus} />
+            ) : (
+              <span className="text-sm text-gray-400">Определяем…</span>
+            )}
           </div>
           <div>
             <div className="text-xs text-gray-400 mb-1.5">Ответственный</div>

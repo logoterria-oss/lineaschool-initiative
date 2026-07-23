@@ -1,5 +1,7 @@
 const API_URL = 'https://functions.poehali.dev/c251547a-6d0d-4d86-9a3c-1b5bd6054b77';
 
+export type CrmStatus = 'teacher' | 'client' | 'lead' | 'unknown';
+
 export interface DialogItem {
   id: number;
   chatId: string;
@@ -11,6 +13,8 @@ export interface DialogItem {
   lastTime: string | null;
   preview: string;
   channels: string[];
+  crmStatus: CrmStatus | null;
+  crmLabel: string | null;
 }
 
 export interface MessageItem {
@@ -53,6 +57,15 @@ export async function assignDialog(dialogId: number, assignee: string): Promise<
   });
   const data = await r.json();
   return !!data.ok;
+}
+
+export async function resolveCrm(
+  dialogId: number,
+  force = false,
+): Promise<{ crmStatus: CrmStatus; crmLabel: string | null }> {
+  const r = await fetch(`${API_URL}?action=resolve-crm&dialog_id=${dialogId}${force ? '&force=1' : ''}`);
+  const data = await r.json();
+  return { crmStatus: data.crmStatus || 'unknown', crmLabel: data.crmLabel || null };
 }
 
 export const WEBHOOK_URL = `${API_URL}?action=webhook`;
