@@ -39,14 +39,18 @@ export async function fetchMessages(dialogId: number): Promise<MessageItem[]> {
   return data.messages || [];
 }
 
-export async function sendMessage(dialogId: number, text: string, author: string): Promise<boolean> {
+export async function sendMessage(
+  dialogId: number,
+  text: string,
+  author: string,
+): Promise<{ ok: boolean; message?: string }> {
   const r = await fetch(`${API_URL}?action=send`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ dialog_id: dialogId, text, author }),
   });
   const data = await r.json();
-  return !!data.ok;
+  return { ok: !!data.ok, message: data.message };
 }
 
 export async function assignDialog(dialogId: number, assignee: string): Promise<boolean> {

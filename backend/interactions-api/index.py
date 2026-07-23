@@ -10,9 +10,10 @@ import re
 from typing import Dict, Any, Optional
 import urllib.request
 import urllib.parse
+import urllib.error
 import psycopg2
 
-WAPPI_BASE = 'https://api.wappi.pro'
+WAPPI_BASE = 'https://wappi.pro'
 S20_HOST = 'https://11086.s20.online'
 S20_EMAIL = os.environ.get('ALFACRM_EMAIL', 'abram.viktoriya.00@mail.ru')
 
@@ -173,16 +174,55 @@ def _messages(cur, dialog_id: int) -> list:
     } for r in cur.fetchall()]
 
 
-def _send_max(chat_id: str, text: str) -> Dict[str, Any]:
+def _send_max(text: str, max_chat_id=None, max_user_id=None, phone=None) -> Dict[str, Any]:
     token = os.environ['WAPPI_API_TOKEN']
     profile_id = os.environ['WAPPI_PROFILE_ID']
-    url = f"{WAPPI_BASE}/api/sync/max/message/send?" + urllib.parse.urlencode({'profile_id': profile_id})
-    payload = json.dumps({'recipient': chat_id, 'body': text}).encode('utf-8')
+    url = f"{WAPPI_BASE}/maxapi/sync/message/send?" + urllib.parse.urlencode({'profile_id': profile_id})
+
+    msg = {'body': text}
+    chat = str(max_chat_id or '').strip()
+    uid = str(max_user_id or '').strip()
+    ph = str(phone or '').strip()
+    if chat:
+        msg['chat_id'] = chat
+    elif uid and uid.isdigit():
+        msg['user_id'] = int(uid)
+    elif ph:
+        msg['recipient'] = ph
+    else:
+        return {'ok': False, 'error': 'no_recipient'}
+    payload = json.dumps(msg).encode('utf-8')
     req = urllib.request.Request(url, data=payload, method='POST')
     req.add_header('Content-Type', 'application/json')
     req.add_header('Authorization', token)
-    with urllib.request.urlopen(req, timeout=25) as r:
-        return json.loads(r.read().decode('utf-8'))
+    try:
+        with urllib.request.urlopen(req, timeout=25) as r:
+            data = json.loads(r.read().decode('utf-8'))
+        print(f"WAPPI send OK msg={msg} resp={json.dumps(data, ensure_ascii=False)[:500]}")
+        return {'ok': True, 'response': data}
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8', 'ignore')
+        print(f"WAPPI send HTTP {e.code} msg={msg} body={err_body[:500]}")
+        return {'ok': False, 'status': e.code, 'error': err_body}
+    except Exception as e:
+        print(f"WAPPI send FAILED msg={msg} err={e}")
+        return {'ok': False, 'error': str(e)}
+
+
+def _get_max_chats(limit: int = 200) -> Dict[str, Any]:
+    token = os.environ['WAPPI_API_TOKEN']
+    profile_id = os.environ['WAPPI_PROFILE_ID']
+    url = f"{WAPPI_BASE}/maxapi/sync/chats/get?" + urllib.parse.urlencode(
+        {'profile_id': profile_id, 'limit': limit, 'show_all': 'true', 'offset': 0, 'order': 'desc'})
+    req = urllib.request.Request(url, method='GET')
+    req.add_header('Authorization', token)
+    try:
+        with urllib.request.urlopen(req, timeout=25) as r:
+            return {'ok': True, 'data': json.loads(r.read().decode('utf-8'))}
+    except urllib.error.HTTPError as e:
+        return {'ok': False, 'status': e.code, 'error': e.read().decode('utf-8', 'ignore')}
+    except Exception as e:
+        return {'ok': False, 'error': str(e)}
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -200,6 +240,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET' and action == 'dialogs':
             data = _list_dialogs(cur)
             return _resp(200, {'dialogs': data})
+
+        if method == 'GET' and action == 'max-chats':
+            return _resp(200, _get_max_chats())
 
         if method == 'GET' and action == 'resolve-crm':
             dialog_id = int(params.get('dialog_id', '0'))
@@ -249,22 +292,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         is_webhook = action == 'webhook' or 'messages' in body or 'message' in body or body.get('event')
         if method == 'POST' and is_webhook:
             msg = body.get('message') or body.get('payload') or body
-            if isinstance(body.get('messages'), list) and body['messages']:
-                msg = body['messages'][0]
+            if isinstance(body.get('messages'), (list, dict)):
+                m = body['messages']
+                msg = (m[0] if isinstance(m, list) and m else m) if not isinstance(m, dict) else m
+
+            wh_type = msg.get('wh_type') or ''
+
+            # Служебные статусы доставки — не сообщение, но полезны для chat_id
+            if wh_type == 'delivery_status' or msg.get('status') in ('error', 'sent', 'delivered'):
+                return _resp(200, {'ok': True, 'skipped': 'delivery_status'})
 
             from_me = bool(msg.get('fromMe') or msg.get('from_me'))
-            chat_id = str(
-                msg.get('chatId') or msg.get('chat_id') or msg.get('senderId')
-                or msg.get('sender_id') or msg.get('from') or ''
+            # чат для ОТВЕТА
+            max_chat_id = str(msg.get('chat_id') or msg.get('chatId') or '')
+            # идентификатор пользователя-отправителя
+            max_user_id = str(
+                msg.get('contact_max_user_id') or msg.get('user_id')
+                or msg.get('senderId') or msg.get('sender_id') or msg.get('from') or ''
             )
+            key = max_chat_id or max_user_id
             text = msg.get('body') or msg.get('text') or msg.get('caption') or ''
             name = (
                 msg.get('senderName') or msg.get('sender_name')
                 or msg.get('chatName') or msg.get('pushName')
             )
-            if not chat_id or from_me:
-                return _resp(200, {'ok': True, 'skipped': 'no_chat_id_or_from_me'})
-            dialog_id = _upsert_dialog(cur, chat_id, name, None)
+            if not key or from_me:
+                return _resp(200, {'ok': True, 'skipped': 'no_key_or_from_me'})
+            dialog_id = _upsert_dialog(cur, key, name, None)
             cur.execute(
                 "INSERT INTO interaction_messages (dialog_id, direction, channel, text) "
                 "VALUES (%s, 'in', 'max', %s)",
@@ -272,8 +326,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             cur.execute(
                 "UPDATE interaction_dialogs SET unread = unread + 1, last_time = now(), "
-                "client_name = COALESCE(client_name, %s) WHERE id = %s",
-                (name, dialog_id),
+                "client_name = COALESCE(client_name, %s), "
+                "max_chat_id = COALESCE(%s, max_chat_id), "
+                "max_user_id = COALESCE(%s, max_user_id) WHERE id = %s",
+                (name, max_chat_id or None, max_user_id or None, dialog_id),
             )
             conn.commit()
             return _resp(200, {'ok': True})
@@ -285,12 +341,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             author = body.get('author') or 'Сотрудник'
             if not text:
                 return _resp(400, {'error': 'empty_text'})
-            cur.execute("SELECT chat_id FROM interaction_dialogs WHERE id = %s", (dialog_id,))
+            cur.execute(
+                "SELECT chat_id, max_chat_id, max_user_id, phone FROM interaction_dialogs WHERE id = %s",
+                (dialog_id,))
             row = cur.fetchone()
             if not row:
                 return _resp(404, {'error': 'dialog_not_found'})
-            chat_id = row[0]
-            wappi_result = _send_max(chat_id, text)
+            chat_id, max_chat_id, max_user_id, phone = row
+            # Для MAX отправка идёт по chat_id = id диалога.
+            # Если max_chat_id не заполнен — используем chat_id/user_id как id диалога.
+            send_chat_id = max_chat_id or chat_id or max_user_id
+            wappi_result = _send_max(
+                max_chat_id=send_chat_id,
+                max_user_id=max_user_id or chat_id,
+                phone=phone,
+                text=text,
+            )
+            if wappi_result.get('ok') and not max_chat_id and send_chat_id:
+                cur.execute(
+                    "UPDATE interaction_dialogs SET max_chat_id = %s WHERE id = %s",
+                    (str(send_chat_id), dialog_id))
+            if not wappi_result.get('ok'):
+                return _resp(502, {
+                    'ok': False,
+                    'error': 'wappi_failed',
+                    'message': 'Max не принял сообщение',
+                    'wappi': wappi_result,
+                })
             cur.execute(
                 "INSERT INTO interaction_messages (dialog_id, direction, channel, text, author) "
                 "VALUES (%s, 'out', 'max', %s, %s)",

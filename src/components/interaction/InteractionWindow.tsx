@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { useToast } from '@/hooks/use-toast';
 import {
   DialogItem,
   MessageItem,
@@ -87,6 +88,7 @@ const MessageBubble = ({ msg }: { msg: MessageItem }) => {
 };
 
 const InteractionWindow = () => {
+  const { toast } = useToast();
   const [dialogs, setDialogs] = useState<DialogItem[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -150,12 +152,13 @@ const InteractionWindow = () => {
     setSending(true);
     const text = draft.trim();
     setDraft('');
-    const ok = await sendMessage(active.id, text, 'Я');
-    if (ok) {
+    const res = await sendMessage(active.id, text, 'Я');
+    if (res.ok) {
       const msgs = await fetchMessages(active.id);
       setMessages(msgs);
     } else {
       setDraft(text);
+      toast({ title: res.message || 'Не удалось отправить сообщение в Max', variant: 'destructive' });
     }
     setSending(false);
   };

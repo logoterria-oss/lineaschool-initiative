@@ -1,0 +1,1 @@
+UPDATE interaction_dialogs SET max_chat_id = '468402897' WHERE id = 1;
