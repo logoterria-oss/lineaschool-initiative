@@ -107,7 +107,7 @@ const AdminWorkspace = () => {
           className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-2 rounded-lg transition-colors"
         >
           <Icon name="UserCog" size={16} className="flex-shrink-0" />
-          <span className={lbl}>Мой профиль</span>
+          <span className={collapsed ? lbl : ''}>Мой профиль</span>
         </button>
       </div>
 
