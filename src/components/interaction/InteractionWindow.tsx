@@ -323,10 +323,7 @@ const InteractionWindow = () => {
           <div>
             <div className="text-xs text-gray-400 mb-1.5">Ответственный</div>
             <div className="space-y-1">
-              {(active.assignee && active.assignee !== 'Не назначен' && !assignees.includes(active.assignee)
-                ? [active.assignee, ...assignees]
-                : assignees
-              ).map((name) => (
+              {assignees.map((name) => (
                 <button
                   key={name}
                   onClick={() => reassign(name)}

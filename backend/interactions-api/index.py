@@ -348,10 +348,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "WHERE status = 'active' AND password_hash <> '' "
                 "AND role IN ('head', 'admin') ORDER BY role, full_name"
             )
-            role_labels = {'head': 'Руководитель', 'admin': 'Администратор'}
+            role_labels = {'head': 'руководитель', 'admin': 'администратор'}
+
+            def _lower_title(t: str) -> str:
+                # С маленькой буквы, НО аббревиатуры (РУО, HR и т.п.) не трогаем.
+                first = t.split(' ', 1)[0]
+                if first.isupper() and len(first) > 1:
+                    return t
+                return t[:1].lower() + t[1:]
+
             names = []
             for full_name, job_title, role in cur.fetchall():
-                title = (job_title or '').strip() or role_labels.get(role, role)
+                jt = (job_title or '').strip()
+                title = _lower_title(jt) if jt else role_labels.get(role, role)
                 names.append(f"{full_name} ({title})")
             return _resp(200, {'assignees': names})
 
