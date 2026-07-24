@@ -35,7 +35,7 @@ const UsersView = () => {
 
   const load = async () => {
     setLoading(true);
-    const list = await listStaff();
+    const list = await listStaff(true);
     setStaff(list);
     setLoading(false);
   };

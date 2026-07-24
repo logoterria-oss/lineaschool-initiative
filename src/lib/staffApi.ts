@@ -135,9 +135,10 @@ export async function logoutStaff() {
   clearStaffToken();
 }
 
-export async function listStaff(): Promise<Staff[]> {
+export async function listStaff(registeredOnly = false): Promise<Staff[]> {
   const token = getStaffToken();
-  const res = await fetch(MANAGE_URL, { headers: token ? { 'X-Auth-Token': token } : {} });
+  const url = registeredOnly ? `${MANAGE_URL}?registered=1` : MANAGE_URL;
+  const res = await fetch(url, { headers: token ? { 'X-Auth-Token': token } : {} });
   if (!res.ok) return [];
   const data = await res.json();
   return data.staff || [];

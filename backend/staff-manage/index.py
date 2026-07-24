@@ -71,7 +71,9 @@ def handler(event: dict, context) -> dict:
 
         method = event.get("httpMethod", "GET")
         if method == "GET":
-            return handle_list(conn)
+            params = event.get("queryStringParameters") or {}
+            registered_only = str(params.get("registered") or "") in ("1", "true", "yes")
+            return handle_list(conn, registered_only)
 
         body = json.loads(event.get("body") or "{}")
         action = body.get("action")
@@ -95,10 +97,14 @@ def handler(event: dict, context) -> dict:
 SELECT_FIELDS = "id, full_name, phone, email, job_title, role, status, source, crm_id, avatar_url, created_at"
 
 
-def handle_list(conn):
+def handle_list(conn, registered_only=False):
+    # registered_only=True — только реально зарегистрированные учётки
+    # (у них задан пароль). Импортированные из CRM записи без регистрации
+    # имеют пустой password_hash и в список «Пользователи» не попадают.
+    where = "WHERE password_hash <> ''" if registered_only else ""
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT {SELECT_FIELDS} FROM {SCHEMA}.staff ORDER BY "
+            f"SELECT {SELECT_FIELDS} FROM {SCHEMA}.staff {where} ORDER BY "
             f"CASE status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, "
             f"full_name ASC")
         rows = cur.fetchall()
@@ -307,9 +313,11 @@ def handle_import_crm(conn):
                     (crm_id, email, job_title, phone or "", existing[0]))
                 updated += 1
             else:
+                # Импортированный из CRM сотрудник ещё НЕ зарегистрирован
+                # (нет пароля) — статус 'pending', не 'active'.
                 cur.execute(
                     f"INSERT INTO {SCHEMA}.staff (full_name, phone, email, job_title, role, status, source, crm_id, password_hash) "
-                    f"VALUES (%s, %s, %s, %s, 'teacher', 'active', 'crm', %s, '')",
+                    f"VALUES (%s, %s, %s, %s, 'teacher', 'pending', 'crm', %s, '')",
                     (name, phone or "", email, job_title, crm_id))
                 added += 1
         conn.commit()
