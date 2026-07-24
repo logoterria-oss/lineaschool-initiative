@@ -111,10 +111,25 @@ const InteractionWindow = () => {
     if (activeIdRef.current === null && list.length) setActiveId(list[0].id);
   };
 
+  // Опрос только когда вкладка активна — в фоне запросы не шлём (экономия вычислений).
+  const runWhenVisible = (fn: () => void, ms: number) => {
+    const tick = () => {
+      if (document.visibilityState === 'visible') fn();
+    };
+    const t = setInterval(tick, ms);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fn();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  };
+
   useEffect(() => {
     loadDialogs();
-    const t = setInterval(loadDialogs, 15000);
-    return () => clearInterval(t);
+    return runWhenVisible(loadDialogs, 30000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -123,17 +138,15 @@ const InteractionWindow = () => {
   };
 
   useEffect(() => {
+    // Список ответственных меняется редко — грузим один раз при открытии.
     loadAssignees();
-    // Обновляем список ответственных, если кто-то зарегистрировался/изменился.
-    const t = setInterval(loadAssignees, 60000);
-    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
     if (activeId === null) return;
     fetchMessages(activeId).then(setMessages);
-    const t = setInterval(() => fetchMessages(activeId).then(setMessages), 8000);
-    return () => clearInterval(t);
+    return runWhenVisible(() => fetchMessages(activeId).then(setMessages), 15000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
 
   const [resolving, setResolving] = useState(false);
