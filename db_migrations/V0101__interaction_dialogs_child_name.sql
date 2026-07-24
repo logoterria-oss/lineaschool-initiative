@@ -1,0 +1,1 @@
+ALTER TABLE interaction_dialogs ADD COLUMN IF NOT EXISTS child_name VARCHAR(255);

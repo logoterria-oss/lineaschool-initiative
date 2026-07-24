@@ -13,22 +13,23 @@ import {
   fetchAssignees,
 } from '@/lib/interactionsApi';
 
-const CRM_META: Record<CrmStatus, { label: string; icon: string; cls: string }> = {
-  staff: { label: 'Сотрудник', icon: 'Briefcase', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  teacher: { label: 'Педагог', icon: 'GraduationCap', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
-  client: { label: 'Клиент', icon: 'UserCheck', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  lead: { label: 'Лид', icon: 'UserPlus', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  parent: { label: 'Родитель', icon: 'Users', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
-  unknown: { label: 'Не в CRM', icon: 'UserX', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+const CRM_META: Record<CrmStatus, { label: string; short: string; icon: string; cls: string }> = {
+  staff: { label: 'Сотрудник', short: 'сотруд.', icon: '', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+  teacher: { label: 'Педагог', short: 'педагог', icon: 'GraduationCap', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+  client: { label: 'Клиент', short: 'клиент', icon: 'UserCheck', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+  lead: { label: 'Лид', short: 'лид', icon: 'UserPlus', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+  parent: { label: 'Родитель', short: 'родитель', icon: 'Users', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+  unknown: { label: 'Не в CRM', short: 'не в CRM', icon: 'UserX', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
 };
 
-const CrmBadge = ({ status, small, label }: { status: CrmStatus | null; small?: boolean; label?: string | null }) => {
+const CrmBadge = ({ status, small, label, short }: { status: CrmStatus | null; small?: boolean; label?: string | null; short?: boolean }) => {
   if (!status) return null;
   const m = CRM_META[status];
+  const text = short ? m.short : (label || m.label);
   return (
-    <span className={`inline-flex items-center gap-1 border rounded-full font-medium ${m.cls} ${small ? 'text-[11px] px-1.5 py-0.5' : 'text-sm px-2.5 py-1'}`}>
-      <Icon name={m.icon as 'UserCheck'} size={small ? 11 : 14} />
-      {label || m.label}
+    <span className={`inline-flex items-center gap-1 border rounded-full font-medium whitespace-nowrap ${m.cls} ${small ? 'text-[11px] px-1.5 py-0.5' : 'text-sm px-2.5 py-1'}`}>
+      {!short && m.icon && <Icon name={m.icon as 'UserCheck'} size={small ? 11 : 14} />}
+      {text}
     </span>
   );
 };
@@ -157,8 +158,8 @@ const InteractionWindow = () => {
     if (!d || d.crmStatus) return;
     setResolving(true);
     resolveCrm(activeId)
-      .then(({ crmStatus, crmLabel }) => {
-        setDialogs((prev) => prev.map((x) => (x.id === activeId ? { ...x, crmStatus, crmLabel } : x)));
+      .then(({ crmStatus, crmLabel, childName }) => {
+        setDialogs((prev) => prev.map((x) => (x.id === activeId ? { ...x, crmStatus, crmLabel, childName } : x)));
       })
       .finally(() => setResolving(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -225,17 +226,18 @@ const InteractionWindow = () => {
                 className={`w-full text-left px-3 py-3 border-b border-gray-50 transition-colors ${isActive ? 'bg-green-50' : 'hover:bg-gray-50'}`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 text-sm truncate flex-1">{d.clientName}</span>
-                  <span className="text-[11px] text-gray-400">{fmtTime(d.lastTime)}</span>
+                  <span className="font-medium text-gray-900 text-sm truncate min-w-0">{d.clientName}</span>
+                  {d.crmStatus && <CrmBadge status={d.crmStatus} small short />}
+                  <span className="text-[11px] text-gray-400 ml-auto">{fmtTime(d.lastTime)}</span>
                   {d.unread > 0 && (
                     <span className="bg-green-500 text-white text-[11px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{d.unread}</span>
                   )}
                 </div>
+                {d.childName && (
+                  <div className="text-[11px] text-gray-500 mt-0.5 truncate">Ученик: {d.childName}</div>
+                )}
                 <div className="flex items-center gap-1.5 mt-1.5">
                   {d.channels.map((c) => <ChannelBadge key={c} channel={c} size={12} />)}
-                  {d.crmStatus ? <CrmBadge status={d.crmStatus} small /> : (
-                    <span className="ml-1 text-[11px] px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400">…</span>
-                  )}
                 </div>
                 <div className="text-[11px] text-gray-400 mt-1 truncate">{d.assignee}</div>
               </button>
@@ -252,6 +254,9 @@ const InteractionWindow = () => {
             </div>
             <div className="min-w-0">
               <div className="font-semibold text-gray-900 truncate">{active.clientName}</div>
+              {active.childName && (
+                <div className="text-xs text-gray-500 truncate">Ученик: {active.childName}</div>
+              )}
               {active.phone && <div className="text-xs text-gray-400">{active.phone}</div>}
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -260,7 +265,7 @@ const InteractionWindow = () => {
                   <Icon name="Loader" size={12} className="animate-spin" /> CRM…
                 </span>
               ) : (
-                <CrmBadge status={active.crmStatus} label={active.crmLabel} />
+                <CrmBadge status={active.crmStatus} label={active.crmStatus === 'parent' ? 'Родитель' : active.crmLabel} />
               )}
               {active.channels.map((c) => <ChannelBadge key={c} channel={c} />)}
             </div>
@@ -305,6 +310,9 @@ const InteractionWindow = () => {
           <div>
             <div className="text-xs text-gray-400 mb-1">Клиент</div>
             <div className="font-semibold text-gray-900">{active.clientName}</div>
+            {active.childName && (
+              <div className="text-sm text-gray-500">Ученик: {active.childName}</div>
+            )}
             {active.phone && (
               <div className="text-sm text-gray-500">{active.phone}</div>
             )}
@@ -316,8 +324,8 @@ const InteractionWindow = () => {
                 onClick={() => {
                   setResolving(true);
                   resolveCrm(active.id, true)
-                    .then(({ crmStatus, crmLabel }) =>
-                      setDialogs((prev) => prev.map((x) => (x.id === active.id ? { ...x, crmStatus, crmLabel } : x))),
+                    .then(({ crmStatus, crmLabel, childName }) =>
+                      setDialogs((prev) => prev.map((x) => (x.id === active.id ? { ...x, crmStatus, crmLabel, childName } : x))),
                     )
                     .finally(() => setResolving(false));
                 }}

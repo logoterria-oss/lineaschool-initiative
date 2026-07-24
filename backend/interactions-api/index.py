@@ -139,24 +139,31 @@ def _collect_phones(obj, out):
 
 
 def _resolve_crm(cur, phone: str, display_name: Optional[str] = None):
-    '''Определяет, кто это: сотрудник школы / педагог / клиент / лид / родитель.
+    '''Определяет собеседника по телефону/ФИО.
 
-    Ищем по телефону (если известен) и по ФИО (из MAX). Возвращает (status, name, label).
-    Если ничего не нашли — ('unknown', None, None), имя в БД НЕ прописываем.
+    В S20 карточка ученика хранит name (ребёнок) и legal_name (родитель),
+    а phone карточки — это телефон РОДИТЕЛЯ. В 99.9% пишет именно родитель.
+
+    Возвращает кортеж (status, name, label, child_name):
+      status     — client / lead / teacher / staff / unknown
+      name       — ФИО собеседника (родителя/педагога/сотрудника)
+      label      — подпись для плашки
+      child_name — ФИО ученика (если собеседник — родитель), иначе None
     '''
     name_key = _norm_name(display_name)
     has_phone = len(phone) == 11
+    disp = _standardize_name(display_name)
 
     # 0. Наши сотрудники (руководители, админы, педагоги из «Списка сотрудников»)
     try:
         ok, nm = _match_staff(cur, phone, name_key)
         if ok:
-            return 'staff', _standardize_name(nm), STATUS_LABELS['staff']
+            return 'staff', _standardize_name(nm), STATUS_LABELS['staff'], None
     except Exception:
         pass
 
     if not has_phone and not name_key:
-        return 'unknown', None, None
+        return 'unknown', None, None, None
 
     token = _s20_token()
 
@@ -165,13 +172,14 @@ def _resolve_crm(cur, phone: str, display_name: Optional[str] = None):
         emp = _s20_post('/v2api/1/teacher/index', {'page': 0, 'pageSize': 200}, token, 30)
         for u in emp.get('items', []):
             if has_phone and _norm_phone(str(u.get('phone') or '')) == phone:
-                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher']
+                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher'], None
             if name_key and _norm_name(u.get('name')) == name_key:
-                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher']
+                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher'], None
     except Exception:
         pass
 
-    # 2. Клиенты (is_study=1) и лиды (is_study=0) — по телефону
+    # 2. Карточки учеников (is_study=1 — клиент) и лидов (is_study=0) — по телефону.
+    #    Телефон в карточке = телефон родителя → собеседник это родитель ученика.
     if has_phone:
         for is_study, status in ((1, 'client'), (0, 'lead')):
             try:
@@ -181,21 +189,18 @@ def _resolve_crm(cur, phone: str, display_name: Optional[str] = None):
                     token, 30,
                 )
                 for c in data.get('items', []):
-                    own = set()
-                    _collect_phones(c.get('phone'), own)
-                    if phone in own:
-                        return status, _standardize_name(c.get('name')), STATUS_LABELS[status]
-                    # Телефон совпал не с основным — значит это родитель/контакт ученика
                     all_ph = set()
                     _collect_phones(c, all_ph)
-                    if phone in all_ph:
-                        student = _standardize_name(c.get('name'))
-                        return 'parent', display_name and _standardize_name(display_name), (
-                            f"Родитель: {student}" if student else STATUS_LABELS['parent'])
+                    if phone not in all_ph:
+                        continue
+                    child = _standardize_name(c.get('name'))
+                    parent = _standardize_name(c.get('legal_name')) or disp
+                    # Собеседник — родитель; ребёнок = карточка ученика.
+                    return status, parent, STATUS_LABELS[status], child
             except Exception:
                 pass
 
-    return 'unknown', None, None
+    return 'unknown', None, None, None
 
 
 def _resp(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
@@ -236,7 +241,7 @@ def _upsert_dialog(cur, chat_id: str, name: Optional[str], phone: Optional[str])
 def _list_dialogs(cur) -> list:
     cur.execute(
         "SELECT d.id, d.chat_id, d.client_name, d.phone, d.assignee, d.status, d.unread, "
-        "d.last_time, d.crm_status, d.crm_name, d.crm_label, "
+        "d.last_time, d.crm_status, d.crm_name, d.crm_label, d.child_name, "
         "(SELECT text FROM interaction_messages m WHERE m.dialog_id = d.id "
         "ORDER BY m.created_at DESC LIMIT 1) "
         "FROM interaction_dialogs d ORDER BY d.last_time DESC NULLS LAST"
@@ -249,10 +254,11 @@ def _list_dialogs(cur) -> list:
         out.append({
             'id': r[0], 'chatId': r[1], 'clientName': display_name, 'phone': r[3] or '',
             'assignee': r[4] or 'Не назначен', 'status': r[5], 'unread': r[6],
-            'lastTime': r[7].isoformat() if r[7] else None, 'preview': r[11] or '',
+            'lastTime': r[7].isoformat() if r[7] else None, 'preview': r[12] or '',
             'channels': ['max'],
             'crmStatus': crm_status,
             'crmLabel': r[10] or STATUS_LABELS.get(crm_status or '', None),
+            'childName': r[11],
         })
     return out
 
@@ -370,36 +376,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             dialog_id = int(params.get('dialog_id', '0'))
             force = params.get('force') == '1'
             cur.execute(
-                "SELECT chat_id, phone, crm_status, crm_label, crm_checked_at, client_name "
+                "SELECT chat_id, phone, crm_status, crm_label, crm_checked_at, client_name, child_name "
                 "FROM interaction_dialogs WHERE id = %s",
                 (dialog_id,),
             )
             row = cur.fetchone()
             if not row:
                 return _resp(404, {'error': 'dialog_not_found'})
-            chat_id, phone, cached_status, cached_label, checked_at, client_name = row
+            chat_id, phone, cached_status, cached_label, checked_at, client_name, cached_child = row
             if cached_status and not force:
                 return _resp(200, {
                     'crmStatus': cached_status,
                     'crmLabel': cached_label or STATUS_LABELS.get(cached_status, None),
+                    'childName': cached_child,
                     'cached': True,
                 })
             resolved_phone = _phone_from_chat(chat_id, phone)
-            status, name, label = _resolve_crm(cur, resolved_phone, client_name)
+            status, name, label, child = _resolve_crm(cur, resolved_phone, client_name)
             # В phone сохраняем только настоящий 11-значный номер (не chat_id из MAX).
             store_phone = resolved_phone if len(resolved_phone) == 11 else None
             # Имя из CRM/сотрудников прописываем ТОЛЬКО если нашли контакт.
             cur.execute(
                 "UPDATE interaction_dialogs SET crm_status = %s, crm_name = COALESCE(%s, crm_name), "
-                "crm_label = %s, "
+                "crm_label = %s, child_name = %s, "
                 "phone = COALESCE(NULLIF(phone, ''), %s), crm_checked_at = now() WHERE id = %s",
-                (status, name, label, store_phone, dialog_id),
+                (status, name, label, child, store_phone, dialog_id),
             )
             conn.commit()
             return _resp(200, {
                 'crmStatus': status,
                 'crmLabel': label or STATUS_LABELS.get(status, None),
                 'crmName': name,
+                'childName': child,
                 'cached': False,
             })
 
