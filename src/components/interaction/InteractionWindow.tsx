@@ -108,6 +108,7 @@ const InteractionWindow = () => {
   const [crmResults, setCrmResults] = useState<CrmContact[]>([]);
   const [crmSearching, setCrmSearching] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [onlyMine, setOnlyMine] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<number | null>(null);
   activeIdRef.current = activeId;
@@ -178,9 +179,19 @@ const InteractionWindow = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
+  const isMine = (d: DialogItem) =>
+    !!currentUser && d.assignee.trim().toLowerCase() === currentUser.trim().toLowerCase();
+
+  const mineCount = useMemo(() => dialogs.filter(isMine).length, [dialogs, currentUser]);
+
   const filtered = useMemo(
-    () => dialogs.filter((d) => d.clientName.toLowerCase().includes(search.toLowerCase()) || d.phone.includes(search)),
-    [dialogs, search],
+    () =>
+      dialogs.filter(
+        (d) =>
+          (!onlyMine || isMine(d)) &&
+          (d.clientName.toLowerCase().includes(search.toLowerCase()) || d.phone.includes(search)),
+      ),
+    [dialogs, search, onlyMine, currentUser],
   );
 
   const send = async () => {
@@ -264,20 +275,33 @@ const InteractionWindow = () => {
               <Icon name="Plus" size={18} />
             </button>
           </div>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={() => setOnlyMine(false)}
+              className={`flex-1 text-xs font-medium py-1.5 rounded-lg transition-colors ${!onlyMine ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+            >
+              Все чаты
+            </button>
+            <button
+              onClick={() => setOnlyMine(true)}
+              className={`flex-1 text-xs font-medium py-1.5 rounded-lg transition-colors ${onlyMine ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+            >
+              Только мои{mineCount > 0 ? ` · ${mineCount}` : ''}
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading && <div className="p-4 text-sm text-gray-400 text-center">Загрузка…</div>}
           {!loading && filtered.length === 0 && (
             <div className="p-6 text-sm text-gray-400 text-center">
-              Пока нет диалогов. Как только клиент напишет в Max, чат появится здесь.
+              {onlyMine
+                ? 'На вас пока не назначено ни одного диалога.'
+                : 'Пока нет диалогов. Как только клиент напишет в Max, чат появится здесь.'}
             </div>
           )}
           {filtered.map((d) => {
             const isActive = d.id === activeId;
-            const mine =
-              !!currentUser &&
-              d.assignee.trim().toLowerCase() === currentUser.trim().toLowerCase();
-            const bg = mine ? 'bg-green-50' : 'bg-gray-50';
+            const bg = isMine(d) ? 'bg-green-50' : 'bg-gray-50';
             const ring = isActive ? 'ring-2 ring-inset ring-green-500' : '';
             return (
               <button
