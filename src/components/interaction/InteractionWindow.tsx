@@ -15,19 +15,21 @@ import {
 const ASSIGNEES = ['Ирина (РУО)', 'Ольга (админ)', 'Я'];
 
 const CRM_META: Record<CrmStatus, { label: string; icon: string; cls: string }> = {
+  staff: { label: 'Сотрудник', icon: 'Briefcase', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   teacher: { label: 'Педагог', icon: 'GraduationCap', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
   client: { label: 'Клиент', icon: 'UserCheck', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   lead: { label: 'Лид', icon: 'UserPlus', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  parent: { label: 'Родитель', icon: 'Users', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
   unknown: { label: 'Не в CRM', icon: 'UserX', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
 };
 
-const CrmBadge = ({ status, small }: { status: CrmStatus | null; small?: boolean }) => {
+const CrmBadge = ({ status, small, label }: { status: CrmStatus | null; small?: boolean; label?: string | null }) => {
   if (!status) return null;
   const m = CRM_META[status];
   return (
     <span className={`inline-flex items-center gap-1 border rounded-full font-medium ${m.cls} ${small ? 'text-[11px] px-1.5 py-0.5' : 'text-sm px-2.5 py-1'}`}>
       <Icon name={m.icon as 'UserCheck'} size={small ? 11 : 14} />
-      {m.label}
+      {label || m.label}
     </span>
   );
 };
@@ -226,7 +228,7 @@ const InteractionWindow = () => {
             </div>
             <div className="min-w-0">
               <div className="font-semibold text-gray-900 truncate">{active.clientName}</div>
-              <div className="text-xs text-gray-400">{active.phone || active.chatId}</div>
+              {active.phone && <div className="text-xs text-gray-400">{active.phone}</div>}
             </div>
             <div className="ml-auto flex items-center gap-2">
               {resolving && !active.crmStatus ? (
@@ -234,7 +236,7 @@ const InteractionWindow = () => {
                   <Icon name="Loader" size={12} className="animate-spin" /> CRM…
                 </span>
               ) : (
-                <CrmBadge status={active.crmStatus} />
+                <CrmBadge status={active.crmStatus} label={active.crmLabel} />
               )}
               {active.channels.map((c) => <ChannelBadge key={c} channel={c} />)}
             </div>
@@ -279,7 +281,9 @@ const InteractionWindow = () => {
           <div>
             <div className="text-xs text-gray-400 mb-1">Клиент</div>
             <div className="font-semibold text-gray-900">{active.clientName}</div>
-            <div className="text-sm text-gray-500">{active.phone || active.chatId}</div>
+            {active.phone && (
+              <div className="text-sm text-gray-500">{active.phone}</div>
+            )}
           </div>
           <div>
             <div className="text-xs text-gray-400 mb-1.5 flex items-center gap-1">
@@ -300,7 +304,7 @@ const InteractionWindow = () => {
               </button>
             </div>
             {active.crmStatus ? (
-              <CrmBadge status={active.crmStatus} />
+              <CrmBadge status={active.crmStatus} label={active.crmLabel} />
             ) : (
               <span className="text-sm text-gray-400">Определяем…</span>
             )}

@@ -1,6 +1,6 @@
 const API_URL = 'https://functions.poehali.dev/c251547a-6d0d-4d86-9a3c-1b5bd6054b77';
 
-export type CrmStatus = 'teacher' | 'client' | 'lead' | 'unknown';
+export type CrmStatus = 'staff' | 'teacher' | 'client' | 'lead' | 'parent' | 'unknown';
 
 export interface DialogItem {
   id: number;
