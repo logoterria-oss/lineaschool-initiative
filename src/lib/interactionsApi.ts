@@ -45,7 +45,7 @@ export interface CrmContact {
   phone: string;
   parent: string | null;
   child: string | null;
-  status: 'client' | 'lead';
+  status: 'client' | 'lead' | 'staff' | 'teacher';
   statusLabel: string;
 }
 

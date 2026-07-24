@@ -148,17 +148,59 @@ def _first_phone(obj) -> str:
     return ''
 
 
-def _search_crm_contacts(query: str, limit: int = 20):
-    '''Поиск контактов в CRM по ФИО родителя (legal_name) или ребёнка (name).
+def _search_crm_contacts(cur, query: str, limit: int = 20):
+    '''Поиск контактов для нового диалога:
+    - сотрудники школы (наша таблица staff),
+    - педагоги CRM,
+    - клиенты и лиды CRM (по ФИО родителя legal_name или ребёнка name).
 
-    Возвращает список: [{phone, parent, child, status}]. Только записи с телефоном.
+    Возвращает список: [{phone, parent, child, status, statusLabel}].
+    Только записи с телефоном.
     '''
     q = _norm_name(query)
     if len(q) < 2:
         return []
-    token = _s20_token()
     out = []
     seen = set()
+
+    def _add(phone, name, child, status):
+        ph = _norm_phone(str(phone or ''))
+        if len(ph) != 11 or ph in seen:
+            return
+        seen.add(ph)
+        out.append({
+            'phone': ph,
+            'parent': _standardize_name(name) or None,
+            'child': _standardize_name(child) or None,
+            'status': status,
+            'statusLabel': STATUS_LABELS.get(status),
+        })
+
+    # 1. Наши сотрудники (Список сотрудников)
+    try:
+        cur.execute("SELECT full_name, phone FROM staff")
+        for full_name, phone in cur.fetchall():
+            if q in _norm_name(full_name):
+                _add(phone, full_name, None, 'staff')
+                if len(out) >= limit:
+                    return out
+    except Exception:
+        pass
+
+    token = _s20_token()
+
+    # 2. Педагоги CRM
+    try:
+        emp = _s20_post('/v2api/1/teacher/index', {'page': 0, 'pageSize': 200}, token, 30)
+        for u in emp.get('items', []):
+            if q in _norm_name(u.get('name')):
+                _add(u.get('phone'), u.get('name'), None, 'teacher')
+                if len(out) >= limit:
+                    return out
+    except Exception:
+        pass
+
+    # 3. Клиенты и лиды CRM (родитель/ребёнок)
     for is_study, status in ((1, 'client'), (0, 'lead')):
         try:
             data = _s20_post(
@@ -171,20 +213,9 @@ def _search_crm_contacts(query: str, limit: int = 20):
         for c in data.get('items', []):
             child = c.get('name') or ''
             parent = c.get('legal_name') or ''
-            blob = _norm_name(f"{child} {parent}")
-            if q not in blob:
+            if q not in _norm_name(f"{child} {parent}"):
                 continue
-            phone = _first_phone(c)
-            if not phone or phone in seen:
-                continue
-            seen.add(phone)
-            out.append({
-                'phone': phone,
-                'parent': _standardize_name(parent) or None,
-                'child': _standardize_name(child) or None,
-                'status': status,
-                'statusLabel': STATUS_LABELS.get(status),
-            })
+            _add(_first_phone(c), parent, child, status)
             if len(out) >= limit:
                 return out
     return out
@@ -402,7 +433,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET' and action == 'crm-search':
             q = params.get('q', '').strip()
             try:
-                results = _search_crm_contacts(q)
+                results = _search_crm_contacts(cur, q)
             except Exception as e:
                 print(f"CRM search error: {e}")
                 results = []

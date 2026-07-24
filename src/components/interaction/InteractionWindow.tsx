@@ -432,11 +432,11 @@ const InteractionWindow = () => {
                   autoFocus
                   value={crmQuery}
                   onChange={(e) => setCrmQuery(e.target.value)}
-                  placeholder="Поиск по фамилии ребёнка или родителя"
+                  placeholder="Поиск: сотрудник, родитель или ребёнок"
                   className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400"
                 />
               </div>
-              <p className="text-[11px] text-gray-400 mt-1.5">Ищем в CRM среди клиентов и лидов</p>
+              <p className="text-[11px] text-gray-400 mt-1.5">Сотрудники школы, клиенты и лиды из CRM</p>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               {crmSearching && <div className="p-4 text-sm text-gray-400 text-center">Ищем…</div>}
