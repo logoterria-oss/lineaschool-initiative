@@ -41,6 +41,36 @@ export async function fetchAssignees(): Promise<string[]> {
   return data.assignees || [];
 }
 
+export interface CrmContact {
+  phone: string;
+  parent: string | null;
+  child: string | null;
+  status: 'client' | 'lead';
+  statusLabel: string;
+}
+
+export async function searchCrmContacts(query: string): Promise<CrmContact[]> {
+  const r = await fetch(`${API_URL}?action=crm-search&q=${encodeURIComponent(query)}`);
+  if (!r.ok) return [];
+  const data = await r.json();
+  return data.results || [];
+}
+
+export async function createDialog(contact: {
+  phone: string;
+  parent: string | null;
+  child: string | null;
+  status: string;
+}): Promise<{ ok: boolean; dialogId?: number; message?: string }> {
+  const r = await fetch(`${API_URL}?action=create-dialog`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(contact),
+  });
+  const data = await r.json();
+  return { ok: !!data.ok, dialogId: data.dialog_id, message: data.message };
+}
+
 export async function fetchMessages(dialogId: number): Promise<MessageItem[]> {
   const r = await fetch(`${API_URL}?action=messages&dialog_id=${dialogId}`);
   const data = await r.json();

@@ -138,6 +138,58 @@ def _collect_phones(obj, out):
             _collect_phones(v, out)
 
 
+def _first_phone(obj) -> str:
+    '''Первый валидный 11-значный телефон из записи CRM.'''
+    found = set()
+    _collect_phones(obj, found)
+    # _collect_phones возвращает set — берём любой стабильно (по сортировке)
+    for p in sorted(found):
+        return p
+    return ''
+
+
+def _search_crm_contacts(query: str, limit: int = 20):
+    '''Поиск контактов в CRM по ФИО родителя (legal_name) или ребёнка (name).
+
+    Возвращает список: [{phone, parent, child, status}]. Только записи с телефоном.
+    '''
+    q = _norm_name(query)
+    if len(q) < 2:
+        return []
+    token = _s20_token()
+    out = []
+    seen = set()
+    for is_study, status in ((1, 'client'), (0, 'lead')):
+        try:
+            data = _s20_post(
+                '/v2api/1/customer/index',
+                {'is_study': is_study, 'removed': 0, 'page': 0, 'pageSize': 100, 'name': query},
+                token, 30,
+            )
+        except Exception:
+            data = {}
+        for c in data.get('items', []):
+            child = c.get('name') or ''
+            parent = c.get('legal_name') or ''
+            blob = _norm_name(f"{child} {parent}")
+            if q not in blob:
+                continue
+            phone = _first_phone(c)
+            if not phone or phone in seen:
+                continue
+            seen.add(phone)
+            out.append({
+                'phone': phone,
+                'parent': _standardize_name(parent) or None,
+                'child': _standardize_name(child) or None,
+                'status': status,
+                'statusLabel': STATUS_LABELS.get(status),
+            })
+            if len(out) >= limit:
+                return out
+    return out
+
+
 def _resolve_crm(cur, phone: str, display_name: Optional[str] = None):
     '''Определяет собеседника по телефону/ФИО.
 
@@ -244,7 +296,8 @@ def _list_dialogs(cur) -> list:
         "d.last_time, d.crm_status, d.crm_name, d.crm_label, d.child_name, "
         "(SELECT text FROM interaction_messages m WHERE m.dialog_id = d.id "
         "ORDER BY m.created_at DESC LIMIT 1) "
-        "FROM interaction_dialogs d ORDER BY d.last_time DESC NULLS LAST"
+        "FROM interaction_dialogs d WHERE d.hidden = false "
+        "ORDER BY d.last_time DESC NULLS LAST"
     )
     out = []
     for r in cur.fetchall():
@@ -345,6 +398,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         if method == 'GET' and action == 'max-chats':
             return _resp(200, _get_max_chats())
+
+        if method == 'GET' and action == 'crm-search':
+            q = params.get('q', '').strip()
+            try:
+                results = _search_crm_contacts(q)
+            except Exception as e:
+                print(f"CRM search error: {e}")
+                results = []
+            return _resp(200, {'results': results})
 
         if method == 'GET' and action == 'assignees':
             # Список ответственных = зарегистрированные активные сотрудники
@@ -469,6 +531,41 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             conn.commit()
             return _resp(200, {'ok': True})
 
+        # Создание нового диалога из CRM (инициатива сотрудника)
+        if method == 'POST' and action == 'create-dialog':
+            phone = _norm_phone(body.get('phone'))
+            if len(phone) != 11:
+                return _resp(400, {'error': 'bad_phone', 'message': 'Некорректный телефон'})
+            parent = (body.get('parent') or '').strip() or None
+            child = (body.get('child') or '').strip() or None
+            crm_status = body.get('status') or None
+            crm_label = STATUS_LABELS.get(crm_status or '', None)
+            display = parent or child or phone
+
+            # Диалог идентифицируем по телефону (chat_id). Если уже есть — вернём его.
+            cur.execute(
+                "SELECT id FROM interaction_dialogs WHERE channel = 'max' AND chat_id = %s",
+                (phone,))
+            existing = cur.fetchone()
+            if existing:
+                dialog_id = existing[0]
+                cur.execute(
+                    "UPDATE interaction_dialogs SET crm_name = COALESCE(%s, crm_name), "
+                    "child_name = COALESCE(%s, child_name), crm_status = COALESCE(%s, crm_status), "
+                    "crm_label = COALESCE(%s, crm_label), phone = %s, hidden = false, crm_checked_at = now() "
+                    "WHERE id = %s",
+                    (parent, child, crm_status, crm_label, phone, dialog_id))
+            else:
+                cur.execute(
+                    "INSERT INTO interaction_dialogs "
+                    "(channel, chat_id, client_name, phone, crm_name, child_name, "
+                    "crm_status, crm_label, crm_checked_at, last_time) "
+                    "VALUES ('max', %s, %s, %s, %s, %s, %s, %s, now(), now()) RETURNING id",
+                    (phone, display, phone, parent, child, crm_status, crm_label))
+                dialog_id = cur.fetchone()[0]
+            conn.commit()
+            return _resp(200, {'ok': True, 'dialog_id': dialog_id})
+
         # Отправка исходящего сообщения
         if method == 'POST' and action == 'send':
             dialog_id = int(body.get('dialog_id'))
@@ -483,19 +580,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not row:
                 return _resp(404, {'error': 'dialog_not_found'})
             chat_id, max_chat_id, max_user_id, phone = row
-            # Для MAX отправка идёт по chat_id = id диалога.
-            # Если max_chat_id не заполнен — используем chat_id/user_id как id диалога.
-            send_chat_id = max_chat_id or chat_id or max_user_id
+            # chat_id, равный телефону (диалог создан из CRM) — это НЕ идентификатор
+            # чата MAX. В таком случае отправляем по номеру (recipient).
+            chat_is_phone = _norm_phone(chat_id) == _norm_phone(phone) and len(_norm_phone(phone)) == 11
+            real_chat = max_chat_id or ('' if chat_is_phone else chat_id)
+            real_user = max_user_id or ('' if chat_is_phone else chat_id)
             wappi_result = _send_max(
-                max_chat_id=send_chat_id,
-                max_user_id=max_user_id or chat_id,
-                phone=phone,
+                max_chat_id=real_chat or None,
+                max_user_id=real_user or None,
+                phone=phone or (_norm_phone(chat_id) if chat_is_phone else None),
                 text=text,
             )
-            if wappi_result.get('ok') and not max_chat_id and send_chat_id:
+            if wappi_result.get('ok') and not max_chat_id and real_chat:
                 cur.execute(
                     "UPDATE interaction_dialogs SET max_chat_id = %s WHERE id = %s",
-                    (str(send_chat_id), dialog_id))
+                    (str(real_chat), dialog_id))
             if not wappi_result.get('ok'):
                 return _resp(502, {
                     'ok': False,

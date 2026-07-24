@@ -11,6 +11,9 @@ import {
   assignDialog,
   resolveCrm,
   fetchAssignees,
+  searchCrmContacts,
+  createDialog,
+  CrmContact,
 } from '@/lib/interactionsApi';
 
 const CRM_META: Record<CrmStatus, { label: string; short: string; icon: string; cls: string }> = {
@@ -99,6 +102,11 @@ const InteractionWindow = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [assignees, setAssignees] = useState<string[]>([]);
+  const [newOpen, setNewOpen] = useState(false);
+  const [crmQuery, setCrmQuery] = useState('');
+  const [crmResults, setCrmResults] = useState<CrmContact[]>([]);
+  const [crmSearching, setCrmSearching] = useState(false);
+  const [creating, setCreating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<number | null>(null);
   activeIdRef.current = activeId;
@@ -196,18 +204,64 @@ const InteractionWindow = () => {
     await assignDialog(active.id, name);
   };
 
+  // Поиск контактов в CRM (с задержкой ввода).
+  useEffect(() => {
+    if (!newOpen) return;
+    const q = crmQuery.trim();
+    if (q.length < 2) {
+      setCrmResults([]);
+      return;
+    }
+    setCrmSearching(true);
+    const t = setTimeout(() => {
+      searchCrmContacts(q)
+        .then(setCrmResults)
+        .finally(() => setCrmSearching(false));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [crmQuery, newOpen]);
+
+  const openNew = () => {
+    setCrmQuery('');
+    setCrmResults([]);
+    setNewOpen(true);
+  };
+
+  const startDialog = async (c: CrmContact) => {
+    if (creating) return;
+    setCreating(true);
+    const res = await createDialog({ phone: c.phone, parent: c.parent, child: c.child, status: c.status });
+    setCreating(false);
+    if (res.ok && res.dialogId) {
+      setNewOpen(false);
+      await loadDialogs();
+      setActiveId(res.dialogId);
+    } else {
+      toast({ title: res.message || 'Не удалось создать диалог', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-220px)] min-h-[520px]">
       <div className="w-full lg:w-80 flex-shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
         <div className="p-3 border-b border-gray-100">
-          <div className="relative">
-            <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Поиск по имени или телефону"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Поиск по имени или телефону"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400"
+              />
+            </div>
+            <button
+              onClick={openNew}
+              title="Новый диалог из CRM"
+              className="flex-shrink-0 w-9 h-9 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+            >
+              <Icon name="Plus" size={18} />
+            </button>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -358,6 +412,61 @@ const InteractionWindow = () => {
               )}
             </div>
             <p className="text-[11px] text-gray-400 mt-2">Передача клиента между сотрудниками — вся история сохраняется.</p>
+          </div>
+        </div>
+      )}
+
+      {newOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-20" onClick={() => setNewOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[70vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="font-semibold text-lg text-gray-900">Новый диалог</h3>
+              <button onClick={() => setNewOpen(false)} className="text-gray-400 hover:text-gray-700">
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+            <div className="p-4 border-b border-gray-100">
+              <div className="relative">
+                <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  autoFocus
+                  value={crmQuery}
+                  onChange={(e) => setCrmQuery(e.target.value)}
+                  placeholder="Поиск по фамилии ребёнка или родителя"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400"
+                />
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1.5">Ищем в CRM среди клиентов и лидов</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {crmSearching && <div className="p-4 text-sm text-gray-400 text-center">Ищем…</div>}
+              {!crmSearching && crmQuery.trim().length >= 2 && crmResults.length === 0 && (
+                <div className="p-6 text-sm text-gray-400 text-center">Никого не нашли</div>
+              )}
+              {!crmSearching && crmQuery.trim().length < 2 && (
+                <div className="p-6 text-sm text-gray-400 text-center">Введите минимум 2 символа</div>
+              )}
+              {crmResults.map((c) => (
+                <button
+                  key={c.phone}
+                  onClick={() => startDialog(c)}
+                  disabled={creating}
+                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 disabled:opacity-60 flex items-center gap-3"
+                >
+                  <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <Icon name="User" size={18} className="text-green-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 text-sm truncate">{c.parent || c.child || c.phone}</div>
+                    {c.child && c.parent && (
+                      <div className="text-[11px] text-gray-500 truncate">Ученик: {c.child}</div>
+                    )}
+                    <div className="text-[11px] text-gray-400">{c.phone}</div>
+                  </div>
+                  <span className="text-[11px] text-gray-400 flex-shrink-0">{c.statusLabel}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
