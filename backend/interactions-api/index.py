@@ -361,7 +361,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             for full_name, job_title, role in cur.fetchall():
                 jt = (job_title or '').strip()
                 title = _lower_title(jt) if jt else role_labels.get(role, role)
-                names.append(f"{full_name} ({title})")
+                # Только Фамилия и Имя (без отчества).
+                short_name = ' '.join((full_name or '').split()[:2])
+                names.append(f"{short_name} ({title})")
             return _resp(200, {'assignees': names})
 
         if method == 'GET' and action == 'resolve-crm':
