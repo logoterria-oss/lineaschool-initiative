@@ -17,7 +17,7 @@ const ROLE_ORDER: StaffRole[] = ['teacher', 'diag', 'admin', 'head'];
 
 const emptyForm: StaffInput = { full_name: '', job_title: '', phone: '', email: '', role: 'teacher' };
 
-const StaffListView = () => {
+const StaffListView = ({ readOnly = false }: { readOnly?: boolean }) => {
   const { toast } = useToast();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,21 +115,25 @@ const StaffListView = () => {
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-amber-400"
           />
         </div>
-        <button
-          onClick={importCrm}
-          disabled={importing}
-          className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-amber-300 disabled:opacity-60 text-gray-700 text-sm font-medium px-3 py-2 rounded-lg transition-colors"
-        >
-          <Icon name={importing ? 'Loader' : 'Download'} size={15} className={importing ? 'animate-spin' : ''} />
-          Выгрузить из CRM
-        </button>
-        <button
-          onClick={startAdd}
-          className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
-        >
-          <Icon name="Plus" size={16} />
-          Добавить
-        </button>
+        {!readOnly && (
+          <>
+            <button
+              onClick={importCrm}
+              disabled={importing}
+              className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-amber-300 disabled:opacity-60 text-gray-700 text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            >
+              <Icon name={importing ? 'Loader' : 'Download'} size={15} className={importing ? 'animate-spin' : ''} />
+              Выгрузить из CRM
+            </button>
+            <button
+              onClick={startAdd}
+              className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            >
+              <Icon name="Plus" size={16} />
+              Добавить
+            </button>
+          </>
+        )}
       </div>
 
       {loading ? (
@@ -144,7 +148,7 @@ const StaffListView = () => {
                 <th className="px-4 py-3 font-medium">Телефон</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Роль</th>
-                <th className="px-4 py-3 font-medium w-24"></th>
+                {!readOnly && <th className="px-4 py-3 font-medium w-24"></th>}
               </tr>
             </thead>
             <tbody>
@@ -162,23 +166,29 @@ const StaffListView = () => {
                   <td className="px-4 py-3 text-gray-600">{s.phone || '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{s.email || '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{ROLE_LABELS[s.role]}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => startEdit(s)} className="p-1.5 text-gray-400 hover:text-amber-600" title="Редактировать">
-                        <Icon name="Pencil" size={15} />
-                      </button>
-                      <button onClick={() => remove(s)} className="p-1.5 text-gray-400 hover:text-red-600" title="Удалить">
-                        <Icon name="Trash2" size={15} />
-                      </button>
-                    </div>
-                  </td>
+                  {!readOnly && (
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button onClick={() => startEdit(s)} className="p-1.5 text-gray-400 hover:text-amber-600" title="Редактировать">
+                          <Icon name="Pencil" size={15} />
+                        </button>
+                        <button onClick={() => remove(s)} className="p-1.5 text-gray-400 hover:text-red-600" title="Удалить">
+                          <Icon name="Trash2" size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-400">
+                  <td colSpan={readOnly ? 5 : 6} className="text-center py-12 text-gray-400">
                     <Icon name="Users" size={32} className="mx-auto mb-2" />
-                    {search ? 'Никто не найден' : 'Список пуст — добавьте сотрудника или выгрузите из CRM'}
+                    {search
+                      ? 'Никто не найден'
+                      : readOnly
+                      ? 'Список сотрудников пуст'
+                      : 'Список пуст — добавьте сотрудника или выгрузите из CRM'}
                   </td>
                 </tr>
               )}

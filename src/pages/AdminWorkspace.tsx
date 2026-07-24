@@ -9,6 +9,7 @@ import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
 import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
 import StudentsListView from '@/components/headWorkspace/StudentsListView';
+import StaffListView from '@/components/headWorkspace/StaffListView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
@@ -65,7 +66,7 @@ const AdminWorkspace = () => {
       case 'violations': return <TeacherViolationsManager withRole />;
       case 'students-list': return <StudentsListView />;
       case 'leads-list': return <LeadsListView />;
-      case 'staff-list': return <StubView label={active.label} />;
+      case 'staff-list': return <StaffListView readOnly />;
       case 'interaction-window': return <InteractionWindow />;
       default: return <StubView label={active.label} />;
     }
