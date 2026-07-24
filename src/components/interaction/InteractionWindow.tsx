@@ -302,12 +302,14 @@ const InteractionWindow = () => {
           {filtered.map((d) => {
             const isActive = d.id === activeId;
             const bg = isMine(d) ? 'bg-green-50' : 'bg-gray-50';
-            const ring = isActive ? 'ring-2 ring-inset ring-green-500' : '';
+            const ring = isActive
+              ? 'border border-dashed border-green-500'
+              : 'border border-transparent border-b-gray-50';
             return (
               <button
                 key={d.id}
                 onClick={() => setActiveId(d.id)}
-                className={`w-full text-left px-3 py-3 border-b border-gray-50 transition-colors hover:brightness-95 ${bg} ${ring}`}
+                className={`w-full text-left px-3 py-3 transition-colors hover:brightness-95 ${bg} ${ring}`}
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-gray-900 text-sm truncate min-w-0">{d.clientName}</span>
