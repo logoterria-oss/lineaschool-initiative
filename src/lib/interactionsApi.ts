@@ -33,6 +33,13 @@ export async function fetchDialogs(): Promise<DialogItem[]> {
   return data.dialogs || [];
 }
 
+export async function fetchAssignees(): Promise<string[]> {
+  const r = await fetch(`${API_URL}?action=assignees`);
+  if (!r.ok) return [];
+  const data = await r.json();
+  return data.assignees || [];
+}
+
 export async function fetchMessages(dialogId: number): Promise<MessageItem[]> {
   const r = await fetch(`${API_URL}?action=messages&dialog_id=${dialogId}`);
   const data = await r.json();

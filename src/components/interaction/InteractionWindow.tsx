@@ -10,9 +10,8 @@ import {
   sendMessage,
   assignDialog,
   resolveCrm,
+  fetchAssignees,
 } from '@/lib/interactionsApi';
-
-const ASSIGNEES = ['Ирина (РУО)', 'Ольга (админ)', 'Я'];
 
 const CRM_META: Record<CrmStatus, { label: string; icon: string; cls: string }> = {
   staff: { label: 'Сотрудник', icon: 'Briefcase', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
@@ -98,6 +97,7 @@ const InteractionWindow = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [assignees, setAssignees] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<number | null>(null);
   activeIdRef.current = activeId;
@@ -116,6 +116,17 @@ const InteractionWindow = () => {
     const t = setInterval(loadDialogs, 15000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadAssignees = async () => {
+    setAssignees(await fetchAssignees());
+  };
+
+  useEffect(() => {
+    loadAssignees();
+    // Обновляем список ответственных, если кто-то зарегистрировался/изменился.
+    const t = setInterval(loadAssignees, 60000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -312,7 +323,10 @@ const InteractionWindow = () => {
           <div>
             <div className="text-xs text-gray-400 mb-1.5">Ответственный</div>
             <div className="space-y-1">
-              {ASSIGNEES.map((name) => (
+              {(active.assignee && active.assignee !== 'Не назначен' && !assignees.includes(active.assignee)
+                ? [active.assignee, ...assignees]
+                : assignees
+              ).map((name) => (
                 <button
                   key={name}
                   onClick={() => reassign(name)}
@@ -321,8 +335,11 @@ const InteractionWindow = () => {
                   {name}
                 </button>
               ))}
+              {assignees.length === 0 && (
+                <div className="text-sm text-gray-400 px-3 py-2">Загрузка сотрудников…</div>
+              )}
             </div>
-            <p className="text-[11px] text-gray-400 mt-2">Передача клиента между РУО и админом — вся история сохраняется.</p>
+            <p className="text-[11px] text-gray-400 mt-2">Передача клиента между сотрудниками — вся история сохраняется.</p>
           </div>
         </div>
       )}

@@ -340,6 +340,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET' and action == 'max-chats':
             return _resp(200, _get_max_chats())
 
+        if method == 'GET' and action == 'assignees':
+            # Список ответственных = зарегистрированные активные сотрудники
+            # с доступом к окну взаимодействия (руководители и администраторы).
+            cur.execute(
+                "SELECT full_name, job_title, role FROM staff "
+                "WHERE status = 'active' AND password_hash <> '' "
+                "AND role IN ('head', 'admin') ORDER BY role, full_name"
+            )
+            role_labels = {'head': 'Руководитель', 'admin': 'Администратор'}
+            names = []
+            for full_name, job_title, role in cur.fetchall():
+                title = (job_title or '').strip() or role_labels.get(role, role)
+                names.append(f"{full_name} ({title})")
+            return _resp(200, {'assignees': names})
+
         if method == 'GET' and action == 'resolve-crm':
             dialog_id = int(params.get('dialog_id', '0'))
             force = params.get('force') == '1'
