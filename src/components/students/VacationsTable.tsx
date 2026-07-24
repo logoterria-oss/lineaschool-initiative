@@ -49,6 +49,16 @@ const returnIndex = (v: StudentVacation | null): number => {
   return idx - todayIdx;
 };
 
+// Дата возврата уже прошла (просрочена) — сравнение с сегодня по декадному индексу.
+const isOverdue = (v: StudentVacation | null): boolean => {
+  if (!v || !v.date_to) return false;
+  const now = new Date();
+  const todayIdx = decadeIndex(now.getFullYear(), now.getMonth(), partOfMonth(now.getDate()));
+  const d = new Date(v.date_to);
+  const idx = decadeIndex(d.getFullYear(), d.getMonth(), vacPart(v));
+  return idx < todayIdx;
+};
+
 // HSV → hex (s,v в 0..1, h в градусах).
 const hsvToHex = (h: number, s: number, val: number): string => {
   const c = val * s;
@@ -325,6 +335,7 @@ const VacationCell = ({
   }
 
   const color = returnColor(displayed);
+  const overdue = isOverdue(displayed);
 
   const clear = async () => {
     await saveVacation(s.id, { date_to: null, vacation_end_type: 'exact' });
@@ -346,8 +357,17 @@ const VacationCell = ({
       <div className="flex items-start gap-2">
         {displayed && displayed.date_to ? (
           <span
-            className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
-            style={color ? { backgroundColor: color.bg, color: color.text } : undefined}
+            className={
+              'inline-block px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap' +
+              (overdue ? ' animate-blink-red text-white' : '')
+            }
+            style={
+              overdue
+                ? undefined
+                : color
+                ? { backgroundColor: color.bg, color: color.text }
+                : undefined
+            }
           >
             {formatVacationEnd(displayed)}
           </span>
@@ -394,6 +414,10 @@ const VacationsTable = ({ rows }: { rows: StudentRow[] }) => {
   const enriched = rows
     .map(s => ({ ...s, vacation: vacMap[s.id] ?? s.vacation }))
     .sort((a, b) => {
+      // Просроченные карточки не уезжают вниз — держим их наверху списка.
+      const oa = isOverdue(a.vacation);
+      const ob = isOverdue(b.vacation);
+      if (oa !== ob) return oa ? -1 : 1;
       const ra = returnIndex(a.vacation);
       const rb = returnIndex(b.vacation);
       if (ra !== rb) return ra - rb;

@@ -100,12 +100,23 @@ export default {
 					'100%': {
 						transform: 'translateX(200%)'
 					}
+				},
+				'blink-red': {
+					'0%, 100%': {
+						backgroundColor: '#dc2626',
+						boxShadow: '0 0 0 0 rgba(220, 38, 38, 0.5)'
+					},
+					'50%': {
+						backgroundColor: '#f87171',
+						boxShadow: '0 0 0 4px rgba(220, 38, 38, 0)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				shimmer: 'shimmer 2.5s ease-in-out infinite'
+				shimmer: 'shimmer 2.5s ease-in-out infinite',
+				'blink-red': 'blink-red 1s ease-in-out infinite'
 			}
 		}
 	},
