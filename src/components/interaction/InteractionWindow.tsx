@@ -94,6 +94,7 @@ const MessageBubble = ({ msg }: { msg: MessageItem }) => {
 
 const InteractionWindow = () => {
   const { toast } = useToast();
+  const currentUser = sessionStorage.getItem('staff_name') || '';
   const [dialogs, setDialogs] = useState<DialogItem[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -273,11 +274,16 @@ const InteractionWindow = () => {
           )}
           {filtered.map((d) => {
             const isActive = d.id === activeId;
+            const mine =
+              !!currentUser &&
+              d.assignee.trim().toLowerCase() === currentUser.trim().toLowerCase();
+            const bg = mine ? 'bg-green-50' : 'bg-gray-50';
+            const ring = isActive ? 'ring-2 ring-inset ring-green-500' : '';
             return (
               <button
                 key={d.id}
                 onClick={() => setActiveId(d.id)}
-                className={`w-full text-left px-3 py-3 border-b border-gray-50 transition-colors ${isActive ? 'bg-green-50' : 'hover:bg-gray-50'}`}
+                className={`w-full text-left px-3 py-3 border-b border-gray-50 transition-colors hover:brightness-95 ${bg} ${ring}`}
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-gray-900 text-sm truncate min-w-0">{d.clientName}</span>
