@@ -118,7 +118,6 @@ const AdminWorkspace = () => {
           interactionActive ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
         }`}
       >
-        <Icon name="MessagesSquare" size={18} className="flex-shrink-0" />
         <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
       </button>
 
