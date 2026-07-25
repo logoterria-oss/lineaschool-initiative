@@ -17,6 +17,7 @@ import DialogList from './DialogList';
 import ChatPanel from './ChatPanel';
 import DialogSidebar from './DialogSidebar';
 import NewDialogModal from './NewDialogModal';
+import { notifyInteractionChanged } from './useInteractionBadges';
 
 const InteractionWindow = () => {
   const { toast } = useToast();
@@ -126,6 +127,7 @@ const InteractionWindow = () => {
       if (prev.includes(id)) return prev;
       const next = [...prev, id];
       localStorage.setItem(seenKey, JSON.stringify(next));
+      notifyInteractionChanged();
       return next;
     });
   };
@@ -178,6 +180,7 @@ const InteractionWindow = () => {
     if (!active) return;
     setDialogs((prev) => prev.map((d) => (d.id === active.id ? { ...d, assignee: name } : d)));
     await assignDialog(active.id, name);
+    notifyInteractionChanged();
   };
 
   const refreshCrm = () => {
