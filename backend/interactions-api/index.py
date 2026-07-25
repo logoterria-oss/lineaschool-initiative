@@ -525,8 +525,12 @@ def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str],
     uname = (username or '').lstrip('@') or None
     ph = phone if (phone and len(phone) == 11) else None
 
-    # 1. Точное совпадение по tg_chat_id
-    cur.execute("SELECT id FROM interaction_dialogs WHERE tg_chat_id = %s", (tg_chat_id,))
+    # 1. Точное совпадение по tg_chat_id (предпочитаем видимый диалог)
+    cur.execute(
+        "SELECT id FROM interaction_dialogs WHERE tg_chat_id = %s "
+        "ORDER BY hidden ASC, id ASC LIMIT 1",
+        (tg_chat_id,),
+    )
     row = cur.fetchone()
     if row:
         return row[0]
@@ -535,7 +539,7 @@ def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str],
     if uname:
         cur.execute(
             "SELECT id FROM interaction_dialogs "
-            "WHERE lower(tg_username) = lower(%s) ORDER BY id LIMIT 1",
+            "WHERE lower(tg_username) = lower(%s) ORDER BY hidden ASC, id ASC LIMIT 1",
             (uname,),
         )
         row = cur.fetchone()
@@ -546,7 +550,7 @@ def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str],
     # 3. По телефону
     if ph:
         cur.execute(
-            "SELECT id FROM interaction_dialogs WHERE phone = %s ORDER BY id LIMIT 1",
+            "SELECT id FROM interaction_dialogs WHERE phone = %s ORDER BY hidden ASC, id ASC LIMIT 1",
             (ph,),
         )
         row = cur.fetchone()
