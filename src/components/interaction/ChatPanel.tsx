@@ -83,6 +83,23 @@ const ChatPanel = ({
             <div className="text-xs text-gray-500 truncate leading-tight">Ученик: {active.childName}</div>
           )}
         </div>
+        {otherAvailable && (
+          <button
+            onClick={() => setConfirmChannel(otherChannel)}
+            className="h-9 px-2.5 flex items-center gap-1 text-sm text-gray-600 hover:text-green-700 bg-gray-50 rounded-lg flex-shrink-0"
+            title={`Перейти в ${CHANNEL_LABEL[otherChannel]}`}
+          >
+            <Icon name="ArrowLeftRight" size={15} />
+            {CHANNEL_SHORT[otherChannel]}
+          </button>
+        )}
+        <button
+          onClick={call}
+          className="w-9 h-9 flex items-center justify-center text-white bg-green-500 hover:bg-green-600 rounded-full flex-shrink-0"
+          title="Позвонить клиенту"
+        >
+          <Icon name="Phone" size={16} />
+        </button>
         <button
           onClick={onOpenInfo}
           className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-green-600 rounded-lg flex-shrink-0"
