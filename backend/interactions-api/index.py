@@ -307,18 +307,33 @@ def _db():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
 
-def _upsert_dialog(cur, chat_id: str, name: Optional[str], phone: Optional[str]) -> int:
+def _upsert_dialog(cur, chat_id: str, name: Optional[str], phone: Optional[str],
+                   max_chat_id: Optional[str] = None, max_user_id: Optional[str] = None) -> int:
+    '''Находит/создаёт Max-диалог.
+
+    Чтобы не плодить дубли, ищем существующий диалог того же клиента по любому
+    из известных идентификаторов Max: chat_id, max_chat_id, max_user_id.
+    Так входящее сообщение попадает в диалог, созданный ранее из CRM (после
+    того как мы записали в него реальный chat_id при первой отправке).
+    '''
+    mc = str(max_chat_id or '').strip() or None
+    mu = str(max_user_id or '').strip() or None
+    keys = [k for k in [chat_id, mc, mu] if k]
+    if keys:
+        placeholders = ','.join(['%s'] * len(keys))
+        cur.execute(
+            "SELECT id FROM interaction_dialogs WHERE channel = 'max' AND ("
+            f"chat_id IN ({placeholders}) OR max_chat_id IN ({placeholders}) "
+            f"OR max_user_id IN ({placeholders})) ORDER BY id LIMIT 1",
+            keys * 3,
+        )
+        row = cur.fetchone()
+        if row:
+            return row[0]
     cur.execute(
-        "SELECT id FROM interaction_dialogs WHERE channel = 'max' AND chat_id = %s",
-        (chat_id,),
-    )
-    row = cur.fetchone()
-    if row:
-        return row[0]
-    cur.execute(
-        "INSERT INTO interaction_dialogs (channel, chat_id, client_name, phone) "
-        "VALUES ('max', %s, %s, %s) RETURNING id",
-        (chat_id, name, phone),
+        "INSERT INTO interaction_dialogs (channel, chat_id, client_name, phone, max_chat_id, max_user_id) "
+        "VALUES ('max', %s, %s, %s, %s, %s) RETURNING id",
+        (chat_id, name, phone, mc, mu),
     )
     return cur.fetchone()[0]
 
@@ -437,6 +452,21 @@ def _send_tg(text: str, tg_chat_id=None, tg_username=None, phone=None) -> Dict[s
     except Exception as e:
         print(f"WAPPI TG send FAILED msg={msg} err={e}")
         return {'ok': False, 'error': str(e)}
+
+
+def _extract_max_ids(wappi_result: dict) -> tuple:
+    '''Достаёт chat_id и user_id из ответа Wappi на отправку в Max.'''
+    resp = wappi_result.get('response') or {}
+    if not isinstance(resp, dict):
+        return None, None
+    candidates = [resp, resp.get('message'), resp.get('data'), resp.get('result')]
+    chat = user = None
+    for c in candidates:
+        if not isinstance(c, dict):
+            continue
+        chat = chat or c.get('chat_id') or c.get('chatId')
+        user = user or c.get('user_id') or c.get('userId') or c.get('recipient_id')
+    return (str(chat) if chat else None), (str(user) if user else None)
 
 
 def _staff_phone_by_name(cur, full_name: str) -> Optional[str]:
@@ -737,7 +767,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             if not key or from_me:
                 return _resp(200, {'ok': True, 'skipped': 'no_key_or_from_me'})
-            dialog_id = _upsert_dialog(cur, key, name, None)
+            dialog_id = _upsert_dialog(cur, key, name, None, max_chat_id or None, max_user_id or None)
             cur.execute(
                 "INSERT INTO interaction_messages (dialog_id, direction, channel, text) "
                 "VALUES (%s, 'in', 'max', %s)",
@@ -843,10 +873,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 phone=phone or (_norm_phone(chat_id) if chat_is_phone else None),
                 text=text,
             )
-            if wappi_result.get('ok') and not max_chat_id and real_chat:
-                cur.execute(
-                    "UPDATE interaction_dialogs SET max_chat_id = %s WHERE id = %s",
-                    (str(real_chat), dialog_id))
+            if wappi_result.get('ok'):
+                # Сохраняем реальные идентификаторы чата MAX, чтобы входящие
+                # сообщения от этого же клиента попадали в ЭТОТ диалог, а не в новый.
+                got_chat, got_user = _extract_max_ids(wappi_result)
+                new_chat = max_chat_id or real_chat or got_chat
+                new_user = max_user_id or real_user or got_user
+                if new_chat or new_user:
+                    cur.execute(
+                        "UPDATE interaction_dialogs SET "
+                        "max_chat_id = COALESCE(max_chat_id, %s), "
+                        "max_user_id = COALESCE(max_user_id, %s) WHERE id = %s",
+                        (new_chat or None, new_user or None, dialog_id))
             if not wappi_result.get('ok'):
                 return _resp(502, {
                     'ok': False,
