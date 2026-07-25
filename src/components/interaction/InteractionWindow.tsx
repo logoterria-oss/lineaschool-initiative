@@ -255,7 +255,7 @@ const InteractionWindow = () => {
   const startDialog = async (c: CrmContact) => {
     if (creating) return;
     setCreating(true);
-    const res = await createDialog({ phone: c.phone, parent: c.parent, child: c.child, status: c.status });
+    const res = await createDialog({ phone: c.phone, parent: c.parent, child: c.child, status: c.status, initiator: currentUser || undefined });
     setCreating(false);
     if (res.ok && res.dialogId) {
       setNewOpen(false);

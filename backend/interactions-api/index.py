@@ -765,6 +765,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             crm_status = body.get('status') or None
             crm_label = STATUS_LABELS.get(crm_status or '', None)
             display = parent or child or phone
+            initiator = (body.get('initiator') or '').strip() or None
 
             # Диалог идентифицируем по телефону (chat_id). Если уже есть — вернём его.
             cur.execute(
@@ -776,16 +777,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute(
                     "UPDATE interaction_dialogs SET crm_name = COALESCE(%s, crm_name), "
                     "child_name = COALESCE(%s, child_name), crm_status = COALESCE(%s, crm_status), "
-                    "crm_label = COALESCE(%s, crm_label), phone = %s, hidden = false, crm_checked_at = now() "
+                    "crm_label = COALESCE(%s, crm_label), phone = %s, hidden = false, crm_checked_at = now(), "
+                    "assignee = COALESCE(NULLIF(assignee, 'Не назначен'), %s, assignee) "
                     "WHERE id = %s",
-                    (parent, child, crm_status, crm_label, phone, dialog_id))
+                    (parent, child, crm_status, crm_label, phone, initiator, dialog_id))
             else:
                 cur.execute(
                     "INSERT INTO interaction_dialogs "
                     "(channel, chat_id, client_name, phone, crm_name, child_name, "
-                    "crm_status, crm_label, crm_checked_at, last_time) "
-                    "VALUES ('max', %s, %s, %s, %s, %s, %s, %s, now(), now()) RETURNING id",
-                    (phone, display, phone, parent, child, crm_status, crm_label))
+                    "crm_status, crm_label, assignee, crm_checked_at, last_time) "
+                    "VALUES ('max', %s, %s, %s, %s, %s, %s, %s, %s, now(), now()) RETURNING id",
+                    (phone, display, phone, parent, child, crm_status, crm_label, initiator))
                 dialog_id = cur.fetchone()[0]
             conn.commit()
             return _resp(200, {'ok': True, 'dialog_id': dialog_id})

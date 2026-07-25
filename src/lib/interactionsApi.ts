@@ -63,6 +63,7 @@ export async function createDialog(contact: {
   parent: string | null;
   child: string | null;
   status: string;
+  initiator?: string;
 }): Promise<{ ok: boolean; dialogId?: number; message?: string }> {
   const r = await fetch(`${API_URL}?action=create-dialog`, {
     method: 'POST',
