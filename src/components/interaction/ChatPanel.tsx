@@ -29,6 +29,8 @@ interface ChatPanelProps {
   canWrite: boolean;
   switchChannel: (channel: string) => void;
   call: () => void;
+  onBack?: () => void;
+  onOpenInfo?: () => void;
 }
 
 const ChatPanel = ({
@@ -44,16 +46,20 @@ const ChatPanel = ({
   canWrite,
   switchChannel,
   call,
+  onBack,
+  onOpenInfo,
 }: ChatPanelProps) => {
   const [confirmChannel, setConfirmChannel] = useState<string | null>(null);
 
   if (!active) {
     return (
-      <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center text-gray-400">
+      <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm hidden lg:flex items-center justify-center text-gray-400">
         {loading ? 'Загрузка…' : 'Выберите диалог'}
       </div>
     );
   }
+
+  const isLeadOrClient = active.crmStatus === 'client' || active.crmStatus === 'lead';
 
   const channel = active.channel || 'max';
   const channelLabel = CHANNEL_LABEL[channel] || 'Max';
@@ -63,27 +69,27 @@ const ChatPanel = ({
 
   return (
     <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 lg:hidden">
-        <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-          <Icon name="User" size={18} className="text-green-600" />
-        </div>
-        <div className="min-w-0">
-          <div className="font-semibold text-gray-900 truncate">{active.clientName}</div>
-          {(active.crmStatus === 'client' || active.crmStatus === 'lead') && active.childName && (
-            <div className="text-xs text-gray-500 truncate">Ученик: {active.childName}</div>
+      <div className="px-2 py-2.5 border-b border-gray-100 flex items-center gap-2 lg:hidden">
+        <button
+          onClick={onBack}
+          className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 rounded-lg flex-shrink-0"
+          title="К списку чатов"
+        >
+          <Icon name="ArrowLeft" size={20} />
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-gray-900 truncate leading-tight">{active.clientName}</div>
+          {isLeadOrClient && active.childName && (
+            <div className="text-xs text-gray-500 truncate leading-tight">Ученик: {active.childName}</div>
           )}
-          {active.phone && <div className="text-xs text-gray-400">{active.phone}</div>}
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          {resolving && !active.crmStatus ? (
-            <span className="text-xs text-gray-400 flex items-center gap-1">
-              <Icon name="Loader" size={12} className="animate-spin" /> CRM…
-            </span>
-          ) : (
-            <CrmBadge status={active.crmStatus} label={active.crmStatus === 'parent' ? 'Родитель' : active.crmLabel} />
-          )}
-          {active.channels.map((c) => <ChannelBadge key={c} channel={c} />)}
-        </div>
+        <button
+          onClick={onOpenInfo}
+          className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-green-600 rounded-lg flex-shrink-0"
+          title="Информация о клиенте"
+        >
+          <Icon name="Info" size={20} />
+        </button>
       </div>
 
       {/* Шапка средней колонки (ПК): мессенджер, переключение, вызов */}

@@ -39,6 +39,7 @@ const InteractionWindow = () => {
   const [crmSearching, setCrmSearching] = useState(false);
   const [creating, setCreating] = useState(false);
   const [onlyMine, setOnlyMine] = useState(false);
+  const [mobileInfo, setMobileInfo] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<number | null>(null);
   activeIdRef.current = activeId;
@@ -136,6 +137,12 @@ const InteractionWindow = () => {
   const openDialog = (id: number) => {
     markSeen(id);
     setActiveId(id);
+    setMobileInfo(false);
+  };
+
+  const backToList = () => {
+    setActiveId(null);
+    setMobileInfo(false);
   };
 
   // При первой загрузке считаем все текущие «мои» чаты уже просмотренными,
@@ -273,45 +280,67 @@ const InteractionWindow = () => {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-220px)] min-h-[520px]">
-      <DialogList
-        search={search}
-        setSearch={setSearch}
-        openNew={openNew}
-        onlyMine={onlyMine}
-        setOnlyMine={setOnlyMine}
-        mineCount={mineCount}
-        loading={loading}
-        filtered={filtered}
-        activeId={activeId}
-        setActiveId={openDialog}
-        isMine={isMine}
-      />
+      {/* Список чатов: на мобиле скрыт, когда открыт чат */}
+      <div className={`${activeId !== null ? 'hidden' : 'flex'} lg:flex min-h-0 flex-1 lg:flex-initial`}>
+        <DialogList
+          search={search}
+          setSearch={setSearch}
+          openNew={openNew}
+          onlyMine={onlyMine}
+          setOnlyMine={setOnlyMine}
+          mineCount={mineCount}
+          loading={loading}
+          filtered={filtered}
+          activeId={activeId}
+          setActiveId={openDialog}
+          isMine={isMine}
+        />
+      </div>
 
-      <ChatPanel
-        active={active}
-        loading={loading}
-        resolving={resolving}
-        messages={messages}
-        scrollRef={scrollRef}
-        draft={draft}
-        setDraft={setDraft}
-        send={send}
-        sending={sending}
-        canWrite={!active || isMine(active)}
-        switchChannel={switchChannel}
-        call={call}
-      />
+      {/* Чат: на мобиле скрыт, пока не выбран диалог */}
+      <div className={`${activeId === null ? 'hidden' : 'flex'} lg:flex min-h-0 flex-1`}>
+        <ChatPanel
+          active={active}
+          loading={loading}
+          resolving={resolving}
+          messages={messages}
+          scrollRef={scrollRef}
+          draft={draft}
+          setDraft={setDraft}
+          send={send}
+          sending={sending}
+          canWrite={!active || isMine(active)}
+          switchChannel={switchChannel}
+          call={call}
+          onBack={backToList}
+          onOpenInfo={() => setMobileInfo(true)}
+        />
+      </div>
 
       {active && (
-        <DialogSidebar
-          active={active}
-          resolving={resolving}
-          refreshCrm={refreshCrm}
-          assignees={assignees}
-          reassign={reassign}
-          currentUser={currentUser}
-          saveContacts={saveContacts}
-        />
+        <>
+          {/* Затемнение под инфо-панелью на мобиле */}
+          {mobileInfo && (
+            <div
+              className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+              onClick={() => setMobileInfo(false)}
+            />
+          )}
+          <div
+            className={`${mobileInfo ? 'flex' : 'hidden'} lg:flex fixed lg:static inset-y-0 right-0 z-50 w-[85%] max-w-sm lg:w-64 lg:max-w-none lg:z-auto`}
+          >
+            <DialogSidebar
+              active={active}
+              resolving={resolving}
+              refreshCrm={refreshCrm}
+              assignees={assignees}
+              reassign={reassign}
+              currentUser={currentUser}
+              saveContacts={saveContacts}
+              onClose={() => setMobileInfo(false)}
+            />
+          </div>
+        </>
       )}
 
       {newOpen && (

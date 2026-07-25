@@ -21,11 +21,12 @@ interface DialogSidebarProps {
   reassign: (name: string) => void;
   currentUser: string;
   saveContacts: (contacts: { phone?: string; tgUsername?: string }) => Promise<void>;
+  onClose?: () => void;
 }
 
 const SUPERVISOR = 'абраменко виктория';
 
-const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, currentUser, saveContacts }: DialogSidebarProps) => {
+const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, currentUser, saveContacts, onClose }: DialogSidebarProps) => {
   const [pending, setPending] = useState<string | null>(null);
   const [editContacts, setEditContacts] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
@@ -55,7 +56,17 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, cur
   };
 
   return (
-    <div className="w-full lg:w-64 flex-shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-4">
+    <div className="w-full bg-white lg:rounded-2xl lg:border border-gray-200 shadow-sm p-4 space-y-4 overflow-y-auto">
+      <div className="flex items-center justify-between lg:hidden -mt-1 mb-1">
+        <span className="text-sm font-semibold text-gray-500">Информация</span>
+        <button
+          onClick={onClose}
+          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 rounded-lg"
+          title="Закрыть"
+        >
+          <Icon name="X" size={18} />
+        </button>
+      </div>
       <div>
         <div className="font-semibold text-gray-900">{active.clientName}</div>
         {(active.crmStatus === 'client' || active.crmStatus === 'lead') && active.childName && (
