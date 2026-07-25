@@ -108,20 +108,20 @@ def _match_staff(cur, phone: str, name_key: str):
     # 1. Телефон / точное ФИО
     for full_name, s_phone in rows:
         if phone and len(phone) == 11 and _norm_phone(str(s_phone or '')) == phone:
-            return True, full_name
+            return True, full_name, _norm_phone(str(s_phone or ''))
         if name_key and _norm_name(full_name) == name_key:
-            return True, full_name
+            return True, full_name, _norm_phone(str(s_phone or ''))
 
     # 2. Одно слово из MAX → совпадение по любому слову ФИО сотрудника (если он один такой)
     if name_key and ' ' not in name_key:
         candidates = [
-            fn for fn, _ in rows
+            (fn, ph) for fn, ph in rows
             if name_key in set(_norm_name(fn).split(' '))
         ]
         if len(candidates) == 1:
-            return True, candidates[0]
+            return True, candidates[0][0], _norm_phone(str(candidates[0][1] or ''))
 
-    return False, None
+    return False, None, None
 
 
 def _collect_phones(obj, out):
@@ -236,17 +236,18 @@ def _resolve_crm(cur, phone: str, display_name: Optional[str] = None):
     name_key = _norm_name(display_name)
     has_phone = len(phone) == 11
     disp = _standardize_name(display_name)
+    known_phone = phone if has_phone else None
 
     # 0. Наши сотрудники (руководители, админы, педагоги из «Списка сотрудников»)
     try:
-        ok, nm = _match_staff(cur, phone, name_key)
+        ok, nm, staff_phone = _match_staff(cur, phone, name_key)
         if ok:
-            return 'staff', _standardize_name(nm), STATUS_LABELS['staff'], None
+            return 'staff', _standardize_name(nm), STATUS_LABELS['staff'], None, (staff_phone or known_phone)
     except Exception:
         pass
 
     if not has_phone and not name_key:
-        return 'unknown', None, None, None
+        return 'unknown', None, None, None, known_phone
 
     token = _s20_token()
 
@@ -254,10 +255,11 @@ def _resolve_crm(cur, phone: str, display_name: Optional[str] = None):
     try:
         emp = _s20_post('/v2api/1/teacher/index', {'page': 0, 'pageSize': 200}, token, 30)
         for u in emp.get('items', []):
-            if has_phone and _norm_phone(str(u.get('phone') or '')) == phone:
-                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher'], None
+            u_phone = _norm_phone(str(u.get('phone') or ''))
+            if has_phone and u_phone == phone:
+                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher'], None, (u_phone or known_phone)
             if name_key and _norm_name(u.get('name')) == name_key:
-                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher'], None
+                return 'teacher', _standardize_name(u.get('name')), STATUS_LABELS['teacher'], None, (u_phone or known_phone)
     except Exception:
         pass
 
@@ -279,11 +281,11 @@ def _resolve_crm(cur, phone: str, display_name: Optional[str] = None):
                     child = _standardize_name(c.get('name'))
                     parent = _standardize_name(c.get('legal_name')) or disp
                     # Собеседник — родитель; ребёнок = карточка ученика.
-                    return status, parent, STATUS_LABELS[status], child
+                    return status, parent, STATUS_LABELS[status], child, (phone or known_phone)
             except Exception:
                 pass
 
-    return 'unknown', None, None, None
+    return 'unknown', None, None, None, known_phone
 
 
 def _resp(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
@@ -544,9 +546,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'cached': True,
                 })
             resolved_phone = _phone_from_chat(chat_id, phone)
-            status, name, label, child = _resolve_crm(cur, resolved_phone, client_name)
-            # В phone сохраняем только настоящий 11-значный номер (не chat_id из MAX).
-            store_phone = resolved_phone if len(resolved_phone) == 11 else None
+            status, name, label, child, crm_phone = _resolve_crm(cur, resolved_phone, client_name)
+            # Телефон для «Способов связи»: сначала номер из карточки CRM,
+            # затем номер из chat_id (если это реальный номер, а не id чата MAX).
+            store_phone = None
+            if crm_phone and len(_norm_phone(str(crm_phone))) == 11:
+                store_phone = _norm_phone(str(crm_phone))
+            elif len(resolved_phone) == 11:
+                store_phone = resolved_phone
             # Имя из CRM/сотрудников прописываем ТОЛЬКО если нашли контакт.
             cur.execute(
                 "UPDATE interaction_dialogs SET crm_status = %s, crm_name = COALESCE(%s, crm_name), "
