@@ -116,4 +116,17 @@ export async function resolveCrm(
   };
 }
 
+export async function setContacts(
+  dialogId: number,
+  contacts: { phone?: string; tgUsername?: string },
+): Promise<boolean> {
+  const r = await fetch(`${API_URL}?action=set-contacts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dialog_id: dialogId, ...contacts }),
+  });
+  const data = await r.json();
+  return !!data.ok;
+}
+
 export const WEBHOOK_URL = `${API_URL}?action=webhook`;

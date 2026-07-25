@@ -11,6 +11,7 @@ import {
   fetchAssignees,
   searchCrmContacts,
   createDialog,
+  setContacts,
   CrmContact,
 } from '@/lib/interactionsApi';
 import DialogList from './DialogList';
@@ -193,6 +194,27 @@ const InteractionWindow = () => {
       .finally(() => setResolving(false));
   };
 
+  const saveContacts = async (contacts: { phone?: string; tgUsername?: string }) => {
+    if (!active) return;
+    const ok = await setContacts(active.id, contacts);
+    if (ok) {
+      const uname = (contacts.tgUsername || '').trim().replace(/^@/, '');
+      setDialogs((prev) =>
+        prev.map((d) =>
+          d.id === active.id
+            ? {
+                ...d,
+                phone: contacts.phone?.trim() ? contacts.phone.trim() : d.phone,
+                tgUsername: uname ? uname : d.tgUsername,
+              }
+            : d,
+        ),
+      );
+    } else {
+      toast({ title: 'Не удалось сохранить контакты', variant: 'destructive' });
+    }
+  };
+
   // Поиск контактов в CRM (с задержкой ввода).
   useEffect(() => {
     if (!newOpen) return;
@@ -266,6 +288,7 @@ const InteractionWindow = () => {
           assignees={assignees}
           reassign={reassign}
           currentUser={currentUser}
+          saveContacts={saveContacts}
         />
       )}
 

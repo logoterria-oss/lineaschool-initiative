@@ -777,6 +777,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             conn.commit()
             return _resp(200, {'ok': True})
 
+        # Ручное сохранение способов связи (телефон для Max, @username для Telegram)
+        if method == 'POST' and action == 'set-contacts':
+            dialog_id = int(body.get('dialog_id'))
+            phone = _norm_phone(body.get('phone') or '')
+            store_phone = phone if len(phone) == 11 else None
+            username = (body.get('tgUsername') or '').strip().lstrip('@') or None
+            cur.execute(
+                "UPDATE interaction_dialogs SET "
+                "phone = COALESCE(%s, phone), "
+                "tg_username = COALESCE(%s, tg_username) WHERE id = %s",
+                (store_phone, username, dialog_id),
+            )
+            conn.commit()
+            return _resp(200, {'ok': True, 'phone': store_phone, 'tgUsername': username})
+
         return _resp(400, {'error': 'unknown_action'})
     finally:
         conn.close()

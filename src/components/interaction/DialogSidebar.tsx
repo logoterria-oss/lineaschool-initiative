@@ -20,12 +20,17 @@ interface DialogSidebarProps {
   assignees: string[];
   reassign: (name: string) => void;
   currentUser: string;
+  saveContacts: (contacts: { phone?: string; tgUsername?: string }) => Promise<void>;
 }
 
 const SUPERVISOR = 'абраменко виктория';
 
-const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, currentUser }: DialogSidebarProps) => {
+const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, currentUser, saveContacts }: DialogSidebarProps) => {
   const [pending, setPending] = useState<string | null>(null);
+  const [editContacts, setEditContacts] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [tgInput, setTgInput] = useState('');
+  const [savingContacts, setSavingContacts] = useState(false);
 
   const me = currentUser.trim().toLowerCase();
   const isSupervisor = me.includes(SUPERVISOR);
@@ -37,6 +42,19 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, cur
     setPending(null);
   };
 
+  const openContactsEdit = () => {
+    setPhoneInput(active.phone || '');
+    setTgInput(active.tgUsername || '');
+    setEditContacts(true);
+  };
+
+  const submitContacts = async () => {
+    setSavingContacts(true);
+    await saveContacts({ phone: phoneInput.trim(), tgUsername: tgInput.trim() });
+    setSavingContacts(false);
+    setEditContacts(false);
+  };
+
   return (
     <div className="w-full lg:w-64 flex-shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-4">
       <div>
@@ -45,33 +63,78 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, cur
         {(active.crmStatus === 'client' || active.crmStatus === 'lead') && active.childName && (
           <div className="text-sm text-gray-500">Ученик: {active.childName}</div>
         )}
-        <div className="mt-2 text-xs text-gray-400">Способ связи</div>
-        {active.channel === 'telegram' ? (
-          active.tgUsername ? (
-            <div className="flex items-center gap-1.5 text-sm text-gray-700">
-              <Icon name="Send" size={13} className="text-sky-500" />
-              <a
-                href={`https://t.me/${active.tgUsername.replace(/^@/, '')}`}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:underline"
+        <div className="mt-2 flex items-center gap-1">
+          <span className="text-xs text-gray-400">Способы связи</span>
+          <button
+            onClick={openContactsEdit}
+            title="Добавить или изменить контакты"
+            className="text-gray-300 hover:text-green-600"
+          >
+            <Icon name="Plus" size={13} />
+          </button>
+        </div>
+
+        {editContacts ? (
+          <div className="mt-1 space-y-2">
+            <div className="relative">
+              <Icon name="MessageCircle" size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-blue-500" />
+              <input
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="Телефон (Max)"
+                className="w-full pl-7 pr-2 py-1.5 text-sm rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400"
+              />
+            </div>
+            <div className="relative">
+              <Icon name="Send" size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-sky-500" />
+              <input
+                value={tgInput}
+                onChange={(e) => setTgInput(e.target.value)}
+                placeholder="@username (Telegram)"
+                className="w-full pl-7 pr-2 py-1.5 text-sm rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={submitContacts}
+                disabled={savingContacts}
+                className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white transition-colors"
               >
-                @{active.tgUsername.replace(/^@/, '')}
-              </a>
+                {savingContacts ? 'Сохранение…' : 'Сохранить'}
+              </button>
+              <button
+                onClick={() => setEditContacts(false)}
+                className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+              >
+                Отмена
+              </button>
             </div>
-          ) : (
-            <div className="flex items-center gap-1.5 text-sm text-gray-400">
-              <Icon name="Send" size={13} className="text-sky-500" />
-              Telegram
-            </div>
-          )
-        ) : active.phone ? (
-          <div className="flex items-center gap-1.5 text-sm text-gray-700">
-            <Icon name="MessageCircle" size={13} className="text-blue-500" />
-            {active.phone}
           </div>
         ) : (
-          <div className="text-sm text-gray-400">—</div>
+          <div className="space-y-1">
+            {active.phone && (
+              <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                <Icon name="MessageCircle" size={13} className="text-blue-500" />
+                {active.phone}
+              </div>
+            )}
+            {active.tgUsername && (
+              <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                <Icon name="Send" size={13} className="text-sky-500" />
+                <a
+                  href={`https://t.me/${active.tgUsername.replace(/^@/, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:underline"
+                >
+                  @{active.tgUsername.replace(/^@/, '')}
+                </a>
+              </div>
+            )}
+            {!active.phone && !active.tgUsername && (
+              <div className="text-sm text-gray-400">Не указаны</div>
+            )}
+          </div>
         )}
       </div>
       <div>

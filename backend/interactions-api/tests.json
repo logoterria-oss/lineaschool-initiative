@@ -36,6 +36,15 @@
       "expectedStatus": 200,
       "expectedBody": {"ok": true},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set contacts manually",
+      "method": "POST",
+      "path": "/?action=set-contacts",
+      "body": {"dialog_id": 3, "phone": "89991234567", "tgUsername": "@ivan"},
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
     }
   ]
 }
