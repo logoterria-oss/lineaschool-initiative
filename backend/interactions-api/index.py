@@ -407,7 +407,7 @@ def _send_tg(text: str, tg_chat_id=None, tg_username=None, phone=None) -> Dict[s
     profile_id = os.environ.get('WAPPI_TG_PROFILE_ID', '')
     if not profile_id:
         return {'ok': False, 'error': 'no_tg_profile', 'message': 'Не настроен профиль Telegram (WAPPI_TG_PROFILE_ID)'}
-    url = f"{WAPPI_BASE}/api/sync/message/send?" + urllib.parse.urlencode({'profile_id': profile_id})
+    url = f"{WAPPI_BASE}/tgapi/sync/message/send?" + urllib.parse.urlencode({'profile_id': profile_id})
 
     msg = {'body': text}
     chat = str(tg_chat_id or '').strip()
