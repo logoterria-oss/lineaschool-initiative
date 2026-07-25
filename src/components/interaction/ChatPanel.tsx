@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const CHANNEL_LABEL: Record<string, string> = { max: 'Max', telegram: 'Telegram' };
+const CHANNEL_SHORT: Record<string, string> = { max: 'Max', telegram: 'Tg' };
 
 interface ChatPanelProps {
   active: DialogItem | null;
@@ -100,7 +101,7 @@ const ChatPanel = ({
               title={`Перейти в ${CHANNEL_LABEL[otherChannel]}`}
             >
               <Icon name="ArrowLeftRight" size={15} />
-              {CHANNEL_LABEL[otherChannel]}
+              {CHANNEL_SHORT[otherChannel]}
             </button>
           )}
           <button
