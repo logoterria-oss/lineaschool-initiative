@@ -21,9 +21,11 @@ import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import InteractionWindow from '@/components/interaction/InteractionWindow';
+import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 
 const HeadWorkspace = () => {
   const navigate = useNavigate();
+  const { newAssigned, unread } = useInteractionBadges();
   const [me, setMe] = useState<Staff | null>(null);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [active, setActive] = useState<SubItem | null>(null);
@@ -139,6 +141,24 @@ const HeadWorkspace = () => {
         }`}
       >
         <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
+        {newAssigned > 0 && (
+          <span
+            title="Новые чаты, где вас назначили ответственным"
+            className="inline-flex items-center gap-0.5 bg-amber-400 text-amber-900 text-[11px] font-bold rounded-full px-1.5 py-0.5"
+          >
+            <Icon name="Star" size={12} />
+            {newAssigned}
+          </span>
+        )}
+        {unread > 0 && (
+          <span
+            title="Непрочитанные сообщения в ваших чатах"
+            className="inline-flex items-center gap-0.5 bg-white text-green-700 text-[11px] font-bold rounded-full px-1.5 py-0.5"
+          >
+            <Icon name="Mail" size={12} />
+            {unread}
+          </span>
+        )}
       </button>
 
       <nav className="bg-white rounded-2xl border border-gray-200 shadow-sm p-2">

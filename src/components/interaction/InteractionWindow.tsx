@@ -148,18 +148,6 @@ const InteractionWindow = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, dialogs, currentUser]);
 
-  // «+N ⭐» — сколько чатов передали мне в ответственные и я их ещё не открывал.
-  const newAssignedCount = useMemo(
-    () => dialogs.filter((d) => isMine(d) && !seenAssigned.includes(d.id)).length,
-    [dialogs, seenAssigned, currentUser],
-  );
-
-  // «+N ✉️» — непрочитанные сообщения в чатах, где я ответственный.
-  const mineUnreadCount = useMemo(
-    () => dialogs.filter(isMine).reduce((sum, d) => sum + (d.unread || 0), 0),
-    [dialogs, currentUser],
-  );
-
   const filtered = useMemo(
     () =>
       dialogs.filter(
@@ -253,8 +241,6 @@ const InteractionWindow = () => {
         activeId={activeId}
         setActiveId={openDialog}
         isMine={isMine}
-        newAssignedCount={newAssignedCount}
-        mineUnreadCount={mineUnreadCount}
       />
 
       <ChatPanel
