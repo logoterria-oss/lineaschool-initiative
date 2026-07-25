@@ -69,51 +69,18 @@ const ChatPanel = ({
 
   return (
     <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-      <div className="px-2 py-2.5 border-b border-gray-100 flex items-center gap-2 lg:hidden">
+      {/* Шапка: мессенджер, переключение, вызов (на мобиле — с кнопкой «назад») */}
+      <div className="flex px-3 lg:px-4 py-2.5 border-b border-gray-100 items-center gap-2 lg:gap-3">
         <button
           onClick={onBack}
-          className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 rounded-lg flex-shrink-0"
+          className="lg:hidden w-8 h-8 -ml-1 flex items-center justify-center text-gray-500 hover:text-gray-800 rounded-lg flex-shrink-0"
           title="К списку чатов"
         >
           <Icon name="ArrowLeft" size={20} />
         </button>
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-gray-900 truncate leading-tight">{active.clientName}</div>
-          {isLeadOrClient && active.childName && (
-            <div className="text-xs text-gray-500 truncate leading-tight">Ученик: {active.childName}</div>
-          )}
-        </div>
-        {otherAvailable && (
-          <button
-            onClick={() => setConfirmChannel(otherChannel)}
-            className="h-9 px-2.5 flex items-center gap-1 text-sm text-gray-600 hover:text-green-700 bg-gray-50 rounded-lg flex-shrink-0"
-            title={`Перейти в ${CHANNEL_LABEL[otherChannel]}`}
-          >
-            <Icon name="ArrowLeftRight" size={15} />
-            {CHANNEL_SHORT[otherChannel]}
-          </button>
-        )}
-        <button
-          onClick={call}
-          className="w-9 h-9 flex items-center justify-center text-white bg-green-500 hover:bg-green-600 rounded-full flex-shrink-0"
-          title="Позвонить клиенту"
-        >
-          <Icon name="Phone" size={16} />
-        </button>
-        <button
-          onClick={onOpenInfo}
-          className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-green-600 rounded-lg flex-shrink-0"
-          title="Информация о клиенте"
-        >
-          <Icon name="Info" size={20} />
-        </button>
-      </div>
-
-      {/* Шапка средней колонки (ПК): мессенджер, переключение, вызов */}
-      <div className="hidden lg:flex px-4 py-2.5 border-b border-gray-100 items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
           <ChannelBadge channel={channel} />
-          <span>
+          <span className="truncate">
             Переписка в <span className="font-medium text-gray-900">{channelLabel}</span>
           </span>
         </div>
@@ -137,6 +104,24 @@ const ChatPanel = ({
             <Icon name="Phone" size={16} />
           </button>
         </div>
+      </div>
+
+      {/* Строка с именем клиента/ученика и кнопкой «инфо» (только мобайл) */}
+      <div className="lg:hidden px-3 py-2 border-b border-gray-100 flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-gray-900 truncate leading-tight">{active.clientName}</div>
+          {isLeadOrClient && active.childName && (
+            <div className="text-xs text-gray-500 truncate leading-tight">Ученик: {active.childName}</div>
+          )}
+        </div>
+        <button
+          onClick={onOpenInfo}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-green-600 flex-shrink-0"
+          title="Информация о клиенте"
+        >
+          <Icon name="Info" size={18} />
+          Инфо
+        </button>
       </div>
 
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50/50">
