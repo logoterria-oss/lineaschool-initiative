@@ -186,7 +186,9 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, cur
           <AlertDialogHeader>
             <AlertDialogTitle>Передать роль ответственного?</AlertDialogTitle>
             <AlertDialogDescription>
-              Точно ли вы хотите передать роль ответственного {pending}?
+              <span className="font-medium text-gray-700">{active.assignee || 'Не назначен'}</span>
+              {' → '}
+              <span className="font-medium text-green-700">{pending}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
