@@ -1,6 +1,17 @@
+import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { DialogItem } from '@/lib/interactionsApi';
 import { CrmBadge } from './interactionShared';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DialogSidebarProps {
   active: DialogItem;
@@ -8,9 +19,24 @@ interface DialogSidebarProps {
   refreshCrm: () => void;
   assignees: string[];
   reassign: (name: string) => void;
+  currentUser: string;
 }
 
-const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign }: DialogSidebarProps) => {
+const SUPERVISOR = 'абраменко виктория';
+
+const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, currentUser }: DialogSidebarProps) => {
+  const [pending, setPending] = useState<string | null>(null);
+
+  const me = currentUser.trim().toLowerCase();
+  const isSupervisor = me.includes(SUPERVISOR);
+  const isCurrentAssignee = active.assignee.trim().toLowerCase() === me;
+  const canReassign = !!currentUser && (isSupervisor || isCurrentAssignee);
+
+  const confirmReassign = () => {
+    if (pending) reassign(pending);
+    setPending(null);
+  };
+
   return (
     <div className="w-full lg:w-64 flex-shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-4">
       <div>
@@ -46,8 +72,12 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign }: D
           {assignees.map((name) => (
             <button
               key={name}
-              onClick={() => reassign(name)}
-              className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${active.assignee === name ? 'bg-green-50 text-green-800 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              onClick={() => {
+                if (name === active.assignee) return;
+                setPending(name);
+              }}
+              disabled={!canReassign}
+              className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${active.assignee === name ? 'bg-green-50 text-green-800 font-medium' : 'text-gray-600 hover:bg-gray-50'} ${!canReassign ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {name}
             </button>
@@ -56,8 +86,27 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign }: D
             <div className="text-sm text-gray-400 px-3 py-2">Загрузка сотрудников…</div>
           )}
         </div>
-        <p className="text-[11px] text-gray-400 mt-2">Передача клиента между сотрудниками — вся история сохраняется.</p>
+        <p className="text-[11px] text-gray-400 mt-2">
+          {canReassign
+            ? 'Передача клиента между сотрудниками — вся история сохраняется.'
+            : 'Передать ответственного может только текущий ответственный или руководитель.'}
+        </p>
       </div>
+
+      <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Передать роль ответственного?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Точно ли вы хотите передать роль ответственного {pending}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReassign}>Передать</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

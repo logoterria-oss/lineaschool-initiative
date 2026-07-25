@@ -224,6 +224,7 @@ const InteractionWindow = () => {
           refreshCrm={refreshCrm}
           assignees={assignees}
           reassign={reassign}
+          currentUser={currentUser}
         />
       )}
 
