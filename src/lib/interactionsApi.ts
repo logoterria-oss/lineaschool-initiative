@@ -13,6 +13,8 @@ export interface DialogItem {
   lastTime: string | null;
   preview: string;
   channels: string[];
+  channel: string;
+  tgUsername: string | null;
   crmStatus: CrmStatus | null;
   crmLabel: string | null;
   childName: string | null;

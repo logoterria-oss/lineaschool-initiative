@@ -45,8 +45,33 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, cur
         {(active.crmStatus === 'client' || active.crmStatus === 'lead') && active.childName && (
           <div className="text-sm text-gray-500">Ученик: {active.childName}</div>
         )}
-        {active.phone && (
-          <div className="text-sm text-gray-500">{active.phone}</div>
+        <div className="mt-2 text-xs text-gray-400">Способ связи</div>
+        {active.channel === 'telegram' ? (
+          active.tgUsername ? (
+            <div className="flex items-center gap-1.5 text-sm text-gray-700">
+              <Icon name="Send" size={13} className="text-sky-500" />
+              <a
+                href={`https://t.me/${active.tgUsername.replace(/^@/, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:underline"
+              >
+                @{active.tgUsername.replace(/^@/, '')}
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-sm text-gray-400">
+              <Icon name="Send" size={13} className="text-sky-500" />
+              Telegram
+            </div>
+          )
+        ) : active.phone ? (
+          <div className="flex items-center gap-1.5 text-sm text-gray-700">
+            <Icon name="MessageCircle" size={13} className="text-blue-500" />
+            {active.phone}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">—</div>
         )}
       </div>
       <div>
