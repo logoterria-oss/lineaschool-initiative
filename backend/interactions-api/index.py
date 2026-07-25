@@ -439,19 +439,56 @@ def _send_tg(text: str, tg_chat_id=None, tg_username=None, phone=None) -> Dict[s
         return {'ok': False, 'error': str(e)}
 
 
-def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str], username: Optional[str]) -> int:
-    '''Находит/создаёт Telegram-диалог по tg_chat_id.'''
-    cur.execute(
-        "SELECT id FROM interaction_dialogs WHERE channel = 'telegram' AND tg_chat_id = %s",
-        (tg_chat_id,),
-    )
+def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str],
+                      username: Optional[str], phone: Optional[str] = None) -> int:
+    '''Находит/создаёт Telegram-диалог.
+
+    Чтобы не плодить дубли, ищем существующий диалог того же человека
+    в таком порядке: по tg_chat_id → по tg_username → по телефону.
+    Если нашли по username/телефону — дописываем tg_chat_id, чтобы
+    следующие входящие сразу попадали в этот же диалог.
+    '''
+    uname = (username or '').lstrip('@') or None
+    ph = phone if (phone and len(phone) == 11) else None
+
+    # 1. Точное совпадение по tg_chat_id
+    cur.execute("SELECT id FROM interaction_dialogs WHERE tg_chat_id = %s", (tg_chat_id,))
     row = cur.fetchone()
     if row:
         return row[0]
+
+    # 2. По username (у диалога может ещё не быть tg_chat_id)
+    if uname:
+        cur.execute(
+            "SELECT id FROM interaction_dialogs "
+            "WHERE lower(tg_username) = lower(%s) ORDER BY id LIMIT 1",
+            (uname,),
+        )
+        row = cur.fetchone()
+        if row:
+            cur.execute("UPDATE interaction_dialogs SET tg_chat_id = %s WHERE id = %s", (tg_chat_id, row[0]))
+            return row[0]
+
+    # 3. По телефону
+    if ph:
+        cur.execute(
+            "SELECT id FROM interaction_dialogs WHERE phone = %s ORDER BY id LIMIT 1",
+            (ph,),
+        )
+        row = cur.fetchone()
+        if row:
+            cur.execute(
+                "UPDATE interaction_dialogs SET tg_chat_id = %s, "
+                "tg_username = COALESCE(tg_username, %s) WHERE id = %s",
+                (tg_chat_id, uname, row[0]),
+            )
+            return row[0]
+
+    # 4. Новый диалог
     cur.execute(
-        "INSERT INTO interaction_dialogs (channel, chat_id, client_name, tg_chat_id, tg_username) "
-        "VALUES ('telegram', %s, %s, %s, %s) RETURNING id",
-        (tg_chat_id, name, tg_chat_id, username),
+        "INSERT INTO interaction_dialogs (channel, chat_id, client_name, tg_chat_id, tg_username, phone) "
+        "VALUES ('telegram', %s, %s, %s, %s, %s) RETURNING id",
+        (tg_chat_id, name, tg_chat_id, uname, ph),
     )
     return cur.fetchone()[0]
 
@@ -608,7 +645,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             phone = _norm_phone(msg.get('senderPhone') or msg.get('phone') or '')
             if not tg_chat_id or from_me:
                 return _resp(200, {'ok': True, 'skipped': 'no_key_or_from_me'})
-            dialog_id = _upsert_tg_dialog(cur, tg_chat_id, name, (username or None))
+            dialog_id = _upsert_tg_dialog(cur, tg_chat_id, name, (username or None), (phone or None))
             cur.execute(
                 "INSERT INTO interaction_messages (dialog_id, direction, channel, text) "
                 "VALUES (%s, 'in', 'telegram', %s)",
