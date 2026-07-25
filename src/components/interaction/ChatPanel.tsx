@@ -42,7 +42,7 @@ const ChatPanel = ({
         </div>
         <div className="min-w-0">
           <div className="font-semibold text-gray-900 truncate">{active.clientName}</div>
-          {active.childName && (
+          {(active.crmStatus === 'client' || active.crmStatus === 'lead') && active.childName && (
             <div className="text-xs text-gray-500 truncate">Ученик: {active.childName}</div>
           )}
           {active.phone && <div className="text-xs text-gray-400">{active.phone}</div>}
