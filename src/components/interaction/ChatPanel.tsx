@@ -106,11 +106,10 @@ const ChatPanel = ({
           )}
           <button
             onClick={call}
-            className="flex items-center gap-1.5 text-sm text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center justify-center w-9 h-9 text-white bg-green-500 hover:bg-green-600 rounded-full transition-colors"
             title="Позвонить клиенту"
           >
-            <Icon name="Phone" size={15} />
-            Вызов
+            <Icon name="Phone" size={16} />
           </button>
         </div>
       </div>
