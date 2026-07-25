@@ -148,9 +148,6 @@ const ChatPanel = ({
         <div className="border-t border-gray-100 p-4 flex-shrink-0 flex items-center gap-2 text-sm text-gray-500 bg-gray-50/60">
           <Icon name="Lock" size={15} className="text-gray-400 flex-shrink-0" />
           Отвечать может только ответственный за этот чат
-          {active.assignee && active.assignee !== 'Не назначен' && (
-            <span className="text-gray-400">— {active.assignee}</span>
-          )}
         </div>
       )}
 
