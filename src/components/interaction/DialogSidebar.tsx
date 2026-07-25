@@ -16,7 +16,7 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign }: D
       <div>
         <div className="text-xs text-gray-400 mb-1">Клиент</div>
         <div className="font-semibold text-gray-900">{active.clientName}</div>
-        {active.childName && (
+        {(active.crmStatus === 'client' || active.crmStatus === 'lead') && active.childName && (
           <div className="text-sm text-gray-500">Ученик: {active.childName}</div>
         )}
         {active.phone && (
