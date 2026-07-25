@@ -307,29 +307,71 @@ def _db():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
 
+def _find_dialog(cur, phone: Optional[str] = None, tg_chat_id: Optional[str] = None,
+                 tg_username: Optional[str] = None, max_chat_id: Optional[str] = None,
+                 max_user_id: Optional[str] = None, chat_id: Optional[str] = None) -> Optional[int]:
+    '''Единая точка поиска чата клиента по ЛЮБОМУ идентификатору, поверх всех
+    каналов (Max/Telegram/CRM). Нужна, чтобы один и тот же человек не попадал
+    в разные записи и не плодились дубли.
+
+    Матчим по нормализованному телефону, tg_chat_id, tg_username (без учёта
+    регистра), max_chat_id/max_user_id и chat_id. Из совпадений выбираем
+    видимый и самый старый (ORDER BY hidden, id) — к нему и подклеиваемся.
+    '''
+    ph = _norm_phone(phone or '')
+    ph = ph if len(ph) == 11 else None
+    uname = (tg_username or '').lstrip('@').lower() or None
+    conds = []
+    params: list = []
+    if ph:
+        conds.append("phone = %s")
+        params.append(ph)
+    if tg_chat_id:
+        conds.append("tg_chat_id = %s")
+        params.append(str(tg_chat_id))
+    if uname:
+        conds.append("lower(tg_username) = %s")
+        params.append(uname)
+    if max_chat_id:
+        conds.append("max_chat_id = %s")
+        params.append(str(max_chat_id))
+    if max_user_id:
+        conds.append("max_user_id = %s")
+        params.append(str(max_user_id))
+    if chat_id:
+        conds.append("chat_id = %s")
+        params.append(str(chat_id))
+    if not conds:
+        return None
+    cur.execute(
+        "SELECT id FROM interaction_dialogs WHERE (" + " OR ".join(conds) + ") "
+        "ORDER BY hidden ASC, id ASC LIMIT 1",
+        params,
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
 def _upsert_dialog(cur, chat_id: str, name: Optional[str], phone: Optional[str],
                    max_chat_id: Optional[str] = None, max_user_id: Optional[str] = None) -> int:
     '''Находит/создаёт Max-диалог.
 
-    Чтобы не плодить дубли, ищем существующий диалог того же клиента по любому
-    из известных идентификаторов Max: chat_id, max_chat_id, max_user_id.
-    Так входящее сообщение попадает в диалог, созданный ранее из CRM (после
-    того как мы записали в него реальный chat_id при первой отправке).
+    Ищем существующий диалог того же клиента по любому идентификатору (телефон,
+    chat_id, max_chat_id, max_user_id) поверх всех каналов — чтобы входящее
+    попадало в чат, созданный ранее из CRM или из другого канала, а не в новый.
+    Если нашли — дописываем недостающие max-идентификаторы.
     '''
     mc = str(max_chat_id or '').strip() or None
     mu = str(max_user_id or '').strip() or None
-    keys = [k for k in [chat_id, mc, mu] if k]
-    if keys:
-        placeholders = ','.join(['%s'] * len(keys))
+    found = _find_dialog(cur, phone=phone, max_chat_id=mc, max_user_id=mu, chat_id=chat_id)
+    if found:
         cur.execute(
-            "SELECT id FROM interaction_dialogs WHERE channel = 'max' AND ("
-            f"chat_id IN ({placeholders}) OR max_chat_id IN ({placeholders}) "
-            f"OR max_user_id IN ({placeholders})) ORDER BY id LIMIT 1",
-            keys * 3,
+            "UPDATE interaction_dialogs SET "
+            "max_chat_id = COALESCE(max_chat_id, %s), "
+            "max_user_id = COALESCE(max_user_id, %s) WHERE id = %s",
+            (mc, mu, found),
         )
-        row = cur.fetchone()
-        if row:
-            return row[0]
+        return found
     cur.execute(
         "INSERT INTO interaction_dialogs (channel, chat_id, client_name, phone, max_chat_id, max_user_id) "
         "VALUES ('max', %s, %s, %s, %s, %s) RETURNING id",
@@ -517,52 +559,25 @@ def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str],
                       username: Optional[str], phone: Optional[str] = None) -> int:
     '''Находит/создаёт Telegram-диалог.
 
-    Чтобы не плодить дубли, ищем существующий диалог того же человека
-    в таком порядке: по tg_chat_id → по tg_username → по телефону.
-    Если нашли по username/телефону — дописываем tg_chat_id, чтобы
-    следующие входящие сразу попадали в этот же диалог.
+    Единый поиск клиента по любому идентификатору (tg_chat_id, tg_username,
+    телефон) поверх всех каналов — чтобы входящее из Telegram попадало в чат,
+    заведённый ранее из CRM/Max, а не в новый. Если нашли — дописываем
+    недостающие tg-идентификаторы.
     '''
     uname = (username or '').lstrip('@') or None
     ph = phone if (phone and len(phone) == 11) else None
 
-    # 1. Точное совпадение по tg_chat_id (предпочитаем видимый диалог)
-    cur.execute(
-        "SELECT id FROM interaction_dialogs WHERE tg_chat_id = %s "
-        "ORDER BY hidden ASC, id ASC LIMIT 1",
-        (tg_chat_id,),
-    )
-    row = cur.fetchone()
-    if row:
-        return row[0]
-
-    # 2. По username (у диалога может ещё не быть tg_chat_id)
-    if uname:
+    found = _find_dialog(cur, phone=ph, tg_chat_id=tg_chat_id, tg_username=uname)
+    if found:
         cur.execute(
-            "SELECT id FROM interaction_dialogs "
-            "WHERE lower(tg_username) = lower(%s) ORDER BY hidden ASC, id ASC LIMIT 1",
-            (uname,),
+            "UPDATE interaction_dialogs SET "
+            "tg_chat_id = COALESCE(tg_chat_id, %s), "
+            "tg_username = COALESCE(tg_username, %s) WHERE id = %s",
+            (tg_chat_id, uname, found),
         )
-        row = cur.fetchone()
-        if row:
-            cur.execute("UPDATE interaction_dialogs SET tg_chat_id = %s WHERE id = %s", (tg_chat_id, row[0]))
-            return row[0]
+        return found
 
-    # 3. По телефону
-    if ph:
-        cur.execute(
-            "SELECT id FROM interaction_dialogs WHERE phone = %s ORDER BY hidden ASC, id ASC LIMIT 1",
-            (ph,),
-        )
-        row = cur.fetchone()
-        if row:
-            cur.execute(
-                "UPDATE interaction_dialogs SET tg_chat_id = %s, "
-                "tg_username = COALESCE(tg_username, %s) WHERE id = %s",
-                (tg_chat_id, uname, row[0]),
-            )
-            return row[0]
-
-    # 4. Новый диалог
+    # Новый диалог
     cur.execute(
         "INSERT INTO interaction_dialogs (channel, chat_id, client_name, tg_chat_id, tg_username, phone) "
         "VALUES ('telegram', %s, %s, %s, %s, %s) RETURNING id",
@@ -801,13 +816,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             display = parent or child or phone
             initiator = (body.get('initiator') or '').strip() or None
 
-            # Диалог идентифицируем по телефону (chat_id). Если уже есть — вернём его.
-            cur.execute(
-                "SELECT id FROM interaction_dialogs WHERE channel = 'max' AND chat_id = %s",
-                (phone,))
-            existing = cur.fetchone()
-            if existing:
-                dialog_id = existing[0]
+            # Ищем клиента по телефону поверх всех каналов — если он уже писал
+            # в Telegram/Max, используем тот же чат, а не создаём дубль.
+            existing_id = _find_dialog(cur, phone=phone, chat_id=phone)
+            if existing_id:
+                dialog_id = existing_id
                 cur.execute(
                     "UPDATE interaction_dialogs SET crm_name = COALESCE(%s, crm_name), "
                     "child_name = COALESCE(%s, child_name), crm_status = COALESCE(%s, crm_status), "
