@@ -36,11 +36,18 @@ export function useInteractionBadges() {
     };
 
     load();
+    // Лёгкий фоновый опрос — чтобы бейдж непрочитанных появлялся, когда клиент
+    // прислал новое сообщение (входящие приходят через вебхук, не событием на клиенте).
+    // Опрашиваем только при активной вкладке — в фоне запросы не шлём.
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') load();
+    }, 20000);
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
     window.addEventListener(INTERACTION_CHANGED, onChanged);
     return () => {
       stop = true;
+      clearInterval(t);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
       window.removeEventListener(INTERACTION_CHANGED, onChanged);
