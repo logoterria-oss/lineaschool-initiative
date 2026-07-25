@@ -76,7 +76,7 @@ const DialogList = ({
         )}
         {filtered.map((d) => {
           const isActive = d.id === activeId;
-          const bg = isMine(d) ? 'bg-green-50' : 'bg-gray-50';
+          const bg = isMine(d) ? 'bg-green-100' : 'bg-gray-100';
           const ring = isActive
             ? 'border border-dashed border-green-500'
             : 'border border-transparent border-b-gray-50';
