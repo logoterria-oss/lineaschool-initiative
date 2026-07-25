@@ -263,6 +263,7 @@ const InteractionWindow = () => {
     setCreating(false);
     if (res.ok && res.dialogId) {
       setNewOpen(false);
+      markSeen(res.dialogId);
       await loadDialogs();
       setActiveId(res.dialogId);
     } else {
