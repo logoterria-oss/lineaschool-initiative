@@ -1,6 +1,6 @@
 import Icon from '@/components/ui/icon';
 import { DialogItem } from '@/lib/interactionsApi';
-import { CrmBadge, ChannelBadge, fmtTime } from './interactionShared';
+import { CrmBadge, fmtTime } from './interactionShared';
 
 interface DialogListProps {
   search: string;
@@ -97,10 +97,7 @@ const DialogList = ({
               {d.childName && (
                 <div className="text-[11px] text-gray-500 mt-0.5 truncate">Ученик: {d.childName}</div>
               )}
-              <div className="flex items-center gap-1.5 mt-1.5">
-                {d.channels.map((c) => <ChannelBadge key={c} channel={c} size={12} />)}
-              </div>
-              <div className="text-[11px] text-gray-400 mt-1 truncate">{d.assignee}</div>
+              <div className="text-[11px] text-gray-400 mt-1.5 truncate">{d.assignee}</div>
             </button>
           );
         })}
