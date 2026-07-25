@@ -20,6 +20,16 @@ export const sameStaff = (a: string, b: string) => {
   return !!ka && ka === kb;
 };
 
+// Короткое имя сотрудника для подписи сообщения: «Фамилия Имя»,
+// без отчества и без роли в скобках, с сохранением регистра.
+export const shortStaffName = (name: string) =>
+  (name || '')
+    .replace(/\(.*?\)/g, '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ') || 'Сотрудник';
+
 export const CRM_META: Record<CrmStatus, { label: string; short: string; icon: string; cls: string }> = {
   staff: { label: 'Сотрудник', short: 'сотруд.', icon: '', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
   teacher: { label: 'Педагог', short: 'педагог', icon: 'GraduationCap', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
@@ -87,7 +97,7 @@ export const MessageBubble = ({ msg }: { msg: MessageItem }) => {
       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${out ? 'bg-green-500 text-white' : 'bg-white border border-gray-200 text-gray-800'}`}>
         <div className={`text-xs mb-0.5 flex items-center gap-1.5 ${out ? 'text-green-50' : 'text-gray-400'}`}>
           <Icon name={(CHANNEL_META[msg.channel] || CHANNEL_META.max).icon as 'Send'} size={11} />
-          {out ? msg.author || 'Сотрудник' : (CHANNEL_META[msg.channel] || CHANNEL_META.max).label}
+          {out ? shortStaffName(msg.author || '') : (CHANNEL_META[msg.channel] || CHANNEL_META.max).label}
         </div>
         <div>{msg.text}</div>
         <div className={`text-[11px] mt-1 text-right ${out ? 'text-green-100' : 'text-gray-400'}`}>{fmtTime(msg.time)}</div>

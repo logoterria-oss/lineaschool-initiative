@@ -166,7 +166,7 @@ const InteractionWindow = () => {
     setSending(true);
     const text = draft.trim();
     setDraft('');
-    const res = await sendMessage(active.id, text, 'Я');
+    const res = await sendMessage(active.id, text, currentUser || 'Сотрудник');
     if (res.ok) {
       const msgs = await fetchMessages(active.id);
       setMessages(msgs);
