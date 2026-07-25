@@ -26,6 +26,7 @@ interface ChatPanelProps {
   setDraft: (v: string) => void;
   send: () => void;
   sending: boolean;
+  canWrite: boolean;
   switchChannel: (channel: string) => void;
   call: () => void;
 }
@@ -40,6 +41,7 @@ const ChatPanel = ({
   setDraft,
   send,
   sending,
+  canWrite,
   switchChannel,
   call,
 }: ChatPanelProps) => {
@@ -118,29 +120,39 @@ const ChatPanel = ({
         {messages.map((m) => <MessageBubble key={m.id} msg={m} />)}
       </div>
 
-      <div className="border-t border-gray-100 p-3 flex-shrink-0">
-        <div className="flex items-center gap-1.5 mb-2 text-xs text-gray-400">
-          <ChannelBadge channel={channel} size={12} />
-          Ответ уйдёт в {channelLabel}
+      {canWrite ? (
+        <div className="border-t border-gray-100 p-3 flex-shrink-0">
+          <div className="flex items-center gap-1.5 mb-2 text-xs text-gray-400">
+            <ChannelBadge channel={channel} size={12} />
+            Ответ уйдёт в {channelLabel}
+          </div>
+          <div className="flex items-end gap-2">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+              rows={1}
+              placeholder="Напишите сообщение клиенту..."
+              className="flex-1 resize-none px-3 py-2.5 text-sm rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400 max-h-32"
+            />
+            <button
+              onClick={send}
+              disabled={sending}
+              className="bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl w-11 h-11 flex items-center justify-center flex-shrink-0 transition-colors"
+            >
+              <Icon name={sending ? 'Loader' : 'Send'} size={18} className={sending ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-end gap-2">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-            rows={1}
-            placeholder="Напишите сообщение клиенту..."
-            className="flex-1 resize-none px-3 py-2.5 text-sm rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-green-400 max-h-32"
-          />
-          <button
-            onClick={send}
-            disabled={sending}
-            className="bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl w-11 h-11 flex items-center justify-center flex-shrink-0 transition-colors"
-          >
-            <Icon name={sending ? 'Loader' : 'Send'} size={18} className={sending ? 'animate-spin' : ''} />
-          </button>
+      ) : (
+        <div className="border-t border-gray-100 p-4 flex-shrink-0 flex items-center gap-2 text-sm text-gray-500 bg-gray-50/60">
+          <Icon name="Lock" size={15} className="text-gray-400 flex-shrink-0" />
+          Отвечать может только ответственный за этот чат
+          {active.assignee && active.assignee !== 'Не назначен' && (
+            <span className="text-gray-400">— {active.assignee}</span>
+          )}
         </div>
-      </div>
+      )}
 
       <AlertDialog open={!!confirmChannel} onOpenChange={(o) => !o && setConfirmChannel(null)}>
         <AlertDialogContent>

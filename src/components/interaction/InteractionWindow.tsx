@@ -163,6 +163,10 @@ const InteractionWindow = () => {
 
   const send = async () => {
     if (!draft.trim() || !active || sending) return;
+    if (!isMine(active)) {
+      toast({ title: 'Писать может только ответственный за чат', variant: 'destructive' });
+      return;
+    }
     setSending(true);
     const text = draft.trim();
     setDraft('');
@@ -292,6 +296,7 @@ const InteractionWindow = () => {
         setDraft={setDraft}
         send={send}
         sending={sending}
+        canWrite={!active || isMine(active)}
         switchChannel={switchChannel}
         call={call}
       />
