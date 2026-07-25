@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { DialogItem } from '@/lib/interactionsApi';
-import { CrmBadge } from './interactionShared';
+import { CrmBadge, sameStaff, staffKey } from './interactionShared';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,9 +32,8 @@ const DialogSidebar = ({ active, resolving, refreshCrm, assignees, reassign, cur
   const [tgInput, setTgInput] = useState('');
   const [savingContacts, setSavingContacts] = useState(false);
 
-  const me = currentUser.trim().toLowerCase();
-  const isSupervisor = me.includes(SUPERVISOR);
-  const isCurrentAssignee = active.assignee.trim().toLowerCase() === me;
+  const isSupervisor = staffKey(currentUser).includes(SUPERVISOR);
+  const isCurrentAssignee = sameStaff(active.assignee, currentUser);
   const canReassign = !!currentUser && (isSupervisor || isCurrentAssignee);
 
   const confirmReassign = () => {

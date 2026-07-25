@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DialogItem, fetchDialogs } from '@/lib/interactionsApi';
+import { sameStaff } from './interactionShared';
 
 // Событие, которое шлёт окно взаимодействия при любом изменении
 // (открыли чат, передали ответственного, отправили сообщение).
@@ -54,8 +55,7 @@ export function useInteractionBadges() {
     };
   }, []);
 
-  const isMine = (d: DialogItem) =>
-    !!currentUser && d.assignee.trim().toLowerCase() === currentUser.trim().toLowerCase();
+  const isMine = (d: DialogItem) => sameStaff(d.assignee, currentUser);
 
   let seen: number[] = [];
   try {

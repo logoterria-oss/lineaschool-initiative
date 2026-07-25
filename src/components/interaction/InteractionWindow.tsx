@@ -18,6 +18,7 @@ import DialogList from './DialogList';
 import ChatPanel from './ChatPanel';
 import DialogSidebar from './DialogSidebar';
 import NewDialogModal from './NewDialogModal';
+import { sameStaff } from './interactionShared';
 import { notifyInteractionChanged } from './useInteractionBadges';
 
 const InteractionWindow = () => {
@@ -47,7 +48,6 @@ const InteractionWindow = () => {
     const list = await fetchDialogs();
     setDialogs(list);
     setLoading(false);
-    if (activeIdRef.current === null && list.length) setActiveId(list[0].id);
   };
 
   // Опрос только когда вкладка активна — в фоне запросы не шлём (экономия вычислений).
@@ -107,8 +107,7 @@ const InteractionWindow = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
-  const isMine = (d: DialogItem) =>
-    !!currentUser && d.assignee.trim().toLowerCase() === currentUser.trim().toLowerCase();
+  const isMine = (d: DialogItem) => sameStaff(d.assignee, currentUser);
 
   const mineCount = useMemo(() => dialogs.filter(isMine).length, [dialogs, currentUser]);
 

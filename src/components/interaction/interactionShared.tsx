@@ -1,6 +1,25 @@
 import Icon from '@/components/ui/icon';
 import { MessageItem, CrmStatus } from '@/lib/interactionsApi';
 
+// Ключ сотрудника: «Фамилия Имя» в нижнем регистре, без отчества и без роли в скобках.
+// Нужно, потому что имя из профиля — «Фамилия Имя Отчество»,
+// а ответственный хранится как «Фамилия Имя (роль)».
+export const staffKey = (name: string) =>
+  (name || '')
+    .replace(/\(.*?\)/g, '')
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ');
+
+// Совпадают ли два имени сотрудника (по «Фамилия Имя»).
+export const sameStaff = (a: string, b: string) => {
+  const ka = staffKey(a);
+  const kb = staffKey(b);
+  return !!ka && ka === kb;
+};
+
 export const CRM_META: Record<CrmStatus, { label: string; short: string; icon: string; cls: string }> = {
   staff: { label: 'Сотрудник', short: 'сотруд.', icon: '', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
   teacher: { label: 'Педагог', short: 'педагог', icon: 'GraduationCap', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
