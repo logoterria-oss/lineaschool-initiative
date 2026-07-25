@@ -472,7 +472,8 @@ def _notify_staff(cur, full_name: Optional[str], text: str) -> None:
 def _notify_new_message(cur, dialog_id: int, channel_label: str) -> None:
     '''Уведомляет ответственного о новом входящем сообщении от клиента.'''
     cur.execute(
-        "SELECT assignee, COALESCE(client_name, 'клиент') FROM interaction_dialogs WHERE id = %s",
+        "SELECT assignee, COALESCE(NULLIF(crm_name, ''), client_name, 'клиент') "
+        "FROM interaction_dialogs WHERE id = %s",
         (dialog_id,),
     )
     row = cur.fetchone()
@@ -864,7 +865,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'POST' and action == 'assign':
             dialog_id = int(body.get('dialog_id'))
             assignee = body.get('assignee') or 'Не назначен'
-            cur.execute("SELECT assignee, COALESCE(client_name, 'клиент') FROM interaction_dialogs WHERE id = %s", (dialog_id,))
+            cur.execute("SELECT assignee, COALESCE(NULLIF(crm_name, ''), client_name, 'клиент') FROM interaction_dialogs WHERE id = %s", (dialog_id,))
             prev = cur.fetchone()
             prev_assignee = prev[0] if prev else None
             client = prev[1] if prev else 'клиент'
