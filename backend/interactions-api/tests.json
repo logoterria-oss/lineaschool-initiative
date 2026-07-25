@@ -18,6 +18,24 @@
       "path": "/",
       "body": {"foo": "bar"},
       "expectedStatus": 400
+    },
+    {
+      "name": "TG webhook skips own message",
+      "method": "POST",
+      "path": "/?action=tg-webhook",
+      "body": {"message": {"chat_id": "123456", "from_me": true, "body": "hi"}},
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "TG webhook incoming message",
+      "method": "POST",
+      "path": "/?action=tg-webhook",
+      "body": {"message": {"chat_id": "999000111", "senderName": "Тест ТГ", "username": "testuser", "body": "Здравствуйте"}},
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
     }
   ]
 }

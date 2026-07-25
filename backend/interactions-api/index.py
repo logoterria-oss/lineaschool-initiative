@@ -326,7 +326,8 @@ def _list_dialogs(cur) -> list:
         "SELECT d.id, d.chat_id, d.client_name, d.phone, d.assignee, d.status, d.unread, "
         "d.last_time, d.crm_status, d.crm_name, d.crm_label, d.child_name, "
         "(SELECT text FROM interaction_messages m WHERE m.dialog_id = d.id "
-        "ORDER BY m.created_at DESC LIMIT 1) "
+        "ORDER BY m.created_at DESC LIMIT 1), "
+        "d.channel, d.tg_username "
         "FROM interaction_dialogs d WHERE d.hidden = false "
         "ORDER BY d.last_time DESC NULLS LAST"
     )
@@ -335,11 +336,14 @@ def _list_dialogs(cur) -> list:
         crm_status = r[8]
         # Имя: приоритет — стандартизированное имя из CRM, затем имя из MAX, затем chat_id.
         display_name = r[9] or _standardize_name(r[2]) or r[1]
+        channel = r[13] or 'max'
         out.append({
             'id': r[0], 'chatId': r[1], 'clientName': display_name, 'phone': r[3] or '',
             'assignee': r[4] or 'Не назначен', 'status': r[5], 'unread': r[6],
             'lastTime': r[7].isoformat() if r[7] else None, 'preview': r[12] or '',
-            'channels': ['max'],
+            'channels': [channel],
+            'channel': channel,
+            'tgUsername': r[14],
             'crmStatus': crm_status,
             'crmLabel': r[10] or STATUS_LABELS.get(crm_status or '', None),
             'childName': r[11],
@@ -393,6 +397,61 @@ def _send_max(text: str, max_chat_id=None, max_user_id=None, phone=None) -> Dict
     except Exception as e:
         print(f"WAPPI send FAILED msg={msg} err={e}")
         return {'ok': False, 'error': str(e)}
+
+
+def _send_tg(text: str, tg_chat_id=None, tg_username=None, phone=None) -> Dict[str, Any]:
+    '''Отправка сообщения в Telegram через Wappi (отдельный профиль).'''
+    token = os.environ['WAPPI_API_TOKEN']
+    profile_id = os.environ.get('WAPPI_TG_PROFILE_ID', '')
+    if not profile_id:
+        return {'ok': False, 'error': 'no_tg_profile', 'message': 'Не настроен профиль Telegram (WAPPI_TG_PROFILE_ID)'}
+    url = f"{WAPPI_BASE}/api/sync/message/send?" + urllib.parse.urlencode({'profile_id': profile_id})
+
+    msg = {'body': text}
+    chat = str(tg_chat_id or '').strip()
+    uname = str(tg_username or '').strip().lstrip('@')
+    ph = str(phone or '').strip()
+    if chat:
+        msg['recipient'] = chat
+    elif uname:
+        msg['recipient'] = '@' + uname
+    elif ph:
+        msg['recipient'] = ph
+    else:
+        return {'ok': False, 'error': 'no_recipient'}
+    payload = json.dumps(msg).encode('utf-8')
+    req = urllib.request.Request(url, data=payload, method='POST')
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('Authorization', token)
+    try:
+        with urllib.request.urlopen(req, timeout=25) as r:
+            data = json.loads(r.read().decode('utf-8'))
+        print(f"WAPPI TG send OK msg={msg} resp={json.dumps(data, ensure_ascii=False)[:500]}")
+        return {'ok': True, 'response': data}
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8', 'ignore')
+        print(f"WAPPI TG send HTTP {e.code} msg={msg} body={err_body[:500]}")
+        return {'ok': False, 'status': e.code, 'error': err_body}
+    except Exception as e:
+        print(f"WAPPI TG send FAILED msg={msg} err={e}")
+        return {'ok': False, 'error': str(e)}
+
+
+def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str], username: Optional[str]) -> int:
+    '''Находит/создаёт Telegram-диалог по tg_chat_id.'''
+    cur.execute(
+        "SELECT id FROM interaction_dialogs WHERE channel = 'telegram' AND tg_chat_id = %s",
+        (tg_chat_id,),
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0]
+    cur.execute(
+        "INSERT INTO interaction_dialogs (channel, chat_id, client_name, tg_chat_id, tg_username) "
+        "VALUES ('telegram', %s, %s, %s, %s) RETURNING id",
+        (tg_chat_id, name, tg_chat_id, username),
+    )
+    return cur.fetchone()[0]
 
 
 def _get_max_chats(limit: int = 200) -> Dict[str, Any]:
@@ -516,6 +575,48 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'POST':
             print(f"POST action={action} body={json.dumps(body, ensure_ascii=False)[:2000]}")
 
+        # Входящий вебхук от Wappi (Telegram). URL этого вебхука указывается
+        # в настройках TG-профиля Wappi: ?action=tg-webhook
+        if method == 'POST' and action == 'tg-webhook':
+            msg = body.get('message') or body.get('payload') or body
+            if isinstance(body.get('messages'), (list, dict)):
+                m = body['messages']
+                msg = (m[0] if isinstance(m, list) and m else m) if not isinstance(m, dict) else m
+
+            wh_type = msg.get('wh_type') or ''
+            if wh_type == 'delivery_status' or msg.get('status') in ('error', 'sent', 'delivered'):
+                return _resp(200, {'ok': True, 'skipped': 'delivery_status'})
+
+            from_me = bool(msg.get('fromMe') or msg.get('from_me'))
+            tg_chat_id = str(msg.get('chat_id') or msg.get('chatId') or msg.get('from') or '')
+            text = msg.get('body') or msg.get('text') or msg.get('caption') or ''
+            name = (
+                msg.get('senderName') or msg.get('sender_name')
+                or msg.get('chatName') or msg.get('pushName')
+            )
+            username = (
+                msg.get('senderUsername') or msg.get('username')
+                or msg.get('contact_username') or ''
+            )
+            phone = _norm_phone(msg.get('senderPhone') or msg.get('phone') or '')
+            if not tg_chat_id or from_me:
+                return _resp(200, {'ok': True, 'skipped': 'no_key_or_from_me'})
+            dialog_id = _upsert_tg_dialog(cur, tg_chat_id, name, (username or None))
+            cur.execute(
+                "INSERT INTO interaction_messages (dialog_id, direction, channel, text) "
+                "VALUES (%s, 'in', 'telegram', %s)",
+                (dialog_id, text),
+            )
+            cur.execute(
+                "UPDATE interaction_dialogs SET unread = unread + 1, last_time = now(), "
+                "client_name = COALESCE(client_name, %s), "
+                "tg_username = COALESCE(%s, tg_username), "
+                "phone = COALESCE(NULLIF(%s, ''), phone) WHERE id = %s",
+                (name, (username or None), phone, dialog_id),
+            )
+            conn.commit()
+            return _resp(200, {'ok': True})
+
         # Входящий вебхук от Wappi (MAX)
         is_webhook = action == 'webhook' or 'messages' in body or 'message' in body or body.get('event')
         if method == 'POST' and is_webhook:
@@ -605,12 +706,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not text:
                 return _resp(400, {'error': 'empty_text'})
             cur.execute(
-                "SELECT chat_id, max_chat_id, max_user_id, phone FROM interaction_dialogs WHERE id = %s",
+                "SELECT chat_id, max_chat_id, max_user_id, phone, channel, tg_chat_id, tg_username "
+                "FROM interaction_dialogs WHERE id = %s",
                 (dialog_id,))
             row = cur.fetchone()
             if not row:
                 return _resp(404, {'error': 'dialog_not_found'})
-            chat_id, max_chat_id, max_user_id, phone = row
+            chat_id, max_chat_id, max_user_id, phone, channel, tg_chat_id, tg_username = row
+            channel = channel or 'max'
+
+            if channel == 'telegram':
+                wappi_result = _send_tg(
+                    text=text,
+                    tg_chat_id=tg_chat_id or None,
+                    tg_username=tg_username or None,
+                    phone=phone or None,
+                )
+                if not wappi_result.get('ok'):
+                    return _resp(502, {
+                        'ok': False,
+                        'error': 'wappi_failed',
+                        'message': wappi_result.get('message') or 'Telegram не принял сообщение',
+                        'wappi': wappi_result,
+                    })
+                cur.execute(
+                    "INSERT INTO interaction_messages (dialog_id, direction, channel, text, author) "
+                    "VALUES (%s, 'out', 'telegram', %s, %s)",
+                    (dialog_id, text, author),
+                )
+                cur.execute("UPDATE interaction_dialogs SET last_time = now() WHERE id = %s", (dialog_id,))
+                conn.commit()
+                return _resp(200, {'ok': True, 'wappi': wappi_result})
+
             # chat_id, равный телефону (диалог создан из CRM) — это НЕ идентификатор
             # чата MAX. В таком случае отправляем по номеру (recipient).
             chat_is_phone = _norm_phone(chat_id) == _norm_phone(phone) and len(_norm_phone(phone)) == 11
