@@ -439,6 +439,49 @@ def _send_tg(text: str, tg_chat_id=None, tg_username=None, phone=None) -> Dict[s
         return {'ok': False, 'error': str(e)}
 
 
+def _staff_phone_by_name(cur, full_name: str) -> Optional[str]:
+    '''Телефон активного сотрудника по «Фамилия Имя» (без отчества и роли).'''
+    key = ' '.join((full_name or '').replace('(', ' ').split()[:2]).strip().lower()
+    if not key:
+        return None
+    cur.execute(
+        "SELECT phone FROM staff WHERE status = 'active' "
+        "AND lower(regexp_replace(full_name, '\\s+', ' ', 'g')) LIKE %s "
+        "ORDER BY id LIMIT 1",
+        (key + '%',),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def _notify_staff(cur, full_name: Optional[str], text: str) -> None:
+    '''Отправляет сотруднику служебное уведомление в Max на его телефон.'''
+    if not full_name or full_name == 'Не назначен':
+        return
+    phone = _staff_phone_by_name(cur, full_name)
+    if not phone:
+        print(f"NOTIFY skip: no phone for staff={full_name}")
+        return
+    try:
+        res = _send_max(text, phone=phone)
+        print(f"NOTIFY staff={full_name} phone={phone} ok={res.get('ok')}")
+    except Exception as e:
+        print(f"NOTIFY FAILED staff={full_name} err={e}")
+
+
+def _notify_new_message(cur, dialog_id: int, channel_label: str) -> None:
+    '''Уведомляет ответственного о новом входящем сообщении от клиента.'''
+    cur.execute(
+        "SELECT assignee, COALESCE(client_name, 'клиент') FROM interaction_dialogs WHERE id = %s",
+        (dialog_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return
+    assignee, client = row[0], row[1]
+    _notify_staff(cur, assignee, f'Новое сообщение от {client} в {channel_label}')
+
+
 def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str],
                       username: Optional[str], phone: Optional[str] = None) -> int:
     '''Находит/создаёт Telegram-диалог.
@@ -659,6 +702,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 (name, (username or None), phone, dialog_id),
             )
             conn.commit()
+            _notify_new_message(cur, dialog_id, 'Telegram')
+            conn.commit()
             return _resp(200, {'ok': True})
 
         # Входящий вебхук от Wappi (MAX)
@@ -704,6 +749,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "max_user_id = COALESCE(%s, max_user_id) WHERE id = %s",
                 (name, max_chat_id or None, max_user_id or None, dialog_id),
             )
+            conn.commit()
+            _notify_new_message(cur, dialog_id, 'Max')
             conn.commit()
             return _resp(200, {'ok': True})
 
@@ -817,8 +864,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'POST' and action == 'assign':
             dialog_id = int(body.get('dialog_id'))
             assignee = body.get('assignee') or 'Не назначен'
+            cur.execute("SELECT assignee, COALESCE(client_name, 'клиент') FROM interaction_dialogs WHERE id = %s", (dialog_id,))
+            prev = cur.fetchone()
+            prev_assignee = prev[0] if prev else None
+            client = prev[1] if prev else 'клиент'
             cur.execute("UPDATE interaction_dialogs SET assignee = %s WHERE id = %s", (assignee, dialog_id))
             conn.commit()
+            if assignee != 'Не назначен' and assignee != prev_assignee:
+                _notify_staff(cur, assignee, f'Вам передали чат с {client}')
+                conn.commit()
             return _resp(200, {'ok': True})
 
         # Ручное сохранение способов связи (телефон для Max, @username для Telegram)
