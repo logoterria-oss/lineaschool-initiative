@@ -1,0 +1,1 @@
+UPDATE interaction_dialogs SET hidden = true WHERE channel = 'telegram' AND tg_chat_id = '999000111';
