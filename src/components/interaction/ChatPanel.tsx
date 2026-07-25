@@ -1,7 +1,19 @@
-import { RefObject } from 'react';
+import { RefObject, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { DialogItem, MessageItem } from '@/lib/interactionsApi';
 import { CrmBadge, ChannelBadge, MessageBubble } from './interactionShared';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+const CHANNEL_LABEL: Record<string, string> = { max: 'Max', telegram: 'Telegram' };
 
 interface ChatPanelProps {
   active: DialogItem | null;
@@ -13,6 +25,8 @@ interface ChatPanelProps {
   setDraft: (v: string) => void;
   send: () => void;
   sending: boolean;
+  switchChannel: (channel: string) => void;
+  call: () => void;
 }
 
 const ChatPanel = ({
@@ -25,7 +39,11 @@ const ChatPanel = ({
   setDraft,
   send,
   sending,
+  switchChannel,
+  call,
 }: ChatPanelProps) => {
+  const [confirmChannel, setConfirmChannel] = useState<string | null>(null);
+
   if (!active) {
     return (
       <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center text-gray-400">
@@ -33,6 +51,12 @@ const ChatPanel = ({
       </div>
     );
   }
+
+  const channel = active.channel || 'max';
+  const channelLabel = CHANNEL_LABEL[channel] || 'Max';
+  // Другой мессенджер доступен, если у контакта есть контакт для него.
+  const otherChannel = channel === 'max' ? 'telegram' : 'max';
+  const otherAvailable = otherChannel === 'telegram' ? !!active.tgUsername : !!active.phone;
 
   return (
     <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
@@ -59,14 +83,45 @@ const ChatPanel = ({
         </div>
       </div>
 
+      {/* Шапка средней колонки (ПК): мессенджер, переключение, вызов */}
+      <div className="hidden lg:flex px-4 py-2.5 border-b border-gray-100 items-center gap-3">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <ChannelBadge channel={channel} />
+          <span>
+            Переписка в <span className="font-medium text-gray-900">{channelLabel}</span>
+          </span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          {otherAvailable && (
+            <button
+              onClick={() => setConfirmChannel(otherChannel)}
+              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-green-700 bg-gray-50 hover:bg-green-50 px-3 py-1.5 rounded-lg transition-colors"
+              title={`Перейти в ${CHANNEL_LABEL[otherChannel]}`}
+            >
+              <Icon name="ArrowLeftRight" size={15} />
+              {CHANNEL_LABEL[otherChannel]}
+            </button>
+          )}
+          <button
+            onClick={call}
+            className="flex items-center gap-1.5 text-sm text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors"
+            title="Позвонить клиенту"
+          >
+            <Icon name="Phone" size={15} />
+            Вызов
+          </button>
+        </div>
+      </div>
+
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50/50">
         {messages.map((m) => <MessageBubble key={m.id} msg={m} />)}
       </div>
 
       <div className="border-t border-gray-100 p-3 flex-shrink-0">
         <div className="flex items-center gap-1.5 mb-2 text-xs text-gray-400">
-          <ChannelBadge channel="max" size={12} />
-          Ответ уйдёт в Max
+          <ChannelBadge channel={channel} size={12} />
+          Ответ уйдёт в {channelLabel}
         </div>
         <div className="flex items-end gap-2">
           <textarea
@@ -86,6 +141,32 @@ const ChatPanel = ({
           </button>
         </div>
       </div>
+
+      <AlertDialog open={!!confirmChannel} onOpenChange={(o) => !o && setConfirmChannel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Перейти в другой мессенджер?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Дальнейшие ответы клиенту будут уходить через{' '}
+              <span className="font-medium text-gray-700">
+                {confirmChannel ? CHANNEL_LABEL[confirmChannel] : ''}
+              </span>
+              . История переписки останется общей.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmChannel) switchChannel(confirmChannel);
+                setConfirmChannel(null);
+              }}
+            >
+              Перейти
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -129,4 +129,14 @@ export async function setContacts(
   return !!data.ok;
 }
 
+export async function setChannel(dialogId: number, channel: string): Promise<boolean> {
+  const r = await fetch(`${API_URL}?action=set-channel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dialog_id: dialogId, channel }),
+  });
+  const data = await r.json();
+  return !!data.ok;
+}
+
 export const WEBHOOK_URL = `${API_URL}?action=webhook`;

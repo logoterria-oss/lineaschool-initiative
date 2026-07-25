@@ -45,6 +45,22 @@
       "expectedStatus": 200,
       "expectedBody": {"ok": true},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set channel telegram",
+      "method": "POST",
+      "path": "/?action=set-channel",
+      "body": {"dialog_id": 3, "channel": "telegram"},
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true, "channel": "telegram"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set channel bad value",
+      "method": "POST",
+      "path": "/?action=set-channel",
+      "body": {"dialog_id": 3, "channel": "sms"},
+      "expectedStatus": 400
     }
   ]
 }

@@ -12,6 +12,7 @@ import {
   searchCrmContacts,
   createDialog,
   setContacts,
+  setChannel,
   CrmContact,
 } from '@/lib/interactionsApi';
 import DialogList from './DialogList';
@@ -193,6 +194,20 @@ const InteractionWindow = () => {
       .finally(() => setResolving(false));
   };
 
+  const switchChannel = async (channel: string) => {
+    if (!active) return;
+    setDialogs((prev) => prev.map((d) => (d.id === active.id ? { ...d, channel, channels: [channel] } : d)));
+    const ok = await setChannel(active.id, channel);
+    if (!ok) {
+      toast({ title: 'Не удалось сменить мессенджер', variant: 'destructive' });
+      loadDialogs();
+    }
+  };
+
+  const call = () => {
+    toast({ title: 'Телефония пока не подключена', description: 'Скоро здесь появится звонок и расшифровка разговора.' });
+  };
+
   const saveContacts = async (contacts: { phone?: string; tgUsername?: string }) => {
     if (!active) return;
     const ok = await setContacts(active.id, contacts);
@@ -277,6 +292,8 @@ const InteractionWindow = () => {
         setDraft={setDraft}
         send={send}
         sending={sending}
+        switchChannel={switchChannel}
+        call={call}
       />
 
       {active && (

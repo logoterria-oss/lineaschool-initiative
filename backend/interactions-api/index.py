@@ -799,6 +799,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             conn.commit()
             return _resp(200, {'ok': True, 'phone': store_phone, 'tgUsername': username})
 
+        # Смена мессенджера, через который ведётся переписка в этом диалоге
+        if method == 'POST' and action == 'set-channel':
+            dialog_id = int(body.get('dialog_id'))
+            channel = (body.get('channel') or '').strip()
+            if channel not in ('max', 'telegram'):
+                return _resp(400, {'error': 'bad_channel'})
+            cur.execute("UPDATE interaction_dialogs SET channel = %s WHERE id = %s", (channel, dialog_id))
+            conn.commit()
+            return _resp(200, {'ok': True, 'channel': channel})
+
         return _resp(400, {'error': 'unknown_action'})
     finally:
         conn.close()
