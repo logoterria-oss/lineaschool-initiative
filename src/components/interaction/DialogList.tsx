@@ -14,6 +14,8 @@ interface DialogListProps {
   activeId: number | null;
   setActiveId: (id: number) => void;
   isMine: (d: DialogItem) => boolean;
+  newAssignedCount: number;
+  mineUnreadCount: number;
 }
 
 const DialogList = ({
@@ -28,10 +30,34 @@ const DialogList = ({
   activeId,
   setActiveId,
   isMine,
+  newAssignedCount,
+  mineUnreadCount,
 }: DialogListProps) => {
   return (
     <div className="w-full lg:w-80 flex-shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
       <div className="p-3 border-b border-gray-100">
+        {(newAssignedCount > 0 || mineUnreadCount > 0) && (
+          <div className="flex items-center gap-2 mb-2">
+            {newAssignedCount > 0 && (
+              <span
+                title="Новые чаты, где вас назначили ответственным"
+                className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full px-2 py-1"
+              >
+                <Icon name="Star" size={13} />
+                +{newAssignedCount}
+              </span>
+            )}
+            {mineUnreadCount > 0 && (
+              <span
+                title="Непрочитанные сообщения в ваших чатах"
+                className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full px-2 py-1"
+              >
+                <Icon name="Mail" size={13} />
+                +{mineUnreadCount}
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

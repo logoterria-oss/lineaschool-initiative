@@ -110,6 +110,56 @@ const InteractionWindow = () => {
 
   const mineCount = useMemo(() => dialogs.filter(isMine).length, [dialogs, currentUser]);
 
+  // Ключ хранилища «просмотренных назначений» — уникальный для каждого сотрудника.
+  const seenKey = `interaction_seen_assigned_${currentUser}`;
+  const seededRef = useRef(false);
+  const [seenAssigned, setSeenAssigned] = useState<number[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(seenKey) || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const markSeen = (id: number) => {
+    setSeenAssigned((prev) => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      localStorage.setItem(seenKey, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const openDialog = (id: number) => {
+    markSeen(id);
+    setActiveId(id);
+  };
+
+  // При первой загрузке считаем все текущие «мои» чаты уже просмотренными,
+  // чтобы значок «+N ⭐» показывал только НОВЫЕ передачи ответственности.
+  useEffect(() => {
+    if (seededRef.current || loading || !currentUser) return;
+    if (localStorage.getItem(seenKey) === null) {
+      const mineIds = dialogs.filter(isMine).map((d) => d.id);
+      localStorage.setItem(seenKey, JSON.stringify(mineIds));
+      setSeenAssigned(mineIds);
+    }
+    seededRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, dialogs, currentUser]);
+
+  // «+N ⭐» — сколько чатов передали мне в ответственные и я их ещё не открывал.
+  const newAssignedCount = useMemo(
+    () => dialogs.filter((d) => isMine(d) && !seenAssigned.includes(d.id)).length,
+    [dialogs, seenAssigned, currentUser],
+  );
+
+  // «+N ✉️» — непрочитанные сообщения в чатах, где я ответственный.
+  const mineUnreadCount = useMemo(
+    () => dialogs.filter(isMine).reduce((sum, d) => sum + (d.unread || 0), 0),
+    [dialogs, currentUser],
+  );
+
   const filtered = useMemo(
     () =>
       dialogs.filter(
@@ -201,8 +251,10 @@ const InteractionWindow = () => {
         loading={loading}
         filtered={filtered}
         activeId={activeId}
-        setActiveId={setActiveId}
+        setActiveId={openDialog}
         isMine={isMine}
+        newAssignedCount={newAssignedCount}
+        mineUnreadCount={mineUnreadCount}
       />
 
       <ChatPanel
