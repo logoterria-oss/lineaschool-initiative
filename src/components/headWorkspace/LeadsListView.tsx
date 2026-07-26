@@ -29,8 +29,8 @@ function isUntouched(l: Lead): boolean {
 }
 
 const COLS: { key: keyof Lead; label: string; w: string }[] = [
-  { key: 'parent_name', label: 'ФИ родителя', w: 'min-w-[150px]' },
-  { key: 'student_name', label: 'ФИ ученика', w: 'min-w-[150px]' },
+  { key: 'parent_name', label: 'ФИ родителя', w: 'min-w-[210px]' },
+  { key: 'student_name', label: 'ФИ ученика', w: 'min-w-[210px]' },
   { key: 'student_age', label: 'Возраст', w: 'w-16' },
   { key: 'contact', label: 'Номер для связи', w: 'min-w-[170px]' },
   { key: 'request_date', label: 'Дата заявки', w: 'w-24' },
