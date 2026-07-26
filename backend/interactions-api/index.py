@@ -309,7 +309,8 @@ def _db():
 
 def _find_dialog(cur, phone: Optional[str] = None, tg_chat_id: Optional[str] = None,
                  tg_username: Optional[str] = None, max_chat_id: Optional[str] = None,
-                 max_user_id: Optional[str] = None, chat_id: Optional[str] = None) -> Optional[int]:
+                 max_user_id: Optional[str] = None, chat_id: Optional[str] = None,
+                 name: Optional[str] = None) -> Optional[int]:
     '''Единая точка поиска чата клиента по ЛЮБОМУ идентификатору, поверх всех
     каналов (Max/Telegram/CRM). Нужна, чтобы один и тот же человек не попадал
     в разные записи и не плодились дубли.
@@ -317,6 +318,12 @@ def _find_dialog(cur, phone: Optional[str] = None, tg_chat_id: Optional[str] = N
     Матчим по нормализованному телефону, tg_chat_id, tg_username (без учёта
     регистра), max_chat_id/max_user_id и chat_id. Из совпадений выбираем
     видимый и самый старый (ORDER BY hidden, id) — к нему и подклеиваемся.
+
+    Сначала пробуем сильные идентификаторы (телефон, tg, max, chat_id). Если по
+    ним ничего не нашли — пробуем «мягкий» матч по имени клиента, чтобы склеить
+    записи, у которых нет общего идентификатора (например, чат из Max без
+    телефона и запись из CRM без max_id). Имя матчим по совпадению набора слов:
+    «Ирина» и «Ирина Зинченко» считаются одним человеком.
     '''
     ph = _norm_phone(phone or '')
     ph = ph if len(ph) == 11 else None
@@ -341,15 +348,59 @@ def _find_dialog(cur, phone: Optional[str] = None, tg_chat_id: Optional[str] = N
     if chat_id:
         conds.append("chat_id = %s")
         params.append(str(chat_id))
-    if not conds:
+    if conds:
+        cur.execute(
+            "SELECT id FROM interaction_dialogs WHERE (" + " OR ".join(conds) + ") "
+            "ORDER BY hidden ASC, id ASC LIMIT 1",
+            params,
+        )
+        row = cur.fetchone()
+        if row:
+            return row[0]
+
+    return _find_dialog_by_name(cur, name)
+
+
+def _find_dialog_by_name(cur, name: Optional[str]) -> Optional[int]:
+    '''«Мягкий» матч по имени: склеиваем записи одного человека, у которых нет
+    общего идентификатора. Совпадением считаем ситуацию, когда набор слов имени
+    одной записи целиком входит в набор слов другой (без учёта регистра/порядка).
+    Так «Ирина» подклеивается к «Ирина Зинченко», но «Ирина» и «Мария» — нет.
+    Чтобы не склеивать разных людей по одному общему слову, требуем совпадения
+    минимум по двум словам ИЛИ по единственному слову, если оно уникально.
+    '''
+    words = [w for w in _norm_name(name).split(' ') if w]
+    if not words:
         return None
     cur.execute(
-        "SELECT id FROM interaction_dialogs WHERE (" + " OR ".join(conds) + ") "
-        "ORDER BY hidden ASC, id ASC LIMIT 1",
-        params,
+        "SELECT id, client_name, crm_name FROM interaction_dialogs "
+        "ORDER BY hidden ASC, id ASC"
     )
-    row = cur.fetchone()
-    return row[0] if row else None
+    rows = cur.fetchall()
+    incoming = set(words)
+
+    # Кандидаты: те, чей набор слов имени входит в наш или наоборот (subset).
+    candidates = []
+    for rid, cname, crm in rows:
+        other = set(w for w in (_norm_name(crm or cname)).split(' ') if w)
+        if not other:
+            continue
+        if incoming <= other or other <= incoming:
+            candidates.append((rid, other))
+
+    if not candidates:
+        return None
+
+    # Совпадение минимум по двум словам — надёжно, берём сразу.
+    for rid, other in candidates:
+        if len(incoming & other) >= 2:
+            return rid
+
+    # Совпадение по одному слову (например «Ирина» ↔ «Ирина Зинченко») —
+    # склеиваем ТОЛЬКО если кандидат единственный, иначе можно спутать тёзок.
+    if len(candidates) == 1:
+        return candidates[0][0]
+    return None
 
 
 def _upsert_dialog(cur, chat_id: str, name: Optional[str], phone: Optional[str],
@@ -363,7 +414,7 @@ def _upsert_dialog(cur, chat_id: str, name: Optional[str], phone: Optional[str],
     '''
     mc = str(max_chat_id or '').strip() or None
     mu = str(max_user_id or '').strip() or None
-    found = _find_dialog(cur, phone=phone, max_chat_id=mc, max_user_id=mu, chat_id=chat_id)
+    found = _find_dialog(cur, phone=phone, max_chat_id=mc, max_user_id=mu, chat_id=chat_id, name=name)
     if found:
         cur.execute(
             "UPDATE interaction_dialogs SET "
@@ -567,7 +618,7 @@ def _upsert_tg_dialog(cur, tg_chat_id: str, name: Optional[str],
     uname = (username or '').lstrip('@') or None
     ph = phone if (phone and len(phone) == 11) else None
 
-    found = _find_dialog(cur, phone=ph, tg_chat_id=tg_chat_id, tg_username=uname)
+    found = _find_dialog(cur, phone=ph, tg_chat_id=tg_chat_id, tg_username=uname, name=name)
     if found:
         cur.execute(
             "UPDATE interaction_dialogs SET "
