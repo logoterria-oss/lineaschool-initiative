@@ -144,11 +144,12 @@ export default function LeadsListView() {
               </tr>
             </thead>
             <tbody>
-              {leads.map((l, idx) => {
+              {leads.map((l, idx, arr) => arr[arr.length - 1 - idx]).map((l, idx) => {
                 const untouched = isUntouched(l);
+                const displayIdx = leads.length - idx;
                 return (
                   <tr key={l.id} className={untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-50/50' : 'bg-white'}>
-                    <td className="px-2 py-1.5 text-gray-400 border-b border-gray-100 align-top">{idx + 1}</td>
+                    <td className="px-2 py-1.5 text-gray-400 border-b border-gray-100 align-top">{displayIdx}</td>
                     {COLS.map((c) => (
                       <td key={c.key} className="px-1 py-1 border-b border-gray-100 align-top">
                         <Cell
