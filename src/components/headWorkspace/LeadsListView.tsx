@@ -186,7 +186,7 @@ export default function LeadsListView() {
           <div
             ref={scrollRef}
             onScroll={syncFromTable}
-            className="overflow-x-auto overflow-y-auto max-h-[65vh]"
+            className="overflow-x-hidden overflow-y-auto max-h-[65vh]"
           >
           <table className="min-w-full text-sm border-collapse">
             <thead className="sticky top-0 z-30">
