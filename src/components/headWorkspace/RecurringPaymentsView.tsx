@@ -266,7 +266,7 @@ const RecurringPaymentsView = () => {
                       className="flex items-center gap-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
                     >
                       <Icon name="Check" size={14} />
-                      Оплачено
+                      Отметить оплату
                     </button>
                   )}
                   <button
