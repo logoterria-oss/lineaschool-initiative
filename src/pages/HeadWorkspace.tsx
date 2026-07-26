@@ -5,6 +5,7 @@ import AdminHeader from '@/components/AdminHeader';
 import { fetchMe, logoutStaff, Staff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
 import { HEAD_MENU, SubItem } from '@/components/headWorkspace/menu';
 import StudentsListView from '@/components/headWorkspace/StudentsListView';
+import LeadsListView from '@/components/headWorkspace/LeadsListView';
 import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
 import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
@@ -76,6 +77,7 @@ const HeadWorkspace = () => {
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'students-list': return <StudentsListView />;
+      case 'leads': return <LeadsListView />;
       case 'interactions': return <InteractionsView />;
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;

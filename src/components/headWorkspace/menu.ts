@@ -46,6 +46,7 @@ export const HEAD_MENU: MenuGroup[] = [
     label: 'Администрирование',
     icon: 'Settings',
     items: [
+      { id: 'leads', label: 'Список лидов', kind: 'component', icon: 'UserPlus' },
       { id: 'interactions', label: 'Взаимодействия', kind: 'component', icon: 'MessagesSquare' },
       { id: 'vacations', label: 'Даты каникул', kind: 'component', icon: 'CalendarOff' },
       { id: 'progress', label: 'Мониторинг прогресса', kind: 'component', icon: 'TrendingUp' },

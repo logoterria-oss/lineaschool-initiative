@@ -8,6 +8,39 @@ import os
 from typing import Dict, Any, Optional
 import requests
 
+def save_lead_to_db(parent_name: str, student_name: str, contact: str,
+                    messengers: list = None, telegram: str = ''):
+    """Сохраняет новую заявку в таблицу leads (для раздела 'Список лидов')."""
+    dsn = os.environ.get('DATABASE_URL')
+    if not dsn:
+        print('DATABASE_URL not set - skip saving lead to db')
+        return
+    try:
+        import psycopg2
+        from datetime import datetime
+        contact_parts = [c for c in [contact, telegram] if c]
+        if messengers:
+            contact_parts.append('(' + ', '.join(messengers) + ')')
+        contact_full = ' '.join(contact_parts)
+        req_date = datetime.now().strftime('%d.%m')
+
+        def esc(v):
+            return (str(v) if v is not None else '').replace("'", "''")
+
+        conn = psycopg2.connect(dsn)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO leads (parent_name, student_name, contact, request_date, source) "
+            f"VALUES ('{esc(parent_name)}', '{esc(student_name)}', '{esc(contact_full)}', "
+            f"'{esc(req_date)}', 'site')"
+        )
+        cur.close()
+        conn.close()
+        print('✅ Lead saved to db')
+    except Exception as e:
+        print(f'Failed to save lead to db: {str(e)}')
+
 def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '', 
                     dob: str = '', telegram: str = '', parent_name: str = '') -> Optional[Dict]:
     """Отправка лида в AlfaCRM через API"""
@@ -338,6 +371,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             parent_name=parent_name
         )
         
+        # Сохранение в таблицу лидов (раздел 'Список лидов' у руководителя)
+        save_lead_to_db(
+            parent_name=parent_name,
+            student_name=child_name,
+            contact=phone,
+            messengers=messengers,
+            telegram=telegram_username,
+        )
+
         # Отправка в Telegram
         print(f'📨 Отправка уведомления в Telegram')
         send_telegram_notification(
