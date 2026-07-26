@@ -43,6 +43,13 @@ function requestDateSortKey(raw: string | undefined): number {
   return year * 10000 + month * 100 + day;
 }
 
+// ISO-дата из input[type=date] («ГГГГ-ММ-ДД») → число ГГГГММДД. Пусто → 0.
+function isoToSortKey(iso: string): number {
+  const m = (iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return 0;
+  return parseInt(m[1], 10) * 10000 + parseInt(m[2], 10) * 100 + parseInt(m[3], 10);
+}
+
 const COLS: { key: keyof Lead; label: string; w: string }[] = [
   { key: 'parent_name', label: 'ФИ родителя', w: 'min-w-[210px]' },
   { key: 'student_name', label: 'ФИ ученика', w: 'min-w-[210px]' },
@@ -68,6 +75,28 @@ export default function LeadsListView() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  // Фильтры таблицы (не связаны со статистикой)
+  const [fSearch, setFSearch] = useState('');
+  const [fResponsible, setFResponsible] = useState('');
+  const [fProcessing, setFProcessing] = useState('');
+  const [fLeadStatus, setFLeadStatus] = useState('');
+  const [fDateFrom, setFDateFrom] = useState('');
+  const [fDateTo, setFDateTo] = useState('');
+  const [fUntouchedOnly, setFUntouchedOnly] = useState(false);
+
+  const resetFilters = () => {
+    setFSearch('');
+    setFResponsible('');
+    setFProcessing('');
+    setFLeadStatus('');
+    setFDateFrom('');
+    setFDateTo('');
+    setFUntouchedOnly(false);
+  };
+
+  const hasActiveFilters =
+    !!fSearch || !!fResponsible || !!fProcessing || !!fLeadStatus || !!fDateFrom || !!fDateTo || fUntouchedOnly;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
   const [tableWidth, setTableWidth] = useState(0);
@@ -84,6 +113,26 @@ export default function LeadsListView() {
       }),
     [leads],
   );
+
+  const visibleLeads = useMemo(() => {
+    const q = fSearch.trim().toLowerCase();
+    const fromKey = isoToSortKey(fDateFrom);
+    const toKey = isoToSortKey(fDateTo);
+    return sortedLeads.filter((l) => {
+      if (q && !`${l.parent_name} ${l.student_name}`.toLowerCase().includes(q)) return false;
+      if (fResponsible && (l.responsible || '') !== fResponsible) return false;
+      if (fProcessing && (l.processing_status || '') !== fProcessing) return false;
+      if (fLeadStatus && (l.lead_status || '') !== fLeadStatus) return false;
+      if (fUntouchedOnly && !isUntouched(l)) return false;
+      if (fromKey > 0 || toKey > 0) {
+        const k = requestDateSortKey(l.request_date);
+        if (k < 0) return false;
+        if (fromKey > 0 && k < fromKey) return false;
+        if (toKey > 0 && k > toKey) return false;
+      }
+      return true;
+    });
+  }, [sortedLeads, fSearch, fResponsible, fProcessing, fLeadStatus, fDateFrom, fDateTo, fUntouchedOnly]);
 
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
   // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
@@ -190,6 +239,102 @@ export default function LeadsListView() {
         />
       )}
 
+      {!loading && leads.length > 0 && (
+        <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3 flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[11px] text-gray-400 mb-1">Поиск по ФИО</label>
+            <div className="relative">
+              <Icon name="Search" size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={fSearch}
+                onChange={(e) => setFSearch(e.target.value)}
+                placeholder="Родитель или ученик"
+                className="w-full border border-gray-300 rounded-lg pl-8 pr-2.5 py-1.5 text-sm outline-none focus:border-amber-400"
+              />
+            </div>
+          </div>
+          <div className="min-w-[170px]">
+            <label className="block text-[11px] text-gray-400 mb-1">Ответственный</label>
+            <select
+              value={fResponsible}
+              onChange={(e) => setFResponsible(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400 bg-white"
+            >
+              <option value="">Все</option>
+              {RESPONSIBLE_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-[190px]">
+            <label className="block text-[11px] text-gray-400 mb-1">Статус обработки</label>
+            <select
+              value={fProcessing}
+              onChange={(e) => setFProcessing(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400 bg-white"
+            >
+              <option value="">Все</option>
+              {PROCESSING_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-[160px]">
+            <label className="block text-[11px] text-gray-400 mb-1">Статус лида</label>
+            <select
+              value={fLeadStatus}
+              onChange={(e) => setFLeadStatus(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400 bg-white"
+            >
+              <option value="">Все</option>
+              {LEAD_STATUS_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] text-gray-400 mb-1">Дата заявки с</label>
+            <input
+              type="date"
+              value={fDateFrom}
+              onChange={(e) => setFDateFrom(e.target.value)}
+              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] text-gray-400 mb-1">по</label>
+            <input
+              type="date"
+              value={fDateTo}
+              onChange={(e) => setFDateTo(e.target.value)}
+              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400"
+            />
+          </div>
+          <button
+            onClick={() => setFUntouchedOnly((v) => !v)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
+              fUntouchedOnly
+                ? 'bg-red-500 text-white border-red-500'
+                : 'bg-white text-red-600 border-red-300 hover:bg-red-50'
+            }`}
+          >
+            Только необработанные
+          </button>
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              <Icon name="X" size={15} />
+              Сбросить
+            </button>
+          )}
+          <div className="text-sm text-gray-400 ml-auto self-center">
+            Показано: {visibleLeads.length} из {leads.length}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="py-16 text-center text-gray-400">
           <Icon name="Loader2" size={28} className="animate-spin mx-auto mb-2" />
@@ -200,6 +345,14 @@ export default function LeadsListView() {
           <Icon name="Inbox" size={36} className="mx-auto mb-2" />
           <p className="font-medium text-gray-500">Пока нет лидов</p>
           <p className="text-sm">Новые заявки с сайта появятся здесь автоматически</p>
+        </div>
+      ) : visibleLeads.length === 0 ? (
+        <div className="py-16 text-center text-gray-400 border border-gray-200 rounded-xl">
+          <Icon name="SearchX" size={36} className="mx-auto mb-2" />
+          <p className="font-medium text-gray-500">Ничего не найдено</p>
+          <button onClick={resetFilters} className="text-sm text-amber-600 hover:underline mt-1">
+            Сбросить фильтры
+          </button>
         </div>
       ) : (
         <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -232,7 +385,7 @@ export default function LeadsListView() {
               </tr>
             </thead>
             <tbody>
-              {sortedLeads.map((l, idx) => {
+              {visibleLeads.map((l, idx) => {
                 const untouched = isUntouched(l);
                 const displayIdx = idx + 1;
                 const rowBg = untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-100' : 'bg-white';
