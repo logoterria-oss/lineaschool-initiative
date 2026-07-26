@@ -152,17 +152,17 @@ export default function LeadsListView() {
           <p className="text-sm">Новые заявки с сайта появятся здесь автоматически</p>
         </div>
       ) : (
-        <div className="overflow-x-auto border border-gray-200 rounded-xl">
+        <div className="overflow-auto border border-gray-200 rounded-xl max-h-[70vh]">
           <table className="min-w-full text-sm border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-yellow-100">
-                <th className="px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 w-10">№</th>
+                <th className="px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0">№</th>
                 {COLS.map((c) => (
-                  <th key={c.key} className={`px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 ${c.w}`}>
+                  <th key={c.key} className={`px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 bg-yellow-100 sticky top-0 ${c.w}`}>
                     {c.label}
                   </th>
                 ))}
-                <th className="px-2 py-2 border-b border-gray-200 w-10" />
+                <th className="px-2 py-2 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0" />
               </tr>
             </thead>
             <tbody>
