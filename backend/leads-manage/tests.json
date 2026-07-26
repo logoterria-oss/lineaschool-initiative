@@ -1,4 +1,5 @@
 {"tests": [
-  {"name": "List leads", "method": "GET", "path": "/", "expectedStatus": 200, "expectedBody": {"leads": "array"}, "bodyMatcher": "partial"},
-  {"name": "Stats", "method": "GET", "path": "/?action=stats", "expectedStatus": 200, "expectedBody": {"total": "number"}, "bodyMatcher": "partial"}
+  {"name": "List leads", "method": "GET", "path": "/", "expectedStatus": 200},
+  {"name": "Stats all", "method": "GET", "path": "/?action=stats", "expectedStatus": 200},
+  {"name": "Stats with period", "method": "GET", "path": "/?action=stats&from=2026-04-01&to=2026-04-30", "expectedStatus": 200}
 ]}

@@ -32,6 +32,9 @@ export interface LeadsStats {
   by_lead_status: Record<string, number>;
   by_processing: Record<string, number>;
   by_month: Record<string, number>;
+  by_responsible: Record<string, number>;
+  from: string;
+  to: string;
 }
 
 export const RESPONSIBLE_OPTIONS = ['Абраменко Виктория', 'Зинченко Ирина'];
@@ -72,8 +75,11 @@ export async function fetchLeads(): Promise<Lead[]> {
   return data.leads || [];
 }
 
-export async function fetchLeadsStats(): Promise<LeadsStats | null> {
-  const res = await fetch(`${URL}?action=stats`, { headers: headers() });
+export async function fetchLeadsStats(from = '', to = ''): Promise<LeadsStats | null> {
+  const q = new URLSearchParams({ action: 'stats' });
+  if (from) q.set('from', from);
+  if (to) q.set('to', to);
+  const res = await fetch(`${URL}?${q.toString()}`, { headers: headers() });
   if (!res.ok) return null;
   return res.json();
 }

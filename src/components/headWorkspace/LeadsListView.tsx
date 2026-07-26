@@ -48,7 +48,10 @@ export default function LeadsListView() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<LeadsStats | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -60,11 +63,18 @@ export default function LeadsListView() {
     load();
   }, []);
 
-  const collectStats = async () => {
+  const collectStats = async (from = dateFrom, to = dateTo) => {
+    setStatsOpen(true);
     setStatsLoading(true);
-    const s = await fetchLeadsStats();
+    const s = await fetchLeadsStats(from, to);
     setStats(s);
     setStatsLoading(false);
+  };
+
+  const applyPeriod = (from: string, to: string) => {
+    setDateFrom(from);
+    setDateTo(to);
+    collectStats(from, to);
   };
 
   const patch = (id: number, key: keyof Lead, value: string) => {
@@ -89,7 +99,7 @@ export default function LeadsListView() {
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <button
-          onClick={collectStats}
+          onClick={() => collectStats()}
           disabled={statsLoading}
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors disabled:opacity-60"
         >
@@ -116,7 +126,19 @@ export default function LeadsListView() {
         </div>
       </div>
 
-      {stats && <LeadsStatsPanel stats={stats} onClose={() => setStats(null)} />}
+      {statsOpen && (
+        <LeadsStatsPanel
+          stats={stats}
+          loading={statsLoading}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onChangeFrom={setDateFrom}
+          onChangeTo={setDateTo}
+          onApply={() => collectStats()}
+          onPreset={applyPeriod}
+          onClose={() => setStatsOpen(false)}
+        />
+      )}
 
       {loading ? (
         <div className="py-16 text-center text-gray-400">
@@ -144,7 +166,7 @@ export default function LeadsListView() {
               </tr>
             </thead>
             <tbody>
-              {leads.map((l, idx, arr) => arr[arr.length - 1 - idx]).map((l, idx) => {
+              {leads.map((_, idx, arr) => arr[arr.length - 1 - idx]).map((l, idx) => {
                 const untouched = isUntouched(l);
                 const displayIdx = leads.length - idx;
                 return (
