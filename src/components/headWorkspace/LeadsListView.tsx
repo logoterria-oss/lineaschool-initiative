@@ -156,11 +156,11 @@ export default function LeadsListView() {
           <table className="min-w-full text-sm border-collapse">
             <thead className="sticky top-0 z-10">
               <tr className="bg-yellow-100">
-                <th className="px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0 left-0 z-20">№</th>
+                <th className="px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0">№</th>
                 {COLS.map((c, ci) => (
                   <th
                     key={c.key}
-                    className={`px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 bg-yellow-100 sticky top-0 ${ci === 0 ? 'left-10 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]' : ''} ${c.w}`}
+                    className={`px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 bg-yellow-100 sticky top-0 ${ci === 1 ? 'left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]' : ''} ${c.w}`}
                   >
                     {c.label}
                   </th>
@@ -175,11 +175,11 @@ export default function LeadsListView() {
                 const rowBg = untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-100' : 'bg-white';
                 return (
                   <tr key={l.id} className={untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-50/50' : 'bg-white'}>
-                    <td className={`px-2 py-1.5 text-gray-400 border-b border-gray-100 align-top sticky left-0 z-10 ${rowBg}`}>{displayIdx}</td>
+                    <td className="px-2 py-1.5 text-gray-400 border-b border-gray-100 align-top">{displayIdx}</td>
                     {COLS.map((c, ci) => (
                       <td
                         key={c.key}
-                        className={`px-1 py-1 border-b border-gray-100 align-top ${ci === 0 ? `sticky left-10 z-10 ${rowBg} shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]` : ''}`}
+                        className={`px-1 py-1 border-b border-gray-100 align-top ${ci === 1 ? `sticky left-0 z-10 ${rowBg} shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]` : ''}`}
                       >
                         <Cell
                           lead={l}
