@@ -83,6 +83,7 @@ export default function LeadsListView() {
   const [fDateFrom, setFDateFrom] = useState('');
   const [fDateTo, setFDateTo] = useState('');
   const [fUntouchedOnly, setFUntouchedOnly] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const resetFilters = () => {
     setFSearch('');
@@ -94,8 +95,14 @@ export default function LeadsListView() {
     setFUntouchedOnly(false);
   };
 
-  const hasActiveFilters =
-    !!fSearch || !!fResponsible || !!fProcessing || !!fLeadStatus || !!fDateFrom || !!fDateTo || fUntouchedOnly;
+  const activeFiltersCount =
+    (fSearch ? 1 : 0) +
+    (fResponsible ? 1 : 0) +
+    (fProcessing ? 1 : 0) +
+    (fLeadStatus ? 1 : 0) +
+    (fDateFrom || fDateTo ? 1 : 0) +
+    (fUntouchedOnly ? 1 : 0);
+  const hasActiveFilters = activeFiltersCount > 0;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
@@ -219,6 +226,22 @@ export default function LeadsListView() {
           <Icon name="RefreshCw" size={16} />
           Обновить
         </button>
+        <button
+          onClick={() => setFiltersOpen(true)}
+          className={`flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors border ${
+            hasActiveFilters
+              ? 'bg-amber-50 border-amber-300 text-amber-700'
+              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          <Icon name="SlidersHorizontal" size={16} />
+          Фильтры
+          {hasActiveFilters && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-amber-500 text-white text-xs font-bold">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
         <div className="text-sm text-gray-400 ml-auto flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded-sm bg-red-100 border border-red-300" />
           новый необработанный лид
@@ -239,98 +262,138 @@ export default function LeadsListView() {
         />
       )}
 
-      {!loading && leads.length > 0 && (
-        <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3 flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-[11px] text-gray-400 mb-1">Поиск по ФИО</label>
-            <div className="relative">
-              <Icon name="Search" size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                value={fSearch}
-                onChange={(e) => setFSearch(e.target.value)}
-                placeholder="Родитель или ученик"
-                className="w-full border border-gray-300 rounded-lg pl-8 pr-2.5 py-1.5 text-sm outline-none focus:border-amber-400"
-              />
-            </div>
-          </div>
-          <div className="min-w-[170px]">
-            <label className="block text-[11px] text-gray-400 mb-1">Ответственный</label>
-            <select
-              value={fResponsible}
-              onChange={(e) => setFResponsible(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400 bg-white"
-            >
-              <option value="">Все</option>
-              {RESPONSIBLE_OPTIONS.map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
-            </select>
-          </div>
-          <div className="min-w-[190px]">
-            <label className="block text-[11px] text-gray-400 mb-1">Статус обработки</label>
-            <select
-              value={fProcessing}
-              onChange={(e) => setFProcessing(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400 bg-white"
-            >
-              <option value="">Все</option>
-              {PROCESSING_OPTIONS.map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
-            </select>
-          </div>
-          <div className="min-w-[160px]">
-            <label className="block text-[11px] text-gray-400 mb-1">Статус лида</label>
-            <select
-              value={fLeadStatus}
-              onChange={(e) => setFLeadStatus(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400 bg-white"
-            >
-              <option value="">Все</option>
-              {LEAD_STATUS_OPTIONS.map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[11px] text-gray-400 mb-1">Дата заявки с</label>
-            <input
-              type="date"
-              value={fDateFrom}
-              onChange={(e) => setFDateFrom(e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] text-gray-400 mb-1">по</label>
-            <input
-              type="date"
-              value={fDateTo}
-              onChange={(e) => setFDateTo(e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-amber-400"
-            />
-          </div>
-          <button
-            onClick={() => setFUntouchedOnly((v) => !v)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
-              fUntouchedOnly
-                ? 'bg-red-500 text-white border-red-500'
-                : 'bg-white text-red-600 border-red-300 hover:bg-red-50'
-            }`}
+      {!loading && leads.length > 0 && hasActiveFilters && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
+          <Icon name="Filter" size={15} className="text-amber-500" />
+          <span>Фильтры применены. Показано: <b className="text-gray-700">{visibleLeads.length}</b> из {leads.length}</span>
+          <button onClick={resetFilters} className="text-amber-600 hover:underline">Сбросить</button>
+        </div>
+      )}
+
+      {filtersOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setFiltersOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-lg my-8"
+            onClick={(e) => e.stopPropagation()}
           >
-            Только необработанные
-          </button>
-          {hasActiveFilters && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <Icon name="X" size={15} />
-              Сбросить
-            </button>
-          )}
-          <div className="text-sm text-gray-400 ml-auto self-center">
-            Показано: {visibleLeads.length} из {leads.length}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Icon name="SlidersHorizontal" size={18} className="text-amber-600" />
+                Фильтры
+              </h3>
+              <button onClick={() => setFiltersOpen(false)} className="text-gray-400 hover:text-gray-700">
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Поиск по ФИО</label>
+                <div className="relative">
+                  <Icon name="Search" size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={fSearch}
+                    onChange={(e) => setFSearch(e.target.value)}
+                    placeholder="Родитель или ученик"
+                    className="w-full border border-gray-300 rounded-lg pl-8 pr-2.5 py-2 text-sm outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Ответственный</label>
+                <select
+                  value={fResponsible}
+                  onChange={(e) => setFResponsible(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
+                >
+                  <option value="">Все</option>
+                  {RESPONSIBLE_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Статус обработки</label>
+                <select
+                  value={fProcessing}
+                  onChange={(e) => setFProcessing(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
+                >
+                  <option value="">Все</option>
+                  {PROCESSING_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Статус лида</label>
+                <select
+                  value={fLeadStatus}
+                  onChange={(e) => setFLeadStatus(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
+                >
+                  <option value="">Все</option>
+                  {LEAD_STATUS_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Дата заявки с</label>
+                  <input
+                    type="date"
+                    value={fDateFrom}
+                    onChange={(e) => setFDateFrom(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">по</label>
+                  <input
+                    type="date"
+                    value={fDateTo}
+                    onChange={(e) => setFDateTo(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={fUntouchedOnly}
+                  onChange={(e) => setFUntouchedOnly(e.target.checked)}
+                  className="w-4 h-4 accent-red-500"
+                />
+                <span className="text-sm text-gray-700">Только необработанные (новые) лиды</span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-gray-100">
+              <button
+                onClick={resetFilters}
+                className="text-sm font-medium text-gray-500 hover:text-gray-800"
+              >
+                Сбросить всё
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">Найдено: {visibleLeads.length}</span>
+                <button
+                  onClick={() => setFiltersOpen(false)}
+                  className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+                >
+                  Показать
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
