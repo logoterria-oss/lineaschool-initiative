@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import {
   Lead,
@@ -52,6 +52,28 @@ export default function LeadsListView() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const [tableWidth, setTableWidth] = useState(0);
+
+  // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
+  // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
+  useEffect(() => {
+    const el = scrollRef.current?.querySelector('table');
+    if (el) setTableWidth(el.scrollWidth);
+  }, [leads]);
+
+  const syncFromTop = () => {
+    if (scrollRef.current && topBarRef.current) {
+      scrollRef.current.scrollLeft = topBarRef.current.scrollLeft;
+    }
+  };
+  const syncFromTable = () => {
+    if (scrollRef.current && topBarRef.current) {
+      topBarRef.current.scrollLeft = scrollRef.current.scrollLeft;
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -152,15 +174,28 @@ export default function LeadsListView() {
           <p className="text-sm">Новые заявки с сайта появятся здесь автоматически</p>
         </div>
       ) : (
-        <div className="overflow-auto border border-gray-200 rounded-xl max-h-[70vh]">
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          {/* Верхняя полоса горизонтальной прокрутки — сразу под шапкой действий */}
+          <div
+            ref={topBarRef}
+            onScroll={syncFromTop}
+            className="overflow-x-auto overflow-y-hidden"
+          >
+            <div style={{ width: tableWidth, height: 1 }} />
+          </div>
+          <div
+            ref={scrollRef}
+            onScroll={syncFromTable}
+            className="overflow-x-auto overflow-y-auto max-h-[65vh]"
+          >
           <table className="min-w-full text-sm border-collapse">
-            <thead className="sticky top-0 z-10">
+            <thead className="sticky top-0 z-30">
               <tr className="bg-yellow-100">
-                <th className="px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0">№</th>
+                <th className="px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0 z-30">№</th>
                 {COLS.map((c, ci) => (
                   <th
                     key={c.key}
-                    className={`px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 bg-yellow-100 sticky top-0 ${ci === 1 ? 'left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]' : ''} ${c.w}`}
+                    className={`px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 bg-yellow-100 sticky top-0 z-30 ${ci === 1 ? 'left-0 z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]' : ''} ${c.w}`}
                   >
                     {c.label}
                   </th>
@@ -199,6 +234,7 @@ export default function LeadsListView() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
