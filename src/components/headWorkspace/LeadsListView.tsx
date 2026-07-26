@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import {
   Lead,
@@ -26,6 +26,21 @@ const EMPTY: Partial<Lead> = {
 // не выставлен статус обработки и статус лида.
 function isUntouched(l: Lead): boolean {
   return !l.responsible?.trim() && !l.processing_status?.trim() && !l.lead_status?.trim();
+}
+
+// Дата заявки хранится текстом: «ДД.ММ» или «ДД.ММ.ГГГГ» (иногда через «/»).
+// Превращаем в число ГГГГММДД для сортировки. Год берём текущий, если не указан.
+// Лиды без даты уходят вниз.
+function requestDateSortKey(raw: string | undefined): number {
+  const s = (raw || '').trim().replace(/\//g, '.');
+  const m = s.match(/^(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?/);
+  if (!m) return -1;
+  const day = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10);
+  let year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+  if (year < 100) year += 2000;
+  if (!month || !day) return -1;
+  return year * 10000 + month * 100 + day;
 }
 
 const COLS: { key: keyof Lead; label: string; w: string }[] = [
@@ -56,6 +71,19 @@ export default function LeadsListView() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
   const [tableWidth, setTableWidth] = useState(0);
+
+  // Сортируем по дате заявки: ближайшие/новые сверху, дальние снизу.
+  // При равных датах — новее по id. Лиды без даты уходят в самый низ.
+  const sortedLeads = useMemo(
+    () =>
+      [...leads].sort((a, b) => {
+        const ka = requestDateSortKey(a.request_date);
+        const kb = requestDateSortKey(b.request_date);
+        if (ka !== kb) return kb - ka;
+        return b.id - a.id;
+      }),
+    [leads],
+  );
 
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
   // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
@@ -204,9 +232,9 @@ export default function LeadsListView() {
               </tr>
             </thead>
             <tbody>
-              {leads.map((_, idx, arr) => arr[arr.length - 1 - idx]).map((l, idx) => {
+              {sortedLeads.map((l, idx) => {
                 const untouched = isUntouched(l);
-                const displayIdx = leads.length - idx;
+                const displayIdx = idx + 1;
                 const rowBg = untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-100' : 'bg-white';
                 return (
                   <tr key={l.id} className={untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-50/50' : 'bg-white'}>
