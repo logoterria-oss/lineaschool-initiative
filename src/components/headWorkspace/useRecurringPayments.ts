@@ -12,6 +12,7 @@ export interface RecurringPayment {
   next_date: string;
   note: string;
   is_active: boolean;
+  last_paid_at: string | null;
 }
 
 export interface PaymentDraft {
@@ -109,6 +110,15 @@ export function useRecurringPayments() {
     if (res.ok) await load();
   }, [load]);
 
+  const unmarkPaid = useCallback(async (id: number) => {
+    const res = await fetch(API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': pwd() },
+      body: JSON.stringify({ id, unmark_paid: true }),
+    });
+    if (res.ok) await load();
+  }, [load]);
+
   const remove = useCallback(async (id: number) => {
     const res = await fetch(API_URL, {
       method: 'DELETE',
@@ -118,5 +128,26 @@ export function useRecurringPayments() {
     if (res.ok) await load();
   }, [load]);
 
-  return { items, loading, error, saving, save, markPaid, remove, reload: load };
+  return { items, loading, error, saving, save, markPaid, unmarkPaid, remove, reload: load };
+}
+
+export type PaymentStatus = 'overdue' | 'due-soon' | 'paid' | 'pending';
+
+/** Оплачен ли текущий период: last_paid_at попадает в интервал [next_date - period; next_date). */
+export function paymentStatus(p: RecurringPayment): PaymentStatus {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const next = new Date(p.next_date + 'T00:00:00');
+
+  if (p.last_paid_at) {
+    const periodStart = new Date(next);
+    periodStart.setMonth(periodStart.getMonth() - p.period_months);
+    const paid = new Date(p.last_paid_at + 'T00:00:00');
+    if (paid >= periodStart) return 'paid';
+  }
+
+  const days = Math.round((next.getTime() - today.getTime()) / 86400000);
+  if (days < 0) return 'overdue';
+  if (days <= 7) return 'due-soon';
+  return 'pending';
 }

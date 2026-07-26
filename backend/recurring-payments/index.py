@@ -56,6 +56,10 @@ def _ensure_table(cur, schema: str) -> None:
             updated_at TIMESTAMP NOT NULL DEFAULT NOW()
         )
     ''')
+    cur.execute(
+        f'ALTER TABLE {schema}.recurring_payments '
+        f'ADD COLUMN IF NOT EXISTS last_paid_at DATE'
+    )
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -78,7 +82,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         if method == 'GET':
             cur.execute(
-                f'SELECT id, title, category, amount, period_months, next_date, note, is_active '
+                f'SELECT id, title, category, amount, period_months, next_date, note, is_active, last_paid_at '
                 f'FROM {schema}.recurring_payments ORDER BY next_date ASC, id ASC'
             )
             rows = cur.fetchall()
@@ -92,6 +96,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'next_date': str(r[5]),
                     'note': r[6] or '',
                     'is_active': r[7],
+                    'last_paid_at': str(r[8]) if r[8] else None,
                 }
                 for r in rows
             ]
@@ -143,11 +148,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.close(); conn.close()
                 return _resp(400, {'error': 'Не указан id'})
 
-            # Отметить оплату: сдвинуть next_date на period_months
+            # Отметить оплату: запомнить дату оплаты и сдвинуть next_date на period_months
             if body_data.get('mark_paid'):
                 cur.execute(
                     f"UPDATE {schema}.recurring_payments "
-                    f"SET next_date = next_date + (period_months || ' months')::interval, updated_at = NOW() "
+                    f"SET last_paid_at = CURRENT_DATE, "
+                    f"next_date = next_date + (period_months || ' months')::interval, updated_at = NOW() "
+                    f"WHERE id = %s RETURNING next_date",
+                    (pid,),
+                )
+                row = cur.fetchone()
+                conn.commit()
+                cur.close(); conn.close()
+                if not row:
+                    return _resp(404, {'error': 'Платёж не найден'})
+                return _resp(200, {'success': True, 'next_date': str(row[0])})
+
+            # Отменить последнюю оплату: вернуть next_date назад
+            if body_data.get('unmark_paid'):
+                cur.execute(
+                    f"UPDATE {schema}.recurring_payments "
+                    f"SET last_paid_at = NULL, "
+                    f"next_date = next_date - (period_months || ' months')::interval, updated_at = NOW() "
                     f"WHERE id = %s RETURNING next_date",
                     (pid,),
                 )
