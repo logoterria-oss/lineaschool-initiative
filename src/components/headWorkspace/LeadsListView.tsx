@@ -200,7 +200,7 @@ export default function LeadsListView() {
                     {c.label}
                   </th>
                 ))}
-                <th className="px-2 py-2 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0" />
+                <th className="px-2 py-2 border-b border-gray-200 w-14 pr-6 bg-yellow-100 sticky top-0" />
               </tr>
             </thead>
             <tbody>
@@ -224,7 +224,7 @@ export default function LeadsListView() {
                         />
                       </td>
                     ))}
-                    <td className="px-1 py-1 border-b border-gray-100 align-top text-center">
+                    <td className="px-1 py-1 pr-6 border-b border-gray-100 align-top text-center">
                       <button onClick={() => removeLead(l.id)} className="text-gray-300 hover:text-red-500">
                         <Icon name="Trash2" size={15} />
                       </button>
