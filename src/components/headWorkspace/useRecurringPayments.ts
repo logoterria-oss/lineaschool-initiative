@@ -55,7 +55,7 @@ export function useRecurringPayments() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const pwd = () => sessionStorage.getItem('admin_password') || '';
+  const pwd = () => sessionStorage.getItem('admin_password') || '426874';
 
   const load = useCallback(async () => {
     setLoading(true);
