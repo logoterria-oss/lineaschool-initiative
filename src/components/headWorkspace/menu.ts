@@ -22,6 +22,7 @@ export const HEAD_MENU: MenuGroup[] = [
     label: 'Уроки и диагностики',
     icon: 'BookOpen',
     items: [
+      { id: 'leads', label: 'Список лидов', kind: 'component', icon: 'UserPlus' },
       { id: 'reports', label: 'Анкеты и заключения', kind: 'component', icon: 'FileText' },
       { id: 'schedule', label: 'Расписание групп и свободные слоты', kind: 'component', icon: 'CalendarDays' },
       { id: 'homework', label: 'Контроль ДЗ', kind: 'component', icon: 'ClipboardCheck' },
@@ -46,7 +47,6 @@ export const HEAD_MENU: MenuGroup[] = [
     label: 'Администрирование',
     icon: 'Settings',
     items: [
-      { id: 'leads', label: 'Список лидов', kind: 'component', icon: 'UserPlus' },
       { id: 'interactions', label: 'Взаимодействия', kind: 'component', icon: 'MessagesSquare' },
       { id: 'vacations', label: 'Даты каникул', kind: 'component', icon: 'CalendarOff' },
       { id: 'progress', label: 'Мониторинг прогресса', kind: 'component', icon: 'TrendingUp' },
