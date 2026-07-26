@@ -243,7 +243,7 @@ const RecurringPaymentsView = () => {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-900 break-words">{p.title}</span>
+                    <span className="font-semibold text-gray-900 whitespace-nowrap">{p.title}</span>
                     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold border rounded-full px-2 py-0.5 ${sm.badge}`}>
                       {isPaid && <Icon name="Check" size={11} />}
                       {sm.label}
