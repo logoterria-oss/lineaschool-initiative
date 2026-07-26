@@ -22,11 +22,11 @@ export const HEAD_MENU: MenuGroup[] = [
     label: 'Уроки и диагностики',
     icon: 'BookOpen',
     items: [
-      { id: 'leads', label: 'Список лидов', kind: 'component', icon: 'UserPlus' },
       { id: 'reports', label: 'Анкеты и заключения', kind: 'component', icon: 'FileText' },
       { id: 'schedule', label: 'Расписание групп и свободные слоты', kind: 'component', icon: 'CalendarDays' },
       { id: 'homework', label: 'Контроль ДЗ', kind: 'component', icon: 'ClipboardCheck' },
       { id: 'students-list', label: 'Список учеников', kind: 'component', icon: 'GraduationCap' },
+      { id: 'leads', label: 'Список лидов', kind: 'component', icon: 'UserPlus' },
     ],
   },
   {
