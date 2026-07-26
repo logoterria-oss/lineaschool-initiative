@@ -11,6 +11,7 @@ import {
   periodLabel,
   paymentStatus,
   PaymentStatus,
+  amountLabel,
 } from './useRecurringPayments';
 
 const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -65,24 +66,29 @@ const RecurringPaymentsView = () => {
     return list;
   }, [withStatus, tab, catFilter]);
 
+  // В рублёвые суммы попадают только фиксированные платежи — процент от дохода
+  // заранее посчитать нельзя, поэтому он учитывается отдельно (счётчиком).
+  const fixed = useMemo(() => items.filter((i) => i.amount_type === 'fixed'), [items]);
+  const percentCount = items.length - fixed.length;
+
   const monthlyTotal = useMemo(
-    () => items.reduce((s, i) => s + i.amount / i.period_months, 0),
-    [items],
+    () => fixed.reduce((s, i) => s + i.amount / i.period_months, 0),
+    [fixed],
   );
   const yearlyTotal = useMemo(
-    () => items.reduce((s, i) => s + (i.amount * 12) / i.period_months, 0),
-    [items],
+    () => fixed.reduce((s, i) => s + (i.amount * 12) / i.period_months, 0),
+    [fixed],
   );
   const toPayTotal = useMemo(
-    () => withStatus.filter((x) => x.status !== 'paid').reduce((s, x) => s + x.p.amount, 0),
+    () => withStatus.filter((x) => x.status !== 'paid' && x.p.amount_type === 'fixed').reduce((s, x) => s + x.p.amount, 0),
     [withStatus],
   );
 
   const byCategory = useMemo(() => {
     const map = new Map<string, number>();
-    items.forEach((i) => map.set(i.category, (map.get(i.category) || 0) + i.amount / i.period_months));
+    fixed.forEach((i) => map.set(i.category, (map.get(i.category) || 0) + i.amount / i.period_months));
     return CATEGORIES.map((c) => ({ category: c, monthly: map.get(c) || 0 })).filter((c) => c.monthly > 0);
-  }, [items]);
+  }, [fixed]);
 
   const openNew = () => setModal({ open: true, initial: null });
   const openEdit = (p: RecurringPayment) => setModal({ open: true, initial: toDraft(p) });
@@ -113,7 +119,9 @@ const RecurringPaymentsView = () => {
         <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4">
           <div className="text-xs text-amber-600 font-medium">Нужно оплатить</div>
           <div className="text-2xl font-bold text-gray-900 mt-1">{rub(Math.round(toPayTotal))}</div>
-          <div className="text-xs text-gray-400 mt-0.5">{todoCount} платежей</div>
+          <div className="text-xs text-gray-400 mt-0.5">
+            {todoCount} платежей{percentCount > 0 ? ` + ${percentCount} по % от дохода` : ''}
+          </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
           <div className="text-xs text-gray-500 font-medium">В месяц (в среднем)</div>
@@ -238,7 +246,7 @@ const RecurringPaymentsView = () => {
                 </div>
 
                 <div className="text-right md:w-44 flex-shrink-0">
-                  <div className="font-bold text-gray-900">{rub(p.amount)}</div>
+                  <div className="font-bold text-gray-900">{amountLabel(p)}</div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     {isPaid ? 'Следующий: ' : ''}{fmtDate(p.next_date)}
                   </div>

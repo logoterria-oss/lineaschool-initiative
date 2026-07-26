@@ -12,7 +12,12 @@ const EMPTY: PaymentDraft = {
   next_date: '',
   note: '',
   is_active: true,
+  amount_type: 'fixed',
+  percent: '',
+  income_period: '',
 };
+
+const INCOME_PERIODS = ['за месяц', 'за квартал', 'за полгода', 'за год'];
 
 interface Props {
   initial?: PaymentDraft | null;
@@ -43,6 +48,9 @@ const RecurringPaymentModal = ({ initial, saving, onClose, onSave }: Props) => {
     if (!draft.title.trim()) return setErr('Укажите назначение платежа');
     if (!draft.next_date) return setErr('Укажите дату следующего платежа');
     if (!draft.period_months || draft.period_months < 1) return setErr('Период должен быть не меньше 1 месяца');
+    if (draft.amount_type === 'percent' && (draft.percent === '' || Number(draft.percent) <= 0)) {
+      return setErr('Укажите процент от дохода');
+    }
     const ok = await onSave(draft);
     if (ok) onClose();
   };
@@ -86,7 +94,33 @@ const RecurringPaymentModal = ({ initial, saving, onClose, onSave }: Props) => {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Как считается платёж</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => upd({ amount_type: 'fixed' })}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  draft.amount_type === 'fixed'
+                    ? 'bg-green-600 text-white border-green-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Фиксированная сумма
+              </button>
+              <button
+                onClick={() => upd({ amount_type: 'percent' })}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  draft.amount_type === 'percent'
+                    ? 'bg-green-600 text-white border-green-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                % от дохода
+              </button>
+            </div>
+          </div>
+
+          {draft.amount_type === 'fixed' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Сумма, ₽</label>
               <input
@@ -97,15 +131,42 @@ const RecurringPaymentModal = ({ initial, saving, onClose, onSave }: Props) => {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Дата платежа</label>
-              <input
-                type="date"
-                value={draft.next_date}
-                onChange={(e) => upd({ next_date: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Процент, %</label>
+                <input
+                  type="number"
+                  value={draft.percent}
+                  onChange={(e) => upd({ percent: e.target.value === '' ? '' : Number(e.target.value) })}
+                  placeholder="6"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Доход за период</label>
+                <select
+                  value={draft.income_period}
+                  onChange={(e) => upd({ income_period: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                >
+                  <option value="">Не указан</option>
+                  {INCOME_PERIODS.map((ip) => (
+                    <option key={ip} value={ip}>{ip}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Дата платежа</label>
+            <input
+              type="date"
+              value={draft.next_date}
+              onChange={(e) => upd({ next_date: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
           </div>
 
           <div>

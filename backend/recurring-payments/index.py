@@ -25,6 +25,7 @@ CATEGORIES = [
     'ПО для мессенджера',
     'Ведение бизнеса',
     'Интернет и телефония',
+    'Страховые и налоги ИП',
 ]
 
 
@@ -60,6 +61,18 @@ def _ensure_table(cur, schema: str) -> None:
         f'ALTER TABLE {schema}.recurring_payments '
         f'ADD COLUMN IF NOT EXISTS last_paid_at DATE'
     )
+    cur.execute(
+        f"ALTER TABLE {schema}.recurring_payments "
+        f"ADD COLUMN IF NOT EXISTS amount_type TEXT NOT NULL DEFAULT 'fixed'"
+    )
+    cur.execute(
+        f'ALTER TABLE {schema}.recurring_payments '
+        f'ADD COLUMN IF NOT EXISTS percent NUMERIC(6,2) NOT NULL DEFAULT 0'
+    )
+    cur.execute(
+        f"ALTER TABLE {schema}.recurring_payments "
+        f"ADD COLUMN IF NOT EXISTS income_period TEXT NOT NULL DEFAULT ''"
+    )
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -82,7 +95,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         if method == 'GET':
             cur.execute(
-                f'SELECT id, title, category, amount, period_months, next_date, note, is_active, last_paid_at '
+                f'SELECT id, title, category, amount, period_months, next_date, note, is_active, last_paid_at, '
+                f'amount_type, percent, income_period '
                 f'FROM {schema}.recurring_payments ORDER BY next_date ASC, id ASC'
             )
             rows = cur.fetchall()
@@ -97,6 +111,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'note': r[6] or '',
                     'is_active': r[7],
                     'last_paid_at': str(r[8]) if r[8] else None,
+                    'amount_type': r[9] or 'fixed',
+                    'percent': float(r[10]) if r[10] is not None else 0.0,
+                    'income_period': r[11] or '',
                 }
                 for r in rows
             ]
@@ -120,22 +137,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             period_months = body_data.get('period_months')
             next_date = (body_data.get('next_date') or '').strip()
             note = (body_data.get('note') or '').strip()
+            amount_type = (body_data.get('amount_type') or 'fixed').strip()
+            percent = body_data.get('percent')
+            income_period = (body_data.get('income_period') or '').strip()
+
+            if amount_type not in ('fixed', 'percent'):
+                amount_type = 'fixed'
 
             if not title or not category or not next_date:
                 cur.close(); conn.close()
                 return _resp(400, {'error': 'Заполните назначение, категорию и дату платежа'})
             try:
                 amount = float(amount) if amount not in (None, '') else 0.0
+                percent = float(percent) if percent not in (None, '') else 0.0
                 period_months = int(period_months) if period_months not in (None, '') else 1
             except (TypeError, ValueError):
                 cur.close(); conn.close()
-                return _resp(400, {'error': 'Некорректная сумма или период'})
+                return _resp(400, {'error': 'Некорректная сумма, процент или период'})
 
             cur.execute(
                 f'INSERT INTO {schema}.recurring_payments '
-                f'(title, category, amount, period_months, next_date, note) '
-                f'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
-                (title, category, amount, period_months, next_date, note),
+                f'(title, category, amount, period_months, next_date, note, amount_type, percent, income_period) '
+                f'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id',
+                (title, category, amount, period_months, next_date, note, amount_type, percent, income_period),
             )
             new_id = cur.fetchone()[0]
             conn.commit()
@@ -187,19 +211,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             next_date = (body_data.get('next_date') or '').strip()
             note = (body_data.get('note') or '').strip()
             is_active = body_data.get('is_active', True)
+            amount_type = (body_data.get('amount_type') or 'fixed').strip()
+            percent = body_data.get('percent')
+            income_period = (body_data.get('income_period') or '').strip()
+
+            if amount_type not in ('fixed', 'percent'):
+                amount_type = 'fixed'
 
             try:
                 amount = float(amount) if amount not in (None, '') else 0.0
+                percent = float(percent) if percent not in (None, '') else 0.0
                 period_months = int(period_months) if period_months not in (None, '') else 1
             except (TypeError, ValueError):
                 cur.close(); conn.close()
-                return _resp(400, {'error': 'Некорректная сумма или период'})
+                return _resp(400, {'error': 'Некорректная сумма, процент или период'})
 
             cur.execute(
                 f'UPDATE {schema}.recurring_payments SET '
                 f'title=%s, category=%s, amount=%s, period_months=%s, next_date=%s, note=%s, '
-                f'is_active=%s, updated_at=NOW() WHERE id=%s',
-                (title, category, amount, period_months, next_date, note, bool(is_active), pid),
+                f'is_active=%s, amount_type=%s, percent=%s, income_period=%s, updated_at=NOW() WHERE id=%s',
+                (title, category, amount, period_months, next_date, note, bool(is_active),
+                 amount_type, percent, income_period, pid),
             )
             conn.commit()
             cur.close(); conn.close()

@@ -3,6 +3,8 @@ import func2url from '../../../backend/func2url.json';
 
 const API_URL = (func2url as Record<string, string>)['recurring-payments'];
 
+export type AmountType = 'fixed' | 'percent';
+
 export interface RecurringPayment {
   id: number;
   title: string;
@@ -13,6 +15,9 @@ export interface RecurringPayment {
   note: string;
   is_active: boolean;
   last_paid_at: string | null;
+  amount_type: AmountType;
+  percent: number;
+  income_period: string;
 }
 
 export interface PaymentDraft {
@@ -24,6 +29,9 @@ export interface PaymentDraft {
   next_date: string;
   note: string;
   is_active: boolean;
+  amount_type: AmountType;
+  percent: number | '';
+  income_period: string;
 }
 
 export const CATEGORIES = [
@@ -32,6 +40,7 @@ export const CATEGORIES = [
   'ПО для мессенджера',
   'Ведение бизнеса',
   'Интернет и телефония',
+  'Страховые и налоги ИП',
 ];
 
 export const CATEGORY_META: Record<string, { icon: string; color: string }> = {
@@ -40,7 +49,17 @@ export const CATEGORY_META: Record<string, { icon: string; color: string }> = {
   'ПО для мессенджера': { icon: 'MessageCircle', color: 'bg-teal-100 text-teal-700 border-teal-200' },
   'Ведение бизнеса': { icon: 'Briefcase', color: 'bg-amber-100 text-amber-700 border-amber-200' },
   'Интернет и телефония': { icon: 'Wifi', color: 'bg-rose-100 text-rose-700 border-rose-200' },
+  'Страховые и налоги ИП': { icon: 'Landmark', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
 };
+
+/** Текст суммы платежа: фиксированная либо процент от дохода. */
+export function amountLabel(p: RecurringPayment): string {
+  if (p.amount_type === 'percent') {
+    const base = `${p.percent}% от дохода`;
+    return p.income_period ? `${base} (${p.income_period})` : base;
+  }
+  return p.amount.toLocaleString('ru-RU') + ' ₽';
+}
 
 export function periodLabel(months: number): string {
   if (months === 1) return 'Ежемесячно';

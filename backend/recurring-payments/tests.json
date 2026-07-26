@@ -5,7 +5,7 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"items": []},
+      "expectedBody": {"categories": ["ПО для уроков", "ПО для сайта", "ПО для мессенджера", "Ведение бизнеса", "Интернет и телефония", "Страховые и налоги ИП"]},
       "bodyMatcher": "partial"
     },
     {
