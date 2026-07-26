@@ -10,9 +10,12 @@ import {
   CATEGORIES,
   periodLabel,
   paymentStatus,
+  dueThisMonth,
   PaymentStatus,
   amountLabel,
 } from './useRecurringPayments';
+
+const MONTH_PREP_RU = ['январе', 'феврале', 'марте', 'апреле', 'мае', 'июне', 'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре'];
 
 const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
@@ -41,25 +44,29 @@ const STATUS_META: Record<PaymentStatus, { label: string; badge: string; card: s
   paid: { label: 'Оплачено', badge: 'bg-green-100 text-green-700 border-green-200', card: 'border-green-200 bg-green-50/30' },
 };
 
-type Tab = 'todo' | 'paid' | 'all';
+type Tab = 'month' | 'todo' | 'paid' | 'all';
 
 const RecurringPaymentsView = () => {
   const { items, loading, error, saving, save, markPaid, unmarkPaid, remove } = useRecurringPayments();
   const [modal, setModal] = useState<{ open: boolean; initial: PaymentDraft | null }>({ open: false, initial: null });
   const [catFilter, setCatFilter] = useState<string>('all');
-  const [tab, setTab] = useState<Tab>('todo');
+  const [tab, setTab] = useState<Tab>('month');
   const [confirmDel, setConfirmDel] = useState<RecurringPayment | null>(null);
 
+  const currentMonthLabel = MONTH_PREP_RU[new Date().getMonth()];
+
   const withStatus = useMemo(
-    () => items.map((p) => ({ p, status: paymentStatus(p) })),
+    () => items.map((p) => ({ p, status: paymentStatus(p), thisMonth: dueThisMonth(p) })),
     [items],
   );
 
+  const monthCount = withStatus.filter((x) => x.thisMonth).length;
   const todoCount = withStatus.filter((x) => x.status !== 'paid').length;
   const paidCount = withStatus.filter((x) => x.status === 'paid').length;
 
   const filtered = useMemo(() => {
     let list = withStatus;
+    if (tab === 'month') list = list.filter((x) => x.thisMonth);
     if (tab === 'todo') list = list.filter((x) => x.status !== 'paid');
     if (tab === 'paid') list = list.filter((x) => x.status === 'paid');
     if (catFilter !== 'all') list = list.filter((x) => x.p.category === catFilter);
@@ -69,7 +76,6 @@ const RecurringPaymentsView = () => {
   // В рублёвые суммы попадают только фиксированные платежи — процент от дохода
   // заранее посчитать нельзя, поэтому он учитывается отдельно (счётчиком).
   const fixed = useMemo(() => items.filter((i) => i.amount_type === 'fixed'), [items]);
-  const percentCount = items.length - fixed.length;
 
   const monthlyTotal = useMemo(
     () => fixed.reduce((s, i) => s + i.amount / i.period_months, 0),
@@ -79,10 +85,12 @@ const RecurringPaymentsView = () => {
     () => fixed.reduce((s, i) => s + (i.amount * 12) / i.period_months, 0),
     [fixed],
   );
-  const toPayTotal = useMemo(
-    () => withStatus.filter((x) => x.status !== 'paid' && x.p.amount_type === 'fixed').reduce((s, x) => s + x.p.amount, 0),
+  // Сумма к оплате именно в этом месяце (фиксированные платежи).
+  const monthToPayTotal = useMemo(
+    () => withStatus.filter((x) => x.thisMonth && x.p.amount_type === 'fixed').reduce((s, x) => s + x.p.amount, 0),
     [withStatus],
   );
+  const monthPercentCount = withStatus.filter((x) => x.thisMonth && x.p.amount_type === 'percent').length;
 
   const byCategory = useMemo(() => {
     const map = new Map<string, number>();
@@ -94,7 +102,8 @@ const RecurringPaymentsView = () => {
   const openEdit = (p: RecurringPayment) => setModal({ open: true, initial: toDraft(p) });
 
   const TABS: { id: Tab; label: string; count: number }[] = [
-    { id: 'todo', label: 'Нужно оплатить', count: todoCount },
+    { id: 'month', label: 'В этом месяце', count: monthCount },
+    { id: 'todo', label: 'Все неоплаченные', count: todoCount },
     { id: 'paid', label: 'Оплачено', count: paidCount },
     { id: 'all', label: 'Все', count: items.length },
   ];
@@ -117,10 +126,11 @@ const RecurringPaymentsView = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4">
-          <div className="text-xs text-amber-600 font-medium">Нужно оплатить</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">{rub(Math.round(toPayTotal))}</div>
+          <div className="text-xs text-amber-600 font-medium">К оплате в {currentMonthLabel}</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">{rub(Math.round(monthToPayTotal))}</div>
           <div className="text-xs text-gray-400 mt-0.5">
-            {todoCount} платежей{percentCount > 0 ? ` + ${percentCount} по % от дохода` : ''}
+            {monthCount} платеж{monthCount === 1 ? '' : monthCount >= 2 && monthCount <= 4 ? 'а' : 'ей'}
+            {monthPercentCount > 0 ? ` + ${monthPercentCount} по % от дохода` : ''}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -152,9 +162,9 @@ const RecurringPaymentsView = () => {
         className="mb-4"
         title="Как работает календарь"
         hints={[
-          'Новый платёж по умолчанию в статусе «Ожидает оплаты» — он попадает во вкладку «Нужно оплатить».',
-          'Когда оплатите — нажмите «Оплачено»: платёж перейдёт в «Оплачено», а дата сдвинется на следующий период.',
-          'Если отметили по ошибке — нажмите «Отменить оплату», всё вернётся назад.',
+          'Вкладка «В этом месяце» и карточка сверху показывают, что нужно оплатить в текущем месяце и общую сумму.',
+          'Когда оплатите — нажмите «Отметить оплату»: платёж перейдёт в «Оплачено», а дата сдвинется на следующий период.',
+          'Если отметили по ошибке — нажмите «Отменить», всё вернётся назад.',
           'Просроченные подсвечиваются красным, а те, до которых ≤7 дней — жёлтым.',
         ]}
       />
@@ -203,7 +213,13 @@ const RecurringPaymentsView = () => {
             <Icon name="CalendarClock" size={26} className="text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-700 mb-1">
-            {tab === 'paid' ? 'Оплаченных пока нет' : tab === 'todo' ? 'Всё оплачено' : 'Пока нет платежей'}
+            {tab === 'paid'
+              ? 'Оплаченных пока нет'
+              : tab === 'month'
+                ? 'В этом месяце платить нечего'
+                : tab === 'todo'
+                  ? 'Всё оплачено'
+                  : 'Пока нет платежей'}
           </h3>
           <p className="text-gray-400 text-sm">
             {items.length === 0 ? 'Нажмите «Добавить платёж», чтобы завести первую регулярную трату.' : 'Здесь пусто.'}

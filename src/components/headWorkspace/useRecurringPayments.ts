@@ -152,21 +152,47 @@ export function useRecurringPayments() {
 
 export type PaymentStatus = 'overdue' | 'due-soon' | 'paid' | 'pending';
 
-/** Оплачен ли текущий период: last_paid_at попадает в интервал [next_date - period; next_date). */
+export const DUE_SOON_DAYS = 7;
+
+/**
+ * Статус платежа.
+ *
+ * Когда пользователь нажимает «Отметить оплату», бэкенд ставит last_paid_at = сегодня
+ * и сдвигает next_date на один период вперёд. Значит, платёж за текущий цикл закрыт,
+ * а next_date — это уже следующая (будущая) дата оплаты.
+ *
+ * Поэтому платёж считается «Оплачено», пока по нему есть отметка об оплате (last_paid_at)
+ * и до следующей даты оплаты ещё далеко (> 7 дней). Как только до next_date остаётся
+ * ≤ 7 дней или она прошла — платёж снова требует оплаты (due-soon / overdue),
+ * даже если last_paid_at заполнен от прошлого цикла.
+ */
 export function paymentStatus(p: RecurringPayment): PaymentStatus {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const next = new Date(p.next_date + 'T00:00:00');
-
-  if (p.last_paid_at) {
-    const periodStart = new Date(next);
-    periodStart.setMonth(periodStart.getMonth() - p.period_months);
-    const paid = new Date(p.last_paid_at + 'T00:00:00');
-    if (paid >= periodStart) return 'paid';
-  }
-
   const days = Math.round((next.getTime() - today.getTime()) / 86400000);
+
   if (days < 0) return 'overdue';
-  if (days <= 7) return 'due-soon';
+  if (days <= DUE_SOON_DAYS) return 'due-soon';
+
+  // До оплаты далеко: если по платежу уже есть отметка об оплате — он закрыт.
+  if (p.last_paid_at) return 'paid';
+
   return 'pending';
+}
+
+/**
+ * Нужно ли платить в текущем календарном месяце: дата платежа приходится
+ * на этот месяц (или уже просрочена) и платёж ещё не оплачен.
+ * Используется, чтобы в начале месяца сразу видеть список и сумму к оплате.
+ */
+export function dueThisMonth(p: RecurringPayment): boolean {
+  if (paymentStatus(p) === 'paid') return false;
+  const today = new Date();
+  const next = new Date(p.next_date + 'T00:00:00');
+  if (next < today) return true; // просроченные всегда попадают
+  return (
+    next.getFullYear() === today.getFullYear() &&
+    next.getMonth() === today.getMonth()
+  );
 }
