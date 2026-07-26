@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Список платежей и категории",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"items": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Без пароля запрещено создание",
+      "method": "POST",
+      "path": "/",
+      "body": {"title": "Test", "category": "ПО для сайта", "next_date": "2026-08-01"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

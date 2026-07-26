@@ -58,7 +58,7 @@ export const HEAD_MENU: MenuGroup[] = [
     items: [
       { id: 'payments', label: 'Оплаты', kind: 'component', icon: 'CreditCard' },
       { id: 'reports-fin', label: 'Отчёты', kind: 'component', icon: 'BarChart2' },
-      { id: 'calendar', label: 'Календарь регулярных платежей', kind: 'stub', icon: 'CalendarClock' },
+      { id: 'calendar', label: 'Календарь регулярных платежей', kind: 'component', icon: 'CalendarClock' },
     ],
   },
   {

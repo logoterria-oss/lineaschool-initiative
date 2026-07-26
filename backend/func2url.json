@@ -1,4 +1,5 @@
 {
+  "recurring-payments": "https://functions.poehali.dev/83c6e536-c425-44ed-a334-b70b629a3ace",
   "interactions-api": "https://functions.poehali.dev/c251547a-6d0d-4d86-9a3c-1b5bd6054b77",
   "staff-manage": "https://functions.poehali.dev/01130309-d1ad-4903-941f-0214cfe792da",
   "staff-auth": "https://functions.poehali.dev/9046cb93-23f6-47d3-9bde-4fe3735dd754",
