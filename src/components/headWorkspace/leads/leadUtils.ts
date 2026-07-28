@@ -86,6 +86,64 @@ function contactWhenWindow(raw: string | undefined): { start: number; end: numbe
   return null;
 }
 
+// Полные названия месяцев (для формирования строки «начало/середина/конец <Месяц>»).
+export const MONTH_LABELS = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+];
+
+export type ContactWhenMode = '' | 'date' | 'range' | 'part';
+export type ContactWhenPart = 'начало' | 'середина' | 'конец';
+
+// Разбирает сохранённое текстовое значение «Когда связаться» обратно в поля формы,
+// чтобы структурированный ввод показывал уже выбранные значения.
+export function parseContactWhen(raw: string | undefined): {
+  mode: ContactWhenMode;
+  date: string;        // ISO для одиночной даты
+  rangeFrom: string;   // ISO
+  rangeTo: string;     // ISO
+  part: ContactWhenPart | '';
+  month: number;       // 1..12 (для part)
+} {
+  const empty = { mode: '' as ContactWhenMode, date: '', rangeFrom: '', rangeTo: '', part: '' as ContactWhenPart | '', month: new Date().getMonth() + 1 };
+  const s = (raw || '').trim();
+  if (!s) return empty;
+  const low = s.toLowerCase();
+
+  // Часть месяца
+  let part: ContactWhenPart | '' = '';
+  if (/начал/.test(low)) part = 'начало';
+  else if (/серед/.test(low)) part = 'середина';
+  else if (/конц|конце|конца/.test(low)) part = 'конец';
+  if (part) {
+    let month = new Date().getMonth() + 1;
+    for (const [k, v] of Object.entries(MONTH_NAMES)) {
+      if (low.includes(k)) { month = v; break; }
+    }
+    return { ...empty, mode: 'part', part, month };
+  }
+
+  // Даты ДД.ММ[.ГГГГ]
+  const norm = low.replace(/\//g, '.');
+  const matches = [...norm.matchAll(/(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?/g)].map((m) => {
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    let y = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+    if (y < 100) y += 2000;
+    return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  });
+  if (matches.length >= 2) return { ...empty, mode: 'range', rangeFrom: matches[0], rangeTo: matches[1] };
+  if (matches.length === 1) return { ...empty, mode: 'date', date: matches[0] };
+  return empty;
+}
+
+// ISO «ГГГГ-ММ-ДД» → «ДД.ММ.ГГГГ». Пусто → пусто.
+export function isoToDots(iso: string): string {
+  const m = (iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
 // Пора связаться / просрочено: срок наступил (сегодня >= начала окна),
 // а лид ещё не закрыт по статусу.
 export function isContactDue(l: Lead): boolean {

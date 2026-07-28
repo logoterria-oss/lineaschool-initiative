@@ -8,6 +8,7 @@ import {
 } from '@/lib/leadsApi';
 import { processingColor, leadStatusColor } from './leadColors';
 import { isContactDue, isContactOverdue } from './leadUtils';
+import ContactWhenCell from './ContactWhenCell';
 
 interface CellProps {
   lead: Lead;
@@ -45,7 +46,7 @@ export function Cell({ lead, fieldKey, onChange, onCommit }: CellProps) {
     const due = isContactDue(lead);
     return (
       <div className="space-y-0.5">
-        <EditText value={value} multiline={false} onChange={onChange} onCommit={onCommit} />
+        <ContactWhenCell value={value} onChange={onChange} onCommit={onCommit} />
         {(due || overdue) && (
           <span
             className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
