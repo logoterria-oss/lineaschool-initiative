@@ -18,6 +18,7 @@ export interface Lead {
   schedule: string;
   teachers: string;
   comment: string;
+  contact_when?: string;
   source: string;
   created_at?: string;
   updated_at?: string;

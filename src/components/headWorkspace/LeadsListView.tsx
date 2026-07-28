@@ -19,6 +19,7 @@ const EMPTY: Partial<Lead> = {
   parent_name: '', student_name: '', student_age: '', contact: '',
   request_date: '', responsible: '', processing_status: '', lead_status: '',
   diag_date: '', report_link: '', schedule: '', teachers: '', comment: '',
+  contact_when: '',
 };
 
 // Лид считается "новым/необработанным" (подсветить красным),
@@ -50,6 +51,72 @@ function isoToSortKey(iso: string): number {
   return parseInt(m[1], 10) * 10000 + parseInt(m[2], 10) * 100 + parseInt(m[3], 10);
 }
 
+const MONTH_NAMES: Record<string, number> = {
+  январ: 1, феврал: 2, март: 3, апрел: 4, мая: 5, май: 5, июн: 6, июл: 7,
+  август: 8, сентябр: 9, октябр: 10, ноябр: 11, декабр: 12,
+};
+
+function todayKey(): number {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+// Статусы лида, при которых связываться уже не нужно (лид «закрыт»).
+const CLOSED_LEAD_STATUSES = new Set([
+  'клиент', 'нецелевой лид', 'лид не вышел на связь', 'норма развития', 'отказ', 'игнор',
+]);
+
+function mkKey(day: number, month: number, year: number): number {
+  return year * 10000 + month * 100 + day;
+}
+
+// Разбирает «Когда связаться» в окно [start, end] (ГГГГММДД).
+// Поддержка: точная дата ДД.ММ[.ГГГГ]; диапазон ДД.ММ-ДД.ММ;
+// «в начале/середине/конце месяца [название]».
+function contactWhenWindow(raw: string | undefined): { start: number; end: number } | null {
+  const s = (raw || '').trim().toLowerCase();
+  if (!s) return null;
+  const year = new Date().getFullYear();
+
+  // Найдём месяц по названию, если он есть в тексте
+  let namedMonth = 0;
+  for (const [k, v] of Object.entries(MONTH_NAMES)) {
+    if (s.includes(k)) { namedMonth = v; break; }
+  }
+  const curMonth = new Date().getMonth() + 1;
+  const month = namedMonth || curMonth;
+
+  if (/начал/.test(s)) return { start: mkKey(1, month, year), end: mkKey(10, month, year) };
+  if (/серед/.test(s)) return { start: mkKey(11, month, year), end: mkKey(20, month, year) };
+  if (/конц|конце|конца/.test(s)) return { start: mkKey(21, month, year), end: mkKey(31, month, year) };
+
+  const norm = s.replace(/\//g, '.');
+  const dates = [...norm.matchAll(/(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?/g)].map((m) => {
+    let y = m[3] ? parseInt(m[3], 10) : year;
+    if (y < 100) y += 2000;
+    return mkKey(parseInt(m[1], 10), parseInt(m[2], 10), y);
+  });
+  if (dates.length >= 2) return { start: Math.min(dates[0], dates[1]), end: Math.max(dates[0], dates[1]) };
+  if (dates.length === 1) return { start: dates[0], end: dates[0] };
+  return null;
+}
+
+// Пора связаться / просрочено: срок наступил (сегодня >= начала окна),
+// а лид ещё не закрыт по статусу.
+function isContactDue(l: Lead): boolean {
+  if (CLOSED_LEAD_STATUSES.has((l.lead_status || '').trim())) return false;
+  const w = contactWhenWindow(l.contact_when);
+  if (!w) return false;
+  return todayKey() >= w.start;
+}
+
+function isContactOverdue(l: Lead): boolean {
+  if (CLOSED_LEAD_STATUSES.has((l.lead_status || '').trim())) return false;
+  const w = contactWhenWindow(l.contact_when);
+  if (!w) return false;
+  return todayKey() > w.end;
+}
+
 const COLS: { key: keyof Lead; label: string; w: string }[] = [
   { key: 'parent_name', label: 'ФИ родителя', w: 'min-w-[210px]' },
   { key: 'student_name', label: 'ФИ ученика', w: 'min-w-[210px]' },
@@ -64,6 +131,7 @@ const COLS: { key: keyof Lead; label: string; w: string }[] = [
   { key: 'schedule', label: 'Расписание', w: 'min-w-[160px]' },
   { key: 'teachers', label: 'Педагоги', w: 'min-w-[140px]' },
   { key: 'comment', label: 'Комментарий', w: 'min-w-[240px]' },
+  { key: 'contact_when', label: 'Когда связаться', w: 'min-w-[190px]' },
 ];
 
 export default function LeadsListView() {
@@ -83,6 +151,7 @@ export default function LeadsListView() {
   const [fDateFrom, setFDateFrom] = useState('');
   const [fDateTo, setFDateTo] = useState('');
   const [fUntouchedOnly, setFUntouchedOnly] = useState(false);
+  const [fContactDue, setFContactDue] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const resetFilters = () => {
@@ -93,6 +162,7 @@ export default function LeadsListView() {
     setFDateFrom('');
     setFDateTo('');
     setFUntouchedOnly(false);
+    setFContactDue(false);
   };
 
   const activeFiltersCount =
@@ -101,7 +171,8 @@ export default function LeadsListView() {
     (fProcessing ? 1 : 0) +
     (fLeadStatus ? 1 : 0) +
     (fDateFrom || fDateTo ? 1 : 0) +
-    (fUntouchedOnly ? 1 : 0);
+    (fUntouchedOnly ? 1 : 0) +
+    (fContactDue ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0;
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -131,6 +202,7 @@ export default function LeadsListView() {
       if (fProcessing && (l.processing_status || '') !== fProcessing) return false;
       if (fLeadStatus && (l.lead_status || '') !== fLeadStatus) return false;
       if (fUntouchedOnly && !isUntouched(l)) return false;
+      if (fContactDue && !isContactDue(l)) return false;
       if (fromKey > 0 || toKey > 0) {
         const k = requestDateSortKey(l.request_date);
         if (k < 0) return false;
@@ -139,7 +211,7 @@ export default function LeadsListView() {
       }
       return true;
     });
-  }, [sortedLeads, fSearch, fResponsible, fProcessing, fLeadStatus, fDateFrom, fDateTo, fUntouchedOnly]);
+  }, [sortedLeads, fSearch, fResponsible, fProcessing, fLeadStatus, fDateFrom, fDateTo, fUntouchedOnly, fContactDue]);
 
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
   // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
@@ -241,6 +313,17 @@ export default function LeadsListView() {
               {activeFiltersCount}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setFContactDue((v) => !v)}
+          className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors border ${
+            fContactDue
+              ? 'bg-orange-500 border-orange-500 text-white'
+              : 'bg-white border-orange-300 text-orange-600 hover:bg-orange-50'
+          }`}
+        >
+          <Icon name="PhoneCall" size={16} />
+          Пора связаться
         </button>
         <div className="text-sm text-gray-400 ml-auto flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded-sm bg-red-100 border border-red-300" />
@@ -375,6 +458,16 @@ export default function LeadsListView() {
                 />
                 <span className="text-sm text-gray-700">Только необработанные (новые) лиды</span>
               </label>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={fContactDue}
+                  onChange={(e) => setFContactDue(e.target.checked)}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="text-sm text-gray-700">Пора связаться (наступил срок или просрочено)</span>
+              </label>
             </div>
 
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-gray-100">
@@ -418,7 +511,23 @@ export default function LeadsListView() {
           </button>
         </div>
       ) : (
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
+        <>
+        {/* Мобильный вид — карточки (таблица неудобна на узких экранах) */}
+        <div className="md:hidden space-y-3">
+          {visibleLeads.map((l, idx) => (
+            <LeadCard
+              key={l.id}
+              lead={l}
+              index={idx + 1}
+              onPatch={(k, v) => patch(l.id, k, v)}
+              onSave={(k, v) => save(l.id, k, v)}
+              onRemove={() => removeLead(l.id)}
+            />
+          ))}
+        </div>
+
+        {/* Десктопный вид — таблица */}
+        <div className="hidden md:block border border-gray-200 rounded-xl overflow-hidden">
           {/* Верхняя полоса горизонтальной прокрутки — сразу под шапкой действий */}
           <div
             ref={topBarRef}
@@ -430,7 +539,7 @@ export default function LeadsListView() {
           <div
             ref={scrollRef}
             onScroll={syncFromTable}
-            className="overflow-x-hidden overflow-y-auto max-h-[65vh]"
+            className="overflow-x-auto overflow-y-auto max-h-[65vh]"
           >
           <table className="min-w-full text-sm border-collapse">
             <thead className="sticky top-0 z-30">
@@ -480,7 +589,64 @@ export default function LeadsListView() {
           </table>
           </div>
         </div>
+        </>
       )}
+    </div>
+  );
+}
+
+// Мобильная карточка лида: все поля в столбик, редактируются теми же ячейками.
+function LeadCard({ lead, index, onPatch, onSave, onRemove }: {
+  lead: Lead;
+  index: number;
+  onPatch: (k: keyof Lead, v: string) => void;
+  onSave: (k: keyof Lead, v: string) => void;
+  onRemove: () => void;
+}) {
+  const untouched = isUntouched(lead);
+  const overdue = isContactOverdue(lead);
+  const due = isContactDue(lead);
+  const borderClass = untouched
+    ? 'border-red-300 bg-red-50'
+    : overdue
+    ? 'border-red-200'
+    : due
+    ? 'border-orange-200'
+    : 'border-gray-200';
+
+  return (
+    <div className={`rounded-xl border ${borderClass} bg-white p-3 shadow-sm`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0">
+          <div className="text-xs text-gray-400">#{index}</div>
+          <div className="font-semibold text-gray-900 truncate">
+            {lead.parent_name || 'Без имени'}
+          </div>
+          <div className="text-sm text-gray-500 truncate">
+            {lead.student_name}
+            {lead.student_age ? `, ${lead.student_age}` : ''}
+          </div>
+        </div>
+        <button onClick={onRemove} className="shrink-0 text-gray-300 hover:text-red-500 p-1">
+          <Icon name="Trash2" size={16} />
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {COLS.filter((c) => !['parent_name', 'student_name', 'student_age'].includes(c.key as string)).map((c) => (
+          <div key={c.key} className="grid grid-cols-[110px_1fr] items-start gap-2">
+            <div className="text-[11px] text-gray-400 pt-1">{c.label}</div>
+            <div className="min-w-0">
+              <Cell
+                lead={lead}
+                fieldKey={c.key}
+                onChange={(v) => onPatch(c.key, v)}
+                onCommit={(v) => onSave(c.key, v)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -513,18 +679,73 @@ function Cell({ lead, fieldKey, onChange, onCommit }: CellProps) {
         onCommit={(v) => { onChange(v); onCommit(v); }} />
     );
   }
-  if (fieldKey === 'report_link' && value) {
+  if (fieldKey === 'report_link') {
+    return <LinkCell value={value} onChange={onChange} onCommit={onCommit} />;
+  }
+  if (fieldKey === 'contact_when') {
+    const overdue = isContactOverdue(lead);
+    const due = isContactDue(lead);
     return (
-      <div className="flex items-center gap-1">
-        <a href={value} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline truncate max-w-[150px] text-xs">
-          {value.replace(/^https?:\/\//, '')}
-        </a>
-        <EditText value={value} multiline={false} onChange={onChange} onCommit={onCommit} iconOnly />
+      <div className="space-y-0.5">
+        <EditText value={value} multiline={false} onChange={onChange} onCommit={onCommit} />
+        {(due || overdue) && (
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+              overdue ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+            }`}
+          >
+            <Icon name={overdue ? 'AlarmClock' : 'PhoneCall'} size={10} />
+            {overdue ? 'Просрочено' : 'Пора связаться'}
+          </span>
+        )}
       </div>
     );
   }
   const multiline = fieldKey === 'comment';
   return <EditText value={value} multiline={multiline} onChange={onChange} onCommit={onCommit} />;
+}
+
+// Ячейка «Ссылка на закл.»: по умолчанию ссылка кликабельна, рядом перо.
+// По клику на перо включается режим редактирования, ссылка становится некликабельной.
+function LinkCell({ value, onChange, onCommit }: {
+  value: string; onChange: (v: string) => void; onCommit: (v: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          autoFocus
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => { onCommit(e.target.value); setEditing(false); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { onCommit((e.target as HTMLInputElement).value); setEditing(false); } }}
+          placeholder="https://…"
+          className="w-full min-w-[130px] bg-white border border-amber-300 rounded px-1 py-0.5 text-xs outline-none"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      {value ? (
+        <a href={value} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline truncate max-w-[150px] text-xs">
+          {value.replace(/^https?:\/\//, '')}
+        </a>
+      ) : (
+        <span className="text-gray-300 text-xs">—</span>
+      )}
+      <button
+        onClick={() => setEditing(true)}
+        className="shrink-0 text-gray-300 hover:text-amber-500"
+        title="Редактировать ссылку"
+      >
+        <Icon name="Pencil" size={13} />
+      </button>
+    </div>
+  );
 }
 
 function TagSelect({ value, options, colorClass, onCommit }: {
@@ -552,19 +773,9 @@ function TagSelect({ value, options, colorClass, onCommit }: {
   );
 }
 
-function EditText({ value, multiline, onChange, onCommit, iconOnly }: {
-  value: string; multiline: boolean; onChange: (v: string) => void; onCommit: (v: string) => void; iconOnly?: boolean;
+function EditText({ value, multiline, onChange, onCommit }: {
+  value: string; multiline: boolean; onChange: (v: string) => void; onCommit: (v: string) => void;
 }) {
-  if (iconOnly) {
-    return (
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={(e) => onCommit(e.target.value)}
-        className="w-3 opacity-0 focus:opacity-100 focus:w-40 focus:absolute focus:z-10 focus:bg-white focus:border focus:border-amber-300 focus:rounded focus:px-1 focus:py-0.5 text-xs"
-      />
-    );
-  }
   if (multiline) {
     return (
       <textarea
