@@ -61,19 +61,31 @@ function mkKey(day: number, month: number, year: number): number {
 function contactWhenWindow(raw: string | undefined): { start: number; end: number } | null {
   const s = (raw || '').trim().toLowerCase();
   if (!s) return null;
-  const year = new Date().getFullYear();
 
-  // Найдём месяц по названию, если он есть в тексте
-  let namedMonth = 0;
-  for (const [k, v] of Object.entries(MONTH_NAMES)) {
-    if (s.includes(k)) { namedMonth = v; break; }
+  // Часть месяца: начало (1–10), середина (11–20), конец (21–последний день).
+  const isPart = /начал/.test(s) || /серед/.test(s) || /конц|конце|конца/.test(s);
+  if (isPart) {
+    // Месяц по названию (обязателен для части месяца)
+    let namedMonth = 0;
+    for (const [k, v] of Object.entries(MONTH_NAMES)) {
+      if (s.includes(k)) { namedMonth = v; break; }
+    }
+    const curMonth = new Date().getMonth() + 1;
+    const month = namedMonth || curMonth;
+
+    // Год: берём ближайший. Если этот месяц в текущем году уже полностью прошёл,
+    // относим срок к следующему году.
+    const now = new Date();
+    let year = now.getFullYear();
+    if (month < curMonth) year += 1;
+
+    const lastDay = new Date(year, month, 0).getDate(); // последний день месяца
+    if (/начал/.test(s)) return { start: mkKey(1, month, year), end: mkKey(10, month, year) };
+    if (/серед/.test(s)) return { start: mkKey(11, month, year), end: mkKey(20, month, year) };
+    return { start: mkKey(21, month, year), end: mkKey(lastDay, month, year) };
   }
-  const curMonth = new Date().getMonth() + 1;
-  const month = namedMonth || curMonth;
 
-  if (/начал/.test(s)) return { start: mkKey(1, month, year), end: mkKey(10, month, year) };
-  if (/серед/.test(s)) return { start: mkKey(11, month, year), end: mkKey(20, month, year) };
-  if (/конц|конце|конца/.test(s)) return { start: mkKey(21, month, year), end: mkKey(31, month, year) };
+  const year = new Date().getFullYear();
 
   const norm = s.replace(/\//g, '.');
   const dates = [...norm.matchAll(/(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?/g)].map((m) => {
@@ -144,13 +156,14 @@ export function isoToDots(iso: string): string {
   return `${m[3]}.${m[2]}.${m[1]}`;
 }
 
-// Пора связаться / просрочено: срок наступил (сегодня >= начала окна),
-// а лид ещё не закрыт по статусу.
+// Пора связаться: сегодня внутри окна [start, end], а лид ещё не закрыт по статусу.
+// (Раньше начала окна — не показываем; позже конца — это «Просрочено».)
 export function isContactDue(l: Lead): boolean {
   if (CLOSED_LEAD_STATUSES.has((l.lead_status || '').trim())) return false;
   const w = contactWhenWindow(l.contact_when);
   if (!w) return false;
-  return todayKey() >= w.start;
+  const t = todayKey();
+  return t >= w.start && t <= w.end;
 }
 
 export function isContactOverdue(l: Lead): boolean {

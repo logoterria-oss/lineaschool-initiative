@@ -20,6 +20,7 @@ import {
   requestDateSortKey,
   isoToSortKey,
   isContactDue,
+  isContactOverdue,
 } from './leads/leadUtils';
 
 export default function LeadsListView() {
@@ -90,7 +91,7 @@ export default function LeadsListView() {
       if (fProcessing && (l.processing_status || '') !== fProcessing) return false;
       if (fLeadStatus && (l.lead_status || '') !== fLeadStatus) return false;
       if (fUntouchedOnly && !isUntouched(l)) return false;
-      if (fContactDue && !isContactDue(l)) return false;
+      if (fContactDue && !isContactDue(l) && !isContactOverdue(l)) return false;
       if (fromKey > 0 || toKey > 0) {
         const k = requestDateSortKey(l.request_date);
         if (k < 0) return false;
