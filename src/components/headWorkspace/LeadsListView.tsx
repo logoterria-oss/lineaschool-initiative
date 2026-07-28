@@ -8,131 +8,19 @@ import {
   createLead,
   updateLead,
   deleteLead,
-  RESPONSIBLE_OPTIONS,
-  PROCESSING_OPTIONS,
-  LEAD_STATUS_OPTIONS,
 } from '@/lib/leadsApi';
-import { processingColor, leadStatusColor } from './leads/leadColors';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
-
-const EMPTY: Partial<Lead> = {
-  parent_name: '', student_name: '', student_age: '', contact: '',
-  request_date: '', responsible: '', processing_status: '', lead_status: '',
-  diag_date: '', report_link: '', schedule: '', teachers: '', comment: '',
-  contact_when: '',
-};
-
-// Лид считается "новым/необработанным" (подсветить красным),
-// если по нему ещё не было взаимодействий: не назначен ответственный,
-// не выставлен статус обработки и статус лида.
-function isUntouched(l: Lead): boolean {
-  return !l.responsible?.trim() && !l.processing_status?.trim() && !l.lead_status?.trim();
-}
-
-// Дата заявки хранится текстом: «ДД.ММ» или «ДД.ММ.ГГГГ» (иногда через «/»).
-// Превращаем в число ГГГГММДД для сортировки. Год берём текущий, если не указан.
-// Лиды без даты уходят вниз.
-function requestDateSortKey(raw: string | undefined): number {
-  const s = (raw || '').trim().replace(/\//g, '.');
-  const m = s.match(/^(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?/);
-  if (!m) return -1;
-  const day = parseInt(m[1], 10);
-  const month = parseInt(m[2], 10);
-  let year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
-  if (year < 100) year += 2000;
-  if (!month || !day) return -1;
-  return year * 10000 + month * 100 + day;
-}
-
-// ISO-дата из input[type=date] («ГГГГ-ММ-ДД») → число ГГГГММДД. Пусто → 0.
-function isoToSortKey(iso: string): number {
-  const m = (iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return 0;
-  return parseInt(m[1], 10) * 10000 + parseInt(m[2], 10) * 100 + parseInt(m[3], 10);
-}
-
-const MONTH_NAMES: Record<string, number> = {
-  январ: 1, феврал: 2, март: 3, апрел: 4, мая: 5, май: 5, июн: 6, июл: 7,
-  август: 8, сентябр: 9, октябр: 10, ноябр: 11, декабр: 12,
-};
-
-function todayKey(): number {
-  const d = new Date();
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-}
-
-// Статусы лида, при которых связываться уже не нужно (лид «закрыт»).
-const CLOSED_LEAD_STATUSES = new Set([
-  'клиент', 'нецелевой лид', 'лид не вышел на связь', 'норма развития', 'отказ', 'игнор',
-]);
-
-function mkKey(day: number, month: number, year: number): number {
-  return year * 10000 + month * 100 + day;
-}
-
-// Разбирает «Когда связаться» в окно [start, end] (ГГГГММДД).
-// Поддержка: точная дата ДД.ММ[.ГГГГ]; диапазон ДД.ММ-ДД.ММ;
-// «в начале/середине/конце месяца [название]».
-function contactWhenWindow(raw: string | undefined): { start: number; end: number } | null {
-  const s = (raw || '').trim().toLowerCase();
-  if (!s) return null;
-  const year = new Date().getFullYear();
-
-  // Найдём месяц по названию, если он есть в тексте
-  let namedMonth = 0;
-  for (const [k, v] of Object.entries(MONTH_NAMES)) {
-    if (s.includes(k)) { namedMonth = v; break; }
-  }
-  const curMonth = new Date().getMonth() + 1;
-  const month = namedMonth || curMonth;
-
-  if (/начал/.test(s)) return { start: mkKey(1, month, year), end: mkKey(10, month, year) };
-  if (/серед/.test(s)) return { start: mkKey(11, month, year), end: mkKey(20, month, year) };
-  if (/конц|конце|конца/.test(s)) return { start: mkKey(21, month, year), end: mkKey(31, month, year) };
-
-  const norm = s.replace(/\//g, '.');
-  const dates = [...norm.matchAll(/(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?/g)].map((m) => {
-    let y = m[3] ? parseInt(m[3], 10) : year;
-    if (y < 100) y += 2000;
-    return mkKey(parseInt(m[1], 10), parseInt(m[2], 10), y);
-  });
-  if (dates.length >= 2) return { start: Math.min(dates[0], dates[1]), end: Math.max(dates[0], dates[1]) };
-  if (dates.length === 1) return { start: dates[0], end: dates[0] };
-  return null;
-}
-
-// Пора связаться / просрочено: срок наступил (сегодня >= начала окна),
-// а лид ещё не закрыт по статусу.
-function isContactDue(l: Lead): boolean {
-  if (CLOSED_LEAD_STATUSES.has((l.lead_status || '').trim())) return false;
-  const w = contactWhenWindow(l.contact_when);
-  if (!w) return false;
-  return todayKey() >= w.start;
-}
-
-function isContactOverdue(l: Lead): boolean {
-  if (CLOSED_LEAD_STATUSES.has((l.lead_status || '').trim())) return false;
-  const w = contactWhenWindow(l.contact_when);
-  if (!w) return false;
-  return todayKey() > w.end;
-}
-
-const COLS: { key: keyof Lead; label: string; w: string }[] = [
-  { key: 'parent_name', label: 'ФИ родителя', w: 'min-w-[210px]' },
-  { key: 'student_name', label: 'ФИ ученика', w: 'min-w-[210px]' },
-  { key: 'student_age', label: 'Возраст', w: 'w-16' },
-  { key: 'contact', label: 'Номер для связи', w: 'min-w-[170px]' },
-  { key: 'request_date', label: 'Дата заявки', w: 'w-24' },
-  { key: 'responsible', label: 'Ответственный', w: 'min-w-[170px]' },
-  { key: 'processing_status', label: 'Статус обработки', w: 'min-w-[230px]' },
-  { key: 'lead_status', label: 'Статус лида', w: 'min-w-[170px]' },
-  { key: 'diag_date', label: 'Дата диаг.', w: 'w-24' },
-  { key: 'report_link', label: 'Ссылка на закл.', w: 'min-w-[180px]' },
-  { key: 'schedule', label: 'Расписание', w: 'min-w-[160px]' },
-  { key: 'teachers', label: 'Педагоги', w: 'min-w-[140px]' },
-  { key: 'comment', label: 'Комментарий', w: 'min-w-[240px]' },
-  { key: 'contact_when', label: 'Когда связаться', w: 'min-w-[190px]' },
-];
+import LeadsFilters from './leads/LeadsFilters';
+import LeadCard from './leads/LeadCard';
+import { Cell } from './leads/LeadCells';
+import {
+  EMPTY,
+  COLS,
+  isUntouched,
+  requestDateSortKey,
+  isoToSortKey,
+  isContactDue,
+} from './leads/leadUtils';
 
 export default function LeadsListView() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -275,61 +163,34 @@ export default function LeadsListView() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <button
-          onClick={() => collectStats()}
-          disabled={statsLoading}
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors disabled:opacity-60"
-        >
-          <Icon name={statsLoading ? 'Loader2' : 'BarChart3'} size={18} className={statsLoading ? 'animate-spin' : ''} />
-          Собрать статистику
-        </button>
-        <button
-          onClick={addLead}
-          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
-        >
-          <Icon name="Plus" size={18} />
-          Добавить лида
-        </button>
-        <button
-          onClick={load}
-          className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
-        >
-          <Icon name="RefreshCw" size={16} />
-          Обновить
-        </button>
-        <button
-          onClick={() => setFiltersOpen(true)}
-          className={`flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors border ${
-            hasActiveFilters
-              ? 'bg-amber-50 border-amber-300 text-amber-700'
-              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          <Icon name="SlidersHorizontal" size={16} />
-          Фильтры
-          {hasActiveFilters && (
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-amber-500 text-white text-xs font-bold">
-              {activeFiltersCount}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setFContactDue((v) => !v)}
-          className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors border ${
-            fContactDue
-              ? 'bg-orange-500 border-orange-500 text-white'
-              : 'bg-white border-orange-300 text-orange-600 hover:bg-orange-50'
-          }`}
-        >
-          <Icon name="PhoneCall" size={16} />
-          Пора связаться
-        </button>
-        <div className="text-sm text-gray-400 ml-auto flex items-center gap-2">
-          <span className="inline-block w-3 h-3 rounded-sm bg-red-100 border border-red-300" />
-          новый необработанный лид
-        </div>
-      </div>
+      <LeadsFilters
+        statsLoading={statsLoading}
+        onCollectStats={() => collectStats()}
+        onAddLead={addLead}
+        onLoad={load}
+        filtersOpen={filtersOpen}
+        setFiltersOpen={setFiltersOpen}
+        hasActiveFilters={hasActiveFilters}
+        activeFiltersCount={activeFiltersCount}
+        fSearch={fSearch}
+        setFSearch={setFSearch}
+        fResponsible={fResponsible}
+        setFResponsible={setFResponsible}
+        fProcessing={fProcessing}
+        setFProcessing={setFProcessing}
+        fLeadStatus={fLeadStatus}
+        setFLeadStatus={setFLeadStatus}
+        fDateFrom={fDateFrom}
+        setFDateFrom={setFDateFrom}
+        fDateTo={fDateTo}
+        setFDateTo={setFDateTo}
+        fUntouchedOnly={fUntouchedOnly}
+        setFUntouchedOnly={setFUntouchedOnly}
+        fContactDue={fContactDue}
+        setFContactDue={setFContactDue}
+        resetFilters={resetFilters}
+        visibleCount={visibleLeads.length}
+      />
 
       {statsOpen && (
         <LeadsStatsPanel
@@ -350,144 +211,6 @@ export default function LeadsListView() {
           <Icon name="Filter" size={15} className="text-amber-500" />
           <span>Фильтры применены. Показано: <b className="text-gray-700">{visibleLeads.length}</b> из {leads.length}</span>
           <button onClick={resetFilters} className="text-amber-600 hover:underline">Сбросить</button>
-        </div>
-      )}
-
-      {filtersOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-          onClick={() => setFiltersOpen(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-lg my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Icon name="SlidersHorizontal" size={18} className="text-amber-600" />
-                Фильтры
-              </h3>
-              <button onClick={() => setFiltersOpen(false)} className="text-gray-400 hover:text-gray-700">
-                <Icon name="X" size={20} />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Поиск по ФИО</label>
-                <div className="relative">
-                  <Icon name="Search" size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    value={fSearch}
-                    onChange={(e) => setFSearch(e.target.value)}
-                    placeholder="Родитель или ученик"
-                    className="w-full border border-gray-300 rounded-lg pl-8 pr-2.5 py-2 text-sm outline-none focus:border-amber-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Ответственный</label>
-                <select
-                  value={fResponsible}
-                  onChange={(e) => setFResponsible(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
-                >
-                  <option value="">Все</option>
-                  {RESPONSIBLE_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Статус обработки</label>
-                <select
-                  value={fProcessing}
-                  onChange={(e) => setFProcessing(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
-                >
-                  <option value="">Все</option>
-                  {PROCESSING_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Статус лида</label>
-                <select
-                  value={fLeadStatus}
-                  onChange={(e) => setFLeadStatus(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
-                >
-                  <option value="">Все</option>
-                  {LEAD_STATUS_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Дата заявки с</label>
-                  <input
-                    type="date"
-                    value={fDateFrom}
-                    onChange={(e) => setFDateFrom(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">по</label>
-                  <input
-                    type="date"
-                    value={fDateTo}
-                    onChange={(e) => setFDateTo(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400"
-                  />
-                </div>
-              </div>
-
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={fUntouchedOnly}
-                  onChange={(e) => setFUntouchedOnly(e.target.checked)}
-                  className="w-4 h-4 accent-red-500"
-                />
-                <span className="text-sm text-gray-700">Только необработанные (новые) лиды</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={fContactDue}
-                  onChange={(e) => setFContactDue(e.target.checked)}
-                  className="w-4 h-4 accent-orange-500"
-                />
-                <span className="text-sm text-gray-700">Пора связаться (наступил срок или просрочено)</span>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-gray-100">
-              <button
-                onClick={resetFilters}
-                className="text-sm font-medium text-gray-500 hover:text-gray-800"
-              >
-                Сбросить всё
-              </button>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Найдено: {visibleLeads.length}</span>
-                <button
-                  onClick={() => setFiltersOpen(false)}
-                  className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
-                >
-                  Показать
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -592,207 +315,5 @@ export default function LeadsListView() {
         </>
       )}
     </div>
-  );
-}
-
-// Мобильная карточка лида: все поля в столбик, редактируются теми же ячейками.
-function LeadCard({ lead, index, onPatch, onSave, onRemove }: {
-  lead: Lead;
-  index: number;
-  onPatch: (k: keyof Lead, v: string) => void;
-  onSave: (k: keyof Lead, v: string) => void;
-  onRemove: () => void;
-}) {
-  const untouched = isUntouched(lead);
-  const overdue = isContactOverdue(lead);
-  const due = isContactDue(lead);
-  const borderClass = untouched
-    ? 'border-red-300 bg-red-50'
-    : overdue
-    ? 'border-red-200'
-    : due
-    ? 'border-orange-200'
-    : 'border-gray-200';
-
-  return (
-    <div className={`rounded-xl border ${borderClass} bg-white p-3 shadow-sm`}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0">
-          <div className="text-xs text-gray-400">#{index}</div>
-          <div className="font-semibold text-gray-900 truncate">
-            {lead.parent_name || 'Без имени'}
-          </div>
-          <div className="text-sm text-gray-500 truncate">
-            {lead.student_name}
-            {lead.student_age ? `, ${lead.student_age}` : ''}
-          </div>
-        </div>
-        <button onClick={onRemove} className="shrink-0 text-gray-300 hover:text-red-500 p-1">
-          <Icon name="Trash2" size={16} />
-        </button>
-      </div>
-
-      <div className="space-y-2">
-        {COLS.filter((c) => !['parent_name', 'student_name', 'student_age'].includes(c.key as string)).map((c) => (
-          <div key={c.key} className="grid grid-cols-[110px_1fr] items-start gap-2">
-            <div className="text-[11px] text-gray-400 pt-1">{c.label}</div>
-            <div className="min-w-0">
-              <Cell
-                lead={lead}
-                fieldKey={c.key}
-                onChange={(v) => onPatch(c.key, v)}
-                onCommit={(v) => onSave(c.key, v)}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-interface CellProps {
-  lead: Lead;
-  fieldKey: keyof Lead;
-  onChange: (v: string) => void;
-  onCommit: (v: string) => void;
-}
-
-function Cell({ lead, fieldKey, onChange, onCommit }: CellProps) {
-  const value = (lead[fieldKey] as string) || '';
-
-  if (fieldKey === 'responsible') {
-    return (
-      <TagSelect value={value} options={RESPONSIBLE_OPTIONS} colorClass="bg-purple-100 text-purple-800"
-        onCommit={(v) => { onChange(v); onCommit(v); }} />
-    );
-  }
-  if (fieldKey === 'processing_status') {
-    return (
-      <TagSelect value={value} options={PROCESSING_OPTIONS} colorClass={processingColor(value)}
-        onCommit={(v) => { onChange(v); onCommit(v); }} />
-    );
-  }
-  if (fieldKey === 'lead_status') {
-    return (
-      <TagSelect value={value} options={LEAD_STATUS_OPTIONS} colorClass={leadStatusColor(value)}
-        onCommit={(v) => { onChange(v); onCommit(v); }} />
-    );
-  }
-  if (fieldKey === 'report_link') {
-    return <LinkCell value={value} onChange={onChange} onCommit={onCommit} />;
-  }
-  if (fieldKey === 'contact_when') {
-    const overdue = isContactOverdue(lead);
-    const due = isContactDue(lead);
-    return (
-      <div className="space-y-0.5">
-        <EditText value={value} multiline={false} onChange={onChange} onCommit={onCommit} />
-        {(due || overdue) && (
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-              overdue ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-            }`}
-          >
-            <Icon name={overdue ? 'AlarmClock' : 'PhoneCall'} size={10} />
-            {overdue ? 'Просрочено' : 'Пора связаться'}
-          </span>
-        )}
-      </div>
-    );
-  }
-  const multiline = fieldKey === 'comment';
-  return <EditText value={value} multiline={multiline} onChange={onChange} onCommit={onCommit} />;
-}
-
-// Ячейка «Ссылка на закл.»: по умолчанию ссылка кликабельна, рядом перо.
-// По клику на перо включается режим редактирования, ссылка становится некликабельной.
-function LinkCell({ value, onChange, onCommit }: {
-  value: string; onChange: (v: string) => void; onCommit: (v: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1">
-        <input
-          autoFocus
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={(e) => { onCommit(e.target.value); setEditing(false); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { onCommit((e.target as HTMLInputElement).value); setEditing(false); } }}
-          placeholder="https://…"
-          className="w-full min-w-[130px] bg-white border border-amber-300 rounded px-1 py-0.5 text-xs outline-none"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-1">
-      {value ? (
-        <a href={value} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline truncate max-w-[150px] text-xs">
-          {value.replace(/^https?:\/\//, '')}
-        </a>
-      ) : (
-        <span className="text-gray-300 text-xs">—</span>
-      )}
-      <button
-        onClick={() => setEditing(true)}
-        className="shrink-0 text-gray-300 hover:text-amber-500"
-        title="Редактировать ссылку"
-      >
-        <Icon name="Pencil" size={13} />
-      </button>
-    </div>
-  );
-}
-
-function TagSelect({ value, options, colorClass, onCommit }: {
-  value: string; options: string[]; colorClass: string; onCommit: (v: string) => void;
-}) {
-  return (
-    <div className="relative">
-      <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap ${value ? colorClass : 'bg-gray-50 text-gray-400 border border-dashed border-gray-300'}`}
-      >
-        {value || '—'}
-        <Icon name="ChevronDown" size={12} className="opacity-60" />
-      </span>
-      <select
-        value={value}
-        onChange={(e) => onCommit(e.target.value)}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-      >
-        <option value="">—</option>
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function EditText({ value, multiline, onChange, onCommit }: {
-  value: string; multiline: boolean; onChange: (v: string) => void; onCommit: (v: string) => void;
-}) {
-  if (multiline) {
-    return (
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={(e) => onCommit(e.target.value)}
-        rows={2}
-        className="w-full resize-y bg-transparent hover:bg-amber-50 focus:bg-white focus:border focus:border-amber-300 rounded px-1 py-0.5 text-xs outline-none"
-      />
-    );
-  }
-  return (
-    <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={(e) => onCommit(e.target.value)}
-      className="w-full bg-transparent hover:bg-amber-50 focus:bg-white focus:border focus:border-amber-300 rounded px-1 py-0.5 text-xs outline-none"
-    />
   );
 }
