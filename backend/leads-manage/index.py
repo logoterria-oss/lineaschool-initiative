@@ -11,7 +11,7 @@ from typing import Dict, Any
 FIELDS = [
     'parent_name', 'student_name', 'student_age', 'contact', 'request_date',
     'responsible', 'processing_status', 'lead_status', 'diag_date',
-    'report_link', 'schedule', 'teachers', 'comment', 'source',
+    'report_link', 'schedule', 'teachers', 'comment', 'contact_when', 'source',
 ]
 
 CORS = {
@@ -58,13 +58,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(
                 "SELECT id, parent_name, student_name, student_age, contact, request_date, "
                 "responsible, processing_status, lead_status, diag_date, report_link, "
-                "schedule, teachers, comment, source, created_at, updated_at "
+                "schedule, teachers, comment, contact_when, source, created_at, updated_at "
                 "FROM leads ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
                     'request_date', 'responsible', 'processing_status', 'lead_status',
                     'diag_date', 'report_link', 'schedule', 'teachers', 'comment',
-                    'source', 'created_at', 'updated_at']
+                    'contact_when', 'source', 'created_at', 'updated_at']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}
