@@ -63,7 +63,7 @@ function contactWhenWindow(raw: string | undefined): { start: number; end: numbe
   if (!s) return null;
 
   // Часть месяца: начало (1–10), середина (11–20), конец (21–последний день).
-  const isPart = /начал/.test(s) || /серед/.test(s) || /конц|конце|конца/.test(s);
+  const isPart = /начал/.test(s) || /серед/.test(s) || /конец|конц/.test(s);
   if (isPart) {
     // Месяц по названию (обязателен для части месяца)
     let namedMonth = 0;
@@ -126,7 +126,7 @@ export function parseContactWhen(raw: string | undefined): {
   let part: ContactWhenPart | '' = '';
   if (/начал/.test(low)) part = 'начало';
   else if (/серед/.test(low)) part = 'середина';
-  else if (/конц|конце|конца/.test(low)) part = 'конец';
+  else if (/конец|конц/.test(low)) part = 'конец';
   if (part) {
     let month = new Date().getMonth() + 1;
     for (const [k, v] of Object.entries(MONTH_NAMES)) {
