@@ -25,6 +25,8 @@ export const TEACHER_SHORT: Record<number, string> = {
   18: 'Карамова А.',
   11: 'Камнева В.',
   4: 'Еремина Д.',
+  20: 'Канкулова Е.',
+  15: 'Мацвей Е.',
 };
 
 export const TEACHER_COLOR: Record<number, string> = {
@@ -32,6 +34,8 @@ export const TEACHER_COLOR: Record<number, string> = {
   18: 'bg-teal-100 text-teal-700 border-teal-200',
   11: 'bg-green-100 text-green-700 border-green-200',
   4: 'bg-orange-100 text-orange-700 border-orange-200',
+  20: 'bg-pink-100 text-pink-700 border-pink-200',
+  15: 'bg-sky-100 text-sky-700 border-sky-200',
 };
 
 // ── Группы ────────────────────────────────────────────────────────────────────
