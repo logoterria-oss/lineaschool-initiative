@@ -5,6 +5,7 @@ import Icon from '@/components/ui/icon';
 import WorkScheduleSection from '@/components/teacher/WorkScheduleSection';
 import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
 import KpiSection from '@/components/teacher/KpiSection';
+import { logoutStaff } from '@/lib/staffApi';
 
 const SECTIONS = [
   {
@@ -37,6 +38,14 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  const onLogout = async () => {
+    await logoutStaff();
+    sessionStorage.removeItem('admin_authenticated');
+    sessionStorage.removeItem('staff_role');
+    sessionStorage.removeItem('staff_name');
+    navigate('/admin');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       <AdminHeader showOnlyHome />
@@ -62,6 +71,13 @@ const TeacherDashboard = () => {
                 </p>
               )}
             </div>
+            <button
+              onClick={onLogout}
+              className="ml-auto flex items-center gap-2 bg-white border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-300 text-sm font-medium px-3 py-2 rounded-lg transition-colors shadow-sm"
+            >
+              <Icon name="LogOut" size={16} />
+              <span className="hidden sm:inline">Выйти</span>
+            </button>
           </div>
 
           {/* Главное меню */}
