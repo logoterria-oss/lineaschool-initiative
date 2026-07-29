@@ -26,6 +26,8 @@ export const INDIVIDUAL_TEACHERS: TeacherOption[] = [
   { id: 18, name: 'Карамова Анна' },
   { id: 11, name: 'Камнева Валерия' },
   { id: 2, name: 'Шишаева Анастасия' },
+  { id: 20, name: 'Канкулова Екатерина' },
+  { id: 15, name: 'Мацвей Екатерина' },
 ];
 
 export const TEACHERS_BY_FORM: Record<LessonForm, TeacherOption[]> = {
