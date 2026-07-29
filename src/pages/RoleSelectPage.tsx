@@ -64,7 +64,7 @@ const homePathForRole = (role: StaffRole): string => {
   switch (role) {
     case 'head': return '/admin/head-workspace';
     case 'diag': return '/admin/diag';
-    case 'teacher': return '/admin/teacher';
+    case 'teacher': return '/admin/teacher-lk';
     case 'admin': return '/admin/admin-workspace';
     default: return '/admin/home';
   }
