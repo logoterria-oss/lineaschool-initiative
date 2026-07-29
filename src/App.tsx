@@ -18,6 +18,7 @@ import QuestionnaireResponses from "./pages/QuestionnaireResponses";
 import AdminDashboard from "./pages/AdminDashboard";
 import RoleSelectPage from "./pages/RoleSelectPage";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherPersonalCabinet from "./pages/TeacherPersonalCabinet";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import HeadDashboard from "./pages/HeadDashboard";
 import HeadReportsPage from "./pages/HeadReportsPage";
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/admin/role-select" element={<RoleSelectPage />} />
             <Route path="/admin/diag" element={<AdminDashboard />} />
             <Route path="/admin/teacher" element={<TeacherDashboard />} />
+            <Route path="/admin/teacher-lk" element={<TeacherPersonalCabinet />} />
             <Route path="/admin/manager" element={<ManagerDashboard />} />
             <Route path="/admin/admin-workspace" element={<AdminWorkspace />} />
             <Route path="/admin/head" element={<HeadDashboard />} />

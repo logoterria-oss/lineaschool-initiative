@@ -254,10 +254,18 @@ const EditModal = ({ teacher, initialWs, onClose, onSave }: EditModalProps) => {
   );
 };
 
-const WorkScheduleSection = ({ readOnly = false }: { readOnly?: boolean } = {}) => {
+const WorkScheduleSection = (
+  { readOnly = false, lockedTeacherId = null }:
+  { readOnly?: boolean; lockedTeacherId?: number | null } = {},
+) => {
   const [scheduleByTeacher, setScheduleByTeacher] = useState<Record<number, ScheduleRow[]>>({});
   const [loading, setLoading] = useState(true);
   const [editingTeacher, setEditingTeacher] = useState<{ id: number; name: string } | null>(null);
+
+  const filterLocked = (list: { id: number; name: string }[]) =>
+    lockedTeacherId == null ? list : list.filter((t) => t.id === lockedTeacherId);
+  const indTeachers = filterLocked(INDIVIDUAL_TEACHERS);
+  const grpTeachers = filterLocked(GROUP_TEACHERS);
 
   const loadSchedule = async () => {
     setLoading(true);
@@ -295,42 +303,46 @@ const WorkScheduleSection = ({ readOnly = false }: { readOnly?: boolean } = {}) 
   return (
     <div>
       {/* Индивидуальные */}
-      <div className="mb-6">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Индивидуальные занятия
-        </h3>
-        <div className="space-y-3">
-          {INDIVIDUAL_TEACHERS.map((t) => (
-            <TeacherCard
-              key={t.id}
-              teacher={t}
-              onEdit={setEditingTeacher}
-              scheduleByTeacher={scheduleByTeacher}
-              loading={loading}
-              readOnly={readOnly}
-            />
-          ))}
+      {indTeachers.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Индивидуальные занятия
+          </h3>
+          <div className="space-y-3">
+            {indTeachers.map((t) => (
+              <TeacherCard
+                key={t.id}
+                teacher={t}
+                onEdit={setEditingTeacher}
+                scheduleByTeacher={scheduleByTeacher}
+                loading={loading}
+                readOnly={readOnly}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Групповые */}
-      <div>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Групповые занятия
-        </h3>
-        <div className="space-y-3">
-          {GROUP_TEACHERS.map((t) => (
-            <TeacherCard
-              key={t.id}
-              teacher={t}
-              onEdit={setEditingTeacher}
-              scheduleByTeacher={scheduleByTeacher}
-              loading={loading}
-              readOnly={readOnly}
-            />
-          ))}
+      {grpTeachers.length > 0 && (
+        <div>
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Групповые занятия
+          </h3>
+          <div className="space-y-3">
+            {grpTeachers.map((t) => (
+              <TeacherCard
+                key={t.id}
+                teacher={t}
+                onEdit={setEditingTeacher}
+                scheduleByTeacher={scheduleByTeacher}
+                loading={loading}
+                readOnly={readOnly}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {editingTeacher && !readOnly && (
         <EditModal

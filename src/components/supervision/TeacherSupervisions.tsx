@@ -63,9 +63,11 @@ const criterionStyle = (avg: number, max: number) => {
   return { row: '', score: 'text-emerald-600' };
 };
 
-const TeacherSupervisions = () => {
+const TeacherSupervisions = (
+  { lockedTeacherId = null }: { lockedTeacherId?: number | null } = {},
+) => {
   const now = new Date();
-  const [teacherId, setTeacherId] = useState<number | ''>('');
+  const [teacherId, setTeacherId] = useState<number | ''>(lockedTeacherId ?? '');
   const [mode, setMode] = useState<Mode>('quarter');
   const [year, setYear] = useState(now.getFullYear());
   const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1);
@@ -217,22 +219,24 @@ const TeacherSupervisions = () => {
 
   return (
     <div className="space-y-5">
-      {/* Выбор педагога */}
-      <div className="space-y-1.5">
-        <label className="text-sm font-semibold text-gray-700">Педагог</label>
-        <select
-          className={`${selectCls} w-full`}
-          value={teacherId}
-          onChange={(e) => setTeacherId(e.target.value ? Number(e.target.value) : '')}
-        >
-          <option value="">— выберите педагога —</option>
-          {ALL_TEACHERS.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Выбор педагога (скрыт в личном кабинете) */}
+      {lockedTeacherId == null && (
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-gray-700">Педагог</label>
+          <select
+            className={`${selectCls} w-full`}
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value ? Number(e.target.value) : '')}
+          >
+            <option value="">— выберите педагога —</option>
+            {ALL_TEACHERS.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Выбор периода */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">

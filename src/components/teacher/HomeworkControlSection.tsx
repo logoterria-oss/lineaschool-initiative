@@ -70,8 +70,10 @@ interface SummaryStudent {
   lessons: SummaryCell[];
 }
 
-const HomeworkControlSection = () => {
-  const [teacher, setTeacher] = useState<{ id: number; name: string } | null>(null);
+const HomeworkControlSection = (
+  { lockedTeacher = null }: { lockedTeacher?: { id: number; name: string } | null } = {},
+) => {
+  const [teacher, setTeacher] = useState<{ id: number; name: string } | null>(lockedTeacher);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -236,8 +238,8 @@ const HomeworkControlSection = () => {
     );
   }
 
-  // --- Экран выбора педагога ---
-  if (!teacher) {
+  // --- Экран выбора педагога (скрыт в личном кабинете) ---
+  if (!teacher && !lockedTeacher) {
     return (
       <div className="space-y-6">
         <button
@@ -294,16 +296,21 @@ const HomeworkControlSection = () => {
   }
 
   // --- Таблица контроля ДЗ ---
+  if (!teacher) return null;
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => { setTeacher(null); setStudents([]); }}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-        >
-          <Icon name="ArrowLeft" size={16} />
-          Выбрать другого педагога
-        </button>
+        {lockedTeacher ? (
+          <span />
+        ) : (
+          <button
+            onClick={() => { setTeacher(null); setStudents([]); }}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <Icon name="ArrowLeft" size={16} />
+            Выбрать другого педагога
+          </button>
+        )}
         <span className="font-semibold text-gray-900">{teacher.name}</span>
       </div>
 
