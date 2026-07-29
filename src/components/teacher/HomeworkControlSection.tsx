@@ -299,10 +299,8 @@ const HomeworkControlSection = (
   if (!teacher) return null;
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        {lockedTeacher ? (
-          <span />
-        ) : (
+      {!lockedTeacher && (
+        <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => { setTeacher(null); setStudents([]); }}
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
@@ -310,9 +308,9 @@ const HomeworkControlSection = (
             <Icon name="ArrowLeft" size={16} />
             Выбрать другого педагога
           </button>
-        )}
-        <span className="font-semibold text-gray-900">{teacher.name}</span>
-      </div>
+          <span className="font-semibold text-gray-900">{teacher.name}</span>
+        </div>
+      )}
 
       {/* Выбор месяца */}
       <div className="flex items-center gap-2 mb-4">
