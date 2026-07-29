@@ -66,19 +66,31 @@ const TeacherCard = ({ teacher, onEdit, scheduleByTeacher, loading, readOnly, hi
   const hasDays = Object.keys(ws).length > 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-semibold text-gray-900">{hideName ? '' : teacher.name}</span>
-        {!readOnly && (
+    <div className="relative bg-white rounded-xl border border-gray-200 p-4">
+      {hideName ? (
+        !readOnly && (
           <button
             onClick={() => onEdit(teacher)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title="Редактировать"
           >
             <Icon name="Pencil" size={16} />
           </button>
-        )}
-      </div>
+        )
+      ) : (
+        <div className="flex items-center justify-between mb-3">
+          <span className="font-semibold text-gray-900">{teacher.name}</span>
+          {!readOnly && (
+            <button
+              onClick={() => onEdit(teacher)}
+              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Редактировать"
+            >
+              <Icon name="Pencil" size={16} />
+            </button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="text-xs text-gray-400">Загрузка…</div>
