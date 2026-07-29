@@ -57,9 +57,10 @@ interface TeacherCardProps {
   scheduleByTeacher: Record<number, ScheduleRow[]>;
   loading: boolean;
   readOnly?: boolean;
+  hideName?: boolean;
 }
 
-const TeacherCard = ({ teacher, onEdit, scheduleByTeacher, loading, readOnly }: TeacherCardProps) => {
+const TeacherCard = ({ teacher, onEdit, scheduleByTeacher, loading, readOnly, hideName }: TeacherCardProps) => {
   const rows = scheduleByTeacher[teacher.id] || [];
   const ws = rowsToWeekSchedule(rows);
   const hasDays = Object.keys(ws).length > 0;
@@ -67,7 +68,7 @@ const TeacherCard = ({ teacher, onEdit, scheduleByTeacher, loading, readOnly }: 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="font-semibold text-gray-900">{teacher.name}</span>
+        <span className="font-semibold text-gray-900">{hideName ? '' : teacher.name}</span>
         {!readOnly && (
           <button
             onClick={() => onEdit(teacher)}
@@ -300,8 +301,19 @@ const WorkScheduleSection = (
     ? rowsToWeekSchedule(scheduleByTeacher[editingTeacher.id] || [])
     : {};
 
+  const isPersonal = lockedTeacherId != null;
+
   return (
     <div>
+      {isPersonal && (
+        <div className="mb-5 flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl p-3.5">
+          <Icon name="Info" size={18} className="text-blue-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-900">
+            Укажите <span className="font-semibold">ВСЕ</span> слоты: и свободные, и те, на которые уже запланированы занятия.
+          </p>
+        </div>
+      )}
+
       {/* Индивидуальные */}
       {indTeachers.length > 0 && (
         <div className="mb-6">
@@ -317,6 +329,7 @@ const WorkScheduleSection = (
                 scheduleByTeacher={scheduleByTeacher}
                 loading={loading}
                 readOnly={readOnly}
+                hideName={isPersonal}
               />
             ))}
           </div>
@@ -338,6 +351,7 @@ const WorkScheduleSection = (
                 scheduleByTeacher={scheduleByTeacher}
                 loading={loading}
                 readOnly={readOnly}
+                hideName={isPersonal}
               />
             ))}
           </div>
