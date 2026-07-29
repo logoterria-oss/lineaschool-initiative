@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import requests
 import psycopg2
@@ -330,22 +331,42 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
     return result
 
 
+# Эмодзи в ФИО из CRM считаем частью имени и переносим в конец строки.
+_EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF"
+    "\U00002190-\U000021FF\U00002B00-\U00002BFF\U0000FE00-\U0000FE0F\U0000200D]+"
+)
+
+
+def _strip_emoji(name: str):
+    """Возвращает (текст без эмодзи, склеенные эмодзи)."""
+    emojis = "".join(_EMOJI_RE.findall(name or ""))
+    text = _EMOJI_RE.sub("", name or "")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text, emojis
+
+
 def _hw_surname_first(name: str) -> str:
     """CRM хранит имена как 'Имя Фамилия'. Переворачиваем в 'Фамилия Имя'.
+    Эмодзи считаем частью имени и переносим в конец: '🖐 Никита Павленко' -> 'Павленко Никита 🖐'.
     Сиблингов ('Марк и Сеня Константиновы' — общая фамилия в конце) оставляем как есть."""
-    name = (name or "").strip()
-    if not name:
-        return name
-    parts = name.split()
+    text, emojis = _strip_emoji((name or "").strip())
+    if not text:
+        return (name or "").strip()
+
+    parts = text.split()
     # Составные имена сиблингов: содержат союз 'и' — фамилия уже в конце или общая
     if "и" in [p.lower() for p in parts]:
-        return name
-    if len(parts) == 2:
-        return f"{parts[1]} {parts[0]}"
+        result = text
+    elif len(parts) == 2:
+        result = f"{parts[1]} {parts[0]}"
     # Три и более слова без 'и' — двойное имя/фамилия: переносим последнее слово вперёд
-    if len(parts) >= 3:
-        return f"{parts[-1]} {' '.join(parts[:-1])}"
-    return name
+    elif len(parts) >= 3:
+        result = f"{parts[-1]} {' '.join(parts[:-1])}"
+    else:
+        result = text
+
+    return f"{result} {emojis}".strip() if emojis else result
 
 
 def _hw_json(status, body, cors_headers):

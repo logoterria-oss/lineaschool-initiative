@@ -1,3 +1,5 @@
+import { splitEmoji, withEmoji } from '@/lib/emoji';
+
 const API_URL = 'https://functions.poehali.dev/c0e33e31-3223-49c3-96e6-b90391728c1e';
 
 export interface StudentTariff {
@@ -121,17 +123,12 @@ export const matchesFilter = (statusId: number | null, filter: StatusFilter): bo
   }
 };
 
-// Регэксп эмодзи (смайлики, символы, флаги и модификаторы).
-const EMOJI_RE =
-  /(?:\p{Extended_Pictographic}(?:\uFE0F|\u200D|\p{Emoji_Modifier})*)+/gu;
-
-// Приводим ФИО к виду «Фамилия Имя <эмодзи>»: вырезаем все эмодзи из строки
+// Приводим ФИО к виду «... <эмодзи>»: вырезаем все эмодзи из строки
 // и приклеиваем их в конец, не меняя порядок слов имени.
 export const normalizeStudentName = (raw: string): string => {
   if (!raw) return raw;
-  const emojis = (raw.match(EMOJI_RE) || []).join('');
-  const text = raw.replace(EMOJI_RE, '').replace(/\s+/g, ' ').trim();
-  return emojis ? `${text} ${emojis}`.trim() : text;
+  const { text, emojis } = splitEmoji(raw);
+  return withEmoji(text, emojis);
 };
 
 export const fetchStudents = async (): Promise<StudentRow[]> => {

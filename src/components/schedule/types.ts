@@ -1,3 +1,5 @@
+import { splitEmoji, withEmoji } from '@/lib/emoji';
+
 export const S20_URL = 'https://functions.poehali.dev/6d9e6094-fd18-47ec-b45f-ad3ee4ba7cc2';
 
 // ── Индивидуальные ────────────────────────────────────────────────────────────
@@ -258,13 +260,16 @@ export const shouldForceManualAge = (formattedName: string): boolean =>
   FORCE_MANUAL_AGE.has(formattedName);
 
 export const formatStudentName = (full?: string): string => {
-  const s = (full || '').trim().replace(/\s+/g, ' ');
-  if (!s) return '';
+  // Эмодзи считаем частью имени и переносим в конец, не влияя на перестановку слов.
+  const { text: s, emojis } = splitEmoji((full || '').trim().replace(/\s+/g, ' '));
+  if (!s) return withEmoji('', emojis);
+
+  const done = (name: string) => withEmoji(name, emojis);
 
   // Точечная замена: в нашей табличке карточку "Марк и Сеня Константиновы"
   // (а также вариации с запятой/порядком имён) показываем как "Сеня Константинов".
   if (/Константинов/i.test(s) && /Сен[яи]/i.test(s) && /Марк/i.test(s)) {
-    return 'Сеня Константинов';
+    return done('Сеня Константинов');
   }
 
   // Сиблинги: "Сеня и Марк Константиновы" / "Сеня, Марк Константиновы"
@@ -277,11 +282,11 @@ export const formatStudentName = (full?: string): string => {
     let last = parts[parts.length - 1];
     if (/ы$/i.test(last)) last = last.slice(0, -1);
     else if (/и$/i.test(last) && last.length > 2) last = last.slice(0, -1) + 'й';
-    return `${first} ${last}`;
+    return done(`${first} ${last}`);
   }
 
   const parts = s.split(' ');
-  if (parts.length <= 2) return s;
+  if (parts.length <= 2) return done(s);
   // 3+ слов — считаем что это "Фамилия Имя Отчество" (как обычно вводят лидов в S20)
-  return `${parts[1]} ${parts[0]}`;
+  return done(`${parts[1]} ${parts[0]}`);
 };

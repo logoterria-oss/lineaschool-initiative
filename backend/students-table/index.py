@@ -326,20 +326,34 @@ def pick_actual_tariff(tariffs, tariff_dict, balance):
     }
 
 
+# Эмодзи в ФИО из CRM считаем частью имени и переносим в конец строки.
+_EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF"
+    "\U00002190-\U000021FF\U00002B00-\U00002BFF\U0000FE00-\U0000FE0F\U0000200D]+"
+)
+
+
 def surname_first(name):
     """CRM хранит 'Имя Фамилия' -> возвращаем 'Фамилия Имя'.
+    Эмодзи считаем частью имени и переносим в конец: '🖐 Никита Павленко' -> 'Павленко Никита 🖐'.
     Имена сиблингов с союзом 'и' оставляем как есть."""
-    name = (name or "").strip()
-    if not name:
-        return name
-    parts = name.split()
+    src = (name or "").strip()
+    emojis = "".join(_EMOJI_RE.findall(src))
+    text = re.sub(r"\s+", " ", _EMOJI_RE.sub("", src)).strip()
+    if not text:
+        return src
+
+    parts = text.split()
     if "и" in [p.lower() for p in parts]:
-        return name
-    if len(parts) == 2:
-        return f"{parts[1]} {parts[0]}"
-    if len(parts) >= 3:
-        return f"{parts[-1]} {' '.join(parts[:-1])}"
-    return name
+        result = text
+    elif len(parts) == 2:
+        result = f"{parts[1]} {parts[0]}"
+    elif len(parts) >= 3:
+        result = f"{parts[-1]} {' '.join(parts[:-1])}"
+    else:
+        result = text
+
+    return f"{result} {emojis}".strip() if emojis else result
 
 
 def split_siblings(name):
