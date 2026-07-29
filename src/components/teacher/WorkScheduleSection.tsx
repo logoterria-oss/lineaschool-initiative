@@ -10,6 +10,8 @@ const INDIVIDUAL_TEACHERS = [
   { id: 18, name: 'Карамова Анна' },
   { id: 11, name: 'Камнева Валерия' },
   { id: 2,  name: 'Шишаева Анастасия' },
+  { id: 20, name: 'Канкулова Екатерина' },
+  { id: 15, name: 'Мацвей Екатерина' },
 ];
 
 const GROUP_TEACHERS = [
