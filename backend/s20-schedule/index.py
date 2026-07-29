@@ -8,12 +8,14 @@ from datetime import datetime, timedelta, date
 HW_START_DATE = "2026-06-01"
 
 
+TEACHER_SCHEDULE_URL = "https://functions.poehali.dev/6dcf4744-e843-45cf-9614-9afe432b92f5"
+
+
 def get_work_schedule_from_db() -> dict:
     """График работы педагогов из БД — через HTTP к функции teacher-schedule."""
     result = {}
     try:
-        url = "https://functions.poehali.dev/6dcf4744-e843-45cf-9614-9afe432b92f5"
-        r = requests.get(url, timeout=8)
+        r = requests.get(TEACHER_SCHEDULE_URL, timeout=8)
         for row in r.json().get("schedule", []):
             tid = row["teacher_id"]
             result.setdefault(tid, []).append({
@@ -24,6 +26,42 @@ def get_work_schedule_from_db() -> dict:
     except Exception as e:
         print(f"DB error: {e}")
     return result
+
+
+def get_teacher_absences_from_db() -> dict:
+    """Выходные и отпуска педагогов из БД: {teacher_id: [ {kind, date_from, date_to, time_from, time_to} ]}."""
+    result = {}
+    try:
+        r = requests.get(f"{TEACHER_SCHEDULE_URL}?resource=absences", timeout=8)
+        for row in r.json().get("absences", []):
+            tid = int(row["teacher_id"])
+            result.setdefault(tid, []).append({
+                "kind": row.get("kind"),
+                "date_from": str(row.get("date_from"))[:10],
+                "date_to": str(row.get("date_to"))[:10],
+                "time_from": (str(row["time_from"])[:5] if row.get("time_from") else None),
+                "time_to": (str(row["time_to"])[:5] if row.get("time_to") else None),
+            })
+    except Exception as e:
+        print(f"Absences DB error: {e}")
+    return result
+
+
+def slot_blocked_by_absence(absences_for_teacher, date_str, tf, tt) -> bool:
+    """True, если слот (date_str, tf-tt) попадает в выходной/отпуск педагога.
+    Отпуск и выходной на весь день блокируют любые слоты дня.
+    Выходной с интервалом времени блокирует только пересекающиеся по времени слоты."""
+    for ab in absences_for_teacher or []:
+        if not (ab["date_from"] <= date_str <= ab["date_to"]):
+            continue
+        atf = ab.get("time_from")
+        att = ab.get("time_to")
+        if not atf or not att:
+            return True  # весь день
+        # пересечение интервалов
+        if atf < tt and att > tf:
+            return True
+    return False
 
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
@@ -839,6 +877,7 @@ def handler(event: dict, context) -> dict:
             dt_to = dt_from + timedelta(days=5)
 
         work_schedule = get_work_schedule_from_db()
+        absences = get_teacher_absences_from_db()
 
         # Берём запланированные (1) и проведённые (3) уроки — оба считаются занятыми
         try:
@@ -884,6 +923,9 @@ def handler(event: dict, context) -> dict:
                             continue
                         tf = slot["time_from"][:5]
                         tt = slot["time_to"][:5]
+                        # Выходной/отпуск педагога — слот недействителен, не показываем
+                        if slot_blocked_by_absence(absences.get(int(teacher_id)), date_str, tf, tt):
+                            continue
                         # Проверяем: занят ли этот слот
                         busy = False
                         booked_lesson_id = None

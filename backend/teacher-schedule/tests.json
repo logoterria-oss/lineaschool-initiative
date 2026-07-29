@@ -17,6 +17,19 @@
       "method": "OPTIONS",
       "path": "/",
       "expectedStatus": 200
+    },
+    {
+      "name": "GET выходные/отпуска педагога",
+      "method": "GET",
+      "path": "/?resource=absences&teacher_id=2",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Добавить выходной — неизвестный педагог",
+      "method": "POST",
+      "path": "/?resource=absences",
+      "body": {"teacher_id": 999, "kind": "dayoff", "date_from": "2026-08-01"},
+      "expectedStatus": 400
     }
   ]
 }

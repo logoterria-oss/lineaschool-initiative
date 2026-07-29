@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import TeacherAbsences from './TeacherAbsences';
 
 const TEACHER_SCHEDULE_URL = 'https://functions.poehali.dev/6dcf4744-e843-45cf-9614-9afe432b92f5';
 
@@ -368,6 +369,10 @@ const WorkScheduleSection = (
             ))}
           </div>
         </div>
+      )}
+
+      {isPersonal && lockedTeacherId != null && (
+        <TeacherAbsences teacherId={lockedTeacherId} />
       )}
 
       {editingTeacher && !readOnly && (
