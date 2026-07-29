@@ -34,7 +34,11 @@ const GroupRegulation = ({ onBack, hideHeader = false }: { onBack: () => void; h
     if (!contentRef.current || saving) return;
     setSaving(true);
     try {
-      await saveElementToPdf(contentRef.current, 'Регламент — групповые занятия.pdf');
+      await saveElementToPdf(
+        contentRef.current,
+        'Регламент — групповые занятия.pdf',
+        'Регламент педагога: групповые занятия',
+      );
     } finally {
       setSaving(false);
     }

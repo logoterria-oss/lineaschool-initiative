@@ -19,7 +19,11 @@ const IndividualRegulation = ({ onBack, hideHeader = false }: { onBack: () => vo
     if (!contentRef.current || saving) return;
     setSaving(true);
     try {
-      await saveElementToPdf(contentRef.current, 'Регламент — индивидуальные занятия.pdf');
+      await saveElementToPdf(
+        contentRef.current,
+        'Регламент — индивидуальные занятия.pdf',
+        'Регламент педагога: индивидуальные занятия',
+      );
     } finally {
       setSaving(false);
     }
