@@ -3,14 +3,26 @@ import Icon from '@/components/ui/icon';
 import { TOC } from './individualRegulationData';
 import IndividualRegulationContentPart1 from './IndividualRegulationContentPart1';
 import IndividualRegulationContentPart2 from './IndividualRegulationContentPart2';
+import { saveElementToPdf } from '@/lib/regulationPdf';
 
 const IndividualRegulation = ({ onBack, hideHeader = false }: { onBack: () => void; hideHeader?: boolean }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [tocOpen, setTocOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const savePdf = async () => {
+    if (!contentRef.current || saving) return;
+    setSaving(true);
+    try {
+      await saveElementToPdf(contentRef.current, 'Регламент — индивидуальные занятия.pdf');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -32,6 +44,18 @@ const IndividualRegulation = ({ onBack, hideHeader = false }: { onBack: () => vo
           </h1>
         </div>
       )}
+
+      {/* Сохранить PDF */}
+      <div className="mb-6">
+        <button
+          onClick={savePdf}
+          disabled={saving}
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+        >
+          <Icon name={saving ? 'Loader2' : 'Download'} size={16} className={saving ? 'animate-spin' : ''} />
+          {saving ? 'Готовлю PDF…' : 'Сохранить PDF'}
+        </button>
+      </div>
 
       {/* Оглавление */}
       <div className="bg-white rounded-2xl border border-gray-200 border-t-4 border-t-blue-500 shadow-sm mb-6 overflow-hidden">
