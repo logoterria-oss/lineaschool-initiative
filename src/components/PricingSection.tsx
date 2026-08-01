@@ -128,7 +128,10 @@ export default function PricingSection() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedSectionTitle, setSelectedSectionTitle] = useState<string>('');
-  const [clientName, setClientName] = useState('');
+  const [childLastName, setChildLastName] = useState('');
+  const [childFirstName, setChildFirstName] = useState('');
+  const clientName = `${childLastName.trim()} ${childFirstName.trim()}`.trim();
+  const isNameValid = childLastName.trim().length >= 2 && childFirstName.trim().length >= 2;
 
   const toggleSection = (index: number) => {
     setOpenSections(prev => 
@@ -145,7 +148,7 @@ export default function PricingSection() {
   };
 
   const handlePayment = async () => {
-    if (!clientName || !selectedPlan) return;
+    if (!isNameValid || !selectedPlan) return;
     
     const amount = parseInt(selectedPlan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
     const description = `${selectedSectionTitle} - ${selectedPlan.title}`;
@@ -409,19 +412,39 @@ export default function PricingSection() {
           <p className="text-gray-600 mb-4">
             Пока мы загружаем платёжную форму, пожалуйста, представьтесь
           </p>
-          <input
-            type="text"
-            placeholder="Введите ФИО ребенка"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
+          <div className="mb-4 space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Фамилия ребёнка <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Например: Иванов"
+                value={childLastName}
+                onChange={(e) => setChildLastName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Имя ребёнка <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Например: Пётр"
+                value={childFirstName}
+                onChange={(e) => setChildFirstName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
           <div className="flex gap-3">
             <Button
               variant="outline"
               onClick={() => {
                 setIsPaymentModalOpen(false);
-                setClientName('');
+                setChildLastName('');
+                setChildFirstName('');
               }}
               className="flex-1"
             >
@@ -429,7 +452,7 @@ export default function PricingSection() {
             </Button>
             <Button
               onClick={handlePayment}
-              disabled={!clientName || clientName.length < 2}
+              disabled={!isNameValid}
               className="flex-1 bg-green-500 hover:bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Оплатить
