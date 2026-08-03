@@ -11,6 +11,7 @@ import {
 } from '@/lib/leadsApi';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
 import LeadsFilters from './leads/LeadsFilters';
+import NewLeadsPanel, { CONTACTED_STATUS } from './leads/NewLeadsPanel';
 import LeadCard from './leads/LeadCard';
 import { Cell } from './leads/LeadCells';
 import {
@@ -101,6 +102,16 @@ export default function LeadsListView() {
       return true;
     });
   }, [sortedLeads, fSearch, fResponsible, fProcessing, fLeadStatus, fDateFrom, fDateTo, fUntouchedOnly, fContactDue]);
+
+  // Новые (необработанные) лиды — сверху, с кнопкой «Списались».
+  const newLeads = useMemo(() => sortedLeads.filter(isUntouched), [sortedLeads]);
+
+  const markContacted = async (id: number) => {
+    await updateLead(id, { processing_status: CONTACTED_STATUS });
+    setLeads((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, processing_status: CONTACTED_STATUS } : l)),
+    );
+  };
 
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
   // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
@@ -206,6 +217,8 @@ export default function LeadsListView() {
           onClose={() => setStatsOpen(false)}
         />
       )}
+
+      {!loading && <NewLeadsPanel leads={newLeads} onContacted={markContacted} />}
 
       {!loading && leads.length > 0 && hasActiveFilters && (
         <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">

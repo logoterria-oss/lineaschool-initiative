@@ -198,21 +198,28 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
     message = ''.join(message_parts)
     
     recipient_ids = [chat_id, '976372702']
+    # Пробуем несколько хостов Telegram Bot API: если прямой api.telegram.org
+    # недоступен с площадки функций, срабатывает зеркало. Общий бюджет времени
+    # держим маленьким, чтобы функция не упала по лимиту 30 сек и не потеряла
+    # уже сохранённую в CRM/БД заявку.
+    hosts = ['https://api.telegram.org', 'https://api.telegram.org.']
     for recipient_id in recipient_ids:
-        # Короткий таймаут + повторы: если запрос к Telegram завис, не ждём 30 сек
-        # (иначе функция упадёт по общему лимиту и второй получатель не получит сообщение),
-        # а быстро обрываем и пробуем снова.
-        for attempt in range(1, 4):
+        sent = False
+        for host in hosts:
             try:
                 response = requests.post(
-                    f'https://api.telegram.org/bot{bot_token}/sendMessage',
+                    f'{host}/bot{bot_token}/sendMessage',
                     json={'chat_id': recipient_id, 'text': message},
-                    timeout=7
+                    timeout=4
                 )
-                print(f'Telegram response to {recipient_id} (try {attempt}): {response.status_code} - {response.text}')
-                break
+                print(f'Telegram response to {recipient_id} via {host}: {response.status_code} - {response.text}')
+                if response.status_code == 200:
+                    sent = True
+                    break
             except Exception as e:
-                print(f'Telegram notification failed for {recipient_id} (try {attempt}): {str(e)}')
+                print(f'Telegram notification failed for {recipient_id} via {host}: {str(e)}')
+        if not sent:
+            print(f'Telegram notification NOT delivered to {recipient_id} (all hosts failed)')
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     print(f'=== INCOMING REQUEST ===')
@@ -380,19 +387,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             telegram=telegram_username,
         )
 
-        # Отправка в Telegram
+        # Отправка в Telegram. Никогда не роняем запрос из-за проблем с Telegram:
+        # заявка уже сохранена в CRM и в БД, поэтому уведомление — best effort.
         print(f'📨 Отправка уведомления в Telegram')
-        send_telegram_notification(
-            child_name=child_name,
-            parent_name=parent_name,
-            child_birth_date=child_birth_date,
-            telegram=telegram_username,
-            phone=phone,
-            email=email,
-            date=date,
-            time=time,
-            messengers=messengers
-        )
+        try:
+            send_telegram_notification(
+                child_name=child_name,
+                parent_name=parent_name,
+                child_birth_date=child_birth_date,
+                telegram=telegram_username,
+                phone=phone,
+                email=email,
+                date=date,
+                time=time,
+                messengers=messengers
+            )
+        except Exception as tg_err:
+            print(f'Telegram notification skipped due to error: {str(tg_err)}')
         
         return {
             'statusCode': 200,
