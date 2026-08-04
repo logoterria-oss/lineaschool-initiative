@@ -19,6 +19,34 @@ export type ImpairedProcessKey =
 
 export type ImpairedProcessesState = Record<ImpairedProcessKey, boolean>;
 
+// 4 уровня развития процесса, по возрастанию (индекс = «сила» уровня)
+export type ProcessLevel =
+  | 'грубо нарушено'
+  | 'не соответствует возрастной норме'
+  | 'приближено к возрастной норме'
+  | 'норма';
+
+export const PROCESS_LEVELS: ProcessLevel[] = [
+  'грубо нарушено',
+  'не соответствует возрастной норме',
+  'приближено к возрастной норме',
+  'норма',
+];
+
+// Выбранный на промежуточной диагностике уровень («стало») по каждому процессу
+export type ProcessLevelsState = Partial<Record<ImpairedProcessKey, ProcessLevel>>;
+
+// Динамика: улучшение / без изменений / ухудшение
+export type ProcessDynamic = 'up' | 'same' | 'down';
+
+export function getDynamic(from: ProcessLevel, to: ProcessLevel): ProcessDynamic {
+  const a = PROCESS_LEVELS.indexOf(from);
+  const b = PROCESS_LEVELS.indexOf(to);
+  if (b > a) return 'up';
+  if (b < a) return 'down';
+  return 'same';
+}
+
 export interface ImpairedGroup {
   title: string;
   items: { key: ImpairedProcessKey; label: string }[];
@@ -124,4 +152,60 @@ export function computeImpairedFromPrimary(
   state.sentenceAnalysis = laImpaired('уровне предложения');
 
   return state;
+}
+
+// Сопоставляет произвольную формулировку из первичной с одним из 4 уровней.
+// Если точной фразы нет, но процесс отмечен как нарушенный —
+// возвращаем «не соответствует возрастной норме».
+function matchLevel(text: string): ProcessLevel {
+  const s = norm(text);
+  if (s.includes('грубо')) return 'грубо нарушено';
+  if (s.includes('приближ')) return 'приближено к возрастной норме';
+  if (s.includes('не соответствует') || s.includes('не сформиров') || s.includes('нарушен')) {
+    return 'не соответствует возрастной норме';
+  }
+  if (s === 'норма' || (s.includes('норма') && !s.includes('не '))) {
+    return 'норма';
+  }
+  // Отмечено как нарушенное, но точной фразы нет — берём средний «нарушенный» уровень
+  return 'не соответствует возрастной норме';
+}
+
+// Возвращает исходный уровень («было») из первичной для одного массива-источника,
+// найдя элемент, содержащий ключевое слово.
+function levelFromArray(arr: string[], kw: string): ProcessLevel {
+  const item = (arr || []).find((x) => norm(x).includes(kw));
+  return matchLevel(item || '');
+}
+
+/**
+ * Вычисляет исходный уровень («было») по каждому процессу из первичной диагностики.
+ * Заполняется только для процессов, отмеченных как нарушенные.
+ */
+export function computeBaselineLevels(
+  p: InterimPrimaryData | undefined,
+  impaired: ImpairedProcessesState,
+): ProcessLevelsState {
+  const out: ProcessLevelsState = {};
+  if (!p) return out;
+
+  const motor = p.motorRealization || [];
+  const connected = p.connectedSpeech || [];
+  const la = p.languageAnalysis || [];
+
+  if (impaired.wordUnderstanding) out.wordUnderstanding = matchLevel(p.wordUnderstanding);
+  if (impaired.complexConstructions) out.complexConstructions = matchLevel(p.complexConstructions);
+  if (impaired.phonematicPerception) out.phonematicPerception = matchLevel(p.phonematicPerception);
+
+  if (impaired.soundProduction) out.soundProduction = levelFromArray(motor, 'нарушен');
+  if (impaired.syllableStructure) out.syllableStructure = levelFromArray(motor, 'слоговая структура');
+  if (impaired.kineticPraxis) out.kineticPraxis = levelFromArray(motor, 'кинетический');
+  if (impaired.grammaticalStructure) out.grammaticalStructure = matchLevel(p.grammaticalStructure);
+  if (impaired.connectedSpeech) out.connectedSpeech = levelFromArray(connected, 'нарушен');
+
+  if (impaired.phonematicAnalysis) out.phonematicAnalysis = levelFromArray(la, 'фонематическ');
+  if (impaired.syllableAnalysis) out.syllableAnalysis = levelFromArray(la, 'слогов');
+  if (impaired.sentenceAnalysis) out.sentenceAnalysis = levelFromArray(la, 'уровне предложения');
+
+  return out;
 }

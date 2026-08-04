@@ -10,9 +10,12 @@ import InterimPrimaryConclusionSection from '@/components/interimDiag/InterimPri
 import { buildPrimaryConclusion } from '@/components/interimDiag/primaryConclusion';
 import {
   computeImpairedFromPrimary,
+  computeBaselineLevels,
   EMPTY_IMPAIRED_STATE,
   ImpairedProcessKey,
   ImpairedProcessesState,
+  ProcessLevel,
+  ProcessLevelsState,
 } from '@/components/interimDiag/impairedProcesses';
 
 export default function InterimDiagForm() {
@@ -24,6 +27,9 @@ export default function InterimDiagForm() {
   });
 
   const [impaired, setImpaired] = useState<ImpairedProcessesState>({ ...EMPTY_IMPAIRED_STATE });
+  const [baseline, setBaseline] = useState<ProcessLevelsState>({});
+  const [levels, setLevels] = useState<ProcessLevelsState>({});
+  const [primaryData, setPrimaryData] = useState<InterimStudent['primary']>(undefined);
   const [autoFilled, setAutoFilled] = useState(false);
   const [primaryConclusion, setPrimaryConclusion] = useState('');
   const [studentSelected, setStudentSelected] = useState(false);
@@ -32,14 +38,31 @@ export default function InterimDiagForm() {
     setPersonal((prev) => ({ ...prev, ...patch }));
 
   const handleSelectStudent = (student: InterimStudent) => {
-    setImpaired(computeImpairedFromPrimary(student.primary));
+    const nextImpaired = computeImpairedFromPrimary(student.primary);
+    const nextBaseline = computeBaselineLevels(student.primary, nextImpaired);
+    setImpaired(nextImpaired);
+    setBaseline(nextBaseline);
+    // По умолчанию «стало» = «было», логопед меняет вручную
+    setLevels({ ...nextBaseline });
+    setPrimaryData(student.primary);
     setAutoFilled(true);
     setPrimaryConclusion(buildPrimaryConclusion(student.primary));
     setStudentSelected(true);
   };
 
-  const handleImpairedChange = (key: ImpairedProcessKey, checked: boolean) =>
+  const handleImpairedChange = (key: ImpairedProcessKey, checked: boolean) => {
     setImpaired((prev) => ({ ...prev, [key]: checked }));
+    if (checked) {
+      // Дозаполняем «было» и «стало» для процесса, включённого вручную
+      const single = computeBaselineLevels(primaryData, { ...EMPTY_IMPAIRED_STATE, [key]: true });
+      const lvl = single[key] || 'не соответствует возрастной норме';
+      setBaseline((prev) => ({ ...prev, [key]: prev[key] || lvl }));
+      setLevels((prev) => ({ ...prev, [key]: prev[key] || lvl }));
+    }
+  };
+
+  const handleLevelChange = (key: ImpairedProcessKey, level: ProcessLevel) =>
+    setLevels((prev) => ({ ...prev, [key]: level }));
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +91,10 @@ export default function InterimDiagForm() {
             />
             <InterimImpairedProcessesSection
               value={impaired}
+              baseline={baseline}
+              levels={levels}
               onChange={handleImpairedChange}
+              onLevelChange={handleLevelChange}
               autoFilled={autoFilled}
             />
           </form>
