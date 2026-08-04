@@ -101,7 +101,7 @@ export default function InterimImpairedProcessesSection({
                     {checked && (
                       <div className="mt-2 ml-6">
                         <Select
-                          value={to || undefined}
+                          value={levels[item.key] || undefined}
                           onValueChange={(v) => onLevelChange(item.key, v as ProcessLevel)}
                         >
                           <SelectTrigger className="w-full max-w-md">
