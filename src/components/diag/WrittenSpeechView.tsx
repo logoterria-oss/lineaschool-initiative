@@ -19,6 +19,17 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
 
   const regulationText = formatRegulationViolations();
 
+  const formatOrthographicErrors = () => {
+    const checkboxItems = formatList(diagData.orthographicErrorTypes || []);
+    const customText = diagData.orthographicErrorsOther?.trim();
+    if (checkboxItems && customText) {
+      return `${checkboxItems}, ${customText}`;
+    }
+    return checkboxItems || customText || '';
+  };
+
+  const orthographicText = formatOrthographicErrors();
+
   return (
     <section>
       <h2 className="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">
@@ -66,6 +77,7 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
         <div><strong>Зрительно-пространственные ошибки:</strong> {formatList(diagData.visualSpatialErrors)}</div>
         <div><strong>Дополнительные характеристики:</strong> {formatList(diagData.additionalCharacteristics)}</div>
         {regulationText && <div><strong>Нарушения регуляции письменной деятельности:</strong> {regulationText}</div>}
+        {orthographicText && <div><strong>Орфографические ошибки:</strong> {orthographicText}</div>}
       </div>
     </section>
   );

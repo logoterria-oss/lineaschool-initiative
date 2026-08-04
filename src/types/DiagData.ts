@@ -57,6 +57,8 @@ export interface DiagData {
   additionalCharacteristics: string[];
   regulationViolations: string[];
   regulationViolationsOther?: string;
+  orthographicErrorTypes?: string[];
+  orthographicErrorsOther?: string;
   speechDisorders: string[];
   soundProductionType?: string;
   languageAnalysisTypes?: string[];
