@@ -134,6 +134,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'city': body_data.get('city', ''),
                     'region': body_data.get('cityRegion', ''),
                     'timezone': body_data.get('cityTimezone', ''),
+                    'childName': body_data.get('childName', ''),
+                    'parentName': body_data.get('parentName', ''),
                 }).encode('utf-8')
                 crm_req = urllib.request.Request(
                     crm_city_url,
