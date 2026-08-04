@@ -27,6 +27,7 @@ export interface InterimPrimaryData {
   motorErrors: string[];
   visualMotorErrors: string[];
   visualSpatialErrors: string[];
+  regulationViolations: string[];
 }
 
 export interface InterimStudent {

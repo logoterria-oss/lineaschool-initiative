@@ -80,7 +80,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    fd -> 'acousticErrors'        AS acoustic_errors,
                    fd -> 'motorErrors'           AS motor_errors,
                    fd -> 'visualMotorErrors'     AS visual_motor_errors,
-                   fd -> 'visualSpatialErrors'   AS visual_spatial_errors
+                   fd -> 'visualSpatialErrors'   AS visual_spatial_errors,
+                   fd -> 'regulationViolations'  AS regulation_violations
             FROM latest
         """)
 
@@ -126,6 +127,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'motorErrors': as_list(r.get('motor_errors')),
                     'visualMotorErrors': as_list(r.get('visual_motor_errors')),
                     'visualSpatialErrors': as_list(r.get('visual_spatial_errors')),
+                    'regulationViolations': as_list(r.get('regulation_violations')),
                 },
             })
 

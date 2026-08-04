@@ -104,6 +104,17 @@ export const DYSGRAPHIC_ERROR_CATALOG: { group: string; items: string[] }[] = [
       'избегания переноса слов',
     ],
   },
+  {
+    group: 'Нарушения регуляции письменной деятельности',
+    items: [
+      'пропуски элементов букв, букв, слогов, слов',
+      'персеверации (навязчивые повторения) элементов букв, букв, слогов, слов',
+      'контоминации (объединение слов)',
+      'антиципации (предвосхищение слов и их элементов)',
+      'ошибки обозначения границ предложения',
+      'орфографические ошибки',
+    ],
+  },
 ];
 
 // Собирает отмеченные при первичной типы дисграфических ошибок (кроме «нет»)
@@ -115,6 +126,7 @@ export function collectPrimaryErrorTypes(p: InterimPrimaryData | undefined): Dys
     p.motorErrors,
     p.visualMotorErrors,
     p.visualSpatialErrors,
+    p.regulationViolations,
   ];
   const seen = new Set<string>();
   const out: DysgraphicErrorItem[] = [];
