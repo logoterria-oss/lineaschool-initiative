@@ -36,12 +36,18 @@ import {
 import DynamicChain, { ChainStep } from './DynamicChain';
 import { InterimHistoryEntry } from './InterimPersonalDataSection';
 
+const MAX_WRITING_SAMPLES = 2;
+
 interface Props {
   baseline: ReadingWritingBaseline;
   value: ReadingWritingState;
   history: InterimHistoryEntry[];
   primaryDate: string | null;
   todayDate: string;
+  primarySamples: string[];
+  interimSamples: string[];
+  interimSamplesDate: string | null;
+  onImageClick: (src: string) => void;
   onChange: (patch: Partial<ReadingWritingState>) => void;
   selected: boolean;
 }
@@ -107,6 +113,10 @@ export default function InterimReadingWritingSection({
   history,
   primaryDate,
   todayDate,
+  primarySamples,
+  interimSamples,
+  interimSamplesDate,
+  onImageClick,
   onChange,
   selected,
 }: Props) {
@@ -129,7 +139,7 @@ export default function InterimReadingWritingSection({
 
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const remaining = 3 - value.writingSamples.length;
+    const remaining = MAX_WRITING_SAMPLES - value.writingSamples.length;
     const toRead = Array.from(files).slice(0, Math.max(0, remaining));
     toRead.forEach((file) => {
       const reader = new FileReader();
@@ -321,8 +331,53 @@ export default function InterimReadingWritingSection({
       {/* Подраздел «Письмо» */}
       <h3 className="text-base font-semibold text-gray-900 mb-3">Письмо</h3>
       <div className="space-y-4">
+        {/* Фото диктанта из прошлых диагностик — только просмотр */}
+        {(primarySamples.length > 0 || interimSamples.length > 0) && (
+          <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 space-y-4">
+            {primarySamples.length > 0 && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  Диктант с первичной диагностики
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {primarySamples.map((src, idx) => (
+                    <img
+                      key={idx}
+                      src={src}
+                      alt={`Первичная ${idx + 1}`}
+                      onClick={() => onImageClick(src)}
+                      className="h-28 w-28 rounded-lg object-cover border border-gray-200 cursor-pointer hover:opacity-80"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {interimSamples.length > 0 && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  Диктант с прошлой промежуточной диагностики
+                  {interimSamplesDate ? ` (${interimSamplesDate.split('-').reverse().join('.')})` : ''}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {interimSamples.map((src, idx) => (
+                    <img
+                      key={idx}
+                      src={src}
+                      alt={`Промежуточная ${idx + 1}`}
+                      onClick={() => onImageClick(src)}
+                      className="h-28 w-28 rounded-lg object-cover border border-gray-200 cursor-pointer hover:opacity-80"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
-          <Label className="text-sm text-gray-700">Образцы письменных работ</Label>
+          <Label className="text-sm text-gray-700">
+            Образцы письменных работ (до {MAX_WRITING_SAMPLES} изображений)
+          </Label>
           <div className="mt-2 flex flex-wrap gap-3">
             {value.writingSamples.map((src, idx) => (
               <div key={idx} className="relative">
@@ -340,7 +395,7 @@ export default function InterimReadingWritingSection({
                 </button>
               </div>
             ))}
-            {value.writingSamples.length < 3 && (
+            {value.writingSamples.length < MAX_WRITING_SAMPLES && (
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}

@@ -51,6 +51,11 @@ export default function InterimDiagForm() {
   const [primaryDate, setPrimaryDate] = useState<string | null>(null);
   const todayDate = new Date().toISOString().split('T')[0];
 
+  const [primarySamples, setPrimarySamples] = useState<string[]>([]);
+  const [interimSamples, setInterimSamples] = useState<string[]>([]);
+  const [interimSamplesDate, setInterimSamplesDate] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
   const [rwBaseline, setRwBaseline] = useState<ReadingWritingBaseline>({
     readingSpeed: '',
     readingComprehension: '',
@@ -107,6 +112,23 @@ export default function InterimDiagForm() {
       errorTypes: collectPrimaryErrorTypes(student.primary),
       orthoErrorTypes: collectPrimaryOrthographicTypes(student.primary),
     });
+
+    // Загружаем фото диктанта первичной и последней промежуточной (отдельный лёгкий запрос)
+    setPrimarySamples([]);
+    setInterimSamples([]);
+    setInterimSamplesDate(null);
+    fetch(
+      `https://functions.poehali.dev/df42e72a-8b2b-4d65-80ee-9bac49fe7782?name=${encodeURIComponent(student.name)}`,
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.success) {
+          setPrimarySamples(Array.isArray(d.primary) ? d.primary : []);
+          setInterimSamples(Array.isArray(d.interim) ? d.interim : []);
+          setInterimSamplesDate(d.interimDate || null);
+        }
+      })
+      .catch(() => {});
   };
 
   const patchRw = (patch: Partial<ReadingWritingState>) =>
@@ -230,6 +252,10 @@ export default function InterimDiagForm() {
               history={history || []}
               primaryDate={primaryDate}
               todayDate={todayDate}
+              primarySamples={primarySamples}
+              interimSamples={interimSamples}
+              interimSamplesDate={interimSamplesDate}
+              onImageClick={setLightbox}
               onChange={patchRw}
               selected={studentSelected}
             />
@@ -252,6 +278,19 @@ export default function InterimDiagForm() {
       </main>
 
       <Footer />
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <img
+            src={lightbox}
+            alt="Просмотр"
+            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
