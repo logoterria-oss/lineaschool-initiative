@@ -76,6 +76,7 @@ export default function InterimPersonalDataSection({ data, onChange }: Props) {
             const name = raw.toLowerCase();
             if (name.includes('тест')) return false;
             if (name.includes('проверк')) return false;
+            if (name.includes('абраменко') && name.includes('виктория')) return false;
             // Отсекаем неполные ФИО (меньше трёх слов: должны быть фамилия, имя, отчество)
             const words = raw.split(/\s+/).filter((w) => /[а-яёa-z]/i.test(w));
             if (words.length < 3) return false;
