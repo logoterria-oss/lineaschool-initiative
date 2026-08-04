@@ -84,7 +84,12 @@ export default function PageContactInfo({ formData, handleInputChange, errors }:
           <CitySelect
             id="city"
             value={formData.city}
-            onChange={(val) => handleInputChange("city", val)}
+            timezoneLabel={formData.cityTimezone}
+            onChange={(val, timezoneLabel, region) => {
+              handleInputChange("city", val);
+              handleInputChange("cityTimezone", timezoneLabel || "");
+              handleInputChange("cityRegion", region || "");
+            }}
           />
         </div>
         {err(errors, 'city') && <p className="text-red-500 text-xs mt-1">Обязательное поле</p>}

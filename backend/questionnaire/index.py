@@ -39,6 +39,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute("""
                 INSERT INTO parent_questionnaire (
                     parent_name, parent_phone, parent_email, city,
+                    city_region, city_timezone,
                     child_name, birth_date, grade,
                     education_type, aoop_required, aoop_variant,
                     school_start_age, kindergarten,
@@ -55,9 +56,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     other_specialist_name, other_specialist_current,
                     dominant_hand
                 ) VALUES (
+                    %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 RETURNING id
             """, (
@@ -65,6 +67,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 body_data.get('parentPhone'),
                 body_data.get('parentEmail'),
                 body_data.get('city'),
+                body_data.get('cityRegion'),
+                body_data.get('cityTimezone'),
                 body_data.get('childName'),
                 body_data.get('birthDate'),
                 body_data.get('grade'),
@@ -116,6 +120,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 )
                 
                 with urllib.request.urlopen(notify_req, timeout=5) as response:
+                    pass
+            except Exception:
+                pass
+
+            # Обновляем примечание лида в CRM: добавляем город + часовой пояс
+            try:
+                import urllib.request
+
+                crm_city_url = 'https://functions.poehali.dev/27be949a-2324-46cd-b3fa-f72058a31ddc'
+                crm_payload = json.dumps({
+                    'phone': body_data.get('parentPhone', ''),
+                    'city': body_data.get('city', ''),
+                    'region': body_data.get('cityRegion', ''),
+                    'timezone': body_data.get('cityTimezone', ''),
+                }).encode('utf-8')
+                crm_req = urllib.request.Request(
+                    crm_city_url,
+                    data=crm_payload,
+                    headers={'Content-Type': 'application/json'}
+                )
+                with urllib.request.urlopen(crm_req, timeout=25) as response:
                     pass
             except Exception:
                 pass

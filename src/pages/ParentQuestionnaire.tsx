@@ -15,6 +15,8 @@ export default function ParentQuestionnaire() {
     parentPhone: "",
     parentEmail: "",
     city: "",
+    cityRegion: "",
+    cityTimezone: "",
     childName: "",
     birthDate: "",
     grade: "",

@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Без города — не обновляем",
+      "method": "POST",
+      "path": "/",
+      "body": {"phone": "+7 (900) 123-45-67", "city": ""},
+      "expectedStatus": 200,
+      "expectedBody": {"updated": false, "reason": "no_city"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Без телефона — не обновляем",
+      "method": "POST",
+      "path": "/",
+      "body": {"phone": "", "city": "Белгород", "region": "Белгородская обл", "timezone": "МСК+0"},
+      "expectedStatus": 200,
+      "expectedBody": {"updated": false, "reason": "no_phone"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
