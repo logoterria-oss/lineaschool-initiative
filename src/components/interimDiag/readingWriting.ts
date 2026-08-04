@@ -1,6 +1,13 @@
 import { InterimPrimaryData } from './InterimPersonalDataSection';
 import { ProcessDynamic } from './impairedProcesses';
 
+// Ключи показателей, у которых есть сравнение «было → стало»
+export type RWMetric =
+  | 'readingSpeed'
+  | 'readingComprehension'
+  | 'dysgraphicErrors'
+  | 'dysorthographicErrors';
+
 // Состояние раздела «Чтение и письмо», которое заполняет логопед на промежуточной
 export interface ReadingWritingState {
   readingSpeed: string; // сл/мин
@@ -9,6 +16,8 @@ export interface ReadingWritingState {
   writingSamples: string[]; // изображения (base64/URL)
   dysgraphicErrors: string; // количество
   dysorthographicErrors: string; // количество
+  // Ручной ввод «было», когда в первичной данных нет
+  baselineOverride: Partial<Record<RWMetric, string>>;
 }
 
 // Значения «было» из первичной диагностики
@@ -26,7 +35,24 @@ export const EMPTY_RW_STATE: ReadingWritingState = {
   writingSamples: [],
   dysgraphicErrors: '',
   dysorthographicErrors: '',
+  baselineOverride: {},
 };
+
+// Эффективное «было»: данные из первичной, а если их нет — ручной ввод логопеда
+export function effectiveBaseline(
+  metric: RWMetric,
+  baseline: ReadingWritingBaseline,
+  state: ReadingWritingState,
+): string {
+  const fromPrimary = (baseline[metric] || '').trim();
+  if (fromPrimary !== '') return fromPrimary;
+  return (state.baselineOverride?.[metric] || '').trim();
+}
+
+// Есть ли значение «было» из первичной (тогда ручной ввод не нужен)
+export function hasPrimaryBaseline(metric: RWMetric, baseline: ReadingWritingBaseline): boolean {
+  return (baseline[metric] || '').trim() !== '';
+}
 
 export function baselineFromPrimary(p: InterimPrimaryData | undefined): ReadingWritingBaseline {
   return {
@@ -78,9 +104,11 @@ export function errorQualityHint(
   baseline: ReadingWritingBaseline,
   state: ReadingWritingState,
 ): string {
-  const dysgraphicDown = dynamicFewerIsBetter(baseline.dysgraphicErrors, state.dysgraphicErrors) === 'up';
+  const dysgraphicBase = effectiveBaseline('dysgraphicErrors', baseline, state);
+  const orthographicBase = effectiveBaseline('dysorthographicErrors', baseline, state);
+  const dysgraphicDown = dynamicFewerIsBetter(dysgraphicBase, state.dysgraphicErrors) === 'up';
   const orthographicUp =
-    dynamicFewerIsBetter(baseline.dysorthographicErrors, state.dysorthographicErrors) === 'down';
+    dynamicFewerIsBetter(orthographicBase, state.dysorthographicErrors) === 'down';
   if (dysgraphicDown && orthographicUp) {
     return 'Изменение качества ошибок, т.е. уменьшение количества дисграфических с увеличением количества орфографических, — показатель прогресса!';
   }

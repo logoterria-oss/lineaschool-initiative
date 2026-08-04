@@ -7,8 +7,11 @@ import { ProcessDynamic } from './impairedProcesses';
 import {
   ReadingWritingBaseline,
   ReadingWritingState,
+  RWMetric,
   dynamicMoreIsBetter,
   dynamicFewerIsBetter,
+  effectiveBaseline,
+  hasPrimaryBaseline,
 } from './readingWriting';
 
 interface Props {
@@ -28,19 +31,35 @@ interface CompareRowProps {
   label: string;
   unit?: string;
   from: string;
+  fromEditable: boolean;
   to: string;
   dyn: ProcessDynamic;
+  onFromChange: (v: string) => void;
   onChange: (v: string) => void;
 }
 
-function CompareRow({ label, unit, from, to, dyn, onChange }: CompareRowProps) {
+function CompareRow({ label, unit, from, fromEditable, to, dyn, onFromChange, onChange }: CompareRowProps) {
   return (
     <div>
       <Label className="text-sm text-gray-700">{label}</Label>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="text-sm text-gray-500 min-w-[70px]">
-          {from !== '' ? `${from}${unit ? ' ' + unit : ''}` : '—'}
-        </span>
+        {fromEditable ? (
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={from}
+              onChange={(e) => onFromChange(e.target.value)}
+              className="w-28"
+              placeholder="было"
+            />
+            {unit && <span className="text-sm text-gray-500">{unit}</span>}
+          </div>
+        ) : (
+          <span className="text-sm text-gray-500 min-w-[70px]">
+            {`${from}${unit ? ' ' + unit : ''}`}
+          </span>
+        )}
         <Icon name="ArrowRight" size={16} className="text-gray-400" />
         <Input
           type="number"
@@ -77,12 +96,17 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
     onChange({ writingSamples: value.writingSamples.filter((_, i) => i !== idx) });
   };
 
+  const fromValue = (metric: RWMetric) => effectiveBaseline(metric, baseline, value);
+  const fromEditable = (metric: RWMetric) => !hasPrimaryBaseline(metric, baseline);
+  const setFrom = (metric: RWMetric, v: string) =>
+    onChange({ baselineOverride: { ...value.baselineOverride, [metric]: v } });
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Чтение и письмо</h2>
       <p className="text-sm text-gray-500 mb-6">
         {selected
-          ? 'Показатели «было» подтянуты из первичной диагностики. Заполните текущие значения.'
+          ? 'Показатели «было» подтянуты из первичной диагностики. Если данных нет — введите их вручную. Заполните текущие значения.'
           : 'Выберите ученика в разделе выше — показатели «было» заполнятся из первичной диагностики.'}
       </p>
 
@@ -92,17 +116,21 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
         <CompareRow
           label="Скорость чтения"
           unit="сл/мин"
-          from={baseline.readingSpeed}
+          from={fromValue('readingSpeed')}
+          fromEditable={fromEditable('readingSpeed')}
           to={value.readingSpeed}
-          dyn={dynamicMoreIsBetter(baseline.readingSpeed, value.readingSpeed)}
+          dyn={dynamicMoreIsBetter(fromValue('readingSpeed'), value.readingSpeed)}
+          onFromChange={(v) => setFrom('readingSpeed', v)}
           onChange={(v) => onChange({ readingSpeed: v })}
         />
         <CompareRow
           label="Понимание прочитанного"
           unit="%"
-          from={baseline.readingComprehension}
+          from={fromValue('readingComprehension')}
+          fromEditable={fromEditable('readingComprehension')}
           to={value.readingComprehension}
-          dyn={dynamicMoreIsBetter(baseline.readingComprehension, value.readingComprehension)}
+          dyn={dynamicMoreIsBetter(fromValue('readingComprehension'), value.readingComprehension)}
+          onFromChange={(v) => setFrom('readingComprehension', v)}
           onChange={(v) => onChange({ readingComprehension: v })}
         />
         <div>
@@ -168,16 +196,20 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
 
         <CompareRow
           label="Количество дисграфических ошибок"
-          from={baseline.dysgraphicErrors}
+          from={fromValue('dysgraphicErrors')}
+          fromEditable={fromEditable('dysgraphicErrors')}
           to={value.dysgraphicErrors}
-          dyn={dynamicFewerIsBetter(baseline.dysgraphicErrors, value.dysgraphicErrors)}
+          dyn={dynamicFewerIsBetter(fromValue('dysgraphicErrors'), value.dysgraphicErrors)}
+          onFromChange={(v) => setFrom('dysgraphicErrors', v)}
           onChange={(v) => onChange({ dysgraphicErrors: v })}
         />
         <CompareRow
           label="Количество орфографических ошибок"
-          from={baseline.dysorthographicErrors}
+          from={fromValue('dysorthographicErrors')}
+          fromEditable={fromEditable('dysorthographicErrors')}
           to={value.dysorthographicErrors}
-          dyn={dynamicFewerIsBetter(baseline.dysorthographicErrors, value.dysorthographicErrors)}
+          dyn={dynamicFewerIsBetter(fromValue('dysorthographicErrors'), value.dysorthographicErrors)}
+          onFromChange={(v) => setFrom('dysorthographicErrors', v)}
           onChange={(v) => onChange({ dysorthographicErrors: v })}
         />
       </div>
