@@ -8,6 +8,9 @@ import InterimPersonalDataSection, {
 import InterimImpairedProcessesSection from '@/components/interimDiag/InterimImpairedProcessesSection';
 import InterimPrimaryConclusionSection from '@/components/interimDiag/InterimPrimaryConclusionSection';
 import InterimReadingWritingSection from '@/components/interimDiag/InterimReadingWritingSection';
+import InterimRecommendationsSection, {
+  InterimRecommendationsData,
+} from '@/components/interimDiag/InterimRecommendationsSection';
 import { buildPrimaryConclusion } from '@/components/interimDiag/primaryConclusion';
 import {
   computeImpairedFromPrimary,
@@ -52,6 +55,14 @@ export default function InterimDiagForm() {
     totalErrors: '',
   });
   const [rw, setRw] = useState<ReadingWritingState>({ ...EMPTY_RW_STATE });
+
+  const [recommendations, setRecommendations] = useState<InterimRecommendationsData>({
+    teacherRecommendations: '',
+    parentRecommendations: '',
+    logopedist: '',
+  });
+  const patchRecommendations = (patch: Partial<InterimRecommendationsData>) =>
+    setRecommendations((prev) => ({ ...prev, ...patch }));
 
   const patchPersonal = (patch: Partial<InterimPersonalData>) =>
     setPersonal((prev) => ({ ...prev, ...patch }));
@@ -133,6 +144,10 @@ export default function InterimDiagForm() {
               value={rw}
               onChange={patchRw}
               selected={studentSelected}
+            />
+            <InterimRecommendationsSection
+              data={recommendations}
+              onChange={patchRecommendations}
             />
           </form>
         </div>
