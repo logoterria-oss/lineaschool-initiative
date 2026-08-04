@@ -66,7 +66,7 @@ export const IMPAIRED_GROUPS: ImpairedGroup[] = [
     items: [
       {
         key: 'soundProduction',
-        label: 'звукопроизношение (только при акустико-артикуляционной дисграфии)',
+        label: 'звукопроизношение (только при артикуляторно-акустической дисграфии)',
       },
       { key: 'syllableStructure', label: 'слоговая структура слова' },
       { key: 'kineticPraxis', label: 'кинетический артикуляционный праксис' },
