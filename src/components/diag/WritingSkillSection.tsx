@@ -99,7 +99,7 @@ export default function WritingSkillSection({
         </div>
 
         <div>
-          <Label htmlFor="dysorthographic-errors" className="text-base font-semibold">Количество дизорфографических ошибок</Label>
+          <Label htmlFor="dysorthographic-errors" className="text-base font-semibold">Количество орфографических ошибок</Label>
           <Input
             id="dysorthographic-errors"
             type="number"
