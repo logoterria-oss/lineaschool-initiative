@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import Icon from '@/components/ui/icon';
 import {
   IMPAIRED_GROUPS,
   ImpairedProcessKey,
@@ -17,43 +16,45 @@ import {
   PROCESS_LEVELS,
   getDynamic,
 } from './impairedProcesses';
+import DynamicChain, { ChainStep } from './DynamicChain';
+import { InterimHistoryEntry } from './InterimPersonalDataSection';
 
 interface Props {
   value: ImpairedProcessesState;
   baseline: ProcessLevelsState;
   levels: ProcessLevelsState;
+  history: InterimHistoryEntry[];
+  primaryDate: string | null;
+  todayDate: string;
   onChange: (key: ImpairedProcessKey, checked: boolean) => void;
   onLevelChange: (key: ImpairedProcessKey, level: ProcessLevel) => void;
   autoFilled: boolean;
-}
-
-const DYNAMIC_UI = {
-  up: { icon: 'ArrowUp', className: 'text-green-600' },
-  same: null,
-  down: { icon: 'ArrowDown', className: 'text-red-600' },
-} as const;
-
-function DynamicSchema({ from, to }: { from: ProcessLevel; to: ProcessLevel }) {
-  const dyn = getDynamic(from, to);
-  const ui = DYNAMIC_UI[dyn];
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-700">
-      <span className="text-gray-500">{from}</span>
-      <Icon name="ArrowRight" size={16} className="text-gray-400" />
-      <span className="font-medium text-gray-900">{to}</span>
-      {ui && <Icon name={ui.icon} size={18} className={ui.className} />}
-    </div>
-  );
 }
 
 export default function InterimImpairedProcessesSection({
   value,
   baseline,
   levels,
+  history,
+  primaryDate,
+  todayDate,
   onChange,
   onLevelChange,
   autoFilled,
 }: Props) {
+  // Строит цепочку «было → … → сейчас» для одного процесса
+  const buildSteps = (key: ImpairedProcessKey): ChainStep[] => {
+    const steps: ChainStep[] = [];
+    const base = baseline[key];
+    if (base) steps.push({ date: primaryDate, value: base });
+    (history || []).forEach((h) => {
+      const v = h.levels?.[key];
+      if (v) steps.push({ date: h.date, value: v });
+    });
+    const cur = levels[key];
+    if (cur) steps.push({ date: todayDate, value: cur });
+    return steps;
+  };
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Нарушенные процессы</h2>
@@ -72,8 +73,14 @@ export default function InterimImpairedProcessesSection({
             <div className="space-y-4">
               {group.items.map((item) => {
                 const checked = value[item.key];
-                const from = baseline[item.key];
-                const to = levels[item.key];
+                const steps = buildSteps(item.key);
+                const finalDynamic =
+                  steps.length >= 2
+                    ? getDynamic(
+                        steps[steps.length - 2].value as ProcessLevel,
+                        steps[steps.length - 1].value as ProcessLevel,
+                      )
+                    : 'same';
                 return (
                   <div key={item.key}>
                     <div className="flex items-start space-x-2">
@@ -109,7 +116,7 @@ export default function InterimImpairedProcessesSection({
                           </SelectContent>
                         </Select>
 
-                        {from && to && <DynamicSchema from={from} to={to} />}
+                        <DynamicChain steps={steps} finalDynamic={finalDynamic} />
                       </div>
                     )}
                   </div>

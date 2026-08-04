@@ -46,6 +46,9 @@ export default function InterimDiagForm() {
   const [autoFilled, setAutoFilled] = useState(false);
   const [primaryConclusion, setPrimaryConclusion] = useState('');
   const [studentSelected, setStudentSelected] = useState(false);
+  const [history, setHistory] = useState<InterimStudent['history']>([]);
+  const [primaryDate, setPrimaryDate] = useState<string | null>(null);
+  const todayDate = new Date().toISOString().split('T')[0];
 
   const [rwBaseline, setRwBaseline] = useState<ReadingWritingBaseline>({
     readingSpeed: '',
@@ -70,14 +73,26 @@ export default function InterimDiagForm() {
   const handleSelectStudent = (student: InterimStudent) => {
     const nextImpaired = computeImpairedFromPrimary(student.primary);
     const nextBaseline = computeBaselineLevels(student.primary, nextImpaired);
+    const hist = student.history || [];
+    const lastEntry = hist.length > 0 ? hist[hist.length - 1] : null;
+
     setImpaired(nextImpaired);
     setBaseline(nextBaseline);
-    // По умолчанию «стало» = «было», логопед меняет вручную
-    setLevels({ ...nextBaseline });
+    // По умолчанию «стало» = последний известный замер (из истории), иначе = «было»
+    const startLevels: ProcessLevelsState = { ...nextBaseline };
+    if (lastEntry?.levels) {
+      Object.keys(startLevels).forEach((k) => {
+        const v = lastEntry.levels[k];
+        if (v) startLevels[k as ImpairedProcessKey] = v as ProcessLevel;
+      });
+    }
+    setLevels(startLevels);
     setPrimaryData(student.primary);
     setAutoFilled(true);
     setPrimaryConclusion(buildPrimaryConclusion(student.primary));
     setStudentSelected(true);
+    setHistory(hist);
+    setPrimaryDate(student.examDate);
     setRwBaseline(baselineFromPrimary(student.primary));
     setRw({
       ...EMPTY_RW_STATE,
@@ -105,9 +120,67 @@ export default function InterimDiagForm() {
   const handleLevelChange = (key: ImpairedProcessKey, level: ProcessLevel) =>
     setLevels((prev) => ({ ...prev, [key]: level }));
 
-  const onSubmit = (e: React.FormEvent) => {
+  const [saving, setSaving] = useState(false);
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Дальнейшие разделы и сохранение добавим позже
+    if (!studentSelected || !personal.childName.trim()) {
+      alert('Сначала выберите ученика в разделе «Персональные данные».');
+      return;
+    }
+    setSaving(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      // Снимок состояния промежуточной диагностики
+      const formData = {
+        childName: personal.childName,
+        birthDate: personal.birthDate,
+        age: personal.age,
+        grade: personal.grade,
+        // Текущие значения показателей — совместимые ключи для будущей цепочки
+        readingSpeed: rw.readingSpeed,
+        readingComprehension: rw.readingComprehension,
+        dysgraphicErrors: rw.dysgraphicErrors,
+        dysorthographicErrors: rw.dysorthographicErrors,
+        totalErrors: rw.totalErrors,
+        // Полный снимок разделов промежуточной
+        interimImpaired: impaired,
+        interimLevels: levels,
+        interimBaseline: baseline,
+        interimReadingWriting: rw,
+        interimRwBaseline: rwBaseline,
+        teacherRecommendations: recommendations.teacherRecommendations,
+        parentRecommendations: recommendations.parentRecommendations,
+        logopedist: recommendations.logopedist,
+      };
+
+      const res = await fetch('https://functions.poehali.dev/7bc33dbc-e8a0-47b4-83cc-d792dc7e1696', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_name: personal.childName,
+          student_age: parseInt(personal.age) || null,
+          date_of_examination: today,
+          therapist_name: recommendations.logopedist || 'Логопед',
+          diag_type: 'interim',
+          recommendations: [recommendations.teacherRecommendations, recommendations.parentRecommendations]
+            .filter(Boolean)
+            .join('\n'),
+          report_content: 'Промежуточная диагностика',
+          form_data: formData,
+        }),
+      });
+
+      if (res.ok) {
+        alert('Промежуточная диагностика сохранена!');
+      } else {
+        alert('Не удалось сохранить. Попробуйте ещё раз.');
+      }
+    } catch {
+      alert('Ошибка при сохранении. Попробуйте ещё раз.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -135,6 +208,9 @@ export default function InterimDiagForm() {
               value={impaired}
               baseline={baseline}
               levels={levels}
+              history={history || []}
+              primaryDate={primaryDate}
+              todayDate={todayDate}
               onChange={handleImpairedChange}
               onLevelChange={handleLevelChange}
               autoFilled={autoFilled}
@@ -142,6 +218,9 @@ export default function InterimDiagForm() {
             <InterimReadingWritingSection
               baseline={rwBaseline}
               value={rw}
+              history={history || []}
+              primaryDate={primaryDate}
+              todayDate={todayDate}
               onChange={patchRw}
               selected={studentSelected}
             />
@@ -149,6 +228,16 @@ export default function InterimDiagForm() {
               data={recommendations}
               onChange={patchRecommendations}
             />
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-60"
+              >
+                {saving ? 'Сохранение…' : 'Сохранить промежуточную диагностику'}
+              </button>
+            </div>
           </form>
         </div>
       </main>

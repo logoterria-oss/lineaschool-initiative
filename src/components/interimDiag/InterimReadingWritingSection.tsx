@@ -24,10 +24,15 @@ import {
   effectiveBaseline,
   hasPrimaryBaseline,
 } from './readingWriting';
+import DynamicChain, { ChainStep } from './DynamicChain';
+import { InterimHistoryEntry } from './InterimPersonalDataSection';
 
 interface Props {
   baseline: ReadingWritingBaseline;
   value: ReadingWritingState;
+  history: InterimHistoryEntry[];
+  primaryDate: string | null;
+  todayDate: string;
   onChange: (patch: Partial<ReadingWritingState>) => void;
   selected: boolean;
 }
@@ -87,8 +92,31 @@ function CompareRow({ label, unit, from, fromEditable, to, dyn, onFromChange, on
   );
 }
 
-export default function InterimReadingWritingSection({ baseline, value, onChange, selected }: Props) {
+export default function InterimReadingWritingSection({
+  baseline,
+  value,
+  history,
+  primaryDate,
+  todayDate,
+  onChange,
+  selected,
+}: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Полная цепочка «первичная → промежуточные → сейчас» для одного показателя.
+  // Показываем только когда есть история промежуточных замеров.
+  const metricSteps = (metric: RWMetric, current: string): ChainStep[] => {
+    if (!history || history.length === 0) return [];
+    const steps: ChainStep[] = [];
+    const base = fromValue(metric);
+    if (base) steps.push({ date: primaryDate, value: base });
+    history.forEach((h) => {
+      const v = (h[metric] as string) || '';
+      if (v) steps.push({ date: h.date, value: v });
+    });
+    if (current) steps.push({ date: todayDate, value: current });
+    return steps;
+  };
 
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -152,6 +180,24 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
     onChange({ orthoErrorTypes: [...value.orthoErrorTypes, item] });
   };
 
+  const num = (s: string) => {
+    const n = Number((s || '').replace(',', '.').trim());
+    return Number.isFinite(n) && (s || '').trim() !== '' ? n : null;
+  };
+
+  const renderChain = (metric: RWMetric, current: string, moreIsBetter: boolean) => {
+    const steps = metricSteps(metric, current);
+    if (steps.length < 2) return null;
+    const a = num(steps[steps.length - 2].value);
+    const b = num(steps[steps.length - 1].value);
+    let dyn: ProcessDynamic = 'same';
+    if (a !== null && b !== null && a !== b) {
+      const improved = moreIsBetter ? b > a : b < a;
+      dyn = improved ? 'up' : 'down';
+    }
+    return <DynamicChain steps={steps} finalDynamic={dyn} />;
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Чтение и письмо</h2>
@@ -164,26 +210,32 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
       {/* Подраздел «Чтение» */}
       <h3 className="text-base font-semibold text-gray-900 mb-3">Чтение</h3>
       <div className="space-y-4 mb-8">
-        <CompareRow
-          label="Скорость чтения"
-          unit="сл/мин"
-          from={fromValue('readingSpeed')}
-          fromEditable={fromEditable('readingSpeed')}
-          to={value.readingSpeed}
-          dyn={dynamicMoreIsBetter(fromValue('readingSpeed'), value.readingSpeed)}
-          onFromChange={(v) => setFrom('readingSpeed', v)}
-          onChange={(v) => onChange({ readingSpeed: v })}
-        />
-        <CompareRow
-          label="Понимание прочитанного"
-          unit="%"
-          from={fromValue('readingComprehension')}
-          fromEditable={fromEditable('readingComprehension')}
-          to={value.readingComprehension}
-          dyn={dynamicMoreIsBetter(fromValue('readingComprehension'), value.readingComprehension)}
-          onFromChange={(v) => setFrom('readingComprehension', v)}
-          onChange={(v) => onChange({ readingComprehension: v })}
-        />
+        <div>
+          <CompareRow
+            label="Скорость чтения"
+            unit="сл/мин"
+            from={fromValue('readingSpeed')}
+            fromEditable={fromEditable('readingSpeed')}
+            to={value.readingSpeed}
+            dyn={dynamicMoreIsBetter(fromValue('readingSpeed'), value.readingSpeed)}
+            onFromChange={(v) => setFrom('readingSpeed', v)}
+            onChange={(v) => onChange({ readingSpeed: v })}
+          />
+          {renderChain('readingSpeed', value.readingSpeed, true)}
+        </div>
+        <div>
+          <CompareRow
+            label="Понимание прочитанного"
+            unit="%"
+            from={fromValue('readingComprehension')}
+            fromEditable={fromEditable('readingComprehension')}
+            to={value.readingComprehension}
+            dyn={dynamicMoreIsBetter(fromValue('readingComprehension'), value.readingComprehension)}
+            onFromChange={(v) => setFrom('readingComprehension', v)}
+            onChange={(v) => onChange({ readingComprehension: v })}
+          />
+          {renderChain('readingComprehension', value.readingComprehension, true)}
+        </div>
         <div>
           <Label htmlFor="rw-reading-errors" className="text-sm text-gray-700">
             Тип ошибок
@@ -245,33 +297,42 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
           />
         </div>
 
-        <CompareRow
-          label="Количество дисграфических ошибок"
-          from={fromValue('dysgraphicErrors')}
-          fromEditable={fromEditable('dysgraphicErrors')}
-          to={value.dysgraphicErrors}
-          dyn={dynamicFewerIsBetter(fromValue('dysgraphicErrors'), value.dysgraphicErrors)}
-          onFromChange={(v) => setFrom('dysgraphicErrors', v)}
-          onChange={(v) => onChange({ dysgraphicErrors: v })}
-        />
-        <CompareRow
-          label="Количество орфографических ошибок"
-          from={fromValue('dysorthographicErrors')}
-          fromEditable={fromEditable('dysorthographicErrors')}
-          to={value.dysorthographicErrors}
-          dyn={dynamicFewerIsBetter(fromValue('dysorthographicErrors'), value.dysorthographicErrors)}
-          onFromChange={(v) => setFrom('dysorthographicErrors', v)}
-          onChange={(v) => onChange({ dysorthographicErrors: v })}
-        />
-        <CompareRow
-          label="Ошибок всего"
-          from={fromValue('totalErrors')}
-          fromEditable={fromEditable('totalErrors')}
-          to={value.totalErrors}
-          dyn={dynamicFewerIsBetter(fromValue('totalErrors'), value.totalErrors)}
-          onFromChange={(v) => setFrom('totalErrors', v)}
-          onChange={(v) => onChange({ totalErrors: v })}
-        />
+        <div>
+          <CompareRow
+            label="Количество дисграфических ошибок"
+            from={fromValue('dysgraphicErrors')}
+            fromEditable={fromEditable('dysgraphicErrors')}
+            to={value.dysgraphicErrors}
+            dyn={dynamicFewerIsBetter(fromValue('dysgraphicErrors'), value.dysgraphicErrors)}
+            onFromChange={(v) => setFrom('dysgraphicErrors', v)}
+            onChange={(v) => onChange({ dysgraphicErrors: v })}
+          />
+          {renderChain('dysgraphicErrors', value.dysgraphicErrors, false)}
+        </div>
+        <div>
+          <CompareRow
+            label="Количество орфографических ошибок"
+            from={fromValue('dysorthographicErrors')}
+            fromEditable={fromEditable('dysorthographicErrors')}
+            to={value.dysorthographicErrors}
+            dyn={dynamicFewerIsBetter(fromValue('dysorthographicErrors'), value.dysorthographicErrors)}
+            onFromChange={(v) => setFrom('dysorthographicErrors', v)}
+            onChange={(v) => onChange({ dysorthographicErrors: v })}
+          />
+          {renderChain('dysorthographicErrors', value.dysorthographicErrors, false)}
+        </div>
+        <div>
+          <CompareRow
+            label="Ошибок всего"
+            from={fromValue('totalErrors')}
+            fromEditable={fromEditable('totalErrors')}
+            to={value.totalErrors}
+            dyn={dynamicFewerIsBetter(fromValue('totalErrors'), value.totalErrors)}
+            onFromChange={(v) => setFrom('totalErrors', v)}
+            onChange={(v) => onChange({ totalErrors: v })}
+          />
+          {renderChain('totalErrors', value.totalErrors, false)}
+        </div>
 
         <ErrorTypesBlock
           title="Типы дисграфических ошибок"

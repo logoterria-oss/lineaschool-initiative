@@ -32,6 +32,16 @@ export interface InterimPrimaryData {
   orthographicErrorsOther: string;
 }
 
+export interface InterimHistoryEntry {
+  date: string | null;
+  levels: Record<string, string>;
+  readingSpeed: string;
+  readingComprehension: string;
+  dysgraphicErrors: string;
+  dysorthographicErrors: string;
+  totalErrors: string;
+}
+
 export interface InterimStudent {
   id: number;
   name: string;
@@ -39,6 +49,7 @@ export interface InterimStudent {
   grade: string;
   examDate: string | null;
   primary?: InterimPrimaryData;
+  history?: InterimHistoryEntry[];
 }
 
 export interface InterimPersonalData {

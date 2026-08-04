@@ -135,6 +135,45 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 },
             })
 
+        # История промежуточных диагностик (для цепочки динамики), связка по ФИО
+        cursor.execute("""
+            SELECT student_name,
+                   date_of_examination,
+                   form_data::jsonb ->> 'childName' AS child_name,
+                   form_data::jsonb -> 'interimLevels'         AS interim_levels,
+                   form_data::jsonb ->> 'readingSpeed'         AS reading_speed,
+                   form_data::jsonb ->> 'readingComprehension' AS reading_comprehension,
+                   form_data::jsonb ->> 'dysgraphicErrors'     AS dysgraphic_errors,
+                   form_data::jsonb ->> 'dysorthographicErrors' AS dysorthographic_errors,
+                   form_data::jsonb ->> 'totalErrors'          AS total_errors
+            FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
+            WHERE diag_type = 'interim'
+            ORDER BY date_of_examination ASC, id ASC
+        """)
+
+        interim_rows = cursor.fetchall()
+        history_by_name = {}
+        for r in interim_rows:
+            nm = (r.get('child_name') or r.get('student_name') or '').strip()
+            if not nm:
+                continue
+            key = nm.lower()
+            levels = r.get('interim_levels')
+            if not isinstance(levels, dict):
+                levels = {}
+            history_by_name.setdefault(key, []).append({
+                'date': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
+                'levels': levels,
+                'readingSpeed': r.get('reading_speed') or '',
+                'readingComprehension': r.get('reading_comprehension') or '',
+                'dysgraphicErrors': r.get('dysgraphic_errors') or '',
+                'dysorthographicErrors': r.get('dysorthographic_errors') or '',
+                'totalErrors': r.get('total_errors') or '',
+            })
+
+        for s in students:
+            s['history'] = history_by_name.get(s['name'].lower(), [])
+
         students.sort(key=lambda s: s['name'].lower())
 
         return {

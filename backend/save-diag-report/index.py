@@ -63,6 +63,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     recommendations = body_data.get('recommendations', '')
     report_content = body_data.get('report_content', '')
     form_data = body_data.get('form_data', {})
+    diag_type = body_data.get('diag_type', 'primary')
+    if diag_type not in ('primary', 'interim'):
+        diag_type = 'primary'
     
     # Генерируем токен доступа
     access_token = secrets.token_urlsafe(32)
@@ -76,8 +79,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cursor.execute("""
             INSERT INTO t_p93118852_lineaschool_initiati.speech_therapy_reports 
             (student_name, student_age, date_of_examination, therapist_name, 
-             diagnosis, recommendations, report_content, form_data, access_token, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+             diagnosis, recommendations, report_content, form_data, access_token, diag_type, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             RETURNING id
         """, (
             student_name,
@@ -88,7 +91,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             recommendations,
             report_content,
             json.dumps(form_data),
-            access_token
+            access_token,
+            diag_type
         ))
         
         result = cursor.fetchone()

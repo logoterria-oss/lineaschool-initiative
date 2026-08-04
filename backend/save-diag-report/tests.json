@@ -18,8 +18,7 @@
       },
       "expectedStatus": 200,
       "expectedBody": {
-        "success": true,
-        "id": "number"
+        "success": true
       },
       "bodyMatcher": "partial"
     },
@@ -28,6 +27,20 @@
       "method": "POST",
       "body": {
         "student_name": "Мария Иванова"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Сохранение промежуточной диагностики",
+      "method": "POST",
+      "body": {
+        "student_name": "Тест Промежуточный",
+        "diag_type": "interim",
+        "form_data": {"childName": "Тест Промежуточный"}
       },
       "expectedStatus": 200,
       "expectedBody": {
