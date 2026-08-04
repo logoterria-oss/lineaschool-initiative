@@ -16,11 +16,35 @@ export interface DysgraphicErrorItem {
   added: boolean; // добавлен вручную на промежуточной (показываем красным с «+»)
 }
 
+// 5 уровней характера чтения по возрастанию (индекс = «сила», больше = лучше)
+export const READING_CHAR_LEVELS: string[] = [
+  'побуквенное чтение',
+  'побуквенно-послоговое чтение',
+  'послоговое чтение',
+  'переход от послогового чтения к синтетическому',
+  'синтетическое чтение',
+];
+
+// Каталог ошибок чтения (для добавления новых на промежуточной)
+export const READING_ERROR_CATALOG: { group: string; items: string[] }[] = [
+  {
+    group: 'Ошибки чтения',
+    items: [
+      'пропуск, перестановка, замены букв/слогов/слов при чтении',
+      'аграмматизмы при чтении',
+      'ошибки угадывающего чтения',
+      'затруднения в припоминании букв',
+      'зеркальность чтения букв и/или слов',
+    ],
+  },
+];
+
 // Состояние раздела «Чтение и письмо», которое заполняет логопед на промежуточной
 export interface ReadingWritingState {
   readingSpeed: string; // сл/мин
   readingComprehension: string; // %
-  readingErrorTypes: string; // тип ошибок (рукописный ввод)
+  readingChar: string; // характер чтения (текущий уровень)
+  readingErrorTypes: DysgraphicErrorItem[]; // список ошибок чтения
   writingSamples: string[]; // изображения (base64/URL)
   dysgraphicErrors: string; // количество
   dysorthographicErrors: string; // количество
@@ -38,12 +62,14 @@ export interface ReadingWritingBaseline {
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
+  readingChar: string;
 }
 
 export const EMPTY_RW_STATE: ReadingWritingState = {
   readingSpeed: '',
   readingComprehension: '',
-  readingErrorTypes: '',
+  readingChar: '',
+  readingErrorTypes: [],
   writingSamples: [],
   dysgraphicErrors: '',
   dysorthographicErrors: '',
@@ -52,6 +78,23 @@ export const EMPTY_RW_STATE: ReadingWritingState = {
   orthoErrorTypes: [],
   baselineOverride: {},
 };
+
+// Извлекает уровень характера чтения из первичной (readingSkill).
+// Значения могут иметь суффикс «(соответствует/НЕ соответствует...)» — обрезаем.
+export function extractReadingChar(readingSkill: string[] | undefined): string {
+  const arr = readingSkill || [];
+  for (const level of READING_CHAR_LEVELS) {
+    if (arr.some((x) => (x || '').trim().toLowerCase().startsWith(level))) {
+      return level;
+    }
+  }
+  return '';
+}
+
+// Индекс уровня характера чтения (для стрелки динамики). -1 если не распознан.
+export function readingCharIndex(level: string): number {
+  return READING_CHAR_LEVELS.indexOf((level || '').trim());
+}
 
 // Каталог орфографических ошибок (для добавления новых на промежуточной)
 export const ORTHOGRAPHIC_ERROR_CATALOG: { group: string; items: string[] }[] = [
@@ -207,6 +250,26 @@ export function collectPrimaryOrthographicTypes(
   return out;
 }
 
+// Собирает отмеченные при первичной ошибки чтения (из readingSkill).
+export function collectPrimaryReadingErrors(
+  p: InterimPrimaryData | undefined,
+): DysgraphicErrorItem[] {
+  if (!p) return [];
+  const catalog = new Set(
+    READING_ERROR_CATALOG.flatMap((g) => g.items).map((x) => x.toLowerCase()),
+  );
+  const seen = new Set<string>();
+  const out: DysgraphicErrorItem[] = [];
+  (p.readingSkill || []).forEach((raw) => {
+    const label = (raw || '').trim();
+    const low = label.toLowerCase();
+    if (!catalog.has(low) || seen.has(low)) return;
+    seen.add(low);
+    out.push({ label, struck: false, added: false });
+  });
+  return out;
+}
+
 // Эффективное «было»: данные из первичной, а если их нет — ручной ввод логопеда
 export function effectiveBaseline(
   metric: RWMetric,
@@ -230,6 +293,7 @@ export function baselineFromPrimary(p: InterimPrimaryData | undefined): ReadingW
     dysgraphicErrors: p?.dysgraphicErrors || '',
     dysorthographicErrors: p?.dysorthographicErrors || '',
     totalErrors: p?.totalErrors || '',
+    readingChar: extractReadingChar(p?.readingSkill),
   };
 }
 

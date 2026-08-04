@@ -83,7 +83,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    fd -> 'visualSpatialErrors'   AS visual_spatial_errors,
                    fd -> 'regulationViolations'  AS regulation_violations,
                    fd -> 'orthographicErrorTypes' AS orthographic_error_types,
-                   fd ->> 'orthographicErrorsOther' AS orthographic_errors_other
+                   fd ->> 'orthographicErrorsOther' AS orthographic_errors_other,
+                   fd -> 'readingSkill'           AS reading_skill
             FROM latest
         """)
 
@@ -132,6 +133,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'regulationViolations': as_list(r.get('regulation_violations')),
                     'orthographicErrorTypes': as_list(r.get('orthographic_error_types')),
                     'orthographicErrorsOther': r.get('orthographic_errors_other') or '',
+                    'readingSkill': as_list(r.get('reading_skill')),
                 },
             })
 
@@ -145,7 +147,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    form_data::jsonb ->> 'readingComprehension' AS reading_comprehension,
                    form_data::jsonb ->> 'dysgraphicErrors'     AS dysgraphic_errors,
                    form_data::jsonb ->> 'dysorthographicErrors' AS dysorthographic_errors,
-                   form_data::jsonb ->> 'totalErrors'          AS total_errors
+                   form_data::jsonb ->> 'totalErrors'          AS total_errors,
+                   form_data::jsonb ->> 'interimReadingChar'   AS interim_reading_char
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
             WHERE diag_type = 'interim'
             ORDER BY date_of_examination ASC, id ASC
@@ -169,6 +172,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'dysgraphicErrors': r.get('dysgraphic_errors') or '',
                 'dysorthographicErrors': r.get('dysorthographic_errors') or '',
                 'totalErrors': r.get('total_errors') or '',
+                'readingChar': r.get('interim_reading_char') or '',
             })
 
         for s in students:

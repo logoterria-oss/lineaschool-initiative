@@ -30,6 +30,7 @@ export interface InterimPrimaryData {
   regulationViolations: string[];
   orthographicErrorTypes: string[];
   orthographicErrorsOther: string;
+  readingSkill: string[];
 }
 
 export interface InterimHistoryEntry {
@@ -40,6 +41,7 @@ export interface InterimHistoryEntry {
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
+  readingChar: string;
 }
 
 export interface InterimStudent {

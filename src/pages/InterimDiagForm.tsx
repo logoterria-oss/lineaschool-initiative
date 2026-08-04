@@ -28,6 +28,7 @@ import {
   baselineFromPrimary,
   collectPrimaryErrorTypes,
   collectPrimaryOrthographicTypes,
+  collectPrimaryReadingErrors,
   errorQualityHint,
 } from '@/components/interimDiag/readingWriting';
 
@@ -56,6 +57,7 @@ export default function InterimDiagForm() {
     dysgraphicErrors: '',
     dysorthographicErrors: '',
     totalErrors: '',
+    readingChar: '',
   });
   const [rw, setRw] = useState<ReadingWritingState>({ ...EMPTY_RW_STATE });
 
@@ -93,9 +95,15 @@ export default function InterimDiagForm() {
     setStudentSelected(true);
     setHistory(hist);
     setPrimaryDate(student.examDate);
-    setRwBaseline(baselineFromPrimary(student.primary));
+    const rwBase = baselineFromPrimary(student.primary);
+    setRwBaseline(rwBase);
+    // Характер чтения по умолчанию = последний известный замер, иначе = из первичной
+    const startReadingChar =
+      (lastEntry?.readingChar && lastEntry.readingChar.trim()) || rwBase.readingChar || '';
     setRw({
       ...EMPTY_RW_STATE,
+      readingChar: startReadingChar,
+      readingErrorTypes: collectPrimaryReadingErrors(student.primary),
       errorTypes: collectPrimaryErrorTypes(student.primary),
       orthoErrorTypes: collectPrimaryOrthographicTypes(student.primary),
     });
@@ -143,6 +151,7 @@ export default function InterimDiagForm() {
         dysgraphicErrors: rw.dysgraphicErrors,
         dysorthographicErrors: rw.dysorthographicErrors,
         totalErrors: rw.totalErrors,
+        interimReadingChar: rw.readingChar,
         // Полный снимок разделов промежуточной
         interimImpaired: impaired,
         interimLevels: levels,

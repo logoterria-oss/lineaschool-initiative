@@ -1,7 +1,13 @@
 import { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +21,8 @@ import { ProcessDynamic } from './impairedProcesses';
 import {
   DYSGRAPHIC_ERROR_CATALOG,
   ORTHOGRAPHIC_ERROR_CATALOG,
+  READING_ERROR_CATALOG,
+  READING_CHAR_LEVELS,
   DysgraphicErrorItem,
   ReadingWritingBaseline,
   ReadingWritingState,
@@ -23,6 +31,7 @@ import {
   dynamicFewerIsBetter,
   effectiveBaseline,
   hasPrimaryBaseline,
+  readingCharIndex,
 } from './readingWriting';
 import DynamicChain, { ChainStep } from './DynamicChain';
 import { InterimHistoryEntry } from './InterimPersonalDataSection';
@@ -180,6 +189,26 @@ export default function InterimReadingWritingSection({
     onChange({ orthoErrorTypes: [...value.orthoErrorTypes, item] });
   };
 
+  const toggleReadStruck = (idx: number) => {
+    const next = value.readingErrorTypes.map((it, i) =>
+      i === idx ? { ...it, struck: !it.struck } : it,
+    );
+    onChange({ readingErrorTypes: next });
+  };
+
+  const removeReadAdded = (idx: number) => {
+    onChange({ readingErrorTypes: value.readingErrorTypes.filter((_, i) => i !== idx) });
+  };
+
+  const addReadType = (label: string) => {
+    const exists = value.readingErrorTypes.some(
+      (it) => it.label.toLowerCase() === label.toLowerCase(),
+    );
+    if (exists) return;
+    const item: DysgraphicErrorItem = { label, struck: false, added: true };
+    onChange({ readingErrorTypes: [...value.readingErrorTypes, item] });
+  };
+
   const num = (s: string) => {
     const n = Number((s || '').replace(',', '.').trim());
     return Number.isFinite(n) && (s || '').trim() !== '' ? n : null;
@@ -198,6 +227,27 @@ export default function InterimReadingWritingSection({
     return <DynamicChain steps={steps} finalDynamic={dyn} />;
   };
 
+  // Цепочка характера чтения: первичная → промежуточные → сейчас
+  const readingCharSteps = (): ChainStep[] => {
+    const steps: ChainStep[] = [];
+    if (baseline.readingChar) steps.push({ date: primaryDate, value: baseline.readingChar });
+    (history || []).forEach((h) => {
+      if (h.readingChar) steps.push({ date: h.date, value: h.readingChar });
+    });
+    if (value.readingChar) steps.push({ date: todayDate, value: value.readingChar });
+    return steps;
+  };
+
+  const renderReadingCharChain = () => {
+    const steps = readingCharSteps();
+    if (steps.length < 2) return null;
+    const a = readingCharIndex(steps[steps.length - 2].value);
+    const b = readingCharIndex(steps[steps.length - 1].value);
+    let dyn: ProcessDynamic = 'same';
+    if (a >= 0 && b >= 0 && a !== b) dyn = b > a ? 'up' : 'down';
+    return <DynamicChain steps={steps} finalDynamic={dyn} />;
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Чтение и письмо</h2>
@@ -210,6 +260,27 @@ export default function InterimReadingWritingSection({
       {/* Подраздел «Чтение» */}
       <h3 className="text-base font-semibold text-gray-900 mb-3">Чтение</h3>
       <div className="space-y-4 mb-8">
+        <div>
+          <Label className="text-sm text-gray-700">Характер чтения</Label>
+          <div className="mt-2">
+            <Select
+              value={value.readingChar || undefined}
+              onValueChange={(v) => onChange({ readingChar: v })}
+            >
+              <SelectTrigger className="w-full max-w-md">
+                <SelectValue placeholder="Выберите характер чтения" />
+              </SelectTrigger>
+              <SelectContent>
+                {READING_CHAR_LEVELS.map((lvl) => (
+                  <SelectItem key={lvl} value={lvl}>
+                    {lvl}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {renderReadingCharChain()}
+        </div>
         <div>
           <CompareRow
             label="Скорость чтения"
@@ -236,19 +307,15 @@ export default function InterimReadingWritingSection({
           />
           {renderChain('readingComprehension', value.readingComprehension, true)}
         </div>
-        <div>
-          <Label htmlFor="rw-reading-errors" className="text-sm text-gray-700">
-            Тип ошибок
-          </Label>
-          <Textarea
-            id="rw-reading-errors"
-            value={value.readingErrorTypes}
-            onChange={(e) => onChange({ readingErrorTypes: e.target.value })}
-            className="mt-2"
-            rows={3}
-            placeholder="Опишите типы ошибок при чтении"
-          />
-        </div>
+        <ErrorTypesBlock
+          title="Тип ошибок"
+          addLabel="Добавить ошибку чтения"
+          catalog={READING_ERROR_CATALOG}
+          items={value.readingErrorTypes}
+          onToggleStruck={toggleReadStruck}
+          onRemoveAdded={removeReadAdded}
+          onAdd={addReadType}
+        />
       </div>
 
       {/* Подраздел «Письмо» */}
