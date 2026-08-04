@@ -12,6 +12,11 @@ export interface InterimPrimaryData {
   connectedSpeech: string[];
   languageAnalysis: string[];
   dysgraphiaTypes: string[];
+  speechDisorders: string[];
+  dyslexiaTypes: string[];
+  brainSyndromes: string[];
+  soundProductionType: string;
+  languageAnalysisTypes: string[];
 }
 
 export interface InterimStudent {

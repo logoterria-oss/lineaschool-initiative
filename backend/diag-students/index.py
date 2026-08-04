@@ -56,7 +56,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    form_data::jsonb -> 'motorRealization'  AS motor_realization,
                    form_data::jsonb -> 'connectedSpeech'   AS connected_speech,
                    form_data::jsonb -> 'languageAnalysis'  AS language_analysis,
-                   form_data::jsonb -> 'dysgraphiaTypes'   AS dysgraphia_types
+                   form_data::jsonb -> 'dysgraphiaTypes'   AS dysgraphia_types,
+                   form_data::jsonb -> 'speechDisorders'   AS speech_disorders,
+                   form_data::jsonb -> 'dyslexiaTypes'     AS dyslexia_types,
+                   form_data::jsonb -> 'brainSyndromes'    AS brain_syndromes,
+                   form_data::jsonb ->> 'soundProductionType'  AS sound_production_type,
+                   form_data::jsonb -> 'languageAnalysisTypes' AS language_analysis_types
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
             WHERE COALESCE(diag_type, 'primary') = 'primary'
             ORDER BY student_name, date_of_examination DESC, id DESC
@@ -89,6 +94,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'connectedSpeech': as_list(r.get('connected_speech')),
                     'languageAnalysis': as_list(r.get('language_analysis')),
                     'dysgraphiaTypes': as_list(r.get('dysgraphia_types')),
+                    'speechDisorders': as_list(r.get('speech_disorders')),
+                    'dyslexiaTypes': as_list(r.get('dyslexia_types')),
+                    'brainSyndromes': as_list(r.get('brain_syndromes')),
+                    'soundProductionType': r.get('sound_production_type') or '',
+                    'languageAnalysisTypes': as_list(r.get('language_analysis_types')),
                 },
             })
 

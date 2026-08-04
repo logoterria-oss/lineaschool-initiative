@@ -6,6 +6,8 @@ import InterimPersonalDataSection, {
   InterimStudent,
 } from '@/components/interimDiag/InterimPersonalDataSection';
 import InterimImpairedProcessesSection from '@/components/interimDiag/InterimImpairedProcessesSection';
+import InterimPrimaryConclusionSection from '@/components/interimDiag/InterimPrimaryConclusionSection';
+import { buildPrimaryConclusion } from '@/components/interimDiag/primaryConclusion';
 import {
   computeImpairedFromPrimary,
   EMPTY_IMPAIRED_STATE,
@@ -23,6 +25,8 @@ export default function InterimDiagForm() {
 
   const [impaired, setImpaired] = useState<ImpairedProcessesState>({ ...EMPTY_IMPAIRED_STATE });
   const [autoFilled, setAutoFilled] = useState(false);
+  const [primaryConclusion, setPrimaryConclusion] = useState('');
+  const [studentSelected, setStudentSelected] = useState(false);
 
   const patchPersonal = (patch: Partial<InterimPersonalData>) =>
     setPersonal((prev) => ({ ...prev, ...patch }));
@@ -30,6 +34,8 @@ export default function InterimDiagForm() {
   const handleSelectStudent = (student: InterimStudent) => {
     setImpaired(computeImpairedFromPrimary(student.primary));
     setAutoFilled(true);
+    setPrimaryConclusion(buildPrimaryConclusion(student.primary));
+    setStudentSelected(true);
   };
 
   const handleImpairedChange = (key: ImpairedProcessKey, checked: boolean) =>
@@ -55,6 +61,10 @@ export default function InterimDiagForm() {
               data={personal}
               onChange={patchPersonal}
               onSelectStudent={handleSelectStudent}
+            />
+            <InterimPrimaryConclusionSection
+              conclusion={primaryConclusion}
+              selected={studentSelected}
             />
             <InterimImpairedProcessesSection
               value={impaired}
