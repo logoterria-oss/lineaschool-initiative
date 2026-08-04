@@ -3,7 +3,15 @@ import Footer from '@/components/Footer';
 import DiagFormNavigation from '@/components/diag/DiagFormNavigation';
 import InterimPersonalDataSection, {
   InterimPersonalData,
+  InterimStudent,
 } from '@/components/interimDiag/InterimPersonalDataSection';
+import InterimImpairedProcessesSection from '@/components/interimDiag/InterimImpairedProcessesSection';
+import {
+  computeImpairedFromPrimary,
+  EMPTY_IMPAIRED_STATE,
+  ImpairedProcessKey,
+  ImpairedProcessesState,
+} from '@/components/interimDiag/impairedProcesses';
 
 export default function InterimDiagForm() {
   const [personal, setPersonal] = useState<InterimPersonalData>({
@@ -13,8 +21,19 @@ export default function InterimDiagForm() {
     grade: '',
   });
 
+  const [impaired, setImpaired] = useState<ImpairedProcessesState>({ ...EMPTY_IMPAIRED_STATE });
+  const [autoFilled, setAutoFilled] = useState(false);
+
   const patchPersonal = (patch: Partial<InterimPersonalData>) =>
     setPersonal((prev) => ({ ...prev, ...patch }));
+
+  const handleSelectStudent = (student: InterimStudent) => {
+    setImpaired(computeImpairedFromPrimary(student.primary));
+    setAutoFilled(true);
+  };
+
+  const handleImpairedChange = (key: ImpairedProcessKey, checked: boolean) =>
+    setImpaired((prev) => ({ ...prev, [key]: checked }));
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +51,16 @@ export default function InterimDiagForm() {
           </h1>
 
           <form className="space-y-8" onSubmit={onSubmit}>
-            <InterimPersonalDataSection data={personal} onChange={patchPersonal} />
+            <InterimPersonalDataSection
+              data={personal}
+              onChange={patchPersonal}
+              onSelectStudent={handleSelectStudent}
+            />
+            <InterimImpairedProcessesSection
+              value={impaired}
+              onChange={handleImpairedChange}
+              autoFilled={autoFilled}
+            />
           </form>
         </div>
       </main>

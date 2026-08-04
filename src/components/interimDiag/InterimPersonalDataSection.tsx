@@ -3,12 +3,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 
+export interface InterimPrimaryData {
+  wordUnderstanding: string;
+  complexConstructions: string;
+  phonematicPerception: string;
+  grammaticalStructure: string;
+  motorRealization: string[];
+  connectedSpeech: string[];
+  languageAnalysis: string[];
+  dysgraphiaTypes: string[];
+}
+
 export interface InterimStudent {
   id: number;
   name: string;
   birthDate: string;
   grade: string;
   examDate: string | null;
+  primary?: InterimPrimaryData;
 }
 
 export interface InterimPersonalData {
@@ -21,6 +33,7 @@ export interface InterimPersonalData {
 interface Props {
   data: InterimPersonalData;
   onChange: (patch: Partial<InterimPersonalData>) => void;
+  onSelectStudent?: (student: InterimStudent) => void;
 }
 
 const DIAG_STUDENTS_URL = 'https://functions.poehali.dev/ed7f6726-88a1-4ecb-b063-ed890e8bd5cd';
@@ -60,7 +73,7 @@ function calculateCurrentGrade(primaryGrade: string, examDate: string | null): s
   return grade > 11 ? '11' : grade.toString();
 }
 
-export default function InterimPersonalDataSection({ data, onChange }: Props) {
+export default function InterimPersonalDataSection({ data, onChange, onSelectStudent }: Props) {
   const [students, setStudents] = useState<InterimStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -110,6 +123,7 @@ export default function InterimPersonalDataSection({ data, onChange }: Props) {
       age: calculateAge(s.birthDate),
       grade: calculateCurrentGrade(s.grade, s.examDate),
     });
+    onSelectStudent?.(s);
     setOpen(false);
   };
 

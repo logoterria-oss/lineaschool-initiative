@@ -48,13 +48,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    date_of_examination,
                    form_data::jsonb ->> 'childName'  AS child_name,
                    form_data::jsonb ->> 'birthDate'  AS birth_date,
-                   form_data::jsonb ->> 'grade'      AS grade
+                   form_data::jsonb ->> 'grade'      AS grade,
+                   form_data::jsonb ->> 'wordUnderstanding'    AS word_understanding,
+                   form_data::jsonb ->> 'complexConstructions' AS complex_constructions,
+                   form_data::jsonb ->> 'phonematicPerception' AS phonematic_perception,
+                   form_data::jsonb ->> 'grammaticalStructure' AS grammatical_structure,
+                   form_data::jsonb -> 'motorRealization'  AS motor_realization,
+                   form_data::jsonb -> 'connectedSpeech'   AS connected_speech,
+                   form_data::jsonb -> 'languageAnalysis'  AS language_analysis,
+                   form_data::jsonb -> 'dysgraphiaTypes'   AS dysgraphia_types
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
             WHERE COALESCE(diag_type, 'primary') = 'primary'
             ORDER BY student_name, date_of_examination DESC, id DESC
         """)
 
         rows = cursor.fetchall()
+
+        def as_list(v):
+            if isinstance(v, list):
+                return [str(x) for x in v]
+            return []
 
         students = []
         for r in rows:
@@ -67,6 +80,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'birthDate': r.get('birth_date') or '',
                 'grade': r.get('grade') or '',
                 'examDate': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
+                'primary': {
+                    'wordUnderstanding': r.get('word_understanding') or '',
+                    'complexConstructions': r.get('complex_constructions') or '',
+                    'phonematicPerception': r.get('phonematic_perception') or '',
+                    'grammaticalStructure': r.get('grammatical_structure') or '',
+                    'motorRealization': as_list(r.get('motor_realization')),
+                    'connectedSpeech': as_list(r.get('connected_speech')),
+                    'languageAnalysis': as_list(r.get('language_analysis')),
+                    'dysgraphiaTypes': as_list(r.get('dysgraphia_types')),
+                },
             })
 
         students.sort(key=lambda s: s['name'].lower())
