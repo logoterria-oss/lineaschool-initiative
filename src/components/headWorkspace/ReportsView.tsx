@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ReportsToolbar from '@/components/reports/AdminHeader';
 import ReportForm from '@/components/reports/ReportForm';
 import ReportsList from '@/components/reports/ReportsList';
+import ReportsFilters, { ReportsFilterState } from '@/components/reports/ReportsFilters';
 import { useReportsAdmin } from '@/components/reports/useReportsAdmin';
 
 // Общий пароль доступа к базе заключений. Руководитель уже авторизован в ЛК,
@@ -33,9 +34,31 @@ const ReportsInner = () => {
     copyPublicLink, toggleForm,
   } = useReportsAdmin();
 
+  const [filters, setFilters] = useState<ReportsFilterState>({ name: '', month: '', type: '' });
+
+  const visibleReports = useMemo(() => {
+    const q = filters.name.trim().toLowerCase();
+    return reports.filter((r) => {
+      if (q && !(r.student_name || '').toLowerCase().includes(q)) return false;
+      if (filters.type && (r.diag_type || 'primary') !== filters.type) return false;
+      if (filters.month) {
+        const d = r.date_of_examination ? r.date_of_examination.slice(0, 7) : '';
+        if (d !== filters.month) return false;
+      }
+      return true;
+    });
+  }, [reports, filters]);
+
   return (
     <div>
       <ReportsToolbar showForm={showForm} onToggleForm={toggleForm} onRefresh={loadReports} />
+
+      <ReportsFilters
+        filters={filters}
+        setFilters={setFilters}
+        total={reports.length}
+        visible={visibleReports.length}
+      />
 
       {success && (
         <Alert className="mb-4 border-green-200 bg-green-50">
@@ -60,7 +83,7 @@ const ReportsInner = () => {
       )}
 
       <ReportsList
-        reports={reports}
+        reports={visibleReports}
         loading={loading}
         onEditReport={editReport}
         onDeleteReport={deleteReport}

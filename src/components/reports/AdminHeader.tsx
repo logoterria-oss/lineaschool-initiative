@@ -21,6 +21,12 @@ export default function AdminHeader({ showForm, onToggleForm, onRefresh }: Admin
           Обновить
         </Button>
         <Button onClick={() => window.location.href = '/diag_form'}>+ первичная диагностика</Button>
+        <Button
+          variant="secondary"
+          onClick={() => alert('Промежуточная диагностика скоро будет доступна')}
+        >
+          + промежуточная диагностика
+        </Button>
       </div>
     </div>
   );

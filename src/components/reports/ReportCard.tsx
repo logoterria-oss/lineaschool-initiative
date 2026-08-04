@@ -16,6 +16,7 @@ export interface SpeechTherapyReport {
   access_token: string;
   created_at: string;
   updated_at: string;
+  diag_type?: string;
 }
 
 interface ReportCardProps {
@@ -26,16 +27,22 @@ interface ReportCardProps {
 }
 
 export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: ReportCardProps) {
+  const isInterim = report.diag_type === 'interim';
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-lg">{report.student_name}</CardTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              <CardTitle className="text-lg">{report.student_name}</CardTitle>
+              <Badge className={isInterim ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' : 'bg-blue-100 text-blue-700 hover:bg-blue-100'}>
+                {isInterim ? 'Промежуточная' : 'Первичная'}
+              </Badge>
+            </div>
             <CardDescription>
               {report.student_age && `${report.student_age} лет, `}
               {new Date(report.date_of_examination).toLocaleDateString('ru-RU')} | 
-              Логопед: {report.therapist_name}
+              Диагност: {report.therapist_name}
             </CardDescription>
           </div>
           <div className="flex gap-2">

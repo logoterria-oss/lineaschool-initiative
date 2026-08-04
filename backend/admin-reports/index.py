@@ -62,7 +62,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Получаем все заключения из БД с сортировкой по дате создания
         cursor.execute("""
             SELECT id, student_name, student_age, date_of_examination, 
-                   therapist_name, created_at, access_token
+                   therapist_name, created_at, access_token,
+                   COALESCE(diag_type, 'primary') AS diag_type
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
             ORDER BY created_at DESC
         """)
@@ -78,6 +79,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'student_age': report['student_age'],
                 'date_of_examination': report['date_of_examination'].isoformat() if report['date_of_examination'] else None,
                 'therapist_name': report['therapist_name'],
+                'diag_type': report.get('diag_type') or 'primary',
                 'created_at': report['created_at'].isoformat() if report['created_at'] else None,
                 'report_url': f"/diag/{report['id']}"
             })
