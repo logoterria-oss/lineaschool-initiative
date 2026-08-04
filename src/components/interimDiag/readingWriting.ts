@@ -6,7 +6,15 @@ export type RWMetric =
   | 'readingSpeed'
   | 'readingComprehension'
   | 'dysgraphicErrors'
-  | 'dysorthographicErrors';
+  | 'dysorthographicErrors'
+  | 'totalErrors';
+
+// Один тип дисграфической ошибки в списке промежуточной диагностики
+export interface DysgraphicErrorItem {
+  label: string;
+  struck: boolean; // вычеркнут (таких ошибок больше нет)
+  added: boolean; // добавлен вручную на промежуточной (показываем красным с «+»)
+}
 
 // Состояние раздела «Чтение и письмо», которое заполняет логопед на промежуточной
 export interface ReadingWritingState {
@@ -16,6 +24,8 @@ export interface ReadingWritingState {
   writingSamples: string[]; // изображения (base64/URL)
   dysgraphicErrors: string; // количество
   dysorthographicErrors: string; // количество
+  totalErrors: string; // всего ошибок
+  errorTypes: DysgraphicErrorItem[]; // список типов дисграфических ошибок
   // Ручной ввод «было», когда в первичной данных нет
   baselineOverride: Partial<Record<RWMetric, string>>;
 }
@@ -26,6 +36,7 @@ export interface ReadingWritingBaseline {
   readingComprehension: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
+  totalErrors: string;
 }
 
 export const EMPTY_RW_STATE: ReadingWritingState = {
@@ -35,8 +46,90 @@ export const EMPTY_RW_STATE: ReadingWritingState = {
   writingSamples: [],
   dysgraphicErrors: '',
   dysorthographicErrors: '',
+  totalErrors: '',
+  errorTypes: [],
   baselineOverride: {},
 };
+
+// Полный каталог типов дисграфических ошибок (для добавления новых на промежуточной)
+export const DYSGRAPHIC_ERROR_CATALOG: { group: string; items: string[] }[] = [
+  {
+    group: 'Ошибки языкового анализа и синтеза',
+    items: ['пропуски', 'вставки', 'перестановки', 'антиципации (предвосхищение)'],
+  },
+  {
+    group: 'Ошибки акустико-артикуляторного сходства',
+    items: [
+      'замены и смешения звонких-глухих согласных',
+      'ошибки обозначения мягкости',
+      'замены и смешения свистящих-шипящих согласных',
+      'замены и смешения аффрикатов и их компонентов',
+      'замены и смешения заднеязычных согласных',
+      'замены и смешения соноров',
+      'замены и смешения гласных в сильной позиции',
+      'замены и смешения согласных по способу образования',
+      'замены и смешения согласных по месту образования',
+    ],
+  },
+  {
+    group: 'Моторные ошибки',
+    items: [
+      'ошибки кинетического запуска',
+      'графический поиск при написании буквы',
+      'лишние элементы при написании буквы',
+      'недописывание отдельных элементов буквы',
+      'персеверации (повтор целой буквы, узнаваемой её части или слога)',
+      'неоднократные правильные обводки букв',
+    ],
+  },
+  {
+    group: 'Зрительно-моторные ошибки',
+    items: [
+      'смешение оптически сходных букв',
+      'неточность передачи графического образа буквы',
+      'неадекватность начертания буквы',
+    ],
+  },
+  {
+    group: 'Зрительно-пространственные ошибки',
+    items: [
+      'зеркальность написания букв',
+      'неудержание строки',
+      'дисметрия букв',
+      'дисметрия элементов букв',
+      'колебание наклона букв',
+      'отсутствие слитности написания букв в словах',
+      'левостороннее игнорирование',
+      'неравномерность расстояний между словами',
+      'избегания переноса слов',
+    ],
+  },
+];
+
+// Собирает отмеченные при первичной типы дисграфических ошибок (кроме «нет»)
+export function collectPrimaryErrorTypes(p: InterimPrimaryData | undefined): DysgraphicErrorItem[] {
+  if (!p) return [];
+  const groups = [
+    p.analysisErrors,
+    p.acousticErrors,
+    p.motorErrors,
+    p.visualMotorErrors,
+    p.visualSpatialErrors,
+  ];
+  const seen = new Set<string>();
+  const out: DysgraphicErrorItem[] = [];
+  groups.forEach((arr) => {
+    (arr || []).forEach((raw) => {
+      const label = (raw || '').trim();
+      const low = label.toLowerCase();
+      if (!label || low === 'нет') return;
+      if (seen.has(low)) return;
+      seen.add(low);
+      out.push({ label, struck: false, added: false });
+    });
+  });
+  return out;
+}
 
 // Эффективное «было»: данные из первичной, а если их нет — ручной ввод логопеда
 export function effectiveBaseline(
@@ -60,6 +153,7 @@ export function baselineFromPrimary(p: InterimPrimaryData | undefined): ReadingW
     readingComprehension: p?.readingComprehension || '',
     dysgraphicErrors: p?.dysgraphicErrors || '',
     dysorthographicErrors: p?.dysorthographicErrors || '',
+    totalErrors: p?.totalErrors || '',
   };
 }
 

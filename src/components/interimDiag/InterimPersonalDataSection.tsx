@@ -21,6 +21,12 @@ export interface InterimPrimaryData {
   readingComprehension: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
+  totalErrors: string;
+  analysisErrors: string[];
+  acousticErrors: string[];
+  motorErrors: string[];
+  visualMotorErrors: string[];
+  visualSpatialErrors: string[];
 }
 
 export interface InterimStudent {

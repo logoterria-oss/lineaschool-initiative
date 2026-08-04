@@ -37,38 +37,51 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
 
     try:
-        conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=5)
+        conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=3)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Берём самое свежее первичное заключение по каждому ребёнку
         cursor.execute("""
-            SELECT DISTINCT ON (student_name)
-                   id,
+            WITH latest AS (
+                SELECT DISTINCT ON (student_name)
+                       id,
+                       student_name,
+                       date_of_examination,
+                       form_data::jsonb AS fd
+                FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
+                WHERE COALESCE(diag_type, 'primary') = 'primary'
+                ORDER BY student_name, date_of_examination DESC, id DESC
+            )
+            SELECT id,
                    student_name,
                    date_of_examination,
-                   form_data::jsonb ->> 'childName'  AS child_name,
-                   form_data::jsonb ->> 'birthDate'  AS birth_date,
-                   form_data::jsonb ->> 'grade'      AS grade,
-                   form_data::jsonb ->> 'wordUnderstanding'    AS word_understanding,
-                   form_data::jsonb ->> 'complexConstructions' AS complex_constructions,
-                   form_data::jsonb ->> 'phonematicPerception' AS phonematic_perception,
-                   form_data::jsonb ->> 'grammaticalStructure' AS grammatical_structure,
-                   form_data::jsonb -> 'motorRealization'  AS motor_realization,
-                   form_data::jsonb -> 'connectedSpeech'   AS connected_speech,
-                   form_data::jsonb -> 'languageAnalysis'  AS language_analysis,
-                   form_data::jsonb -> 'dysgraphiaTypes'   AS dysgraphia_types,
-                   form_data::jsonb -> 'speechDisorders'   AS speech_disorders,
-                   form_data::jsonb -> 'dyslexiaTypes'     AS dyslexia_types,
-                   form_data::jsonb -> 'brainSyndromes'    AS brain_syndromes,
-                   form_data::jsonb ->> 'soundProductionType'  AS sound_production_type,
-                   form_data::jsonb -> 'languageAnalysisTypes' AS language_analysis_types,
-                   form_data::jsonb ->> 'readingSpeed'         AS reading_speed,
-                   form_data::jsonb ->> 'readingComprehension' AS reading_comprehension,
-                   form_data::jsonb ->> 'dysgraphicErrors'     AS dysgraphic_errors,
-                   form_data::jsonb ->> 'dysorthographicErrors' AS dysorthographic_errors
-            FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
-            WHERE COALESCE(diag_type, 'primary') = 'primary'
-            ORDER BY student_name, date_of_examination DESC, id DESC
+                   fd ->> 'childName'  AS child_name,
+                   fd ->> 'birthDate'  AS birth_date,
+                   fd ->> 'grade'      AS grade,
+                   fd ->> 'wordUnderstanding'    AS word_understanding,
+                   fd ->> 'complexConstructions' AS complex_constructions,
+                   fd ->> 'phonematicPerception' AS phonematic_perception,
+                   fd ->> 'grammaticalStructure' AS grammatical_structure,
+                   fd -> 'motorRealization'  AS motor_realization,
+                   fd -> 'connectedSpeech'   AS connected_speech,
+                   fd -> 'languageAnalysis'  AS language_analysis,
+                   fd -> 'dysgraphiaTypes'   AS dysgraphia_types,
+                   fd -> 'speechDisorders'   AS speech_disorders,
+                   fd -> 'dyslexiaTypes'     AS dyslexia_types,
+                   fd -> 'brainSyndromes'    AS brain_syndromes,
+                   fd ->> 'soundProductionType'  AS sound_production_type,
+                   fd -> 'languageAnalysisTypes' AS language_analysis_types,
+                   fd ->> 'readingSpeed'         AS reading_speed,
+                   fd ->> 'readingComprehension' AS reading_comprehension,
+                   fd ->> 'dysgraphicErrors'     AS dysgraphic_errors,
+                   fd ->> 'dysorthographicErrors' AS dysorthographic_errors,
+                   fd ->> 'totalErrors'          AS total_errors,
+                   fd -> 'analysisErrors'        AS analysis_errors,
+                   fd -> 'acousticErrors'        AS acoustic_errors,
+                   fd -> 'motorErrors'           AS motor_errors,
+                   fd -> 'visualMotorErrors'     AS visual_motor_errors,
+                   fd -> 'visualSpatialErrors'   AS visual_spatial_errors
+            FROM latest
         """)
 
         rows = cursor.fetchall()
@@ -107,6 +120,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'readingComprehension': r.get('reading_comprehension') or '',
                     'dysgraphicErrors': r.get('dysgraphic_errors') or '',
                     'dysorthographicErrors': r.get('dysorthographic_errors') or '',
+                    'totalErrors': r.get('total_errors') or '',
+                    'analysisErrors': as_list(r.get('analysis_errors')),
+                    'acousticErrors': as_list(r.get('acoustic_errors')),
+                    'motorErrors': as_list(r.get('motor_errors')),
+                    'visualMotorErrors': as_list(r.get('visual_motor_errors')),
+                    'visualSpatialErrors': as_list(r.get('visual_spatial_errors')),
                 },
             })
 

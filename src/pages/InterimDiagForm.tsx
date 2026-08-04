@@ -23,6 +23,7 @@ import {
   ReadingWritingBaseline,
   ReadingWritingState,
   baselineFromPrimary,
+  collectPrimaryErrorTypes,
   errorQualityHint,
 } from '@/components/interimDiag/readingWriting';
 
@@ -47,6 +48,7 @@ export default function InterimDiagForm() {
     readingComprehension: '',
     dysgraphicErrors: '',
     dysorthographicErrors: '',
+    totalErrors: '',
   });
   const [rw, setRw] = useState<ReadingWritingState>({ ...EMPTY_RW_STATE });
 
@@ -65,7 +67,7 @@ export default function InterimDiagForm() {
     setPrimaryConclusion(buildPrimaryConclusion(student.primary));
     setStudentSelected(true);
     setRwBaseline(baselineFromPrimary(student.primary));
-    setRw({ ...EMPTY_RW_STATE });
+    setRw({ ...EMPTY_RW_STATE, errorTypes: collectPrimaryErrorTypes(student.primary) });
   };
 
   const patchRw = (patch: Partial<ReadingWritingState>) =>
