@@ -72,9 +72,13 @@ export default function InterimPersonalDataSection({ data, onChange }: Props) {
       .then((res) => {
         if (res?.success && Array.isArray(res.students)) {
           const filtered = res.students.filter((s: InterimStudent) => {
-            const name = (s.name || '').toLowerCase();
+            const raw = (s.name || '').trim();
+            const name = raw.toLowerCase();
             if (name.includes('тест')) return false;
-            if (name.includes('абраменко') && name.includes('виктория')) return false;
+            if (name.includes('проверк')) return false;
+            // Отсекаем неполные ФИО (меньше трёх слов: должны быть фамилия, имя, отчество)
+            const words = raw.split(/\s+/).filter((w) => /[а-яёa-z]/i.test(w));
+            if (words.length < 3) return false;
             return true;
           });
           setStudents(filtered);
