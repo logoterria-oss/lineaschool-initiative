@@ -6,6 +6,7 @@ export interface ReportsFilterState {
   name: string;
   month: string;
   type: string;
+  therapist: string;
 }
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
   setFilters: (f: ReportsFilterState) => void;
   total: number;
   visible: number;
+  therapists: string[];
 }
 
 const TYPE_OPTIONS = [
@@ -21,14 +23,14 @@ const TYPE_OPTIONS = [
   { value: 'interim', label: 'Промежуточная' },
 ];
 
-export default function ReportsFilters({ filters, setFilters, total, visible }: Props) {
-  const hasActive = !!(filters.name || filters.month || filters.type);
+export default function ReportsFilters({ filters, setFilters, total, visible, therapists }: Props) {
+  const hasActive = !!(filters.name || filters.month || filters.type || filters.therapist);
 
-  const reset = () => setFilters({ name: '', month: '', type: '' });
+  const reset = () => setFilters({ name: '', month: '', type: '', therapist: '' });
 
   return (
     <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50/60 p-3">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="relative">
           <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
@@ -44,6 +46,18 @@ export default function ReportsFilters({ filters, setFilters, total, visible }: 
           value={filters.month}
           onChange={(e) => setFilters({ ...filters, month: e.target.value })}
         />
+        <select
+          className="h-10 rounded-md border border-input bg-white px-3 text-sm"
+          value={filters.therapist}
+          onChange={(e) => setFilters({ ...filters, therapist: e.target.value })}
+        >
+          <option value="">Все диагносты</option>
+          {therapists.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
         <select
           className="h-10 rounded-md border border-input bg-white px-3 text-sm"
           value={filters.type}

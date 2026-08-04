@@ -34,13 +34,23 @@ const ReportsInner = () => {
     copyPublicLink, toggleForm,
   } = useReportsAdmin();
 
-  const [filters, setFilters] = useState<ReportsFilterState>({ name: '', month: '', type: '' });
+  const [filters, setFilters] = useState<ReportsFilterState>({ name: '', month: '', type: '', therapist: '' });
+
+  const therapists = useMemo(() => {
+    const set = new Set<string>();
+    reports.forEach((r) => {
+      const t = (r.therapist_name || '').trim();
+      if (t) set.add(t);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [reports]);
 
   const visibleReports = useMemo(() => {
     const q = filters.name.trim().toLowerCase();
     return reports.filter((r) => {
       if (q && !(r.student_name || '').toLowerCase().includes(q)) return false;
       if (filters.type && (r.diag_type || 'primary') !== filters.type) return false;
+      if (filters.therapist && (r.therapist_name || '').trim() !== filters.therapist) return false;
       if (filters.month) {
         const d = r.date_of_examination ? r.date_of_examination.slice(0, 7) : '';
         if (d !== filters.month) return false;
@@ -58,6 +68,7 @@ const ReportsInner = () => {
         setFilters={setFilters}
         total={reports.length}
         visible={visibleReports.length}
+        therapists={therapists}
       />
 
       {success && (
