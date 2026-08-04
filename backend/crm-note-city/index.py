@@ -99,7 +99,7 @@ def _find_customer_by_phone(token: str, branch: str, phone: str) -> Optional[Dic
     return None
 
 
-def _update_note(token: str, branch: str, customer: Dict[str, Any], city_line: str) -> bool:
+def _update_note(token: str, branch: str, customer: Dict[str, Any], city_line: str, city: str = '') -> bool:
     '''Добавляет city_line в начало примечания, не затирая остальной текст.'''
     customer_id = customer.get('id')
     if not customer_id:
@@ -113,9 +113,22 @@ def _update_note(token: str, branch: str, customer: Dict[str, Any], city_line: s
         print('City line already present at top — skip')
         return True
 
-    # Убираем прежнюю строку про этот же город, если она где-то есть (защита от дублей)
+    # Убираем ЛЮБЫЕ прежние строки про этот же город (город в начале строки),
+    # чтобы не плодить дубли и старые варианты форматирования.
+    city_norm = (city or '').strip()
     lines = [ln for ln in current_note.split('\n')] if current_note else []
-    lines = [ln for ln in lines if ln.strip() != city_line]
+
+    def _is_city_line(ln: str) -> bool:
+        s = ln.strip()
+        if not s:
+            return False
+        if s == city_line:
+            return True
+        if city_norm and (s == city_norm or s.startswith(city_norm + ' (')):
+            return True
+        return False
+
+    lines = [ln for ln in lines if not _is_city_line(ln)]
     new_note = city_line + ('\n' + '\n'.join(lines) if lines else '')
 
     url = f'{S20_HOST}/v2api/{branch}/customer/update?id={customer_id}'
@@ -181,7 +194,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if not customer:
         return {'statusCode': 200, 'headers': cors, 'body': json.dumps({'updated': False, 'reason': 'not_found'})}
 
-    ok = _update_note(token, branch, customer, city_line)
+    ok = _update_note(token, branch, customer, city_line, city)
     return {
         'statusCode': 200,
         'headers': cors,

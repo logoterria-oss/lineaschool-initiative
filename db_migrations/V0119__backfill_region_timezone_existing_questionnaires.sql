@@ -1,0 +1,16 @@
+UPDATE parent_questionnaire SET city_region='', city_timezone='МСК+0' WHERE id=163;
+UPDATE parent_questionnaire SET city_region='Белгородская обл', city_timezone='МСК+0' WHERE id=162;
+UPDATE parent_questionnaire SET city_region='', city_timezone='МСК+0' WHERE id=161;
+UPDATE parent_questionnaire SET city_region='Саратовская обл', city_timezone='МСК+0' WHERE id=160;
+UPDATE parent_questionnaire SET city_region='Московская обл', city_timezone='МСК+0' WHERE id=159;
+UPDATE parent_questionnaire SET city_region='Московская обл', city_timezone='МСК+0' WHERE id=158;
+UPDATE parent_questionnaire SET city_region='Свердловская обл', city_timezone='МСК+2' WHERE id=157;
+UPDATE parent_questionnaire SET city_region='Тульская обл', city_timezone='МСК+0' WHERE id=156;
+UPDATE parent_questionnaire SET city_region='Московская обл', city_timezone='МСК+0' WHERE id=155;
+UPDATE parent_questionnaire SET city_region='Томская обл', city_timezone='МСК+3' WHERE id=154;
+UPDATE parent_questionnaire SET city_region='Пермский край', city_timezone='МСК+1' WHERE id=153;
+UPDATE parent_questionnaire SET city_region='Воронежская обл', city_timezone='МСК+0' WHERE id=152;
+UPDATE parent_questionnaire SET city_region='Новосибирская обл', city_timezone='МСК+0' WHERE id=151;
+UPDATE parent_questionnaire SET city_region='Воронежская обл', city_timezone='МСК+0' WHERE id=150;
+UPDATE parent_questionnaire SET city_region='', city_timezone='МСК+0' WHERE id=149;
+UPDATE parent_questionnaire SET city_region='Кемеровская область - Кузбасс', city_timezone='МСК+4' WHERE id=148;
