@@ -9,7 +9,7 @@ interface Props {
 export default function InterimPrimaryConclusionSection({ conclusion, selected, hint }: Props) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-1">Заключение первичной диагностики</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-1">Заключение</h2>
       <p className="text-sm text-gray-500 mb-4">Подтягивается автоматически при выборе ученика.</p>
 
       {selected && hint && (
