@@ -12,6 +12,7 @@ import Pricing from "./pages/Pricing";
 import OfferPage from "./pages/OfferPage";
 import Privacy from "./pages/Privacy";
 import DiagForm from "./pages/DiagForm";
+import InterimDiagForm from "./pages/InterimDiagForm";
 import DiagConclusion from "./pages/DiagConclusion";
 import ParentQuestionnaire from "./pages/ParentQuestionnaire";
 import QuestionnaireResponses from "./pages/QuestionnaireResponses";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/extension" element={<ExtensionPage />} />
             <Route path="/anketa" element={<ParentQuestionnaire />} />
             <Route path="/diag_form" element={<DiagForm />} />
+            <Route path="/interim_diag_form" element={<InterimDiagForm />} />
             <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
             <Route path="/admin" element={<RoleSelectPage />} />
             <Route path="/admin/role-select" element={<RoleSelectPage />} />

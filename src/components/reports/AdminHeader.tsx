@@ -30,7 +30,7 @@ export default function AdminHeader({ showForm, onToggleForm, onRefresh }: Admin
         <Button
           variant="outline"
           className="border-primary text-primary hover:bg-primary/10"
-          onClick={() => alert('Промежуточная диагностика скоро будет доступна')}
+          onClick={() => window.location.href = '/interim_diag_form'}
         >
           + промежуточная диагностика
         </Button>
