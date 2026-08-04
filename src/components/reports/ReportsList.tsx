@@ -18,6 +18,27 @@ export default function ReportsList({
   onDeleteReport, 
   onCopyPublicLink 
 }: ReportsListProps) {
+  if (loading && reports.length === 0) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="py-5">
+              <div className="animate-pulse space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-5 w-52 rounded bg-gray-200" />
+                  <div className="h-5 w-20 rounded-full bg-gray-200" />
+                </div>
+                <div className="h-4 w-72 rounded bg-gray-200" />
+                <div className="h-4 w-40 rounded bg-gray-200" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   if (reports.length === 0 && !loading) {
     return (
       <Card>
