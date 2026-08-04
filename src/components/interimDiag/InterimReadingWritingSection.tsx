@@ -1,5 +1,4 @@
-import { useRef, useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -8,15 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import Icon from '@/components/ui/icon';
 import { ProcessDynamic } from './impairedProcesses';
 import {
   DYSGRAPHIC_ERROR_CATALOG,
@@ -35,6 +25,9 @@ import {
 } from './readingWriting';
 import DynamicChain, { ChainStep } from './DynamicChain';
 import { InterimHistoryEntry } from './InterimPersonalDataSection';
+import CompareRow from './ReadingWritingCompareRow';
+import ErrorTypesBlock from './ReadingWritingErrorTypesBlock';
+import ReadingWritingSamples from './ReadingWritingSamples';
 
 const MAX_WRITING_SAMPLES = 2;
 
@@ -50,61 +43,6 @@ interface Props {
   onImageClick: (src: string) => void;
   onChange: (patch: Partial<ReadingWritingState>) => void;
   selected: boolean;
-}
-
-function DynamicArrow({ dyn }: { dyn: ProcessDynamic }) {
-  if (dyn === 'up') return <Icon name="ArrowUp" size={18} className="text-green-600" />;
-  if (dyn === 'down') return <Icon name="ArrowDown" size={18} className="text-red-600" />;
-  return null;
-}
-
-interface CompareRowProps {
-  label: string;
-  unit?: string;
-  from: string;
-  fromEditable: boolean;
-  to: string;
-  dyn: ProcessDynamic;
-  onFromChange: (v: string) => void;
-  onChange: (v: string) => void;
-}
-
-function CompareRow({ label, unit, from, fromEditable, to, dyn, onFromChange, onChange }: CompareRowProps) {
-  return (
-    <div>
-      <Label className="text-sm text-gray-700">{label}</Label>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        {fromEditable ? (
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              inputMode="numeric"
-              value={from}
-              onChange={(e) => onFromChange(e.target.value)}
-              className="w-28"
-              placeholder="было"
-            />
-            {unit && <span className="text-sm text-gray-500">{unit}</span>}
-          </div>
-        ) : (
-          <span className="text-sm text-gray-500 min-w-[70px]">
-            {`${from}${unit ? ' ' + unit : ''}`}
-          </span>
-        )}
-        <Icon name="ArrowRight" size={16} className="text-gray-400" />
-        <Input
-          type="number"
-          inputMode="numeric"
-          value={to}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-28"
-          placeholder="0"
-        />
-        {unit && <span className="text-sm text-gray-500">{unit}</span>}
-        <DynamicArrow dyn={dyn} />
-      </div>
-    </div>
-  );
 }
 
 export default function InterimReadingWritingSection({
@@ -331,93 +269,17 @@ export default function InterimReadingWritingSection({
       {/* Подраздел «Письмо» */}
       <h3 className="text-base font-semibold text-gray-900 mb-3">Письмо</h3>
       <div className="space-y-4">
-        {/* Фото диктанта из прошлых диагностик — только просмотр */}
-        {(primarySamples.length > 0 || interimSamples.length > 0) && (
-          <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 space-y-4">
-            {primarySamples.length > 0 && (
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">
-                  Диктант с первичной диагностики
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {primarySamples.map((src, idx) => (
-                    <img
-                      key={idx}
-                      src={src}
-                      alt={`Первичная ${idx + 1}`}
-                      onClick={() => onImageClick(src)}
-                      className="h-28 w-28 rounded-lg object-cover border border-gray-200 cursor-pointer hover:opacity-80"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {interimSamples.length > 0 && (
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">
-                  Диктант с прошлой промежуточной диагностики
-                  {interimSamplesDate ? ` (${interimSamplesDate.split('-').reverse().join('.')})` : ''}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {interimSamples.map((src, idx) => (
-                    <img
-                      key={idx}
-                      src={src}
-                      alt={`Промежуточная ${idx + 1}`}
-                      onClick={() => onImageClick(src)}
-                      className="h-28 w-28 rounded-lg object-cover border border-gray-200 cursor-pointer hover:opacity-80"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div>
-          <Label className="text-sm text-gray-700">
-            Образцы письменных работ (до {MAX_WRITING_SAMPLES} изображений)
-          </Label>
-          <div className="mt-2 flex flex-wrap gap-3">
-            {value.writingSamples.map((src, idx) => (
-              <div key={idx} className="relative">
-                <img
-                  src={src}
-                  alt={`Образец ${idx + 1}`}
-                  className="h-28 w-28 rounded-lg object-cover border border-gray-200"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeSample(idx)}
-                  className="absolute -top-2 -right-2 bg-white rounded-full border border-gray-300 shadow-sm p-0.5 hover:bg-gray-50"
-                >
-                  <Icon name="X" size={14} className="text-gray-600" />
-                </button>
-              </div>
-            ))}
-            {value.writingSamples.length < MAX_WRITING_SAMPLES && (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="h-28 w-28 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-500"
-              >
-                <Icon name="ImagePlus" size={24} />
-                <span className="text-xs mt-1">Добавить</span>
-              </button>
-            )}
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              handleFiles(e.target.files);
-              e.target.value = '';
-            }}
-          />
-        </div>
+        <ReadingWritingSamples
+          maxSamples={MAX_WRITING_SAMPLES}
+          writingSamples={value.writingSamples}
+          primarySamples={primarySamples}
+          interimSamples={interimSamples}
+          interimSamplesDate={interimSamplesDate}
+          fileRef={fileRef}
+          onImageClick={onImageClick}
+          onRemoveSample={removeSample}
+          onFiles={handleFiles}
+        />
 
         <div>
           <CompareRow
@@ -475,110 +337,6 @@ export default function InterimReadingWritingSection({
           onRemoveAdded={removeOrthoAdded}
           onAdd={addOrthoType}
         />
-      </div>
-    </div>
-  );
-}
-
-interface ErrorTypesBlockProps {
-  items: DysgraphicErrorItem[];
-  onToggleStruck: (idx: number) => void;
-  onRemoveAdded: (idx: number) => void;
-  onAdd: (label: string) => void;
-  title: string;
-  addLabel: string;
-  catalog: { group: string; items: string[] }[];
-}
-
-function ErrorTypesBlock({
-  items,
-  onToggleStruck,
-  onRemoveAdded,
-  onAdd,
-  title,
-  addLabel,
-  catalog,
-}: ErrorTypesBlockProps) {
-  const [open, setOpen] = useState(false);
-  const chosen = new Set(items.map((it) => it.label.toLowerCase()));
-
-  return (
-    <div>
-      <Label className="text-sm text-gray-700">{title}</Label>
-      <p className="text-xs text-gray-400 mt-1">
-        Вычеркните ошибки, которых больше нет, и добавьте новые типы.
-      </p>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {items.map((it, idx) => (
-          <div
-            key={`${it.label}-${idx}`}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
-              it.added
-                ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-gray-200 bg-gray-50 text-gray-800'
-            } ${it.struck ? 'opacity-60' : ''}`}
-          >
-            <span className={it.struck ? 'line-through' : ''}>
-              {it.added ? '+' : ''}
-              {it.label}
-            </span>
-            {it.added ? (
-              <button
-                type="button"
-                onClick={() => onRemoveAdded(idx)}
-                title="Удалить"
-                className="text-red-500 hover:text-red-700"
-              >
-                <Icon name="X" size={14} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onToggleStruck(idx)}
-                title={it.struck ? 'Вернуть' : 'Вычеркнуть'}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <Icon name={it.struck ? 'RotateCcw' : 'Strikethrough'} size={14} />
-              </button>
-            )}
-          </div>
-        ))}
-
-        <DropdownMenu open={open} onOpenChange={setOpen}>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 rounded-full border border-red-300 bg-white px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50"
-            >
-              <Icon name="Plus" size={14} />
-              {addLabel}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto w-80">
-            {catalog.map((group) => (
-              <div key={group.group}>
-                <DropdownMenuLabel className="text-xs text-gray-500">
-                  {group.group}
-                </DropdownMenuLabel>
-                {group.items.map((label) => {
-                  const already = chosen.has(label.toLowerCase());
-                  return (
-                    <DropdownMenuItem
-                      key={label}
-                      disabled={already}
-                      onSelect={() => onAdd(label)}
-                      className="text-sm"
-                    >
-                      {label}
-                    </DropdownMenuItem>
-                  );
-                })}
-                <DropdownMenuSeparator />
-              </div>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </div>
   );
