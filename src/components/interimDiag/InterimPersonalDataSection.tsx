@@ -86,8 +86,8 @@ export default function InterimPersonalDataSection({ data, onChange }: Props) {
 
   const matches = useMemo(() => {
     const q = data.childName.trim().toLowerCase();
-    if (!q) return students.slice(0, 20);
-    return students.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 20);
+    if (!q) return students;
+    return students.filter((s) => s.name.toLowerCase().includes(q));
   }, [students, data.childName]);
 
   const selectStudent = (s: InterimStudent) => {
