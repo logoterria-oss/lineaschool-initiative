@@ -42,7 +42,7 @@ export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: Rep
             <CardDescription>
               {report.student_age && `${report.student_age} лет, `}
               {new Date(report.date_of_examination).toLocaleDateString('ru-RU')} | 
-              Диагност: {report.therapist_name}
+              Логопед: {report.therapist_name}
             </CardDescription>
           </div>
           <div className="flex gap-2">
