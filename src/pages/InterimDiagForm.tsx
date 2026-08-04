@@ -7,6 +7,7 @@ import InterimPersonalDataSection, {
 } from '@/components/interimDiag/InterimPersonalDataSection';
 import InterimImpairedProcessesSection from '@/components/interimDiag/InterimImpairedProcessesSection';
 import InterimPrimaryConclusionSection from '@/components/interimDiag/InterimPrimaryConclusionSection';
+import InterimReadingWritingSection from '@/components/interimDiag/InterimReadingWritingSection';
 import { buildPrimaryConclusion } from '@/components/interimDiag/primaryConclusion';
 import {
   computeImpairedFromPrimary,
@@ -17,6 +18,13 @@ import {
   ProcessLevel,
   ProcessLevelsState,
 } from '@/components/interimDiag/impairedProcesses';
+import {
+  EMPTY_RW_STATE,
+  ReadingWritingBaseline,
+  ReadingWritingState,
+  baselineFromPrimary,
+  errorQualityHint,
+} from '@/components/interimDiag/readingWriting';
 
 export default function InterimDiagForm() {
   const [personal, setPersonal] = useState<InterimPersonalData>({
@@ -34,6 +42,14 @@ export default function InterimDiagForm() {
   const [primaryConclusion, setPrimaryConclusion] = useState('');
   const [studentSelected, setStudentSelected] = useState(false);
 
+  const [rwBaseline, setRwBaseline] = useState<ReadingWritingBaseline>({
+    readingSpeed: '',
+    readingComprehension: '',
+    dysgraphicErrors: '',
+    dysorthographicErrors: '',
+  });
+  const [rw, setRw] = useState<ReadingWritingState>({ ...EMPTY_RW_STATE });
+
   const patchPersonal = (patch: Partial<InterimPersonalData>) =>
     setPersonal((prev) => ({ ...prev, ...patch }));
 
@@ -48,7 +64,14 @@ export default function InterimDiagForm() {
     setAutoFilled(true);
     setPrimaryConclusion(buildPrimaryConclusion(student.primary));
     setStudentSelected(true);
+    setRwBaseline(baselineFromPrimary(student.primary));
+    setRw({ ...EMPTY_RW_STATE });
   };
+
+  const patchRw = (patch: Partial<ReadingWritingState>) =>
+    setRw((prev) => ({ ...prev, ...patch }));
+
+  const rwHint = errorQualityHint(rwBaseline, rw);
 
   const handleImpairedChange = (key: ImpairedProcessKey, checked: boolean) => {
     setImpaired((prev) => ({ ...prev, [key]: checked }));
@@ -88,6 +111,7 @@ export default function InterimDiagForm() {
             <InterimPrimaryConclusionSection
               conclusion={primaryConclusion}
               selected={studentSelected}
+              hint={rwHint}
             />
             <InterimImpairedProcessesSection
               value={impaired}
@@ -96,6 +120,12 @@ export default function InterimDiagForm() {
               onChange={handleImpairedChange}
               onLevelChange={handleLevelChange}
               autoFilled={autoFilled}
+            />
+            <InterimReadingWritingSection
+              baseline={rwBaseline}
+              value={rw}
+              onChange={patchRw}
+              selected={studentSelected}
             />
           </form>
         </div>

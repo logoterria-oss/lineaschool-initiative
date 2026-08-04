@@ -17,6 +17,10 @@ export interface InterimPrimaryData {
   brainSyndromes: string[];
   soundProductionType: string;
   languageAnalysisTypes: string[];
+  readingSpeed: string;
+  readingComprehension: string;
+  dysgraphicErrors: string;
+  dysorthographicErrors: string;
 }
 
 export interface InterimStudent {

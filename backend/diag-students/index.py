@@ -61,7 +61,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    form_data::jsonb -> 'dyslexiaTypes'     AS dyslexia_types,
                    form_data::jsonb -> 'brainSyndromes'    AS brain_syndromes,
                    form_data::jsonb ->> 'soundProductionType'  AS sound_production_type,
-                   form_data::jsonb -> 'languageAnalysisTypes' AS language_analysis_types
+                   form_data::jsonb -> 'languageAnalysisTypes' AS language_analysis_types,
+                   form_data::jsonb ->> 'readingSpeed'         AS reading_speed,
+                   form_data::jsonb ->> 'readingComprehension' AS reading_comprehension,
+                   form_data::jsonb ->> 'dysgraphicErrors'     AS dysgraphic_errors,
+                   form_data::jsonb ->> 'dysorthographicErrors' AS dysorthographic_errors
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
             WHERE COALESCE(diag_type, 'primary') = 'primary'
             ORDER BY student_name, date_of_examination DESC, id DESC
@@ -99,6 +103,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'brainSyndromes': as_list(r.get('brain_syndromes')),
                     'soundProductionType': r.get('sound_production_type') or '',
                     'languageAnalysisTypes': as_list(r.get('language_analysis_types')),
+                    'readingSpeed': r.get('reading_speed') or '',
+                    'readingComprehension': r.get('reading_comprehension') or '',
+                    'dysgraphicErrors': r.get('dysgraphic_errors') or '',
+                    'dysorthographicErrors': r.get('dysorthographic_errors') or '',
                 },
             })
 
