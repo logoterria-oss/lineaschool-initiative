@@ -28,9 +28,9 @@ interface Props {
 }
 
 const DYNAMIC_UI = {
-  up: { icon: 'Check', className: 'text-green-600' },
-  same: { icon: 'Minus', className: 'text-yellow-500' },
-  down: { icon: 'X', className: 'text-red-600' },
+  up: { icon: 'ArrowUp', className: 'text-green-600' },
+  same: null,
+  down: { icon: 'ArrowDown', className: 'text-red-600' },
 } as const;
 
 function DynamicSchema({ from, to }: { from: ProcessLevel; to: ProcessLevel }) {
@@ -41,7 +41,7 @@ function DynamicSchema({ from, to }: { from: ProcessLevel; to: ProcessLevel }) {
       <span className="text-gray-500">{from}</span>
       <Icon name="ArrowRight" size={16} className="text-gray-400" />
       <span className="font-medium text-gray-900">{to}</span>
-      <Icon name={ui.icon} size={18} className={ui.className} />
+      {ui && <Icon name={ui.icon} size={18} className={ui.className} />}
     </div>
   );
 }
