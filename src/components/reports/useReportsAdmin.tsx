@@ -221,13 +221,45 @@ export function useReportsAdmin() {
     });
   };
 
-  const copyPublicLink = (reportLinkOrId: string | number) => {
+  const copyPublicLink = async (reportLinkOrId: string | number) => {
     // Если это строка, то это уже готовая ссылка (/diag/1234)
     // Если число, то формируем ссылку по старому формату
     const reportLink = typeof reportLinkOrId === 'string' ? reportLinkOrId : `/diag/${reportLinkOrId}`;
     const publicUrl = `${window.location.origin}${reportLink}`;
-    navigator.clipboard.writeText(publicUrl);
-    setSuccess('Ссылка скопирована в буфер обмена!');
+
+    const fallbackCopy = (text: string): boolean => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    };
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(publicUrl);
+        setSuccess('Ссылка скопирована в буфер обмена!');
+      } else if (fallbackCopy(publicUrl)) {
+        setSuccess('Ссылка скопирована в буфер обмена!');
+      } else {
+        setError(`Не удалось скопировать. Ссылка: ${publicUrl}`);
+      }
+    } catch {
+      if (fallbackCopy(publicUrl)) {
+        setSuccess('Ссылка скопирована в буфер обмена!');
+      } else {
+        setError(`Не удалось скопировать. Ссылка: ${publicUrl}`);
+      }
+    }
   };
 
   const toggleForm = () => {
