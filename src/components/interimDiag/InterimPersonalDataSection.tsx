@@ -70,7 +70,15 @@ export default function InterimPersonalDataSection({ data, onChange }: Props) {
     fetch(DIAG_STUDENTS_URL)
       .then((r) => r.json())
       .then((res) => {
-        if (res?.success && Array.isArray(res.students)) setStudents(res.students);
+        if (res?.success && Array.isArray(res.students)) {
+          const filtered = res.students.filter((s: InterimStudent) => {
+            const name = (s.name || '').toLowerCase();
+            if (name.includes('тест')) return false;
+            if (name.includes('абраменко') && name.includes('виктория')) return false;
+            return true;
+          });
+          setStudents(filtered);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
