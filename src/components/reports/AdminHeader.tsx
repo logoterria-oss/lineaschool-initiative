@@ -10,19 +10,20 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ showForm, onToggleForm, onRefresh }: AdminHeaderProps) {
   return (
-    <div className="flex justify-between items-center mb-6">
+    <div className="flex flex-col gap-4 mb-6 md:flex-row md:justify-between md:items-center">
       <div>
         <h1 className="text-2xl font-bold">Логопедические заключения</h1>
         <p className="text-gray-600">Управление базой данных заключений</p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={onRefresh} variant="outline" size="sm">
           <Icon name="RefreshCw" size={16} className="mr-2" />
           Обновить
         </Button>
         <Button onClick={() => window.location.href = '/diag_form'}>+ первичная диагностика</Button>
         <Button
-          variant="secondary"
+          variant="outline"
+          className="border-primary text-primary hover:bg-primary/10"
           onClick={() => alert('Промежуточная диагностика скоро будет доступна')}
         >
           + промежуточная диагностика
