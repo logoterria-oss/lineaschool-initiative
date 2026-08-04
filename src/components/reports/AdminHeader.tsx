@@ -20,7 +20,13 @@ export default function AdminHeader({ showForm, onToggleForm, onRefresh }: Admin
           <Icon name="RefreshCw" size={16} className="mr-2" />
           Обновить
         </Button>
-        <Button onClick={() => window.location.href = '/diag_form'}>+ первичная диагностика</Button>
+        <Button
+          variant="outline"
+          className="border-primary text-primary hover:bg-primary/10"
+          onClick={() => window.location.href = '/diag_form'}
+        >
+          + первичная диагностика
+        </Button>
         <Button
           variant="outline"
           className="border-primary text-primary hover:bg-primary/10"
