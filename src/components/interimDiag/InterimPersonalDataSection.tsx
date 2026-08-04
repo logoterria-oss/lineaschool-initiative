@@ -28,6 +28,8 @@ export interface InterimPrimaryData {
   visualMotorErrors: string[];
   visualSpatialErrors: string[];
   regulationViolations: string[];
+  orthographicErrorTypes: string[];
+  orthographicErrorsOther: string;
 }
 
 export interface InterimStudent {

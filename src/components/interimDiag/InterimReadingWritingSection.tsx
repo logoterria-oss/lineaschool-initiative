@@ -14,6 +14,7 @@ import Icon from '@/components/ui/icon';
 import { ProcessDynamic } from './impairedProcesses';
 import {
   DYSGRAPHIC_ERROR_CATALOG,
+  ORTHOGRAPHIC_ERROR_CATALOG,
   DysgraphicErrorItem,
   ReadingWritingBaseline,
   ReadingWritingState,
@@ -129,6 +130,26 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
     if (exists) return;
     const item: DysgraphicErrorItem = { label, struck: false, added: true };
     onChange({ errorTypes: [...value.errorTypes, item] });
+  };
+
+  const toggleOrthoStruck = (idx: number) => {
+    const next = value.orthoErrorTypes.map((it, i) =>
+      i === idx ? { ...it, struck: !it.struck } : it,
+    );
+    onChange({ orthoErrorTypes: next });
+  };
+
+  const removeOrthoAdded = (idx: number) => {
+    onChange({ orthoErrorTypes: value.orthoErrorTypes.filter((_, i) => i !== idx) });
+  };
+
+  const addOrthoType = (label: string) => {
+    const exists = value.orthoErrorTypes.some(
+      (it) => it.label.toLowerCase() === label.toLowerCase(),
+    );
+    if (exists) return;
+    const item: DysgraphicErrorItem = { label, struck: false, added: true };
+    onChange({ orthoErrorTypes: [...value.orthoErrorTypes, item] });
   };
 
   return (
@@ -253,10 +274,23 @@ export default function InterimReadingWritingSection({ baseline, value, onChange
         />
 
         <ErrorTypesBlock
+          title="Типы дисграфических ошибок"
+          addLabel="Добавить тип ошибки"
+          catalog={DYSGRAPHIC_ERROR_CATALOG}
           items={value.errorTypes}
           onToggleStruck={toggleStruck}
           onRemoveAdded={removeAdded}
           onAdd={addErrorType}
+        />
+
+        <ErrorTypesBlock
+          title="Орфографические ошибки"
+          addLabel="Добавить орфографическую ошибку"
+          catalog={ORTHOGRAPHIC_ERROR_CATALOG}
+          items={value.orthoErrorTypes}
+          onToggleStruck={toggleOrthoStruck}
+          onRemoveAdded={removeOrthoAdded}
+          onAdd={addOrthoType}
         />
       </div>
     </div>
@@ -268,15 +302,26 @@ interface ErrorTypesBlockProps {
   onToggleStruck: (idx: number) => void;
   onRemoveAdded: (idx: number) => void;
   onAdd: (label: string) => void;
+  title: string;
+  addLabel: string;
+  catalog: { group: string; items: string[] }[];
 }
 
-function ErrorTypesBlock({ items, onToggleStruck, onRemoveAdded, onAdd }: ErrorTypesBlockProps) {
+function ErrorTypesBlock({
+  items,
+  onToggleStruck,
+  onRemoveAdded,
+  onAdd,
+  title,
+  addLabel,
+  catalog,
+}: ErrorTypesBlockProps) {
   const [open, setOpen] = useState(false);
   const chosen = new Set(items.map((it) => it.label.toLowerCase()));
 
   return (
     <div>
-      <Label className="text-sm text-gray-700">Типы дисграфических ошибок</Label>
+      <Label className="text-sm text-gray-700">{title}</Label>
       <p className="text-xs text-gray-400 mt-1">
         Вычеркните ошибки, которых больше нет, и добавьте новые типы.
       </p>
@@ -324,11 +369,11 @@ function ErrorTypesBlock({ items, onToggleStruck, onRemoveAdded, onAdd }: ErrorT
               className="inline-flex items-center gap-1 rounded-full border border-red-300 bg-white px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50"
             >
               <Icon name="Plus" size={14} />
-              Добавить тип ошибки
+              {addLabel}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto w-80">
-            {DYSGRAPHIC_ERROR_CATALOG.map((group) => (
+            {catalog.map((group) => (
               <div key={group.group}>
                 <DropdownMenuLabel className="text-xs text-gray-500">
                   {group.group}

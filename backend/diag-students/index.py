@@ -81,7 +81,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    fd -> 'motorErrors'           AS motor_errors,
                    fd -> 'visualMotorErrors'     AS visual_motor_errors,
                    fd -> 'visualSpatialErrors'   AS visual_spatial_errors,
-                   fd -> 'regulationViolations'  AS regulation_violations
+                   fd -> 'regulationViolations'  AS regulation_violations,
+                   fd -> 'orthographicErrorTypes' AS orthographic_error_types,
+                   fd ->> 'orthographicErrorsOther' AS orthographic_errors_other
             FROM latest
         """)
 
@@ -128,6 +130,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'visualMotorErrors': as_list(r.get('visual_motor_errors')),
                     'visualSpatialErrors': as_list(r.get('visual_spatial_errors')),
                     'regulationViolations': as_list(r.get('regulation_violations')),
+                    'orthographicErrorTypes': as_list(r.get('orthographic_error_types')),
+                    'orthographicErrorsOther': r.get('orthographic_errors_other') or '',
                 },
             })
 

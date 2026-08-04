@@ -26,6 +26,7 @@ export interface ReadingWritingState {
   dysorthographicErrors: string; // количество
   totalErrors: string; // всего ошибок
   errorTypes: DysgraphicErrorItem[]; // список типов дисграфических ошибок
+  orthoErrorTypes: DysgraphicErrorItem[]; // список орфографических ошибок
   // Ручной ввод «было», когда в первичной данных нет
   baselineOverride: Partial<Record<RWMetric, string>>;
 }
@@ -48,8 +49,46 @@ export const EMPTY_RW_STATE: ReadingWritingState = {
   dysorthographicErrors: '',
   totalErrors: '',
   errorTypes: [],
+  orthoErrorTypes: [],
   baselineOverride: {},
 };
+
+// Каталог орфографических ошибок (для добавления новых на промежуточной)
+export const ORTHOGRAPHIC_ERROR_CATALOG: { group: string; items: string[] }[] = [
+  {
+    group: 'Орфографические ошибки',
+    items: [
+      'Заглавная буква в начале предложения',
+      'Правописание безударных гласных',
+      'Слова с удвоенными согласными',
+      'Правописание слов с мягким знаком',
+      'Правописание парных глухих и звонких согласных',
+      'Буквосочетания чк, чн, чт',
+      'Буквосочетания жи-ши, ча-ща, чу-щу',
+      'Заглавная буква в именах собственных',
+      'Буквосочетания чк, чн, чт, щн, нч',
+      'Разделительный мягкий знак',
+      'Не с глаголами',
+      'Правописание предлогов со словами',
+      'Безударные гласные',
+      'Парные глухие и звонкие согласные',
+      'Правописание слов с непроизносимым согласным',
+      'Правописание слов с двойными согласными',
+      'Правописание суффиксов и приставок',
+      'Разделительный твёрдый знак',
+      'Соединительные гласные о и е в сложных словах',
+      'Мягкий знак после шипящих на конце имён существительных',
+      'Правописание слов с буквами ь и ъ',
+      'Безударные падежные окончания имён существительных',
+      'Безударные падежные окончания имён прилагательных',
+      'Мягкий знак после шипящих на конце глаголов 2-го лица ед.ч.',
+      'Мягкий знак в глаголах на -ться, -тся',
+      'Безударные личные окончания глаголов',
+      'Правописание местоимений',
+      'Непроверяемые гласные и согласные',
+    ],
+  },
+];
 
 // Полный каталог типов дисграфических ошибок (для добавления новых на промежуточной)
 export const DYSGRAPHIC_ERROR_CATALOG: { group: string; items: string[] }[] = [
@@ -140,6 +179,31 @@ export function collectPrimaryErrorTypes(p: InterimPrimaryData | undefined): Dys
       out.push({ label, struck: false, added: false });
     });
   });
+  return out;
+}
+
+// Собирает отмеченные при первичной орфографические ошибки
+// (чекбоксы + свободный ввод через запятую)
+export function collectPrimaryOrthographicTypes(
+  p: InterimPrimaryData | undefined,
+): DysgraphicErrorItem[] {
+  if (!p) return [];
+  const seen = new Set<string>();
+  const out: DysgraphicErrorItem[] = [];
+  const push = (raw: string) => {
+    const label = (raw || '').trim();
+    const low = label.toLowerCase();
+    if (!label || low === 'нет') return;
+    if (seen.has(low)) return;
+    seen.add(low);
+    out.push({ label, struck: false, added: false });
+  };
+  (p.orthographicErrorTypes || []).forEach(push);
+  (p.orthographicErrorsOther || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .forEach(push);
   return out;
 }
 
