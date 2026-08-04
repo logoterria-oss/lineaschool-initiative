@@ -120,6 +120,8 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
               additionalCharacteristics: formData.additionalCharacteristics,
               regulationViolations: formData.regulationViolations,
               regulationViolationsOther: formData.regulationViolationsOther,
+              orthographicErrorTypes: formData.orthographicErrorTypes,
+              orthographicErrorsOther: formData.orthographicErrorsOther,
               childName: formData.childName
             }}
             onInputChange={onInputChange}

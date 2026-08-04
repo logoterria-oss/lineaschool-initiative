@@ -15,6 +15,8 @@ interface WritingSkillProps {
   additionalCharacteristics: string[];
   regulationViolations: string[];
   regulationViolationsOther?: string;
+  orthographicErrorTypes: string[];
+  orthographicErrorsOther?: string;
   childName: string;
   onCheckboxChange: (field: string, value: string, checked: boolean) => void;
   onInputChange: (field: string, value: string | string[]) => void;
@@ -34,6 +36,8 @@ export default function WritingSkillSection({
   additionalCharacteristics,
   regulationViolations,
   regulationViolationsOther,
+  orthographicErrorTypes,
+  orthographicErrorsOther,
   childName,
   onCheckboxChange,
   onInputChange,
@@ -298,6 +302,62 @@ export default function WritingSkillSection({
               placeholder="Укажите другие нарушения регуляции"
               value={regulationViolationsOther || ""}
               onChange={(e) => onInputChange("regulationViolationsOther", e.target.value)}
+              className="mt-2"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="ml-4">
+        <Label className="text-base font-semibold">Орфографические ошибки</Label>
+        <div className="mt-2 space-y-2">
+          {[
+            "Заглавная буква в начале предложения",
+            "Правописание безударных гласных",
+            "Слова с удвоенными согласными",
+            "Правописание слов с мягким знаком",
+            "Правописание парных глухих и звонких согласных",
+            "Буквосочетания чк, чн, чт",
+            "Буквосочетания жи-ши, ча-ща, чу-щу",
+            "Заглавная буква в именах собственных",
+            "Буквосочетания чк, чн, чт, щн, нч",
+            "Разделительный мягкий знак",
+            "Не с глаголами",
+            "Правописание предлогов со словами",
+            "Безударные гласные",
+            "Парные глухие и звонкие согласные",
+            "Правописание слов с непроизносимым согласным",
+            "Правописание слов с двойными согласными",
+            "Правописание суффиксов и приставок",
+            "Разделительный твёрдый знак",
+            "Соединительные гласные о и е в сложных словах",
+            "Мягкий знак после шипящих на конце имён существительных",
+            "Правописание слов с буквами ь и ъ",
+            "Безударные падежные окончания имён существительных",
+            "Безударные падежные окончания имён прилагательных",
+            "Мягкий знак после шипящих на конце глаголов 2-го лица ед.ч.",
+            "Мягкий знак в глаголах на -ться, -тся",
+            "Безударные личные окончания глаголов",
+            "Правописание местоимений",
+            "Непроверяемые гласные и согласные"
+          ].map(option => (
+            <div key={option} className="flex items-start space-x-2">
+              <Checkbox
+                id={`orthographic-error-types-${option}`}
+                checked={orthographicErrorTypes.includes(option)}
+                onCheckedChange={(checked) => onCheckboxChange("orthographicErrorTypes", option, !!checked)}
+                className="mt-0.5"
+              />
+              <Label htmlFor={`orthographic-error-types-${option}`} className="text-sm leading-5">{option}</Label>
+            </div>
+          ))}
+          <div className="mt-3">
+            <Label htmlFor="orthographic-errors-other" className="text-sm font-medium">Другие орфографические ошибки (укажите через запятую)</Label>
+            <Input
+              id="orthographic-errors-other"
+              placeholder="Укажите другие орфографические ошибки"
+              value={orthographicErrorsOther || ""}
+              onChange={(e) => onInputChange("orthographicErrorsOther", e.target.value)}
               className="mt-2"
             />
           </div>

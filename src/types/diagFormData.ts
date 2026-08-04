@@ -61,6 +61,8 @@ export interface DiagFormData {
   additionalCharacteristics: string[];
   regulationViolations: string[];
   regulationViolationsOther: string;
+  orthographicErrorTypes: string[];
+  orthographicErrorsOther: string;
   // Заключение
   speechDisorders: string[];
   dyslexiaTypes: string[];

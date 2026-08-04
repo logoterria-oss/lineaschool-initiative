@@ -65,6 +65,8 @@ export const useFormDataManager = () => {
     additionalCharacteristics: [] as string[],
     regulationViolations: [] as string[],
     regulationViolationsOther: "",
+    orthographicErrorTypes: [] as string[],
+    orthographicErrorsOther: "",
     // Заключение
     speechDisorders: [] as string[],
     dyslexiaTypes: [] as string[],

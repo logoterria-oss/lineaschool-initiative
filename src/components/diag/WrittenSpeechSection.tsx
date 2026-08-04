@@ -19,6 +19,8 @@ interface WrittenSpeechData {
   additionalCharacteristics: string[];
   regulationViolations: string[];
   regulationViolationsOther: string;
+  orthographicErrorTypes: string[];
+  orthographicErrorsOther: string;
   childName: string;
 }
 
@@ -86,6 +88,8 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
           additionalCharacteristics={formData.additionalCharacteristics}
           regulationViolations={formData.regulationViolations}
           regulationViolationsOther={formData.regulationViolationsOther}
+          orthographicErrorTypes={formData.orthographicErrorTypes}
+          orthographicErrorsOther={formData.orthographicErrorsOther}
           childName={formData.childName}
           onCheckboxChange={handleCheckboxChange}
           onInputChange={onInputChange}
