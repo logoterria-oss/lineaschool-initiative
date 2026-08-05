@@ -47,20 +47,21 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   const weeksToLoad = isOnce ? 1 : WEEKS_TO_LOAD;
   const maxStartOffset = isOnce ? 0 : MAX_START_OFFSET;
 
-  // Минимально допустимая дата старта — завтра (сегодня в день диагностики
-  // начинать нельзя, чтобы не ломать логику стабильных окон).
+  // Регулярное расписание: раньше завтрашнего дня начинать нельзя (сегодня —
+  // день диагностики, и это ломало бы логику стабильных окон).
+  // Разовый перенос: отсчёт идёт от СЕГОДНЯ — неделя это «сегодня + 6 дней».
   const minDate = (() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 1);
+    if (!isOnce) d.setDate(d.getDate() + 1);
     return d;
   })();
 
-  // Дата, с которой клиент готов начать заниматься (не обязательно понедельник)
+  // Дата начала окна: регулярное — завтра, разовый перенос — сегодня
   const [startDate, setStartDate] = useState<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 1);
+    if (!isOnce) d.setDate(d.getDate() + 1);
     return d;
   });
   const [type, setType] = useState<ScheduleType>('both');
