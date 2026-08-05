@@ -69,6 +69,8 @@ export const useFormDataManager = () => {
     orthographicErrorsOther: "",
     // Заключение
     speechDisorders: [] as string[],
+    soundProductionType: "",
+    languageAnalysisTypes: [] as string[],
     dyslexiaTypes: [] as string[],
     dysgraphiaTypes: [] as string[],
     brainSyndromes: [] as string[],

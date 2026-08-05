@@ -65,6 +65,8 @@ export interface DiagFormData {
   orthographicErrorsOther: string;
   // Заключение
   speechDisorders: string[];
+  soundProductionType: string;
+  languageAnalysisTypes: string[];
   dyslexiaTypes: string[];
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
