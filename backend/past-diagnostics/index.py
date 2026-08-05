@@ -1,0 +1,168 @@
+import json
+import os
+import secrets
+from typing import Dict, Any
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+SCHEMA = 't_p93118852_lineaschool_initiati'
+
+CORS = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+METRICS = [
+    'readingSpeed',
+    'readingComprehension',
+    'dysgraphicErrors',
+    'dysorthographicErrors',
+    'totalErrors',
+]
+
+
+def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+    """
+    Business: Результаты прошлых промежуточных диагностик ученика — список, добавление,
+    изменение и удаление. Нужны для построения цепочки динамики показателей.
+    Args: event - dict с httpMethod, queryStringParameters (name), body (action, id, ...)
+          context - объект с request_id
+    Returns: HTTP response dict со списком записей или результатом операции
+    """
+    method: str = event.get('httpMethod', 'GET')
+
+    if method == 'OPTIONS':
+        return {'statusCode': 200, 'headers': CORS, 'body': '', 'isBase64Encoded': False}
+
+    conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=5)
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        if method == 'GET':
+            params = event.get('queryStringParameters') or {}
+            name = (params.get('name') or '').strip()
+            if not name:
+                return _bad('Не указано имя ученика')
+
+            cursor.execute(
+                f"""
+                SELECT id,
+                       date_of_examination,
+                       COALESCE(form_data::jsonb ->> 'childName', student_name) AS child_name,
+                       form_data::jsonb ->> 'readingSpeed'          AS reading_speed,
+                       form_data::jsonb ->> 'readingComprehension'  AS reading_comprehension,
+                       form_data::jsonb ->> 'dysgraphicErrors'      AS dysgraphic_errors,
+                       form_data::jsonb ->> 'dysorthographicErrors' AS dysorthographic_errors,
+                       form_data::jsonb ->> 'totalErrors'           AS total_errors,
+                       form_data::jsonb ->> 'interimReadingChar'    AS reading_char
+                FROM {SCHEMA}.speech_therapy_reports
+                WHERE diag_type = 'interim'
+                  AND lower(COALESCE(form_data::jsonb ->> 'childName', student_name)) = lower(%s)
+                ORDER BY date_of_examination ASC, id ASC
+                """,
+                (name,),
+            )
+            items = [
+                {
+                    'id': r['id'],
+                    'date': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
+                    'readingSpeed': r['reading_speed'] or '',
+                    'readingComprehension': r['reading_comprehension'] or '',
+                    'dysgraphicErrors': r['dysgraphic_errors'] or '',
+                    'dysorthographicErrors': r['dysorthographic_errors'] or '',
+                    'totalErrors': r['total_errors'] or '',
+                    'readingChar': r['reading_char'] or '',
+                }
+                for r in cursor.fetchall()
+            ]
+            return _ok({'items': items})
+
+        body = json.loads(event.get('body') or '{}')
+        action = body.get('action')
+
+        if action == 'create':
+            name = (body.get('name') or '').strip()
+            date = (body.get('date') or '').strip()
+            if not name or not date:
+                return _bad('Нужны имя ученика и дата диагностики')
+
+            form_data = {'childName': name, 'interimReadingChar': body.get('readingChar') or ''}
+            for m in METRICS:
+                form_data[m] = str(body.get(m) or '')
+
+            cursor.execute(
+                f"""
+                INSERT INTO {SCHEMA}.speech_therapy_reports
+                    (student_name, date_of_examination, therapist_name, diagnosis,
+                     recommendations, report_content, form_data, access_token, diag_type, created_at)
+                VALUES (%s, %s, %s, '', '', %s, %s, %s, 'interim', NOW())
+                RETURNING id
+                """,
+                (
+                    name,
+                    date,
+                    body.get('logopedist') or 'Логопед',
+                    'Промежуточная диагностика (внесена вручную)',
+                    json.dumps(form_data),
+                    secrets.token_urlsafe(32),
+                ),
+            )
+            new_id = cursor.fetchone()['id']
+            conn.commit()
+            return _ok({'id': new_id})
+
+        if action == 'update':
+            rid = body.get('id')
+            date = (body.get('date') or '').strip()
+            if not rid or not date:
+                return _bad('Нужны идентификатор записи и дата')
+
+            patch = {'interimReadingChar': body.get('readingChar') or ''}
+            for m in METRICS:
+                patch[m] = str(body.get(m) or '')
+
+            cursor.execute(
+                f"""
+                UPDATE {SCHEMA}.speech_therapy_reports
+                SET date_of_examination = %s,
+                    form_data = (COALESCE(form_data::jsonb, '{{}}'::jsonb) || %s::jsonb)::text
+                WHERE id = %s AND diag_type = 'interim'
+                """,
+                (date, json.dumps(patch), int(rid)),
+            )
+            conn.commit()
+            return _ok({'updated': cursor.rowcount})
+
+        if action == 'delete':
+            rid = body.get('id')
+            if not rid:
+                return _bad('Нужен идентификатор записи')
+            cursor.execute(
+                f"DELETE FROM {SCHEMA}.speech_therapy_reports WHERE id = %s AND diag_type = 'interim'",
+                (int(rid),),
+            )
+            conn.commit()
+            return _ok({'deleted': cursor.rowcount})
+
+        return _bad('Неизвестное действие')
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def _ok(payload: Dict[str, Any]) -> Dict[str, Any]:
+    data = {'success': True}
+    data.update(payload)
+    return {'statusCode': 200, 'headers': CORS, 'body': json.dumps(data), 'isBase64Encoded': False}
+
+
+def _bad(message: str) -> Dict[str, Any]:
+    return {
+        'statusCode': 400,
+        'headers': CORS,
+        'body': json.dumps({'success': False, 'error': message}),
+        'isBase64Encoded': False,
+    }

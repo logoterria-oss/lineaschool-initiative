@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Icon from '@/components/ui/icon';
 import Footer from '@/components/Footer';
 import DiagFormNavigation from '@/components/diag/DiagFormNavigation';
 import InterimPersonalDataSection, {
@@ -11,6 +12,7 @@ import InterimReadingWritingSection from '@/components/interimDiag/InterimReadin
 import InterimRecommendationsSection, {
   InterimRecommendationsData,
 } from '@/components/interimDiag/InterimRecommendationsSection';
+import PastDiagnosticsModal from '@/components/interimDiag/PastDiagnosticsModal';
 import { buildPrimaryConclusion } from '@/components/interimDiag/primaryConclusion';
 import {
   computeImpairedFromPrimary,
@@ -55,6 +57,7 @@ export default function InterimDiagForm() {
   const [interimSamples, setInterimSamples] = useState<string[]>([]);
   const [interimSamplesDate, setInterimSamplesDate] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [pastOpen, setPastOpen] = useState(false);
 
   const [rwBaseline, setRwBaseline] = useState<ReadingWritingBaseline>({
     readingSpeed: '',
@@ -127,6 +130,22 @@ export default function InterimDiagForm() {
           setInterimSamples(Array.isArray(d.interim) ? d.interim : []);
           setInterimSamplesDate(d.interimDate || null);
         }
+      })
+      .catch(() => {});
+  };
+
+  // Перечитываем историю прошлых замеров после правок в модалке,
+  // чтобы цепочки динамики сразу показали актуальные значения
+  const reloadHistory = () => {
+    if (!personal.childName.trim()) return;
+    fetch('https://functions.poehali.dev/ed7f6726-88a1-4ecb-b063-ed890e8bd5cd')
+      .then((r) => r.json())
+      .then((d) => {
+        const list: InterimStudent[] = d?.students || [];
+        const found = list.find(
+          (s) => s.name.trim().toLowerCase() === personal.childName.trim().toLowerCase(),
+        );
+        if (found) setHistory(found.history || []);
       })
       .catch(() => {});
   };
@@ -235,6 +254,19 @@ export default function InterimDiagForm() {
               selected={studentSelected}
               hint={rwHint}
             />
+            {studentSelected && (
+              <div className="flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => setPastOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <Icon name="History" size={16} className="text-gray-500" />
+                  Добавить/изменить результаты прошлых диагностик
+                </button>
+              </div>
+            )}
+
             <InterimImpairedProcessesSection
               value={impaired}
               baseline={baseline}
@@ -278,6 +310,14 @@ export default function InterimDiagForm() {
       </main>
 
       <Footer />
+
+      {pastOpen && (
+        <PastDiagnosticsModal
+          studentName={personal.childName}
+          onClose={() => setPastOpen(false)}
+          onSaved={reloadHistory}
+        />
+      )}
 
       {lightbox && (
         <div
