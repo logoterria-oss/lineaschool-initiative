@@ -4,6 +4,8 @@ from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+SCHEMA = 't_p93118852_lineaschool_initiati'
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Business: Админ-панель для просмотра всех логопедических заключений
@@ -20,7 +22,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password, X-Staff-Role',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -59,16 +61,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Удаление заключения — только для руководителя школы
+        # Удаление заключения — только для руководителя школы (Абраменко Виктория).
+        # Личность проверяем по токену сессии, а не по заголовку роли:
+        # заголовок можно подделать, живую сессию — нет.
         if method == 'DELETE':
-            staff_role = headers.get('X-Staff-Role', headers.get('x-staff-role', ''))
-            if staff_role != 'head':
+            token = headers.get('X-Auth-Token', headers.get('x-auth-token', ''))
+            allowed = False
+            if token:
+                cursor.execute(
+                    f"SELECT s.full_name, s.role, s.status "
+                    f"FROM {SCHEMA}.staff_sessions ss "
+                    f"JOIN {SCHEMA}.staff s ON s.id = ss.staff_id "
+                    f"WHERE ss.token = %s AND ss.expires_at > now()",
+                    (token,)
+                )
+                me = cursor.fetchone()
+                if me and me['status'] == 'active' and me['role'] == 'head':
+                    allowed = 'абраменко' in (me['full_name'] or '').strip().lower()
+
+            if not allowed:
                 cursor.close()
                 conn.close()
                 return {
                     'statusCode': 403,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Удалять заключения может только руководитель школы'}),
+                    'body': json.dumps({'error': 'Удалять заключения может только руководитель школы Абраменко Виктория'}),
                     'isBase64Encoded': False
                 }
 

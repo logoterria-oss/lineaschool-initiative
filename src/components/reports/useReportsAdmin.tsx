@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SpeechTherapyReport } from './ReportCard';
 import { ReportFormData } from './ReportForm';
+import { canDeleteReports } from './canDeleteReports';
 
 const REPORTS_API_URL = 'https://functions.poehali.dev/903d39bc-07b8-462d-92da-a1922db341aa';
 
@@ -169,9 +170,8 @@ export function useReportsAdmin() {
 
   const deleteReport = async (id: number) => {
     if (!isAuthenticated) return;
-    // Удалять заключения может только руководитель школы
-    if (sessionStorage.getItem('staff_role') !== 'head') {
-      setError('Удалять заключения может только руководитель школы');
+    if (!canDeleteReports()) {
+      setError('Удалять заключения может только руководитель школы Абраменко Виктория');
       return;
     }
     if (!confirm('Удалить это заключение? Действие необратимо.')) return;
@@ -183,7 +183,7 @@ export function useReportsAdmin() {
         method: 'DELETE',
         headers: {
           'X-Admin-Password': currentPassword,
-          'X-Staff-Role': 'head'
+          'X-Auth-Token': localStorage.getItem('staff_token') || ''
         }
       });
 

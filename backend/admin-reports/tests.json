@@ -21,7 +21,7 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Удаление запрещено без роли руководителя",
+      "name": "Удаление запрещено без сессии",
       "method": "DELETE",
       "path": "/?id=999999999",
       "headers": {
@@ -29,21 +29,21 @@
       },
       "expectedStatus": 403,
       "expectedBody": {
-        "error": "Удалять заключения может только руководитель школы"
+        "error": "Удалять заключения может только руководитель школы Абраменко Виктория"
       },
       "bodyMatcher": "partial"
     },
     {
-      "name": "Руководитель: некорректный номер",
+      "name": "Удаление запрещено с чужим токеном",
       "method": "DELETE",
-      "path": "/?id=abc",
+      "path": "/?id=999999999",
       "headers": {
         "X-Admin-Password": "426874",
-        "X-Staff-Role": "head"
+        "X-Auth-Token": "fake-token-not-in-db"
       },
-      "expectedStatus": 400,
+      "expectedStatus": 403,
       "expectedBody": {
-        "error": "Не указан корректный номер заключения"
+        "error": "Удалять заключения может только руководитель школы Абраменко Виктория"
       },
       "bodyMatcher": "partial"
     }

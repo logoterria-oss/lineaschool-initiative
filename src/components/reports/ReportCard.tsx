@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import { canDeleteReports } from './canDeleteReports';
 
 export interface SpeechTherapyReport {
   id: number;
@@ -30,8 +31,7 @@ export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: Rep
   const isInterim = report.diag_type === 'interim';
   // У промежуточной своя страница заключения
   const reportLink = isInterim ? `/interim_diag/${report.id}` : `/diag/${report.id}`;
-  // Удалять заключения может только руководитель школы
-  const canDelete = sessionStorage.getItem('staff_role') === 'head';
+  const canDelete = canDeleteReports();
   return (
     <Card>
       <CardHeader>
