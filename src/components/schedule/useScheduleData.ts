@@ -281,8 +281,13 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
         .map((time) => ({ time, teachers: times[time] }));
       if (items.length > 0) result.push({ dayOffset, items });
     }
-    // Сортируем по календарному дню недели: ПН→ВС
-    result.sort((a, b) => weekdayOf(a.dayOffset) - weekdayOf(b.dayOffset));
+    // Регулярное расписание — сортируем по календарному дню недели ПН→ВС.
+    // Разовый перенос — строго хронологически от даты старта (сегодня → +6 дней).
+    result.sort((a, b) =>
+      isOnce
+        ? a.dayOffset - b.dayOffset
+        : weekdayOf(a.dayOffset) - weekdayOf(b.dayOffset),
+    );
     return result;
   };
 
@@ -377,8 +382,13 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       items.sort((a, b) => a.time.localeCompare(b.time));
       result.push({ dayOffset, items });
     }
-    // Сортируем по календарному дню недели: ПН→ВС
-    result.sort((a, b) => weekdayOf(a.dayOffset) - weekdayOf(b.dayOffset));
+    // Регулярное расписание — сортируем по календарному дню недели ПН→ВС.
+    // Разовый перенос — строго хронологически от даты старта (сегодня → +6 дней).
+    result.sort((a, b) =>
+      isOnce
+        ? a.dayOffset - b.dayOffset
+        : weekdayOf(a.dayOffset) - weekdayOf(b.dayOffset),
+    );
     return result;
   };
 
