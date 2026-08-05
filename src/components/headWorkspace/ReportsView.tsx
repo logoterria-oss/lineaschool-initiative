@@ -69,6 +69,8 @@ const ReportsInner = () => {
         total={reports.length}
         visible={visibleReports.length}
         therapists={therapists}
+        primaryCount={reports.filter((r) => (r.diag_type || 'primary') === 'primary').length}
+        interimCount={reports.filter((r) => r.diag_type === 'interim').length}
       />
 
       {success && (

@@ -15,22 +15,38 @@ interface Props {
   total: number;
   visible: number;
   therapists: string[];
+  // Счётчики по типам для вкладок (необязательны)
+  primaryCount?: number;
+  interimCount?: number;
 }
 
-const TYPE_OPTIONS = [
-  { value: '', label: 'Все типы' },
-  { value: 'primary', label: 'Первичная' },
-  { value: 'interim', label: 'Промежуточная' },
+const TYPE_TABS = [
+  { value: '', label: 'Все' },
+  { value: 'primary', label: 'Первичные' },
+  { value: 'interim', label: 'Промежуточные' },
 ];
 
-export default function ReportsFilters({ filters, setFilters, total, visible, therapists }: Props) {
+export default function ReportsFilters({
+  filters,
+  setFilters,
+  total,
+  visible,
+  therapists,
+  primaryCount,
+  interimCount,
+}: Props) {
+  const countFor = (value: string) => {
+    if (value === 'primary') return primaryCount;
+    if (value === 'interim') return interimCount;
+    return total;
+  };
   const hasActive = !!(filters.name || filters.month || filters.type || filters.therapist);
 
   const reset = () => setFilters({ name: '', month: '', type: '', therapist: '' });
 
   return (
     <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50/60 p-3">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="relative">
           <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
@@ -58,17 +74,32 @@ export default function ReportsFilters({ filters, setFilters, total, visible, th
             </option>
           ))}
         </select>
-        <select
-          className="h-10 rounded-md border border-input bg-white px-3 text-sm"
-          value={filters.type}
-          onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-        >
-          {TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {TYPE_TABS.map((tab) => {
+          const active = filters.type === tab.value;
+          const count = countFor(tab.value);
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setFilters({ ...filters, type: tab.value })}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                active
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {tab.label}
+              {typeof count === 'number' && (
+                <span className={active ? 'ml-1.5 opacity-80' : 'ml-1.5 text-gray-400'}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
       {hasActive && (
         <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
