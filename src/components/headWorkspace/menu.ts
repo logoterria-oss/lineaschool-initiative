@@ -22,7 +22,8 @@ export const HEAD_MENU: MenuGroup[] = [
     label: 'Уроки и диагностики',
     icon: 'BookOpen',
     items: [
-      { id: 'reports', label: 'Анкеты и заключения', kind: 'component', icon: 'FileText' },
+      { id: 'questionnaires', label: 'Анкеты родителей', kind: 'component', icon: 'ClipboardList' },
+      { id: 'reports', label: 'Логопедические заключения', kind: 'component', icon: 'FileText' },
       { id: 'schedule', label: 'Расписание групп и свободные слоты', kind: 'component', icon: 'CalendarDays' },
       { id: 'homework', label: 'Контроль ДЗ', kind: 'component', icon: 'ClipboardCheck' },
       { id: 'students-list', label: 'Список учеников', kind: 'component', icon: 'GraduationCap' },
