@@ -195,6 +195,21 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   const dateForSlot = (period: number, dayOffset: number): Date =>
     addDays(startDate, period * 7 + dayOffset);
 
+  // Разовый перенос: окно, которое сегодня уже началось, предлагать бессмысленно.
+  // Считаем прошедшим всё, что начинается менее чем через MIN_LEAD_MINUTES минут.
+  const MIN_LEAD_MINUTES = 30;
+  const isSlotPassed = (dayOffset: number, time: string): boolean => {
+    if (!isOnce) return false;
+    const now = new Date();
+    const slot = addDays(startDate, dayOffset);
+    // Сравниваем по календарной дате: фильтруем только сегодняшний день
+    if (slot.toDateString() !== now.toDateString()) return false;
+    const [h, m] = time.slice(0, 5).split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return false;
+    slot.setHours(h, m, 0, 0);
+    return slot.getTime() - now.getTime() < MIN_LEAD_MINUTES * 60 * 1000;
+  };
+
   // ── Индивидуальные: стабильные окна ──────────────────────────────────────────
   // dayOffset слота внутри периода period: из даты дня минус начало периода
   const indDayOffset = (period: number, isoDate: string): number => {
@@ -219,7 +234,10 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   // Стабильно ли окно STABLE_WEEKS периодов подряд, начиная с периода startPeriod.
   // В режиме разового переноса достаточно, чтобы окно было свободно в самом периоде.
   const isIndStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
-    if (isOnce) return isIndFree(startPeriod, dayOffset, time, teacherId);
+    if (isOnce) {
+      if (isSlotPassed(dayOffset, time)) return false;
+      return isIndFree(startPeriod, dayOffset, time, teacherId);
+    }
     for (let k = 0; k < STABLE_WEEKS; k++) {
       if (!isIndFree(startPeriod + k, dayOffset, time, teacherId)) return false;
     }
@@ -313,7 +331,7 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   const isGroupStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
     const first = groupFreeAt(startPeriod, dayOffset, time, teacherId);
     if (first === null || first <= 0) return false;
-    if (isOnce) return true;
+    if (isOnce) return !isSlotPassed(dayOffset, time);
     for (let k = 1; k < STABLE_WEEKS; k++) {
       const free = groupFreeAt(startPeriod + k, dayOffset, time, teacherId);
       if (free !== null && free <= 0) return false;
