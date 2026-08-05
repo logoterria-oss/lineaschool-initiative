@@ -134,6 +134,16 @@ export default function InterimDiagForm() {
       .catch(() => {});
   };
 
+  // Прошлые диагностики можно вносить любому ребёнку — достаточно указать ФИО.
+  // Выбор из списка не обязателен: у части детей диагностики шли не в этой форме.
+  const openPastDiagnostics = () => {
+    if (!personal.childName.trim()) {
+      alert('Сначала укажите ФИО ребёнка в разделе «Персональные данные».');
+      return;
+    }
+    setPastOpen(true);
+  };
+
   // Перечитываем историю прошлых замеров после правок в модалке,
   // чтобы цепочки динамики сразу показали актуальные значения
   const reloadHistory = () => {
@@ -145,7 +155,14 @@ export default function InterimDiagForm() {
         const found = list.find(
           (s) => s.name.trim().toLowerCase() === personal.childName.trim().toLowerCase(),
         );
-        if (found) setHistory(found.history || []);
+        if (!found) return;
+        setHistory(found.history || []);
+        // Первичную могли внести вручную только что — подтягиваем её как значения «было»
+        if (found.primary) {
+          setRwBaseline(baselineFromPrimary(found.primary));
+          setPrimaryDate(found.examDate);
+          setStudentSelected(true);
+        }
       })
       .catch(() => {});
   };
@@ -257,23 +274,16 @@ export default function InterimDiagForm() {
             <div className="flex flex-col items-start gap-2">
               <button
                 type="button"
-                onClick={() => setPastOpen(true)}
-                disabled={!studentSelected}
-                title={
-                  studentSelected
-                    ? undefined
-                    : 'Сначала выберите ученика в разделе «Персональные данные»'
-                }
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+                onClick={openPastDiagnostics}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 <Icon name="History" size={16} className="text-gray-500" />
                 Добавить/изменить результаты прошлых диагностик
               </button>
-              {!studentSelected && (
-                <span className="text-xs text-gray-500">
-                  Доступно после выбора ученика в разделе «Персональные данные».
-                </span>
-              )}
+              <span className="text-xs text-gray-500">
+                Если первичная или промежуточные диагностики проводились не в этой форме — внесите их
+                показатели вручную.
+              </span>
             </div>
 
             <InterimImpairedProcessesSection

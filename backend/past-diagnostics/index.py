@@ -49,6 +49,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cursor.execute(
                 f"""
                 SELECT id,
+                       diag_type,
                        date_of_examination,
                        COALESCE(form_data::jsonb ->> 'childName', student_name) AS child_name,
                        form_data::jsonb ->> 'readingSpeed'          AS reading_speed,
@@ -56,10 +57,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                        form_data::jsonb ->> 'dysgraphicErrors'      AS dysgraphic_errors,
                        form_data::jsonb ->> 'dysorthographicErrors' AS dysorthographic_errors,
                        form_data::jsonb ->> 'totalErrors'           AS total_errors,
-                       form_data::jsonb ->> 'interimReadingChar'    AS reading_char
+                       COALESCE(
+                           form_data::jsonb ->> 'interimReadingChar',
+                           form_data::jsonb ->> 'manualReadingChar'
+                       ) AS reading_char
                 FROM {SCHEMA}.speech_therapy_reports
-                WHERE diag_type = 'interim'
-                  AND lower(COALESCE(form_data::jsonb ->> 'childName', student_name)) = lower(%s)
+                WHERE lower(COALESCE(form_data::jsonb ->> 'childName', student_name)) = lower(%s)
                 ORDER BY date_of_examination ASC, id ASC
                 """,
                 (name,),
@@ -67,6 +70,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             items = [
                 {
                     'id': r['id'],
+                    'diagType': r['diag_type'] or 'interim',
                     'date': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
                     'readingSpeed': r['reading_speed'] or '',
                     'readingComprehension': r['reading_comprehension'] or '',
@@ -88,25 +92,41 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not name or not date:
                 return _bad('Нужны имя ученика и дата диагностики')
 
-            form_data = {'childName': name, 'interimReadingChar': body.get('readingChar') or ''}
+            diag_type = 'primary' if body.get('diagType') == 'primary' else 'interim'
+            reading_char = body.get('readingChar') or ''
+
+            form_data = {
+                'childName': name,
+                'birthDate': body.get('birthDate') or '',
+                'grade': body.get('grade') or '',
+                'manualEntry': True,
+                'interimReadingChar': reading_char,
+            }
+            if diag_type == 'primary':
+                # Для первичной характер чтения читается из readingSkill
+                form_data['readingSkill'] = [reading_char] if reading_char else []
+                form_data['manualReadingChar'] = reading_char
             for m in METRICS:
                 form_data[m] = str(body.get(m) or '')
+
+            label = 'Первичная диагностика' if diag_type == 'primary' else 'Промежуточная диагностика'
 
             cursor.execute(
                 f"""
                 INSERT INTO {SCHEMA}.speech_therapy_reports
                     (student_name, date_of_examination, therapist_name, diagnosis,
                      recommendations, report_content, form_data, access_token, diag_type, created_at)
-                VALUES (%s, %s, %s, '', '', %s, %s, %s, 'interim', NOW())
+                VALUES (%s, %s, %s, '', '', %s, %s, %s, %s, NOW())
                 RETURNING id
                 """,
                 (
                     name,
                     date,
                     body.get('logopedist') or 'Логопед',
-                    'Промежуточная диагностика (внесена вручную)',
+                    f'{label} (внесена вручную)',
                     json.dumps(form_data),
                     secrets.token_urlsafe(32),
+                    diag_type,
                 ),
             )
             new_id = cursor.fetchone()['id']
@@ -119,7 +139,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not rid or not date:
                 return _bad('Нужны идентификатор записи и дата')
 
-            patch = {'interimReadingChar': body.get('readingChar') or ''}
+            reading_char = body.get('readingChar') or ''
+            patch = {'interimReadingChar': reading_char}
+            if body.get('diagType') == 'primary':
+                patch['readingSkill'] = [reading_char] if reading_char else []
+                patch['manualReadingChar'] = reading_char
             for m in METRICS:
                 patch[m] = str(body.get(m) or '')
 
@@ -128,7 +152,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 UPDATE {SCHEMA}.speech_therapy_reports
                 SET date_of_examination = %s,
                     form_data = (COALESCE(form_data::jsonb, '{{}}'::jsonb) || %s::jsonb)::text
-                WHERE id = %s AND diag_type = 'interim'
+                WHERE id = %s
                 """,
                 (date, json.dumps(patch), int(rid)),
             )
@@ -140,7 +164,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not rid:
                 return _bad('Нужен идентификатор записи')
             cursor.execute(
-                f"DELETE FROM {SCHEMA}.speech_therapy_reports WHERE id = %s AND diag_type = 'interim'",
+                f"DELETE FROM {SCHEMA}.speech_therapy_reports WHERE id = %s",
                 (int(rid),),
             )
             conn.commit()

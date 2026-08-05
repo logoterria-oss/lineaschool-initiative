@@ -15,6 +15,7 @@ const API = 'https://functions.poehali.dev/12cd04f4-07fb-4fe5-a260-e3c9955e0ae7'
 
 export interface PastEntry {
   id: number;
+  diagType: 'primary' | 'interim';
   date: string | null;
   readingSpeed: string;
   readingComprehension: string;
@@ -25,6 +26,7 @@ export interface PastEntry {
 }
 
 const EMPTY: Omit<PastEntry, 'id'> = {
+  diagType: 'interim',
   date: '',
   readingSpeed: '',
   readingComprehension: '',
@@ -64,6 +66,7 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
   const startEdit = (it: PastEntry) => {
     setEditingId(it.id);
     setDraft({
+      diagType: it.diagType,
       date: it.date || '',
       readingSpeed: it.readingSpeed,
       readingComprehension: it.readingComprehension,
@@ -137,7 +140,8 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Результаты прошлых диагностик</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {studentName}. Эти замеры встают в цепочку динамики между первичной и текущей диагностикой.
+              {studentName}. Здесь можно вручную внести первичную и промежуточные диагностики, если
+              они проводились не в этой форме. Замеры встают в цепочку динамики показателей.
             </p>
           </div>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-700">
@@ -150,13 +154,14 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
             <p className="text-sm text-gray-500">Загрузка…</p>
           ) : items.length === 0 ? (
             <p className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
-              Прошлых промежуточных диагностик пока нет. Добавьте их ниже, если они проводились раньше.
+              Прошлых диагностик пока нет. Добавьте их ниже, если они проводились раньше.
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase text-gray-500">
+                    <th className="pb-2 pr-3">Тип</th>
                     <th className="pb-2 pr-3">Дата</th>
                     <th className="pb-2 pr-3">Скорость</th>
                     <th className="pb-2 pr-3">Понимание</th>
@@ -169,6 +174,17 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                 <tbody>
                   {items.map((it) => (
                     <tr key={it.id} className="border-t border-gray-100">
+                      <td className="py-2 pr-3">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            it.diagType === 'primary'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {it.diagType === 'primary' ? 'Первичная' : 'Промежуточная'}
+                        </span>
+                      </td>
                       <td className="py-2 pr-3 font-medium text-gray-900">{fmt(it.date)}</td>
                       <td className="py-2 pr-3">{it.readingSpeed || '—'}</td>
                       <td className="py-2 pr-3">{it.readingComprehension || '—'}</td>
@@ -206,6 +222,21 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
             </h4>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <Label className="text-sm">Тип диагностики</Label>
+                <Select
+                  value={draft.diagType}
+                  onValueChange={(v) => patch({ diagType: v as 'primary' | 'interim' })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primary">Первичная</SelectItem>
+                    <SelectItem value="interim">Промежуточная</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label className="text-sm">Дата диагностики</Label>
                 <Input
