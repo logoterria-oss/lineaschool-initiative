@@ -7,6 +7,7 @@ interface ExportPdfPreviewProps {
   logoData: string;
   startDate: Date;
   type: ScheduleType;
+  isOnce?: boolean;
   indStableDays: IndStableDay[];
   groupStableDays: GroupStableDay[];
   weekdayOf: (dayOffset: number) => number;
@@ -18,6 +19,7 @@ const ExportPdfPreview = ({
   logoData,
   startDate,
   type,
+  isOnce = false,
   indStableDays,
   groupStableDays,
   weekdayOf,
@@ -36,10 +38,11 @@ const ExportPdfPreview = ({
           )}
         </div>
         <h1 style={{ fontSize: 30, fontWeight: 700, color: '#111827', marginBottom: 4 }}>
-          Свободные слоты для записи
+          {isOnce ? 'Свободные слоты для разового переноса' : 'Свободные слоты для записи'}
         </h1>
         <p style={{ fontSize: 20, color: '#4b5563', marginBottom: 12 }}>
-          Начало занятий: {fmtRu(startDate)} – {fmtRu(addDays(startDate, 6))}
+          {isOnce ? 'Даты: ' : 'Начало занятий: '}
+          {fmtRu(startDate)} – {fmtRu(addDays(startDate, 6))}
         </p>
         <div
           style={{
@@ -72,6 +75,12 @@ const ExportPdfPreview = ({
                 <div key={day.dayOffset} style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 20, fontWeight: 600, color: '#374151' }}>
                     {WEEKDAY_FULL[weekdayOf(day.dayOffset)]}
+                    {isOnce && (
+                      <span style={{ fontWeight: 400, color: '#6b7280' }}>
+                        {' '}
+                        {fmtRu(addDays(startDate, day.dayOffset))}
+                      </span>
+                    )}
                   </div>
                   {day.items.map((item) => (
                     <div key={item.time} style={{ fontSize: 18, color: '#4b5563', paddingLeft: 12 }}>
@@ -104,6 +113,12 @@ const ExportPdfPreview = ({
                 <div key={day.dayOffset} style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 20, fontWeight: 600, color: '#374151' }}>
                     {WEEKDAY_FULL[weekdayOf(day.dayOffset)]}
+                    {isOnce && (
+                      <span style={{ fontWeight: 400, color: '#6b7280' }}>
+                        {' '}
+                        {fmtRu(addDays(startDate, day.dayOffset))}
+                      </span>
+                    )}
                   </div>
                   {day.items.map((x, i) => (
                     <div key={i} style={{ fontSize: 18, color: '#4b5563', paddingLeft: 12 }}>

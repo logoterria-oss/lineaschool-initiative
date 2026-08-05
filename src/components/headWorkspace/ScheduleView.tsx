@@ -4,10 +4,11 @@ import Icon from '@/components/ui/icon';
 import IndividualTab from '@/components/schedule/IndividualTab';
 import GroupsTab from '@/components/schedule/GroupsTab';
 import ExportPdfModal from '@/components/schedule/ExportPdfModal';
+import { PdfMode } from '@/components/schedule/useScheduleData';
 
 const ScheduleView = () => {
   const [tab, setTab] = useState<'individual' | 'groups'>('groups');
-  const [showPdf, setShowPdf] = useState(false);
+  const [pdfMode, setPdfMode] = useState<PdfMode | null>(null);
 
   return (
     <div>
@@ -20,16 +21,20 @@ const ScheduleView = () => {
           <Icon name="User" size={16} />
           Индивидуальные
         </Button>
-        <Button onClick={() => setShowPdf(true)} className="ml-auto gap-2 bg-green-600 hover:bg-green-700">
+        <Button onClick={() => setPdfMode('regular')} className="ml-auto gap-2 bg-green-600 hover:bg-green-700">
           <Icon name="FileDown" size={16} />
-          Создать PDF
+          Создать PDF (регулярное расписание)
+        </Button>
+        <Button onClick={() => setPdfMode('once')} className="gap-2 bg-amber-600 hover:bg-amber-700">
+          <Icon name="CalendarClock" size={16} />
+          Создать PDF (разовый перенос)
         </Button>
       </div>
 
       {tab === 'individual' && <IndividualTab />}
       {tab === 'groups' && <GroupsTab />}
 
-      {showPdf && <ExportPdfModal onClose={() => setShowPdf(false)} />}
+      {pdfMode && <ExportPdfModal mode={pdfMode} onClose={() => setPdfMode(null)} />}
     </div>
   );
 };

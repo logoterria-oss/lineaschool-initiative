@@ -2,14 +2,16 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { fmtDate, addDays, fmtRu } from './types';
 import { ScheduleType } from './pdfExportUtils';
-import { useScheduleData } from './useScheduleData';
+import { useScheduleData, PdfMode } from './useScheduleData';
 import ExportPdfPreview from './ExportPdfPreview';
 
 interface ExportPdfModalProps {
   onClose: () => void;
+  mode?: PdfMode;
 }
 
-const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
+const ExportPdfModal = ({ onClose, mode = 'regular' }: ExportPdfModalProps) => {
+  const isOnce = mode === 'once';
   const {
     startDate,
     minDate,
@@ -28,14 +30,16 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
     fmtFrom,
     indStableDays,
     groupStableDays,
-  } = useScheduleData();
+  } = useScheduleData(mode);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl">
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
-          <h2 className="font-bold text-lg text-gray-900">Создать PDF с расписанием</h2>
+          <h2 className="font-bold text-lg text-gray-900">
+            {isOnce ? 'PDF: разовый перенос' : 'PDF: регулярное расписание'}
+          </h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700 rounded-lg">
             <Icon name="X" size={20} />
           </button>
@@ -45,7 +49,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
           {/* Дата старта */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Дата, с которой клиент готов начать
+              {isOnce ? 'Дата, с которой ищем замену' : 'Дата, с которой клиент готов начать'}
             </label>
             <input
               type="date"
@@ -55,7 +59,10 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Окна с {fmtRu(startDate)} по {fmtRu(addDays(startDate, 6))}. Предлагаем только те, что свободны 3 недели подряд.
+              Окна с {fmtRu(startDate)} по {fmtRu(addDays(startDate, 6))}.{' '}
+              {isOnce
+                ? 'Показываем всё, что свободно на этой неделе — без проверки на будущие недели.'
+                : 'Предлагаем только те, что свободны 3 недели подряд.'}
             </p>
           </div>
 
@@ -108,6 +115,7 @@ const ExportPdfModal = ({ onClose }: ExportPdfModalProps) => {
               logoData={logoData}
               startDate={startDate}
               type={type}
+              isOnce={isOnce}
               indStableDays={indStableDays}
               groupStableDays={groupStableDays}
               weekdayOf={weekdayOf}

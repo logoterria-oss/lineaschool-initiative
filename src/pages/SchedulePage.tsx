@@ -6,11 +6,12 @@ import Icon from '@/components/ui/icon';
 import IndividualTab from '@/components/schedule/IndividualTab';
 import GroupsTab from '@/components/schedule/GroupsTab';
 import ExportPdfModal from '@/components/schedule/ExportPdfModal';
+import { PdfMode } from '@/components/schedule/useScheduleData';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'individual' | 'groups'>('groups');
-  const [showPdf, setShowPdf] = useState(false);
+  const [pdfMode, setPdfMode] = useState<PdfMode | null>(null);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
@@ -18,17 +19,24 @@ const SchedulePage = () => {
       <div className="container mx-auto px-4 py-8">
         <div className={tab === 'groups' ? 'max-w-7xl mx-auto' : 'max-w-4xl mx-auto'}>
 
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-6 flex-wrap">
             <button onClick={() => navigate('/admin')} className="text-gray-500 hover:text-gray-800">
               <Icon name="ArrowLeft" size={20} />
             </button>
             <h1 className="text-2xl font-bold text-gray-900">Расписание</h1>
             <Button
-              onClick={() => setShowPdf(true)}
+              onClick={() => setPdfMode('regular')}
               className="ml-auto gap-2 bg-green-600 hover:bg-green-700"
             >
               <Icon name="FileDown" size={16} />
-              Создать PDF
+              Создать PDF (регулярное расписание)
+            </Button>
+            <Button
+              onClick={() => setPdfMode('once')}
+              className="gap-2 bg-amber-600 hover:bg-amber-700"
+            >
+              <Icon name="CalendarClock" size={16} />
+              Создать PDF (разовый перенос)
             </Button>
           </div>
 
@@ -58,7 +66,7 @@ const SchedulePage = () => {
         </div>
       </div>
 
-      {showPdf && <ExportPdfModal onClose={() => setShowPdf(false)} />}
+      {pdfMode && <ExportPdfModal mode={pdfMode} onClose={() => setPdfMode(null)} />}
     </div>
   );
 };

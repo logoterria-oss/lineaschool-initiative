@@ -35,7 +35,18 @@ export interface GroupStableDay {
   items: { time: string; teacher: string; free: number; ageLabel: string; fromDate: Date | null }[];
 }
 
-export const useScheduleData = () => {
+// 'regular' — регулярное расписание: окно предлагаем, только если оно стабильно
+//             (свободно несколько недель подряд).
+// 'once'    — разовый перенос: смотрим ТОЛЬКО выбранную неделю, без проверки
+//             стабильности и без пометок «с такого-то числа».
+export type PdfMode = 'regular' | 'once';
+
+export const useScheduleData = (mode: PdfMode = 'regular') => {
+  const isOnce = mode === 'once';
+  // В разовом режиме грузим одну неделю и не сдвигаем старт вперёд
+  const weeksToLoad = isOnce ? 1 : WEEKS_TO_LOAD;
+  const maxStartOffset = isOnce ? 0 : MAX_START_OFFSET;
+
   // Минимально допустимая дата старта — завтра (сегодня в день диагностики
   // начинать нельзя, чтобы не ломать логику стабильных окон).
   const minDate = (() => {
@@ -90,7 +101,7 @@ export const useScheduleData = () => {
 
       // «Неделя» здесь — скользящее окно из 7 дней от даты старта:
       // период 0 = startDate..startDate+6, период 1 = startDate+7..+13 и т.д.
-      const weekStarts = Array.from({ length: WEEKS_TO_LOAD }, (_, w) => addDays(startDate, w * 7));
+      const weekStarts = Array.from({ length: weeksToLoad }, (_, w) => addDays(startDate, w * 7));
 
       if (type === 'individual' || type === 'both') {
         const weeks: IndDay[][] = [];
@@ -204,8 +215,10 @@ export const useScheduleData = () => {
     return false;
   };
 
-  // Стабильно ли окно STABLE_WEEKS периодов подряд, начиная с периода startPeriod
+  // Стабильно ли окно STABLE_WEEKS периодов подряд, начиная с периода startPeriod.
+  // В режиме разового переноса достаточно, чтобы окно было свободно в самом периоде.
   const isIndStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
+    if (isOnce) return isIndFree(startPeriod, dayOffset, time, teacherId);
     for (let k = 0; k < STABLE_WEEKS; k++) {
       if (!isIndFree(startPeriod + k, dayOffset, time, teacherId)) return false;
     }
@@ -216,10 +229,10 @@ export const useScheduleData = () => {
     const result: IndStableDay[] = [];
     if (!indWeeks || indWeeks.length === 0) return result;
 
-    // Кандидаты окон — из периода 0 и периода 1
+    // Кандидаты окон — из периодов 0..maxStartOffset
     const seen = new Set<string>();
     const candidates: { dayOffset: number; time: string; teacherId: number; teacherName: string }[] = [];
-    for (let period = 0; period <= MAX_START_OFFSET; period++) {
+    for (let period = 0; period <= maxStartOffset; period++) {
       const week = indWeeks[period];
       if (!week) continue;
       for (const day of week) {
@@ -242,9 +255,9 @@ export const useScheduleData = () => {
 
     const byDay: Record<number, Record<string, { name: string; fromDate: Date | null }[]>> = {};
     for (const c of candidates) {
-      // Ищем первый период (0..MAX_START_OFFSET), с которого окно стабильно
+      // Ищем первый период (0..maxStartOffset), с которого окно стабильно
       let startPeriod = -1;
-      for (let p = 0; p <= MAX_START_OFFSET; p++) {
+      for (let p = 0; p <= maxStartOffset; p++) {
         if (isIndStable(p, c.dayOffset, c.time, c.teacherId)) {
           startPeriod = p;
           break;
@@ -294,6 +307,7 @@ export const useScheduleData = () => {
   const isGroupStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
     const first = groupFreeAt(startPeriod, dayOffset, time, teacherId);
     if (first === null || first <= 0) return false;
+    if (isOnce) return true;
     for (let k = 1; k < STABLE_WEEKS; k++) {
       const free = groupFreeAt(startPeriod + k, dayOffset, time, teacherId);
       if (free !== null && free <= 0) return false;
@@ -305,10 +319,10 @@ export const useScheduleData = () => {
     const result: GroupStableDay[] = [];
     if (!groupWeeks || groupWeeks.length === 0) return result;
 
-    // Кандидаты — групповые окна из периода 0 и периода 1
+    // Кандидаты — групповые окна из периодов 0..maxStartOffset
     const seen = new Set<string>();
     const candidates: { dayOffset: number; time: string; teacherId: number; teacherName: string }[] = [];
-    for (let period = 0; period <= MAX_START_OFFSET; period++) {
+    for (let period = 0; period <= maxStartOffset; period++) {
       const week = groupWeeks[period];
       if (!week) continue;
       for (const row of week) {
@@ -330,7 +344,7 @@ export const useScheduleData = () => {
     const byDay: Record<number, GroupStableDay['items']> = {};
     for (const c of candidates) {
       let startPeriod = -1;
-      for (let p = 0; p <= MAX_START_OFFSET; p++) {
+      for (let p = 0; p <= maxStartOffset; p++) {
         if (isGroupStable(p, c.dayOffset, c.time, c.teacherId)) {
           startPeriod = p;
           break;
