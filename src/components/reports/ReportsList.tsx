@@ -2,13 +2,14 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import ReportCard, { SpeechTherapyReport } from './ReportCard';
+import { useCanDeleteReports } from './canDeleteReports';
 
 interface ReportsListProps {
   reports: SpeechTherapyReport[];
   loading: boolean;
   onEditReport: (report: SpeechTherapyReport) => void;
   onDeleteReport: (id: number) => void;
-  onCopyPublicLink: (token: string) => void;
+  onCopyPublicLink: (linkOrId: string | number) => void;
 }
 
 export default function ReportsList({ 
@@ -18,6 +19,9 @@ export default function ReportsList({
   onDeleteReport, 
   onCopyPublicLink 
 }: ReportsListProps) {
+  // Право на удаление определяем один раз для всего списка
+  const canDelete = useCanDeleteReports();
+
   if (loading && reports.length === 0) {
     return (
       <div className="space-y-4">
@@ -60,6 +64,7 @@ export default function ReportsList({
           onEdit={onEditReport}
           onDelete={onDeleteReport}
           onCopyLink={onCopyPublicLink}
+          canDelete={canDelete}
         />
       ))}
     </div>

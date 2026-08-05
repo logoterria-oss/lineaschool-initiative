@@ -171,7 +171,7 @@ export function useReportsAdmin() {
   const deleteReport = async (id: number) => {
     if (!isAuthenticated) return;
     if (!canDeleteReports()) {
-      setError('Удалять заключения может только руководитель школы Абраменко Виктория');
+      setError('Удалять заключения может только руководитель школы');
       return;
     }
     if (!confirm('Удалить это заключение? Действие необратимо.')) return;

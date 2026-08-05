@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { canDeleteReports } from './canDeleteReports';
 
 export interface SpeechTherapyReport {
   id: number;
@@ -25,13 +24,14 @@ interface ReportCardProps {
   onEdit: (report: SpeechTherapyReport) => void;
   onDelete: (id: number) => void;
   onCopyLink: (linkOrId: string | number) => void;
+  canDelete?: boolean;
 }
 
-export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: ReportCardProps) {
+export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: ReportCardProps) {
   const isInterim = report.diag_type === 'interim';
   // У промежуточной своя страница заключения
   const reportLink = isInterim ? `/interim_diag/${report.id}` : `/diag/${report.id}`;
-  const canDelete = canDeleteReports();
+
   return (
     <Card>
       <CardHeader>
