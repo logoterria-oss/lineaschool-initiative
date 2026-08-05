@@ -28,6 +28,8 @@ interface ReportCardProps {
 
 export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: ReportCardProps) {
   const isInterim = report.diag_type === 'interim';
+  // У промежуточной своя страница заключения
+  const reportLink = isInterim ? `/interim_diag/${report.id}` : `/diag/${report.id}`;
   return (
     <Card>
       <CardHeader>
@@ -46,11 +48,13 @@ export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: Rep
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => onCopyLink((report as any).report_link || report.id)}
-            >
+            <Button size="sm" variant="outline" asChild>
+              <a href={reportLink} target="_blank" rel="noopener noreferrer">
+                <Icon name="FileText" size={14} className="mr-1" />
+                Заключение
+              </a>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onCopyLink(reportLink)}>
               <Icon name="Link" size={14} className="mr-1" />
               Ссылка
             </Button>

@@ -24,8 +24,10 @@ export default function InterimDiagConclusion() {
     fetch(`${API}?id=${id}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d?.success && d.form_data) setData(d.form_data);
-        else setError('Заключение не найдено');
+        if (d?.success && d.form_data) {
+          // У ранних записей дата осмотра лежит вне снимка формы
+          setData({ ...d.form_data, _examDate: d.date_of_examination });
+        } else setError('Заключение не найдено');
       })
       .catch(() => setError('Не удалось загрузить заключение'))
       .finally(() => setLoading(false));
@@ -65,7 +67,7 @@ export default function InterimDiagConclusion() {
 
   const rw = data.interimReadingWriting || {};
   const history = data.interimHistory || [];
-  const todayDate = data.interimDate || null;
+  const todayDate = data.interimDate || data._examDate || null;
   const primaryDate = data.primaryDate || null;
 
   return (

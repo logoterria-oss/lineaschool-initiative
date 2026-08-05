@@ -58,6 +58,15 @@ export default function PastDiagnosticsTable({ items, editingId, onEdit, onRemov
                 {Object.keys(it.levels || {}).length || '—'}
               </td>
               <td className="py-2 text-right whitespace-nowrap">
+                <a
+                  href={it.diagType === 'primary' ? `/diag/${it.id}` : `/interim_diag/${it.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mr-2 inline-block align-middle text-gray-400 hover:text-primary"
+                  title="Открыть заключение"
+                >
+                  <Icon name="FileText" size={16} />
+                </a>
                 <button
                   type="button"
                   onClick={() => onEdit(it)}

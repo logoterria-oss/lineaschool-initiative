@@ -85,15 +85,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 except (json.JSONDecodeError, TypeError, AttributeError):
                     logopedist = ''
             therapist = logopedist or report['therapist_name']
+            dtype = report.get('diag_type') or 'primary'
+            # У промежуточной диагностики своя страница заключения
+            url_prefix = 'interim_diag' if dtype == 'interim' else 'diag'
             reports_list.append({
                 'id': report['id'],
                 'student_name': report['student_name'],
                 'student_age': report['student_age'],
                 'date_of_examination': report['date_of_examination'].isoformat() if report['date_of_examination'] else None,
                 'therapist_name': therapist,
-                'diag_type': report.get('diag_type') or 'primary',
+                'diag_type': dtype,
                 'created_at': report['created_at'].isoformat() if report['created_at'] else None,
-                'report_url': f"/diag/{report['id']}"
+                'report_url': f"/{url_prefix}/{report['id']}"
             })
         
         return {
