@@ -58,6 +58,8 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
   const [draft, setDraft] = useState<Omit<PastEntry, 'id'>>({ ...EMPTY });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState('');
+  // null — экран выбора действия; 'edit' — правка существующих; 'add' — внесение новой
+  const [mode, setMode] = useState<'edit' | 'add' | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -167,8 +169,67 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
           </button>
         </div>
 
+        {mode === null && (
+          <div className="p-5">
+            <p className="mb-4 text-sm text-gray-700">Что нужно сделать?</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  resetDraft();
+                  setMode('edit');
+                }}
+                disabled={loading || items.length === 0}
+                className="rounded-lg border border-gray-300 p-4 text-left hover:border-primary hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-300 disabled:hover:bg-white"
+              >
+                <span className="flex items-center gap-2 font-medium text-gray-900">
+                  <Icon name="Pencil" size={16} className="text-gray-500" />
+                  Изменить данные прошлых диагностик
+                </span>
+                <span className="mt-1 block text-sm text-gray-500">
+                  {loading
+                    ? 'Загрузка…'
+                    : items.length === 0
+                      ? 'Сохранённых диагностик пока нет'
+                      : `Первичная и промежуточные, уже сохранённые в системе (${items.length})`}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  resetDraft();
+                  setMode('add');
+                }}
+                className="rounded-lg border border-gray-300 p-4 text-left hover:border-primary hover:bg-gray-50"
+              >
+                <span className="flex items-center gap-2 font-medium text-gray-900">
+                  <Icon name="Plus" size={16} className="text-gray-500" />
+                  Внести данные по прошлым диагностикам
+                </span>
+                <span className="mt-1 block text-sm text-gray-500">
+                  Первичная или промежуточная проводилась не в этой форме
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {mode !== null && (
         <div className="p-5">
-          {loading ? (
+          <button
+            type="button"
+            onClick={() => {
+              resetDraft();
+              setMode(null);
+            }}
+            className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
+          >
+            <Icon name="ArrowLeft" size={14} />
+            Назад к выбору
+          </button>
+
+          {mode === 'add' ? null : loading ? (
             <p className="text-sm text-gray-500">Загрузка…</p>
           ) : items.length === 0 ? (
             <p className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
@@ -238,6 +299,13 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
             </div>
           )}
 
+          {mode === 'edit' && !editingId && items.length > 0 && (
+            <p className="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+              Нажмите на карандаш в строке нужной диагностики, чтобы изменить её данные.
+            </p>
+          )}
+
+          {(mode === 'add' || editingId) && (
           <div className="mt-6 rounded-lg border border-gray-200 p-4">
             <h4 className="mb-3 text-sm font-semibold text-gray-900">
               {editingId ? 'Изменение записи' : 'Добавить прошлую диагностику'}
@@ -268,7 +336,55 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                   className="mt-1"
                 />
               </div>
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-3 border-t border-gray-200 pt-4">
+                <h5 className="text-sm font-semibold text-gray-900">Нарушенные процессы</h5>
+                <p className="mt-1 text-xs text-gray-500">
+                  Укажите уровень по тем процессам, которые оценивались. Незаполненные не попадут в
+                  цепочку динамики.
+                </p>
+
+                <div className="mt-4 space-y-5">
+                  {IMPAIRED_GROUPS.map((group, idx) => (
+                    <div key={group.title}>
+                      <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
+                        {idx + 1}) {group.title}
+                      </p>
+                      <div className="space-y-3">
+                        {group.items.map((item) => (
+                          <div
+                            key={item.key}
+                            className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2"
+                          >
+                            <Label className="text-sm font-normal text-gray-700">
+                              {item.label}
+                            </Label>
+                            <Select
+                              value={draft.levels[item.key] || 'none'}
+                              onValueChange={(v) =>
+                                setLevel(item.key, v === 'none' ? null : (v as ProcessLevel))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Не оценивался" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Не оценивался</SelectItem>
+                                {PROCESS_LEVELS.map((lvl) => (
+                                  <SelectItem key={lvl} value={lvl}>
+                                    {lvl}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="sm:col-span-3 border-t border-gray-200 pt-4">
                 <h5 className="text-sm font-semibold text-gray-900">Чтение и письмо</h5>
               </div>
               <div>
@@ -342,52 +458,6 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
               </div>
             </div>
 
-            <div className="mt-6 border-t border-gray-200 pt-4">
-              <h5 className="text-sm font-semibold text-gray-900">Нарушенные процессы</h5>
-              <p className="mt-1 text-xs text-gray-500">
-                Укажите уровень по тем процессам, которые оценивались. Незаполненные не попадут в
-                цепочку динамики.
-              </p>
-
-              <div className="mt-4 space-y-5">
-                {IMPAIRED_GROUPS.map((group, idx) => (
-                  <div key={group.title}>
-                    <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
-                      {idx + 1}) {group.title}
-                    </p>
-                    <div className="space-y-3">
-                      {group.items.map((item) => (
-                        <div
-                          key={item.key}
-                          className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2"
-                        >
-                          <Label className="text-sm font-normal text-gray-700">{item.label}</Label>
-                          <Select
-                            value={draft.levels[item.key] || 'none'}
-                            onValueChange={(v) =>
-                              setLevel(item.key, v === 'none' ? null : (v as ProcessLevel))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Не оценивался" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Не оценивался</SelectItem>
-                              {PROCESS_LEVELS.map((lvl) => (
-                                <SelectItem key={lvl} value={lvl}>
-                                  {lvl === 'норма' ? 'норма!' : lvl}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
             <div className="mt-4 flex justify-end gap-2">
@@ -410,7 +480,9 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
               </button>
             </div>
           </div>
+          )}
         </div>
+        )}
 
         <div className="flex justify-end border-t border-gray-200 p-4">
           <button

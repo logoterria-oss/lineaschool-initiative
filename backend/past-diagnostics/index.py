@@ -63,6 +63,76 @@ def _levels_to_primary_fields(levels: Dict[str, str]) -> Dict[str, Any]:
     return out
 
 
+LEVEL_WORDS = (
+    ('грубо', 'грубо нарушено'),
+    ('приближ', 'приближено к возрастной норме'),
+    ('не соответствует', 'не соответствует возрастной норме'),
+    ('не сформиров', 'не соответствует возрастной норме'),
+    ('нарушен', 'не соответствует возрастной норме'),
+)
+
+
+def _match_level(text: str) -> str:
+    """Приводит произвольную формулировку первичной к одному из 4 уровней."""
+    s = (text or '').strip().lower()
+    if not s:
+        return ''
+    for word, level in LEVEL_WORDS:
+        if word in s:
+            return level
+    if 'норма' in s:
+        return 'норма'
+    return 'не соответствует возрастной норме'
+
+
+def _level_from_list(items: Any, keyword: str) -> str:
+    if not isinstance(items, list):
+        return ''
+    for x in items:
+        if keyword in str(x).lower():
+            return _match_level(str(x))
+    return ''
+
+
+def _levels_from_primary(fd: Dict[str, Any]) -> Dict[str, str]:
+    """Собирает уровни процессов из полей настоящей первичной диагностики."""
+    out: Dict[str, str] = {}
+
+    for key in ('wordUnderstanding', 'complexConstructions', 'phonematicPerception',
+                'grammaticalStructure'):
+        lvl = _match_level(str(fd.get(key) or ''))
+        if lvl:
+            out[key] = lvl
+
+    motor = fd.get('motorRealization')
+    for key, kw in (
+        ('soundProduction', 'звукопроизношение'),
+        ('syllableStructure', 'слоговая структура'),
+        ('kineticPraxis', 'кинетическ'),
+    ):
+        lvl = _level_from_list(motor, kw)
+        if lvl:
+            out[key] = lvl
+
+    lvl = _level_from_list(fd.get('connectedSpeech'), 'связн')
+    if not lvl:
+        lvl = _level_from_list(fd.get('connectedSpeech'), 'нарушен')
+    if lvl:
+        out['connectedSpeech'] = lvl
+
+    la = fd.get('languageAnalysis')
+    for key, kw in (
+        ('phonematicAnalysis', 'фонематическ'),
+        ('syllableAnalysis', 'слогов'),
+        ('sentenceAnalysis', 'предложен'),
+    ):
+        lvl = _level_from_list(la, kw)
+        if lvl:
+            out[key] = lvl
+
+    return out
+
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Business: Результаты прошлых промежуточных диагностик ученика — список, добавление,
@@ -101,15 +171,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                            form_data::jsonb ->> 'interimReadingChar',
                            form_data::jsonb ->> 'manualReadingChar'
                        ) AS reading_char,
-                       form_data::jsonb -> 'interimLevels' AS levels
+                       form_data::jsonb -> 'interimLevels' AS levels,
+                       form_data::jsonb AS fd
                 FROM {SCHEMA}.speech_therapy_reports
                 WHERE lower(COALESCE(form_data::jsonb ->> 'childName', student_name)) = lower(%s)
                 ORDER BY date_of_examination ASC, id ASC
                 """,
                 (name,),
             )
-            items = [
-                {
+            items = []
+            for r in cursor.fetchall():
+                fd = r['fd'] if isinstance(r['fd'], dict) else {}
+                levels = r['levels'] if isinstance(r['levels'], dict) else {}
+                # У настоящей первичной уровни лежат в её собственных полях —
+                # разбираем их, чтобы логопед мог отредактировать
+                if not levels:
+                    levels = _levels_from_primary(fd)
+
+                reading_char = r['reading_char'] or ''
+                if not reading_char and isinstance(fd.get('readingSkill'), list):
+                    reading_char = next(
+                        (str(x) for x in fd['readingSkill'] if str(x).strip()), ''
+                    )
+
+                items.append({
                     'id': r['id'],
                     'diagType': r['diag_type'] or 'interim',
                     'date': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
@@ -118,11 +203,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'dysgraphicErrors': r['dysgraphic_errors'] or '',
                     'dysorthographicErrors': r['dysorthographic_errors'] or '',
                     'totalErrors': r['total_errors'] or '',
-                    'readingChar': r['reading_char'] or '',
-                    'levels': r['levels'] if isinstance(r['levels'], dict) else {},
-                }
-                for r in cursor.fetchall()
-            ]
+                    'readingChar': reading_char,
+                    'levels': levels,
+                })
             return _ok({'items': items})
 
         body = json.loads(event.get('body') or '{}')
