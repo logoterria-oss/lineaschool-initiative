@@ -254,18 +254,27 @@ export default function InterimDiagForm() {
               selected={studentSelected}
               hint={rwHint}
             />
-            {studentSelected && (
-              <div className="flex justify-start">
-                <button
-                  type="button"
-                  onClick={() => setPastOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <Icon name="History" size={16} className="text-gray-500" />
-                  Добавить/изменить результаты прошлых диагностик
-                </button>
-              </div>
-            )}
+            <div className="flex flex-col items-start gap-2">
+              <button
+                type="button"
+                onClick={() => setPastOpen(true)}
+                disabled={!studentSelected}
+                title={
+                  studentSelected
+                    ? undefined
+                    : 'Сначала выберите ученика в разделе «Персональные данные»'
+                }
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+              >
+                <Icon name="History" size={16} className="text-gray-500" />
+                Добавить/изменить результаты прошлых диагностик
+              </button>
+              {!studentSelected && (
+                <span className="text-xs text-gray-500">
+                  Доступно после выбора ученика в разделе «Персональные данные».
+                </span>
+              )}
+            </div>
 
             <InterimImpairedProcessesSection
               value={impaired}
