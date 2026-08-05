@@ -49,7 +49,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                        date_of_examination,
                        form_data::jsonb AS fd
                 FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
-                WHERE COALESCE(diag_type, 'primary') = 'primary'
+                WHERE COALESCE(diag_type, 'primary') = 'primary' AND archived_at IS NULL
                 ORDER BY student_name, date_of_examination DESC, id DESC
             )
             SELECT id,
@@ -150,7 +150,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    form_data::jsonb ->> 'totalErrors'          AS total_errors,
                    form_data::jsonb ->> 'interimReadingChar'   AS interim_reading_char
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
-            WHERE diag_type = 'interim'
+            WHERE diag_type = 'interim' AND archived_at IS NULL
             ORDER BY date_of_examination ASC, id ASC
         """)
 

@@ -119,11 +119,20 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
   };
 
   const remove = async (id: number) => {
-    if (!confirm('Удалить эту запись прошлой диагностики?')) return;
+    const ok = confirm(
+      'Убрать эту диагностику из истории ребёнка?\n\n' +
+        'Заключение исчезнет из списков и цепочки динамики, но сохранится в корзине — ' +
+        'руководитель школы сможет его вернуть.',
+    );
+    if (!ok) return;
     await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', id }),
+      body: JSON.stringify({
+        action: 'delete',
+        id,
+        who: sessionStorage.getItem('staff_name') || '',
+      }),
     });
     if (editingId === id) resetDraft();
     load();

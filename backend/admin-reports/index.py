@@ -21,7 +21,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -29,8 +29,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    # Принимаем GET (список) и DELETE (удаление руководителем)
-    if method not in ('GET', 'DELETE'):
+    # GET — список, DELETE — в корзину, POST — восстановление из корзины
+    if method not in ('GET', 'DELETE', 'POST'):
         return {
             'statusCode': 405,
             'headers': {
@@ -64,9 +64,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Удаление заключения — только для руководителя школы (Абраменко Виктория).
         # Личность проверяем по токену сессии, а не по заголовку роли:
         # заголовок можно подделать, живую сессию — нет.
-        if method == 'DELETE':
+        if method in ('DELETE', 'POST'):
             token = headers.get('X-Auth-Token', headers.get('x-auth-token', ''))
             allowed = False
+            who = ''
             if token:
                 cursor.execute(
                     f"SELECT s.full_name, s.role, s.status "
@@ -77,7 +78,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 )
                 me = cursor.fetchone()
                 if me and me['status'] == 'active' and me['role'] == 'head':
-                    allowed = 'абраменко' in (me['full_name'] or '').strip().lower()
+                    who = (me['full_name'] or '').strip()
+                    allowed = 'абраменко' in who.lower()
 
             if not allowed:
                 cursor.close()
@@ -101,9 +103,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
 
+            if method == 'POST':
+                # Восстановление из корзины
+                cursor.execute(
+                    f'UPDATE {SCHEMA}.speech_therapy_reports '
+                    f'SET archived_at = NULL, archived_by = NULL WHERE id = %s',
+                    (int(raw_id),)
+                )
+                restored = cursor.rowcount if cursor.rowcount and cursor.rowcount > 0 else 0
+                conn.commit()
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'restored': restored}),
+                    'isBase64Encoded': False
+                }
+
+            # Не стираем запись, а прячем в корзину — её можно восстановить
             cursor.execute(
-                'DELETE FROM t_p93118852_lineaschool_initiati.speech_therapy_reports WHERE id = %s',
-                (int(raw_id),)
+                f'UPDATE {SCHEMA}.speech_therapy_reports '
+                f'SET archived_at = NOW(), archived_by = %s '
+                f'WHERE id = %s AND archived_at IS NULL',
+                (who, int(raw_id))
             )
             deleted = cursor.rowcount if cursor.rowcount and cursor.rowcount > 0 else 0
             conn.commit()
@@ -116,6 +139,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
 
+        # Корзина: список заключений, убранных из общего списка
+        params = event.get('queryStringParameters') or {}
+        if str(params.get('archived') or '') == '1':
+            cursor.execute(f"""
+                SELECT id, student_name, date_of_examination, therapist_name,
+                       COALESCE(diag_type, 'primary') AS diag_type,
+                       archived_at, archived_by
+                FROM {SCHEMA}.speech_therapy_reports
+                WHERE archived_at IS NOT NULL
+                ORDER BY archived_at DESC
+            """)
+            items = []
+            for r in cursor.fetchall():
+                items.append({
+                    'id': r['id'],
+                    'student_name': r['student_name'],
+                    'date_of_examination': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
+                    'therapist_name': r['therapist_name'],
+                    'diag_type': r['diag_type'],
+                    'archived_at': r['archived_at'].isoformat() if r['archived_at'] else None,
+                    'archived_by': r['archived_by'] or '',
+                })
+            cursor.close()
+            conn.close()
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': True, 'reports': items, 'count': len(items)}),
+                'isBase64Encoded': False
+            }
+
         # Получаем все заключения из БД с сортировкой по дате создания
         cursor.execute("""
             SELECT id, student_name, student_age, date_of_examination, 
@@ -123,6 +177,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    COALESCE(diag_type, 'primary') AS diag_type,
                    form_data
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
+            WHERE archived_at IS NULL
             ORDER BY created_at DESC
         """)
         

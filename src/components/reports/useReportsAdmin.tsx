@@ -174,7 +174,7 @@ export function useReportsAdmin() {
       setError('Удалять заключения может только руководитель школы');
       return;
     }
-    if (!confirm('Удалить это заключение? Действие необратимо.')) return;
+    if (!confirm('Убрать заключение из списка? Его можно вернуть из корзины.')) return;
 
     setLoading(true);
     const currentPassword = sessionStorage.getItem('admin_password') || password;

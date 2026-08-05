@@ -255,6 +255,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                        form_data::jsonb AS fd
                 FROM {SCHEMA}.speech_therapy_reports
                 WHERE lower(COALESCE(form_data::jsonb ->> 'childName', student_name)) = lower(%s)
+                  AND archived_at IS NULL
                 ORDER BY date_of_examination ASC, id ASC
                 """,
                 (name,),
@@ -398,12 +399,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             rid = body.get('id')
             if not rid:
                 return _bad('Нужен идентификатор записи')
+            # Не стираем запись, а прячем в корзину — её можно восстановить
+            who = str(body.get('who') or '').strip()[:255]
             cursor.execute(
-                f"DELETE FROM {SCHEMA}.speech_therapy_reports WHERE id = %s",
+                f"UPDATE {SCHEMA}.speech_therapy_reports "
+                f"SET archived_at = NOW(), archived_by = %s "
+                f"WHERE id = %s AND archived_at IS NULL",
+                (who, int(rid)),
+            )
+            conn.commit()
+            return _ok({'deleted': max(cursor.rowcount, 0)})
+
+        if action == 'restore':
+            rid = body.get('id')
+            if not rid:
+                return _bad('Нужен идентификатор записи')
+            cursor.execute(
+                f"UPDATE {SCHEMA}.speech_therapy_reports "
+                f"SET archived_at = NULL, archived_by = NULL WHERE id = %s",
                 (int(rid),),
             )
             conn.commit()
-            return _ok({'deleted': cursor.rowcount})
+            return _ok({'restored': max(cursor.rowcount, 0)})
 
         return _bad('Неизвестное действие')
 

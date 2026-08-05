@@ -4,6 +4,9 @@ import ReportsToolbar from '@/components/reports/AdminHeader';
 import ReportForm from '@/components/reports/ReportForm';
 import ReportsList from '@/components/reports/ReportsList';
 import ReportsFilters, { ReportsFilterState } from '@/components/reports/ReportsFilters';
+import ReportsTrash from '@/components/reports/ReportsTrash';
+import { useCanDeleteReports } from '@/components/reports/canDeleteReports';
+import Icon from '@/components/ui/icon';
 import { useReportsAdmin } from '@/components/reports/useReportsAdmin';
 
 // Общий пароль доступа к базе заключений. Руководитель уже авторизован в ЛК,
@@ -35,6 +38,8 @@ const ReportsInner = () => {
   } = useReportsAdmin();
 
   const [filters, setFilters] = useState<ReportsFilterState>({ name: '', month: '', type: '', therapist: '' });
+  const [showTrash, setShowTrash] = useState(false);
+  const canDelete = useCanDeleteReports();
 
   const therapists = useMemo(() => {
     const set = new Set<string>();
@@ -63,6 +68,21 @@ const ReportsInner = () => {
     <div>
       <ReportsToolbar showForm={showForm} onToggleForm={toggleForm} onRefresh={loadReports} />
 
+      {canDelete && (
+        <button
+          type="button"
+          onClick={() => setShowTrash((v) => !v)}
+          className="mb-4 inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          <Icon name={showTrash ? 'ArrowLeft' : 'Trash2'} size={16} className="text-gray-500" />
+          {showTrash ? 'Вернуться к списку заключений' : 'Корзина удалённых'}
+        </button>
+      )}
+
+      {showTrash && canDelete && <ReportsTrash onRestored={loadReports} />}
+
+      {!showTrash && (
+      <>
       <ReportsFilters
         filters={filters}
         setFilters={setFilters}
@@ -102,6 +122,8 @@ const ReportsInner = () => {
         onDeleteReport={deleteReport}
         onCopyPublicLink={copyPublicLink}
       />
+      </>
+      )}
     </div>
   );
 };

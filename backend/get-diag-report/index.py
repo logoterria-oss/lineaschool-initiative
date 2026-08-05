@@ -78,7 +78,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    therapist_name, diagnosis, recommendations, report_content, 
                    form_data, access_token, created_at
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
-            WHERE id = %s
+            WHERE id = %s AND archived_at IS NULL
         """, (report_id,))
         
         report = cursor.fetchone()

@@ -53,6 +53,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             SELECT diag_type, date_of_examination, form_data::jsonb AS fd
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
             WHERE lower(trim(COALESCE(form_data::jsonb ->> 'childName', student_name))) = lower(trim(%s))
+              AND archived_at IS NULL
             ORDER BY date_of_examination DESC, id DESC
         """, (name,))
         rows = cur.fetchall()
