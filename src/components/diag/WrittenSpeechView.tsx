@@ -68,7 +68,7 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
         )}
         
         <div><strong>Дисграфические ошибки:</strong> {diagData.dysgraphicErrors || 'Не указано'}</div>
-        <div><strong>Дизорфографические ошибки:</strong> {diagData.dysorthographicErrors || 'Не указано'}</div>
+        <div><strong>Орфографические ошибки:</strong> {diagData.dysorthographicErrors || 'Не указано'}</div>
         <div><strong>Ошибок всего:</strong> {diagData.totalErrors || 'Не указано'}</div>
         <div><strong>Ошибки анализа:</strong> {formatList(diagData.analysisErrors)}</div>
         <div><strong>Акустические ошибки:</strong> {formatList(diagData.acousticErrors)}</div>
@@ -77,7 +77,7 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
         <div><strong>Зрительно-пространственные ошибки:</strong> {formatList(diagData.visualSpatialErrors)}</div>
         <div><strong>Дополнительные характеристики:</strong> {formatList(diagData.additionalCharacteristics)}</div>
         {regulationText && <div><strong>Нарушения регуляции письменной деятельности:</strong> {regulationText}</div>}
-        {orthographicText && <div><strong>Орфографические ошибки:</strong> {orthographicText}</div>}
+        {orthographicText && <div><strong>Типы орфографических ошибок:</strong> {orthographicText}</div>}
       </div>
     </section>
   );

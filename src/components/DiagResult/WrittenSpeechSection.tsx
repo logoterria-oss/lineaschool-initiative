@@ -63,7 +63,7 @@ const WrittenSpeechSection = ({ diagData }: WrittenSpeechSectionProps) => {
           <p><strong>Количество дисграфических ошибок:</strong> {diagData.dysgraphicErrors}</p>
         )}
         {diagData.dysorthographicErrors && (
-          <p><strong>Количество дизорфографических ошибок:</strong> {diagData.dysorthographicErrors}</p>
+          <p><strong>Количество орфографических ошибок:</strong> {diagData.dysorthographicErrors}</p>
         )}
         {diagData.totalErrors && (
           <p><strong>Ошибок всего:</strong> {diagData.totalErrors}</p>
