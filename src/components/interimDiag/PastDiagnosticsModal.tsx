@@ -60,6 +60,7 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
   const [error, setError] = useState('');
   // null — экран выбора действия; 'edit' — правка существующих; 'add' — внесение новой
   const [mode, setMode] = useState<'edit' | 'add' | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -72,10 +73,20 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
 
   useEffect(load, [studentName]);
 
+  // В режиме правки сразу открываем первую запись целиком,
+  // чтобы все поля были доступны без лишних кликов
+  useEffect(() => {
+    if (mode === 'edit' && editingId === null && items.length > 0) {
+      startEdit(items[0]);
+    }
+  }, [mode, items, editingId]);
+
   const patch = (p: Partial<Omit<PastEntry, 'id'>>) => setDraft((prev) => ({ ...prev, ...p }));
 
   const startEdit = (it: PastEntry) => {
     setEditingId(it.id);
+    setSavedAt(null);
+    setError('');
     setDraft({
       diagType: it.diagType,
       date: it.date || '',
@@ -125,7 +136,13 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
         setError(d?.error || 'Не удалось сохранить');
         return;
       }
-      resetDraft();
+      // После добавления возвращаемся к списку, после правки — остаёмся в записи
+      if (!editingId) {
+        resetDraft();
+        setMode('edit');
+      } else {
+        setSavedAt(Date.now());
+      }
       load();
       onSaved();
     } catch {
@@ -253,7 +270,12 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                 </thead>
                 <tbody>
                   {items.map((it) => (
-                    <tr key={it.id} className="border-t border-gray-100">
+                    <tr
+                      key={it.id}
+                      className={`border-t border-gray-100 ${
+                        editingId === it.id ? 'bg-primary/5' : ''
+                      }`}
+                    >
                       <td className="py-2 pr-3">
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -299,9 +321,10 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
             </div>
           )}
 
-          {mode === 'edit' && !editingId && items.length > 0 && (
-            <p className="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
-              Нажмите на карандаш в строке нужной диагностики, чтобы изменить её данные.
+          {mode === 'edit' && items.length > 1 && (
+            <p className="mt-4 text-sm text-gray-500">
+              Ниже открыта выделенная диагностика. Чтобы править другую — нажмите карандаш в её
+              строке.
             </p>
           )}
 
@@ -459,17 +482,15 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
             </div>
 
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+            {savedAt && !error && (
+              <p className="mt-3 flex items-center gap-1.5 text-sm text-green-700">
+                <Icon name="Check" size={16} />
+                Изменения сохранены
+              </p>
+            )}
 
             <div className="mt-4 flex justify-end gap-2">
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={resetDraft}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
-                >
-                  Отмена
-                </button>
-              )}
+
               <button
                 type="button"
                 onClick={save}
