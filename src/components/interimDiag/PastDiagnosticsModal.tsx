@@ -10,6 +10,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { READING_CHAR_LEVELS } from './readingWriting';
+import {
+  IMPAIRED_GROUPS,
+  ImpairedProcessKey,
+  ProcessLevel,
+  ProcessLevelsState,
+  PROCESS_LEVELS,
+} from './impairedProcesses';
 
 const API = 'https://functions.poehali.dev/12cd04f4-07fb-4fe5-a260-e3c9955e0ae7';
 
@@ -23,6 +30,7 @@ export interface PastEntry {
   dysorthographicErrors: string;
   totalErrors: string;
   readingChar: string;
+  levels: ProcessLevelsState;
 }
 
 const EMPTY: Omit<PastEntry, 'id'> = {
@@ -34,6 +42,7 @@ const EMPTY: Omit<PastEntry, 'id'> = {
   dysorthographicErrors: '',
   totalErrors: '',
   readingChar: '',
+  levels: {},
 };
 
 interface Props {
@@ -74,8 +83,17 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
       dysorthographicErrors: it.dysorthographicErrors,
       totalErrors: it.totalErrors,
       readingChar: it.readingChar,
+      levels: it.levels || {},
     });
   };
+
+  const setLevel = (key: ImpairedProcessKey, level: ProcessLevel | null) =>
+    setDraft((prev) => {
+      const next = { ...prev.levels };
+      if (level) next[key] = level;
+      else delete next[key];
+      return { ...prev, levels: next };
+    });
 
   const resetDraft = () => {
     setEditingId(null);
@@ -168,6 +186,7 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                     <th className="pb-2 pr-3">Дисграф.</th>
                     <th className="pb-2 pr-3">Орфогр.</th>
                     <th className="pb-2 pr-3">Всего</th>
+                    <th className="pb-2 pr-3">Процессы</th>
                     <th className="pb-2" />
                   </tr>
                 </thead>
@@ -191,6 +210,9 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                       <td className="py-2 pr-3">{it.dysgraphicErrors || '—'}</td>
                       <td className="py-2 pr-3">{it.dysorthographicErrors || '—'}</td>
                       <td className="py-2 pr-3">{it.totalErrors || '—'}</td>
+                      <td className="py-2 pr-3 text-gray-600">
+                        {Object.keys(it.levels || {}).length || '—'}
+                      </td>
                       <td className="py-2 text-right whitespace-nowrap">
                         <button
                           type="button"
@@ -245,6 +267,9 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                   onChange={(e) => patch({ date: e.target.value })}
                   className="mt-1"
                 />
+              </div>
+              <div className="sm:col-span-3">
+                <h5 className="text-sm font-semibold text-gray-900">Чтение и письмо</h5>
               </div>
               <div>
                 <Label className="text-sm">Скорость чтения (сл/мин)</Label>
@@ -314,6 +339,52 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="mt-6 border-t border-gray-200 pt-4">
+              <h5 className="text-sm font-semibold text-gray-900">Нарушенные процессы</h5>
+              <p className="mt-1 text-xs text-gray-500">
+                Укажите уровень по тем процессам, которые оценивались. Незаполненные не попадут в
+                цепочку динамики.
+              </p>
+
+              <div className="mt-4 space-y-5">
+                {IMPAIRED_GROUPS.map((group, idx) => (
+                  <div key={group.title}>
+                    <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
+                      {idx + 1}) {group.title}
+                    </p>
+                    <div className="space-y-3">
+                      {group.items.map((item) => (
+                        <div
+                          key={item.key}
+                          className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2"
+                        >
+                          <Label className="text-sm font-normal text-gray-700">{item.label}</Label>
+                          <Select
+                            value={draft.levels[item.key] || 'none'}
+                            onValueChange={(v) =>
+                              setLevel(item.key, v === 'none' ? null : (v as ProcessLevel))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Не оценивался" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Не оценивался</SelectItem>
+                              {PROCESS_LEVELS.map((lvl) => (
+                                <SelectItem key={lvl} value={lvl}>
+                                  {lvl === 'норма' ? 'норма!' : lvl}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

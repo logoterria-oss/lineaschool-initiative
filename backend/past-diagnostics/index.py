@@ -23,6 +23,46 @@ METRICS = [
 ]
 
 
+def _levels_to_primary_fields(levels: Dict[str, str]) -> Dict[str, Any]:
+    """Раскладывает уровни процессов по полям первичной диагностики,
+    чтобы форма подтянула их как значения «было»."""
+    out: Dict[str, Any] = {}
+
+    for key, field in (
+        ('wordUnderstanding', 'wordUnderstanding'),
+        ('complexConstructions', 'complexConstructions'),
+        ('phonematicPerception', 'phonematicPerception'),
+        ('grammaticalStructure', 'grammaticalStructure'),
+    ):
+        if levels.get(key):
+            out[field] = levels[key]
+
+    motor = []
+    if levels.get('soundProduction'):
+        motor.append(f"звукопроизношение нарушено: {levels['soundProduction']}")
+    if levels.get('syllableStructure'):
+        motor.append(f"слоговая структура слова нарушена: {levels['syllableStructure']}")
+    if levels.get('kineticPraxis'):
+        motor.append(f"кинетический артикуляционный праксис нарушен: {levels['kineticPraxis']}")
+    if motor:
+        out['motorRealization'] = motor
+
+    if levels.get('connectedSpeech'):
+        out['connectedSpeech'] = [f"связная речь нарушена: {levels['connectedSpeech']}"]
+
+    analysis = []
+    if levels.get('phonematicAnalysis'):
+        analysis.append(f"фонематический анализ и синтез: {levels['phonematicAnalysis']}")
+    if levels.get('syllableAnalysis'):
+        analysis.append(f"слоговой анализ: {levels['syllableAnalysis']}")
+    if levels.get('sentenceAnalysis'):
+        analysis.append(f"анализ на уровне предложения: {levels['sentenceAnalysis']}")
+    if analysis:
+        out['languageAnalysis'] = analysis
+
+    return out
+
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Business: Результаты прошлых промежуточных диагностик ученика — список, добавление,
@@ -60,7 +100,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                        COALESCE(
                            form_data::jsonb ->> 'interimReadingChar',
                            form_data::jsonb ->> 'manualReadingChar'
-                       ) AS reading_char
+                       ) AS reading_char,
+                       form_data::jsonb -> 'interimLevels' AS levels
                 FROM {SCHEMA}.speech_therapy_reports
                 WHERE lower(COALESCE(form_data::jsonb ->> 'childName', student_name)) = lower(%s)
                 ORDER BY date_of_examination ASC, id ASC
@@ -78,6 +119,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'dysorthographicErrors': r['dysorthographic_errors'] or '',
                     'totalErrors': r['total_errors'] or '',
                     'readingChar': r['reading_char'] or '',
+                    'levels': r['levels'] if isinstance(r['levels'], dict) else {},
                 }
                 for r in cursor.fetchall()
             ]
@@ -95,17 +137,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             diag_type = 'primary' if body.get('diagType') == 'primary' else 'interim'
             reading_char = body.get('readingChar') or ''
 
+            levels = body.get('levels') or {}
+            if not isinstance(levels, dict):
+                levels = {}
+
             form_data = {
                 'childName': name,
                 'birthDate': body.get('birthDate') or '',
                 'grade': body.get('grade') or '',
                 'manualEntry': True,
                 'interimReadingChar': reading_char,
+                'interimLevels': levels,
             }
             if diag_type == 'primary':
                 # Для первичной характер чтения читается из readingSkill
                 form_data['readingSkill'] = [reading_char] if reading_char else []
                 form_data['manualReadingChar'] = reading_char
+                form_data.update(_levels_to_primary_fields(levels))
             for m in METRICS:
                 form_data[m] = str(body.get(m) or '')
 
@@ -140,10 +188,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return _bad('Нужны идентификатор записи и дата')
 
             reading_char = body.get('readingChar') or ''
-            patch = {'interimReadingChar': reading_char}
+            levels = body.get('levels') or {}
+            if not isinstance(levels, dict):
+                levels = {}
+
+            patch = {'interimReadingChar': reading_char, 'interimLevels': levels}
             if body.get('diagType') == 'primary':
                 patch['readingSkill'] = [reading_char] if reading_char else []
                 patch['manualReadingChar'] = reading_char
+                patch.update(_levels_to_primary_fields(levels))
             for m in METRICS:
                 patch[m] = str(body.get(m) or '')
 
