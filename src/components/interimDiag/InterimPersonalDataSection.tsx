@@ -177,7 +177,7 @@ export default function InterimPersonalDataSection({ data, onChange, onSelectStu
               id="childName"
               autoComplete="off"
               className="pl-9"
-              placeholder="Начните вводить ФИО и выберите из списка"
+              placeholder="Введите ФИО или выберите из списка"
               value={data.childName}
               onFocus={() => setOpen(true)}
               onChange={(e) => {
@@ -205,30 +205,40 @@ export default function InterimPersonalDataSection({ data, onChange, onSelectStu
           )}
           {open && !loading && matches.length === 0 && (
             <div className="absolute z-20 mt-1 w-full rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-500 shadow-lg">
-              Ученик с первичной диагностикой не найден
+              Такого ученика нет в базе — продолжайте вводить данные вручную
             </div>
           )}
+          <p className="mt-1 text-xs text-gray-500">
+            Если первичной диагностики не было, просто заполните поля вручную.
+          </p>
         </div>
 
         <div>
           <Label htmlFor="birthDate">Дата рождения</Label>
           <Input
             id="birthDate"
-            className="mt-1 bg-gray-50"
-            readOnly
-            placeholder="Подтянется из первичной"
+            type="date"
+            className="mt-1"
             value={data.birthDate}
+            onChange={(e) => {
+              const birthDate = e.target.value;
+              // Возраст пересчитываем сами, но логопед может поправить его вручную
+              onChange({ birthDate, age: calculateAge(birthDate) || data.age });
+            }}
           />
         </div>
 
         <div>
-          <Label htmlFor="age">Возраст</Label>
+          <Label htmlFor="age">Возраст (лет)</Label>
           <Input
             id="age"
-            className="mt-1 bg-gray-50"
-            readOnly
-            placeholder="Рассчитается автоматически"
-            value={data.age ? `${data.age} лет` : ''}
+            type="number"
+            min="0"
+            max="18"
+            className="mt-1"
+            placeholder="Рассчитается по дате рождения"
+            value={data.age}
+            onChange={(e) => onChange({ age: e.target.value })}
           />
         </div>
 
@@ -236,10 +246,13 @@ export default function InterimPersonalDataSection({ data, onChange, onSelectStu
           <Label htmlFor="grade">Класс</Label>
           <Input
             id="grade"
-            className="mt-1 bg-gray-50"
-            readOnly
-            placeholder="Рассчитается автоматически"
-            value={data.grade ? `${data.grade} класс` : ''}
+            type="number"
+            min="1"
+            max="11"
+            className="mt-1"
+            placeholder="Укажите класс"
+            value={data.grade}
+            onChange={(e) => onChange({ grade: e.target.value })}
           />
         </div>
       </div>

@@ -190,8 +190,9 @@ export default function InterimDiagForm() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentSelected || !personal.childName.trim()) {
-      alert('Сначала выберите ученика в разделе «Персональные данные».');
+    // Выбор ученика из базы не обязателен — данные можно заполнить полностью вручную
+    if (!personal.childName.trim()) {
+      alert('Укажите ФИО ребёнка в разделе «Персональные данные».');
       return;
     }
     setSaving(true);
@@ -210,6 +211,7 @@ export default function InterimDiagForm() {
         dysorthographicErrors: rw.dysorthographicErrors,
         totalErrors: rw.totalErrors,
         interimReadingChar: rw.readingChar,
+        conclusion: primaryConclusion,
         // Полный снимок разделов промежуточной
         interimImpaired: impaired,
         interimLevels: levels,
@@ -270,6 +272,7 @@ export default function InterimDiagForm() {
               conclusion={primaryConclusion}
               selected={studentSelected}
               hint={rwHint}
+              onChange={setPrimaryConclusion}
             />
             <div className="flex flex-col items-start gap-2">
               <button
