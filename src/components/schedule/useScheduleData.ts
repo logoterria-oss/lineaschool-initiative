@@ -273,20 +273,30 @@ export const useScheduleData = () => {
   };
 
   // ── Группы: стабильные окна ──────────────────────────────────────────────────
-  // В groupWeeks[period] ключ cell = dayOffset (0..6) от начала периода
-  const groupFreeAt = (period: number, dayOffset: number, time: string, teacherId: number): number => {
+  // В groupWeeks[period] ключ cell = dayOffset (0..6) от начала периода.
+  // Возвращает null, если занятия в этом периоде НЕТ в CRM (расписание ещё не
+  // заведено на будущее) — это не то же самое, что «занятие есть, но мест нет».
+  const groupFreeAt = (period: number, dayOffset: number, time: string, teacherId: number): number | null => {
     const week = groupWeeks?.[period];
-    if (!week) return 0;
+    if (!week) return null;
     const row = week.find((r) => r.time === time && r.teacher_id === teacherId);
-    if (!row) return 0;
+    if (!row) return null;
     const cell = row.cells[String(dayOffset)];
-    if (!cell) return 0;
+    if (!cell) return null;
     return cell.free;
   };
 
+  // Окно считаем стабильным, если:
+  //  • в стартовом периоде занятие есть и в нём есть свободные места;
+  //  • в следующих периодах оно НЕ становится заполненным.
+  // Периоды, на которые расписание в CRM ещё не заведено (занятия нет), не
+  // «обнуляют» стабильность — иначе из выдачи пропадали бы почти все дни.
   const isGroupStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
-    for (let k = 0; k < STABLE_WEEKS; k++) {
-      if (groupFreeAt(startPeriod + k, dayOffset, time, teacherId) <= 0) return false;
+    const first = groupFreeAt(startPeriod, dayOffset, time, teacherId);
+    if (first === null || first <= 0) return false;
+    for (let k = 1; k < STABLE_WEEKS; k++) {
+      const free = groupFreeAt(startPeriod + k, dayOffset, time, teacherId);
+      if (free !== null && free <= 0) return false;
     }
     return true;
   };
