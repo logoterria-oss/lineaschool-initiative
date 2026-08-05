@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { ImpairedProcessKey, ProcessLevel } from './impairedProcesses';
-import { API, EMPTY, PastEntry } from './pastDiagnostics';
+import { API, defaultLevels, emptyEntry, PastEntry } from './pastDiagnostics';
 import PastDiagnosticsModeChoice from './PastDiagnosticsModeChoice';
 import PastDiagnosticsTable from './PastDiagnosticsTable';
 import PastDiagnosticsForm from './PastDiagnosticsForm';
@@ -18,7 +18,7 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
   const [items, setItems] = useState<PastEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [draft, setDraft] = useState<Omit<PastEntry, 'id'>>({ ...EMPTY });
+  const [draft, setDraft] = useState<Omit<PastEntry, 'id'>>(emptyEntry);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState('');
   // null — экран выбора действия; 'edit' — правка существующих; 'add' — внесение новой
@@ -62,7 +62,9 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
       readingErrorTypes: it.readingErrorTypes || [],
       errorTypes: it.errorTypes || [],
       orthoErrorTypes: it.orthoErrorTypes || [],
-      levels: it.levels || {},
+      // Недостающие процессы показываем как «норма» — чтобы на экране
+      // было ровно то, что сохранится при нажатии «Сохранить»
+      levels: { ...defaultLevels(), ...(it.levels || {}) },
     });
   };
 
@@ -76,7 +78,7 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
 
   const resetDraft = () => {
     setEditingId(null);
-    setDraft({ ...EMPTY });
+    setDraft(emptyEntry());
   };
 
   const save = async () => {

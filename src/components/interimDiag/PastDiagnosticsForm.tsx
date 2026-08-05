@@ -78,8 +78,8 @@ export default function PastDiagnosticsForm({
         <div className="sm:col-span-3 border-t border-gray-200 pt-4">
           <h5 className="text-sm font-semibold text-gray-900">Нарушенные процессы</h5>
           <p className="mt-1 text-xs text-gray-500">
-            Укажите уровень по тем процессам, которые оценивались. Незаполненные не попадут в
-            цепочку динамики.
+            По умолчанию везде «норма» — измените только нарушенные процессы. Если процесс не
+            обследовался, выберите «Не оценивался»: он не попадёт в цепочку динамики.
           </p>
 
           <div className="mt-4 space-y-5">
@@ -96,13 +96,13 @@ export default function PastDiagnosticsForm({
                     >
                       <Label className="text-sm font-normal text-gray-700">{item.label}</Label>
                       <Select
-                        value={draft.levels[item.key] || 'none'}
+                        value={draft.levels[item.key] || 'норма'}
                         onValueChange={(v) =>
                           setLevel(item.key, v === 'none' ? null : (v as ProcessLevel))
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Не оценивался" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Не оценивался</SelectItem>

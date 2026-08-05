@@ -27,7 +27,7 @@ export default function PastDiagnosticsTable({ items, editingId, onEdit, onRemov
             <th className="pb-2 pr-3">Дисграф.</th>
             <th className="pb-2 pr-3">Орфогр.</th>
             <th className="pb-2 pr-3">Всего</th>
-            <th className="pb-2 pr-3">Процессы</th>
+            <th className="pb-2 pr-3">Нарушено</th>
             <th className="pb-2" />
           </tr>
         </thead>
@@ -55,7 +55,7 @@ export default function PastDiagnosticsTable({ items, editingId, onEdit, onRemov
               <td className="py-2 pr-3">{it.dysorthographicErrors || '—'}</td>
               <td className="py-2 pr-3">{it.totalErrors || '—'}</td>
               <td className="py-2 pr-3 text-gray-600">
-                {Object.keys(it.levels || {}).length || '—'}
+                {Object.values(it.levels || {}).filter((v) => v && v !== 'норма').length || '—'}
               </td>
               <td className="py-2 text-right whitespace-nowrap">
                 <a
