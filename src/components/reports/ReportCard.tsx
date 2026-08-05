@@ -30,6 +30,8 @@ export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: Rep
   const isInterim = report.diag_type === 'interim';
   // У промежуточной своя страница заключения
   const reportLink = isInterim ? `/interim_diag/${report.id}` : `/diag/${report.id}`;
+  // Удалять заключения может только руководитель школы
+  const canDelete = sessionStorage.getItem('staff_role') === 'head';
   return (
     <Card>
       <CardHeader>
@@ -58,6 +60,17 @@ export default function ReportCard({ report, onEdit, onDelete, onCopyLink }: Rep
               <Icon name="Link" size={14} className="mr-1" />
               Ссылка
             </Button>
+            {canDelete && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onDelete(report.id)}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <Icon name="Trash2" size={14} className="mr-1" />
+                Удалить
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>

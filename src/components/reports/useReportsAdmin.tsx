@@ -168,7 +168,13 @@ export function useReportsAdmin() {
   };
 
   const deleteReport = async (id: number) => {
-    if (!isAuthenticated || !confirm('Удалить это заключение?')) return;
+    if (!isAuthenticated) return;
+    // Удалять заключения может только руководитель школы
+    if (sessionStorage.getItem('staff_role') !== 'head') {
+      setError('Удалять заключения может только руководитель школы');
+      return;
+    }
+    if (!confirm('Удалить это заключение? Действие необратимо.')) return;
 
     setLoading(true);
     const currentPassword = sessionStorage.getItem('admin_password') || password;
@@ -176,12 +182,14 @@ export function useReportsAdmin() {
       const response = await fetch(`${REPORTS_API_URL}?id=${id}`, {
         method: 'DELETE',
         headers: {
-          'X-Auth-Password': currentPassword
+          'X-Admin-Password': currentPassword,
+          'X-Staff-Role': 'head'
         }
       });
 
       if (response.ok) {
-        setSuccess('Отчёт удалён');
+        const res = await response.json().catch(() => null);
+        setSuccess(res?.deleted ? 'Заключение удалено' : 'Заключение уже было удалено');
         loadReports();
       } else {
         const errorData = await response.json().catch(() => null);

@@ -19,16 +19,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password',
+                'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password, X-Staff-Role',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
             'isBase64Encoded': False
         }
     
-    # Принимаем только GET запросы
-    if method != 'GET':
+    # Принимаем GET (список) и DELETE (удаление руководителем)
+    if method not in ('GET', 'DELETE'):
         return {
             'statusCode': 405,
             'headers': {
@@ -58,7 +58,47 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        
+
+        # Удаление заключения — только для руководителя школы
+        if method == 'DELETE':
+            staff_role = headers.get('X-Staff-Role', headers.get('x-staff-role', ''))
+            if staff_role != 'head':
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Удалять заключения может только руководитель школы'}),
+                    'isBase64Encoded': False
+                }
+
+            params = event.get('queryStringParameters') or {}
+            raw_id = str(params.get('id') or '').strip()
+            if not raw_id.isdigit():
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Не указан корректный номер заключения'}),
+                    'isBase64Encoded': False
+                }
+
+            cursor.execute(
+                'DELETE FROM t_p93118852_lineaschool_initiati.speech_therapy_reports WHERE id = %s',
+                (int(raw_id),)
+            )
+            deleted = cursor.rowcount if cursor.rowcount and cursor.rowcount > 0 else 0
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': True, 'deleted': deleted}),
+                'isBase64Encoded': False
+            }
+
         # Получаем все заключения из БД с сортировкой по дате создания
         cursor.execute("""
             SELECT id, student_name, student_age, date_of_examination, 

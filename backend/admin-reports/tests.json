@@ -1,12 +1,51 @@
 {
-  "tests": [{
-    "name": "Test admin auth required",
-    "method": "GET", 
-    "path": "/",
-    "expectedStatus": 401,
-    "expectedBody": {
-      "error": "Неверный пароль администратора"
+  "tests": [
+    {
+      "name": "Test admin auth required",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "Неверный пароль администратора"
+      },
+      "bodyMatcher": "partial"
     },
-    "bodyMatcher": "partial"
-  }]
+    {
+      "name": "Удаление требует пароль",
+      "method": "DELETE",
+      "path": "/?id=1",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "Неверный пароль администратора"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Удаление запрещено без роли руководителя",
+      "method": "DELETE",
+      "path": "/?id=999999999",
+      "headers": {
+        "X-Admin-Password": "426874"
+      },
+      "expectedStatus": 403,
+      "expectedBody": {
+        "error": "Удалять заключения может только руководитель школы"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Руководитель: некорректный номер",
+      "method": "DELETE",
+      "path": "/?id=abc",
+      "headers": {
+        "X-Admin-Password": "426874",
+        "X-Staff-Role": "head"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "Не указан корректный номер заключения"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
 }
