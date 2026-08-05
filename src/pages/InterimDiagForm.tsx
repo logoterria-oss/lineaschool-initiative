@@ -216,6 +216,11 @@ export default function InterimDiagForm() {
         interimImpaired: impaired,
         interimLevels: levels,
         interimBaseline: baseline,
+        // Цепочка прошлых замеров, чтобы заключение показало
+        // «первичная → прошлые промежуточные → сейчас»
+        interimHistory: history || [],
+        primaryDate,
+        interimDate: today,
         interimReadingWriting: rw,
         interimRwBaseline: rwBaseline,
         teacherRecommendations: recommendations.teacherRecommendations,
@@ -241,6 +246,11 @@ export default function InterimDiagForm() {
       });
 
       if (res.ok) {
+        const saved = await res.json();
+        if (saved?.id) {
+          window.location.href = `/interim_diag/${saved.id}`;
+          return;
+        }
         alert('Промежуточная диагностика сохранена!');
       } else {
         alert('Не удалось сохранить. Попробуйте ещё раз.');

@@ -25,6 +25,13 @@ function DynamicArrow({ dyn }: { dyn: ProcessDynamic }) {
   return null;
 }
 
+// Подпись шага: первичная → 1-я, 2-я … промежуточная → сейчас
+function stepLabel(idx: number, total: number): string {
+  if (idx === 0) return 'Первичная';
+  if (idx === total - 1) return 'Сейчас';
+  return `${idx}-я промежут.`;
+}
+
 export default function DynamicChain({ steps, finalDynamic }: Props) {
   const visible = steps.filter((s) => (s.value || '').trim() !== '');
   if (visible.length === 0) return null;
@@ -36,9 +43,10 @@ export default function DynamicChain({ steps, finalDynamic }: Props) {
         return (
           <div key={idx} className="flex items-end gap-2">
             <div className="flex flex-col">
-              {step.date && (
-                <span className="text-[11px] leading-none text-gray-400 mb-0.5">{fmtDate(step.date)}</span>
-              )}
+              <span className="text-[11px] leading-none text-gray-400 mb-0.5">
+                {stepLabel(idx, visible.length)}
+                {step.date ? ` · ${fmtDate(step.date)}` : ''}
+              </span>
               <span className={isLast ? 'font-medium text-gray-900' : 'text-gray-500'}>
                 {step.value}
               </span>

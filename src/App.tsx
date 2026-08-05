@@ -14,6 +14,7 @@ import Privacy from "./pages/Privacy";
 import DiagForm from "./pages/DiagForm";
 import InterimDiagForm from "./pages/InterimDiagForm";
 import DiagConclusion from "./pages/DiagConclusion";
+import InterimDiagConclusion from "./pages/InterimDiagConclusion";
 import ParentQuestionnaire from "./pages/ParentQuestionnaire";
 import QuestionnaireResponses from "./pages/QuestionnaireResponses";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/diag_form" element={<DiagForm />} />
             <Route path="/interim_diag_form" element={<InterimDiagForm />} />
             <Route path="/diag/:serialNumber" element={<DiagConclusion />} />
+            <Route path="/interim_diag/:id" element={<InterimDiagConclusion />} />
             <Route path="/admin" element={<RoleSelectPage />} />
             <Route path="/admin/role-select" element={<RoleSelectPage />} />
             <Route path="/admin/diag" element={<AdminDashboard />} />
