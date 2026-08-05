@@ -8,7 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { READING_CHAR_LEVELS } from './readingWriting';
+import {
+  READING_CHAR_LEVELS,
+  READING_ERROR_CATALOG,
+  DYSGRAPHIC_ERROR_CATALOG,
+  ORTHOGRAPHIC_ERROR_CATALOG,
+} from './readingWriting';
+import PastDiagnosticsErrorList from './PastDiagnosticsErrorList';
 import {
   IMPAIRED_GROUPS,
   ImpairedProcessKey,
@@ -183,6 +189,27 @@ export default function PastDiagnosticsForm({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="sm:col-span-3 space-y-3">
+          <PastDiagnosticsErrorList
+            title="Ошибки чтения"
+            catalog={READING_ERROR_CATALOG}
+            selected={draft.readingErrorTypes}
+            onChange={(v) => patch({ readingErrorTypes: v })}
+          />
+          <PastDiagnosticsErrorList
+            title="Дисграфические ошибки"
+            catalog={DYSGRAPHIC_ERROR_CATALOG}
+            selected={draft.errorTypes}
+            onChange={(v) => patch({ errorTypes: v })}
+          />
+          <PastDiagnosticsErrorList
+            title="Орфографические ошибки"
+            catalog={ORTHOGRAPHIC_ERROR_CATALOG}
+            selected={draft.orthoErrorTypes}
+            onChange={(v) => patch({ orthoErrorTypes: v })}
+          />
         </div>
       </div>
 

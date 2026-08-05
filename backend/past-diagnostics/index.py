@@ -23,6 +23,86 @@ METRICS = [
 ]
 
 
+READING_ERROR_CATALOG = [
+    'пропуск, перестановка, замены букв/слогов/слов при чтении',
+    'аграмматизмы при чтении',
+    'ошибки угадывающего чтения',
+    'затруднения в припоминании букв',
+    'зеркальность чтения букв и/или слов',
+]
+
+DYSGRAPHIC_GROUP_FIELDS = [
+    'analysisErrors',
+    'acousticErrors',
+    'motorErrors',
+    'visualMotorErrors',
+    'visualSpatialErrors',
+    'regulationViolations',
+]
+
+
+def _clean_list(raw: Any) -> list:
+    """Убирает пустые значения, «нет» и дубли, сохраняя порядок."""
+    seen = set()
+    out = []
+    for x in raw or []:
+        label = str(x or '').strip()
+        low = label.lower()
+        if not label or low == 'нет' or low in seen:
+            continue
+        seen.add(low)
+        out.append(label)
+    return out
+
+
+def _reading_errors_from_primary(fd: Dict[str, Any]) -> list:
+    catalog = {x.lower() for x in READING_ERROR_CATALOG}
+    return _clean_list(
+        [x for x in (fd.get('readingSkill') or []) if str(x or '').strip().lower() in catalog]
+    )
+
+
+def _dysgraphic_from_primary(fd: Dict[str, Any]) -> list:
+    items = []
+    for field in DYSGRAPHIC_GROUP_FIELDS:
+        items.extend(fd.get(field) or [])
+    return _clean_list(items)
+
+
+def _ortho_from_primary(fd: Dict[str, Any]) -> list:
+    items = list(fd.get('orthographicErrorTypes') or [])
+    other = str(fd.get('orthographicErrorsOther') or '')
+    items.extend([s for s in other.split(',')])
+    return _clean_list(items)
+
+
+def _error_lists_patch(body: Dict[str, Any], diag_type: str) -> Dict[str, Any]:
+    """Готовит поля со списками типов ошибок для сохранения."""
+    reading = _clean_list(body.get('readingErrorTypes'))
+    dysgraphic = _clean_list(body.get('errorTypes'))
+    ortho = _clean_list(body.get('orthoErrorTypes'))
+
+    out: Dict[str, Any] = {
+        'interimReadingErrorTypes': reading,
+        'interimErrorTypes': dysgraphic,
+        'interimOrthoErrorTypes': ortho,
+    }
+
+    if diag_type == 'primary':
+        # У первичной ошибки чтения лежат вместе с характером чтения
+        char = str(body.get('readingChar') or '').strip()
+        out['readingSkill'] = ([char] if char else []) + reading
+        # Все дисграфические кладём в одну группу, остальные очищаем,
+        # чтобы не задваивать при обратном разборе
+        out['analysisErrors'] = dysgraphic
+        for field in DYSGRAPHIC_GROUP_FIELDS[1:]:
+            out[field] = []
+        out['orthographicErrorTypes'] = ortho
+        out['orthographicErrorsOther'] = ''
+
+    return out
+
+
 def _levels_to_primary_fields(levels: Dict[str, str]) -> Dict[str, Any]:
     """Раскладывает уровни процессов по полям первичной диагностики,
     чтобы форма подтянула их как значения «было»."""
@@ -194,7 +274,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         (str(x) for x in fd['readingSkill'] if str(x).strip()), ''
                     )
 
+                # Списки типов ошибок: свои поля вручную внесённых записей,
+                # иначе разбираем поля настоящей первичной
+                reading_errs = fd.get('interimReadingErrorTypes')
+                if not isinstance(reading_errs, list):
+                    reading_errs = _reading_errors_from_primary(fd)
+
+                dysgraphic_types = fd.get('interimErrorTypes')
+                if not isinstance(dysgraphic_types, list):
+                    dysgraphic_types = _dysgraphic_from_primary(fd)
+
+                ortho_types = fd.get('interimOrthoErrorTypes')
+                if not isinstance(ortho_types, list):
+                    ortho_types = _ortho_from_primary(fd)
+
                 items.append({
+                    'readingErrorTypes': _clean_list(reading_errs),
+                    'errorTypes': _clean_list(dysgraphic_types),
+                    'orthoErrorTypes': _clean_list(ortho_types),
                     'id': r['id'],
                     'diagType': r['diag_type'] or 'interim',
                     'date': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
@@ -237,6 +334,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 form_data['readingSkill'] = [reading_char] if reading_char else []
                 form_data['manualReadingChar'] = reading_char
                 form_data.update(_levels_to_primary_fields(levels))
+            form_data.update(_error_lists_patch(body, diag_type))
             for m in METRICS:
                 form_data[m] = str(body.get(m) or '')
 
@@ -280,6 +378,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 patch['readingSkill'] = [reading_char] if reading_char else []
                 patch['manualReadingChar'] = reading_char
                 patch.update(_levels_to_primary_fields(levels))
+            patch.update(_error_lists_patch(body, body.get('diagType') or 'interim'))
             for m in METRICS:
                 patch[m] = str(body.get(m) or '')
 

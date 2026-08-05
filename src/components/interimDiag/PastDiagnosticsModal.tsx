@@ -59,6 +59,9 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
       dysorthographicErrors: it.dysorthographicErrors,
       totalErrors: it.totalErrors,
       readingChar: it.readingChar,
+      readingErrorTypes: it.readingErrorTypes || [],
+      errorTypes: it.errorTypes || [],
+      orthoErrorTypes: it.orthoErrorTypes || [],
       levels: it.levels || {},
     });
   };

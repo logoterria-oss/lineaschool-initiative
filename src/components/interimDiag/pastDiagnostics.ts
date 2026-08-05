@@ -12,6 +12,9 @@ export interface PastEntry {
   dysorthographicErrors: string;
   totalErrors: string;
   readingChar: string;
+  readingErrorTypes: string[];
+  errorTypes: string[];
+  orthoErrorTypes: string[];
   levels: ProcessLevelsState;
 }
 
@@ -24,5 +27,8 @@ export const EMPTY: Omit<PastEntry, 'id'> = {
   dysorthographicErrors: '',
   totalErrors: '',
   readingChar: '',
+  readingErrorTypes: [],
+  errorTypes: [],
+  orthoErrorTypes: [],
   levels: {},
 };
