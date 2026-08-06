@@ -252,6 +252,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                            form_data::jsonb ->> 'manualReadingChar'
                        ) AS reading_char,
                        form_data::jsonb -> 'interimLevels' AS levels,
+                       COALESCE(form_data::jsonb ->> 'excludedFromDynamics', 'false') AS excluded,
                        form_data::jsonb AS fd
                 FROM {SCHEMA}.speech_therapy_reports
                 WHERE lower(COALESCE(form_data::jsonb ->> 'childName', student_name)) = lower(%s)
@@ -303,6 +304,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'totalErrors': r['total_errors'] or '',
                     'readingChar': reading_char,
                     'levels': levels,
+                    'excluded': str(r['excluded']).lower() == 'true',
                 })
             return _ok({'items': items})
 
@@ -396,31 +398,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return _ok({'updated': cursor.rowcount})
 
         if action == 'delete':
-            rid = body.get('id')
-            if not rid:
-                return _bad('Нужен идентификатор записи')
-            # Не стираем запись, а прячем в корзину — её можно восстановить
-            who = str(body.get('who') or '').strip()[:255]
-            cursor.execute(
-                f"UPDATE {SCHEMA}.speech_therapy_reports "
-                f"SET archived_at = NOW(), archived_by = %s "
-                f"WHERE id = %s AND archived_at IS NULL",
-                (who, int(rid)),
-            )
-            conn.commit()
-            return _ok({'deleted': max(cursor.rowcount, 0)})
-
-        if action == 'restore':
+            # ВАЖНО: это НЕ удаление заключения из базы.
+            # Логопед лишь исключает диагностику из цепочки динамики этого ребёнка.
+            # Само заключение остаётся в кабинете и открывается по своей ссылке.
             rid = body.get('id')
             if not rid:
                 return _bad('Нужен идентификатор записи')
             cursor.execute(
-                f"UPDATE {SCHEMA}.speech_therapy_reports "
-                f"SET archived_at = NULL, archived_by = NULL WHERE id = %s",
+                f"""
+                UPDATE {SCHEMA}.speech_therapy_reports
+                SET form_data = (
+                        COALESCE(form_data::jsonb, '{{}}'::jsonb)
+                        || '{{"excludedFromDynamics": true}}'::jsonb
+                    )::text
+                WHERE id = %s
+                """,
                 (int(rid),),
             )
             conn.commit()
-            return _ok({'restored': max(cursor.rowcount, 0)})
+            return _ok({'excluded': max(cursor.rowcount, 0)})
+
+        if action == 'include':
+            # Вернуть диагностику в цепочку динамики
+            rid = body.get('id')
+            if not rid:
+                return _bad('Нужен идентификатор записи')
+            cursor.execute(
+                f"""
+                UPDATE {SCHEMA}.speech_therapy_reports
+                SET form_data = (
+                        COALESCE(form_data::jsonb, '{{}}'::jsonb) - 'excludedFromDynamics'
+                    )::text
+                WHERE id = %s
+                """,
+                (int(rid),),
+            )
+            conn.commit()
+            return _ok({'included': max(cursor.rowcount, 0)})
 
         return _bad('Неизвестное действие')
 

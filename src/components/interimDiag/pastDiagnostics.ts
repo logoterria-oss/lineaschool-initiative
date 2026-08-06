@@ -23,6 +23,8 @@ export interface PastEntry {
   errorTypes: string[];
   orthoErrorTypes: string[];
   levels: ProcessLevelsState;
+  // Диагностика исключена из цепочки динамики (заключение при этом цело)
+  excluded?: boolean;
 }
 
 // Пустая заготовка новой записи (уровни — «норма» по умолчанию)

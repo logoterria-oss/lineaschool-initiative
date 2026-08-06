@@ -122,21 +122,28 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
 
   const remove = async (id: number) => {
     const ok = confirm(
-      'Убрать эту диагностику из истории ребёнка?\n\n' +
-        'Заключение исчезнет из списков и цепочки динамики, но сохранится в корзине — ' +
-        'руководитель школы сможет его вернуть.',
+      'Убрать эту диагностику из цепочки динамики?\n\n' +
+        'Она перестанет учитываться в расчёте динамики этого ребёнка. ' +
+        'Само логопедическое заключение НЕ удаляется: оно останется в базе, ' +
+        'в кабинете и по своей ссылке. Вернуть можно здесь же.',
     );
     if (!ok) return;
     await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'delete',
-        id,
-        who: sessionStorage.getItem('staff_name') || '',
-      }),
+      body: JSON.stringify({ action: 'delete', id }),
     });
     if (editingId === id) resetDraft();
+    load();
+    onSaved();
+  };
+
+  const include = async (id: number) => {
+    await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'include', id }),
+    });
     load();
     onSaved();
   };
@@ -198,6 +205,7 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
                 editingId={editingId}
                 onEdit={startEdit}
                 onRemove={remove}
+                onInclude={include}
               />
             )}
 

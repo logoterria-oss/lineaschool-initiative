@@ -6,6 +6,7 @@ interface Props {
   editingId: number | null;
   onEdit: (it: PastEntry) => void;
   onRemove: (id: number) => void;
+  onInclude: (id: number) => void;
 }
 
 function fmt(d: string | null) {
@@ -14,7 +15,13 @@ function fmt(d: string | null) {
   return p.length === 3 ? `${p[2]}.${p[1]}.${p[0]}` : d;
 }
 
-export default function PastDiagnosticsTable({ items, editingId, onEdit, onRemove }: Props) {
+export default function PastDiagnosticsTable({
+  items,
+  editingId,
+  onEdit,
+  onRemove,
+  onInclude,
+}: Props) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -48,7 +55,14 @@ export default function PastDiagnosticsTable({ items, editingId, onEdit, onRemov
                   {it.diagType === 'primary' ? 'Первичная' : 'Промежуточная'}
                 </span>
               </td>
-              <td className="py-2 pr-3 font-medium text-gray-900">{fmt(it.date)}</td>
+              <td className="py-2 pr-3 font-medium text-gray-900">
+                {fmt(it.date)}
+                {it.excluded && (
+                  <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-normal text-gray-500">
+                    не в динамике
+                  </span>
+                )}
+              </td>
               <td className="py-2 pr-3">{it.readingSpeed || '—'}</td>
               <td className="py-2 pr-3">{it.readingComprehension || '—'}</td>
               <td className="py-2 pr-3">{it.dysgraphicErrors || '—'}</td>
@@ -75,14 +89,25 @@ export default function PastDiagnosticsTable({ items, editingId, onEdit, onRemov
                 >
                   <Icon name="Pencil" size={16} />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onRemove(it.id)}
-                  className="text-gray-400 hover:text-red-600"
-                  title="Удалить"
-                >
-                  <Icon name="Trash2" size={16} />
-                </button>
+                {it.excluded ? (
+                  <button
+                    type="button"
+                    onClick={() => onInclude(it.id)}
+                    className="text-gray-400 hover:text-primary"
+                    title="Вернуть в цепочку динамики"
+                  >
+                    <Icon name="RotateCcw" size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onRemove(it.id)}
+                    className="text-gray-400 hover:text-red-600"
+                    title="Убрать из цепочки динамики (заключение останется)"
+                  >
+                    <Icon name="EyeOff" size={16} />
+                  </button>
+                )}
               </td>
             </tr>
           ))}
