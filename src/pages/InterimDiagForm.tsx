@@ -156,12 +156,40 @@ export default function InterimDiagForm() {
           (s) => s.name.trim().toLowerCase() === personal.childName.trim().toLowerCase(),
         );
         if (!found) return;
-        setHistory(found.history || []);
-        // Первичную могли внести вручную только что — подтягиваем её как значения «было»
+        const hist = found.history || [];
+        setHistory(hist);
+
+        // Первичную могли внести или отредактировать только что —
+        // пересобираем всё, что от неё зависит: нарушенные процессы,
+        // уровни «было», заключение первичной и показатели чтения/письма
         if (found.primary) {
+          const nextImpaired = computeImpairedFromPrimary(found.primary);
+          const nextBaseline = computeBaselineLevels(found.primary, nextImpaired);
+          setPrimaryData(found.primary);
+          setImpaired(nextImpaired);
+          setBaseline(nextBaseline);
+          setPrimaryConclusion(buildPrimaryConclusion(found.primary));
           setRwBaseline(baselineFromPrimary(found.primary));
           setPrimaryDate(found.examDate);
+          setAutoFilled(true);
           setStudentSelected(true);
+
+          // «Стало» подтягиваем из последнего замера, но НЕ затираем то,
+          // что логопед уже успел выставить руками в этой форме
+          const last = hist.length > 0 ? hist[hist.length - 1] : null;
+          setLevels((prev) => {
+            const next: ProcessLevelsState = { ...nextBaseline, ...prev };
+            if (last?.levels) {
+              Object.keys(nextBaseline).forEach((k) => {
+                const key = k as ImpairedProcessKey;
+                if (!prev[key]) {
+                  const v = last.levels[key];
+                  if (v) next[key] = v as ProcessLevel;
+                }
+              });
+            }
+            return next;
+          });
         }
       })
       .catch(() => {});
