@@ -18,27 +18,29 @@ export interface InterimHistoryItem {
   readingChar?: string;
 }
 
-// Подпись шага: первичная → предыдущая промежуточная → сейчас.
-// В цепочке максимум 3 замера, поэтому нумерация не нужна.
-export function stepLabel(idx: number, total: number): string {
-  if (idx === 0) return 'Первичная';
-  if (idx === total - 1) return 'Сейчас';
-  return 'Предыдущая';
+// Откуда взят замер. Подпись зависит именно от источника, а не от позиции:
+// если в первичной диагностике показатель не заполнен, цепочка начинается
+// с промежуточной, и её нельзя подписывать «Первичная».
+type StepKind = 'primary' | 'previous' | 'current';
+
+const STEP_LABELS: Record<StepKind, string> = {
+  primary: 'Первичная',
+  previous: 'Предыдущая',
+  current: 'Сейчас',
+};
+
+interface RawStep {
+  date: string | null;
+  value: string;
+  kind: StepKind;
 }
 
-// Короткая подпись для печати
-export function stepLabelShort(idx: number, total: number): string {
-  if (idx === 0) return 'Первичная';
-  if (idx === total - 1) return 'Сейчас';
-  return 'Предыдущая';
-}
-
-function withLabels(raw: { date: string | null; value: string }[]): ConclusionStep[] {
-  const total = raw.length;
-  return raw.map((s, idx) => ({
-    ...s,
-    label: stepLabel(idx, total),
-    labelShort: stepLabelShort(idx, total),
+function withLabels(raw: RawStep[]): ConclusionStep[] {
+  return raw.map((s) => ({
+    date: s.date,
+    value: s.value,
+    label: STEP_LABELS[s.kind],
+    labelShort: STEP_LABELS[s.kind],
   }));
 }
 
@@ -50,9 +52,9 @@ function withLabels(raw: { date: string | null; value: string }[]): ConclusionSt
 function previousMeasure(
   history: InterimHistoryItem[],
   getValue: (h: InterimHistoryItem) => string,
-): { date: string | null; value: string } | null {
+): RawStep | null {
   const filled = (history || [])
-    .map((h) => ({ date: h.date, value: (getValue(h) || '').trim() }))
+    .map((h) => ({ date: h.date, value: (getValue(h) || '').trim(), kind: 'previous' as StepKind }))
     .filter((h) => h.value !== '');
   if (filled.length === 0) return null;
 
@@ -70,13 +72,13 @@ export function processChain(
   primaryDate: string | null,
   todayDate: string | null,
 ): ConclusionStep[] {
-  const raw: { date: string | null; value: string }[] = [];
+  const raw: RawStep[] = [];
   const base = baseline?.[key];
-  if (base) raw.push({ date: primaryDate, value: base });
+  if (base) raw.push({ date: primaryDate, value: base, kind: 'primary' });
   const prev = previousMeasure(history, (h) => h.levels?.[key] || '');
   if (prev) raw.push(prev);
   const cur = current?.[key];
-  if (cur) raw.push({ date: todayDate, value: cur });
+  if (cur) raw.push({ date: todayDate, value: cur, kind: 'current' });
   return withLabels(raw);
 }
 
@@ -97,11 +99,11 @@ export function metricChain(
   primaryDate: string | null,
   todayDate: string | null,
 ): ConclusionStep[] {
-  const raw: { date: string | null; value: string }[] = [];
-  if (baseline) raw.push({ date: primaryDate, value: baseline });
+  const raw: RawStep[] = [];
+  if (baseline) raw.push({ date: primaryDate, value: baseline, kind: 'primary' });
   const prev = previousMeasure(history, (h) => (h[metric] as string) || '');
   if (prev) raw.push(prev);
-  if (current) raw.push({ date: todayDate, value: current });
+  if (current) raw.push({ date: todayDate, value: current, kind: 'current' });
   return withLabels(raw);
 }
 
@@ -126,11 +128,11 @@ export function readingCharChain(
   primaryDate: string | null,
   todayDate: string | null,
 ): ConclusionStep[] {
-  const raw: { date: string | null; value: string }[] = [];
-  if (baseline) raw.push({ date: primaryDate, value: baseline });
+  const raw: RawStep[] = [];
+  if (baseline) raw.push({ date: primaryDate, value: baseline, kind: 'primary' });
   const prev = previousMeasure(history, (h) => h.readingChar || '');
   if (prev) raw.push(prev);
-  if (current) raw.push({ date: todayDate, value: current });
+  if (current) raw.push({ date: todayDate, value: current, kind: 'current' });
   return withLabels(raw);
 }
 
