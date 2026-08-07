@@ -1,13 +1,25 @@
 import { DysgraphicErrorItem } from '@/components/interimDiag/readingWriting';
 
+type ErrorItemInput = DysgraphicErrorItem | string;
+
 interface Props {
-  readingErrorTypes: DysgraphicErrorItem[];
-  errorTypes: DysgraphicErrorItem[];
-  orthoErrorTypes: DysgraphicErrorItem[];
+  readingErrorTypes: ErrorItemInput[];
+  errorTypes: ErrorItemInput[];
+  orthoErrorTypes: ErrorItemInput[];
 }
 
-function Block({ title, items }: { title: string; items: DysgraphicErrorItem[] }) {
-  const list = items || [];
+// Часть записей (внесённые вручную прошлые диагностики) хранит ошибки
+// простым списком названий — приводим оба формата к одному виду
+function normalize(items: ErrorItemInput[]): DysgraphicErrorItem[] {
+  return (items || [])
+    .map((it) =>
+      typeof it === 'string' ? { label: it, struck: false, added: false } : it,
+    )
+    .filter((it) => it && it.label);
+}
+
+function Block({ title, items }: { title: string; items: ErrorItemInput[] }) {
+  const list = normalize(items);
   if (list.length === 0) return null;
   return (
     <div>
@@ -40,9 +52,9 @@ export default function InterimErrorTypesView({
   orthoErrorTypes,
 }: Props) {
   const empty =
-    (readingErrorTypes || []).length === 0 &&
-    (errorTypes || []).length === 0 &&
-    (orthoErrorTypes || []).length === 0;
+    normalize(readingErrorTypes).length === 0 &&
+    normalize(errorTypes).length === 0 &&
+    normalize(orthoErrorTypes).length === 0;
   if (empty) return null;
 
   return (

@@ -113,7 +113,9 @@ export default function InterimDiagConclusion() {
                 </div>
                 <div>
                   <dt className="text-gray-500">Дата рождения</dt>
-                  <dd className="font-medium text-gray-900">{data.birthDate || '—'}</dd>
+                  <dd className="font-medium text-gray-900">
+                    {fmtDate(data.birthDate) || '—'}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Класс</dt>
