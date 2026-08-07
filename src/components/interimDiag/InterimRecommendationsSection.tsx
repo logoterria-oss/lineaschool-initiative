@@ -1,3 +1,4 @@
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -17,9 +18,16 @@ export interface InterimRecommendationsData {
 interface Props {
   data: InterimRecommendationsData;
   onChange: (patch: Partial<InterimRecommendationsData>) => void;
+  examDate: string;
+  onExamDateChange: (date: string) => void;
 }
 
-export default function InterimRecommendationsSection({ data, onChange }: Props) {
+export default function InterimRecommendationsSection({
+  data,
+  onChange,
+  examDate,
+  onExamDateChange,
+}: Props) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Рекомендации</h2>
@@ -50,6 +58,19 @@ export default function InterimRecommendationsSection({ data, onChange }: Props)
             className="mt-2"
             rows={4}
             placeholder="Введите рекомендации родителям"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="interim-exam-date" className="text-base font-semibold">
+            Дата диагностики
+          </Label>
+          <Input
+            id="interim-exam-date"
+            type="date"
+            value={examDate}
+            onChange={(e) => onExamDateChange(e.target.value)}
+            className="mt-2 w-48"
           />
         </div>
 

@@ -404,6 +404,8 @@ export default function InterimDiagForm() {
             <InterimRecommendationsSection
               data={recommendations}
               onChange={patchRecommendations}
+              examDate={personal.examDate}
+              onExamDateChange={(date) => patchPersonal({ examDate: date })}
             />
 
             <div className="flex justify-end">

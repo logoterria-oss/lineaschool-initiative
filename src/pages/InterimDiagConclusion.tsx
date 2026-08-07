@@ -106,15 +106,16 @@ export default function InterimDiagConclusion() {
 
             <section>
               <h2 className="mb-3 text-lg font-bold text-gray-900">Сведения о ребёнке</h2>
-              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                <div>
+              {/* ФИО — на всю первую строку, возраст и класс — на второй */}
+              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+                <div className="sm:col-span-3">
                   <dt className="text-gray-500">ФИО</dt>
                   <dd className="font-medium text-gray-900">{data.childName || '—'}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Дата рождения</dt>
+                  <dt className="text-gray-500">Возраст</dt>
                   <dd className="font-medium text-gray-900">
-                    {fmtDate(data.birthDate) || '—'}
+                    {data.age ? `${data.age} лет` : '—'}
                   </dd>
                 </div>
                 <div>

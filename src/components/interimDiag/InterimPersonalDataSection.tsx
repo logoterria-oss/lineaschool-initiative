@@ -258,17 +258,6 @@ export default function InterimPersonalDataSection({ data, onChange, onSelectStu
             onChange={(e) => onChange({ grade: e.target.value })}
           />
         </div>
-
-        <div>
-          <Label htmlFor="examDate">Дата диагностики</Label>
-          <Input
-            id="examDate"
-            type="date"
-            className="mt-1"
-            value={data.examDate}
-            onChange={(e) => onChange({ examDate: e.target.value })}
-          />
-        </div>
       </div>
     </div>
   );
