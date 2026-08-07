@@ -40,7 +40,6 @@ function withLabels(raw: RawStep[]): ConclusionStep[] {
     date: s.date,
     value: s.value,
     label: STEP_LABELS[s.kind],
-    labelShort: STEP_LABELS[s.kind],
   }));
 }
 

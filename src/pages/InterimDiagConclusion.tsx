@@ -6,6 +6,7 @@ import InterimProcessesView from '@/components/interimConclusion/InterimProcesse
 import InterimReadingWritingView from '@/components/interimConclusion/InterimReadingWritingView';
 import InterimErrorTypesView from '@/components/interimConclusion/InterimErrorTypesView';
 import { fmtDate } from '@/components/interimConclusion/ConclusionChain';
+import { calculateAge, ageWithUnit } from '@/components/interimDiag/age';
 
 const API = 'https://functions.poehali.dev/ccdf6e9e-8ab6-450b-a327-e0afd0a8a31c';
 
@@ -69,6 +70,9 @@ export default function InterimDiagConclusion() {
   const history = data.interimHistory || [];
   const todayDate = data.interimDate || data._examDate || null;
   const primaryDate = data.primaryDate || null;
+  // Возраст на дату диагностики. Если в форме его не заполнили —
+  // считаем сами из даты рождения, чтобы в заключении не было прочерка
+  const age = data.age || calculateAge(data.birthDate, todayDate);
 
   return (
     <div className="min-h-screen bg-white">
@@ -119,22 +123,13 @@ export default function InterimDiagConclusion() {
                 </div>
                 <div>
                   <dt className="text-gray-500">Возраст</dt>
-                  <dd className="font-medium text-gray-900">
-                    {data.age ? `${data.age} лет` : '—'}
-                  </dd>
+                  <dd className="font-medium text-gray-900">{ageWithUnit(age) || '—'}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Класс</dt>
                   <dd className="font-medium text-gray-900">{data.grade || '—'}</dd>
                 </div>
               </dl>
-              {history.length > 0 && (
-                <p className="mt-3 text-sm text-gray-600">
-                  Динамика показана по цепочке: первичная диагностика
-                  {primaryDate ? ` от ${fmtDate(primaryDate)}` : ''} → предыдущая промежуточная →
-                  текущая.
-                </p>
-              )}
             </section>
 
             {data.conclusion && (

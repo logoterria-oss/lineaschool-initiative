@@ -4,8 +4,6 @@ import { ProcessDynamic } from '@/components/interimDiag/impairedProcesses';
 export interface ConclusionStep {
   date: string | null;
   label: string;
-  // Укороченная подпись — показывается только при печати
-  labelShort?: string;
   value: string;
 }
 
@@ -25,32 +23,47 @@ export default function ConclusionChain({ steps, dynamic }: Props) {
   if (visible.length === 0) return null;
 
   return (
+    /* Цепочка всегда в одну строку: шаги делят ширину поровну,
+       длинные формулировки переносятся внутри своей колонки */
     <div
-      className="chain-line flex flex-wrap items-end gap-x-2 gap-y-1 text-sm"
+      className="chain-line flex flex-nowrap items-start gap-x-2 text-sm"
       data-steps={visible.length}
     >
       {visible.map((step, idx) => {
         const isLast = idx === visible.length - 1;
         return (
-          <div key={idx} className="chain-step flex items-end gap-2">
-            <div className="flex flex-col">
-              <span className="chain-label text-[11px] leading-none text-gray-500 mb-0.5">
-                <span className="print:hidden">{step.label}</span>
-                <span className="hidden print:inline">{step.labelShort || step.label}</span>
+          /* Последний шаг не растягиваем: иначе стрелка динамики
+             уезжает вправо и отрывается от значения */
+          <div
+            key={idx}
+            className={`chain-step flex min-w-0 items-start gap-1.5 ${isLast ? 'flex-initial' : 'flex-1'}`}
+          >
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="chain-label mb-0.5 text-[11px] leading-tight text-gray-500">
+                {step.label}
                 {step.date ? ` · ${fmtDate(step.date)}` : ''}
               </span>
               <span
-                className={`chain-value ${isLast ? 'font-semibold text-gray-900' : 'text-gray-600'}`}
+                className={`chain-value leading-snug ${isLast ? 'font-semibold text-gray-900' : 'text-gray-600'}`}
               >
                 {step.value}
               </span>
             </div>
-            {!isLast && <Icon name="ArrowRight" size={15} className="mb-0.5 text-gray-400" />}
+            {/* mt-[18px] — сдвиг на высоту подписи, чтобы стрелка
+                встала на одну линию с первой строкой значения */}
+            {!isLast && (
+              <Icon
+                name="ArrowRight"
+                size={15}
+                className="mt-[18px] shrink-0 text-gray-400"
+                fallback="MoveRight"
+              />
+            )}
             {isLast && dynamic === 'up' && (
-              <Icon name="ArrowUp" size={15} className="mb-0.5 text-green-600" />
+              <Icon name="ArrowUp" size={15} className="mt-[18px] shrink-0 text-green-600" />
             )}
             {isLast && dynamic === 'down' && (
-              <Icon name="ArrowDown" size={15} className="mb-0.5 text-red-600" />
+              <Icon name="ArrowDown" size={15} className="mt-[18px] shrink-0 text-red-600" />
             )}
           </div>
         );

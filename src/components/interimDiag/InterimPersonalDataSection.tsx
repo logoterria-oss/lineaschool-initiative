@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
+import { calculateAge } from './age';
 
 export interface InterimPrimaryData {
   wordUnderstanding: string;
@@ -71,25 +72,6 @@ interface Props {
 }
 
 const DIAG_STUDENTS_URL = 'https://functions.poehali.dev/ed7f6726-88a1-4ecb-b063-ed890e8bd5cd';
-
-function calculateAge(birthDate: string): string {
-  if (!birthDate) return '';
-  const parts = birthDate.split(/[-./]/);
-  if (parts.length !== 3) return '';
-  let [year, month, day] = parts;
-  if (year.length !== 4) {
-    [day, month, year] = parts;
-  }
-  const birth = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-  if (isNaN(birth.getTime())) return '';
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age >= 0 ? age.toString() : '';
-}
 
 // Класс на момент промежуточной диагностики:
 // класс из первичной + число наступивших с тех пор 1 сентября.
