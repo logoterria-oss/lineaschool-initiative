@@ -25,9 +25,21 @@ export function stepLabel(idx: number, total: number): string {
   return `${idx}-я промежуточная`;
 }
 
+// Короткая подпись для печати: «1-я промежуточная» не влезает
+// в узкую колонку, когда замеров много
+export function stepLabelShort(idx: number, total: number): string {
+  if (idx === 0) return 'Первичная';
+  if (idx === total - 1) return 'Сейчас';
+  return `${idx}-я промеж.`;
+}
+
 function withLabels(raw: { date: string | null; value: string }[]): ConclusionStep[] {
   const total = raw.length;
-  return raw.map((s, idx) => ({ ...s, label: stepLabel(idx, total) }));
+  return raw.map((s, idx) => ({
+    ...s,
+    label: stepLabel(idx, total),
+    labelShort: stepLabelShort(idx, total),
+  }));
 }
 
 // Цепочка уровней одного нарушенного процесса

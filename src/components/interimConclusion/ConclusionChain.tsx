@@ -4,6 +4,8 @@ import { ProcessDynamic } from '@/components/interimDiag/impairedProcesses';
 export interface ConclusionStep {
   date: string | null;
   label: string;
+  // Укороченная подпись — показывается только при печати
+  labelShort?: string;
   value: string;
 }
 
@@ -23,17 +25,23 @@ export default function ConclusionChain({ steps, dynamic }: Props) {
   if (visible.length === 0) return null;
 
   return (
-    <div className="chain-line flex flex-wrap items-end gap-x-2 gap-y-1 text-sm">
+    <div
+      className="chain-line flex flex-wrap items-end gap-x-2 gap-y-1 text-sm"
+      data-steps={visible.length}
+    >
       {visible.map((step, idx) => {
         const isLast = idx === visible.length - 1;
         return (
           <div key={idx} className="chain-step flex items-end gap-2">
             <div className="flex flex-col">
-              <span className="text-[11px] leading-none text-gray-500 mb-0.5">
-                {step.label}
+              <span className="chain-label text-[11px] leading-none text-gray-500 mb-0.5">
+                <span className="print:hidden">{step.label}</span>
+                <span className="hidden print:inline">{step.labelShort || step.label}</span>
                 {step.date ? ` · ${fmtDate(step.date)}` : ''}
               </span>
-              <span className={isLast ? 'font-semibold text-gray-900' : 'text-gray-600'}>
+              <span
+                className={`chain-value ${isLast ? 'font-semibold text-gray-900' : 'text-gray-600'}`}
+              >
                 {step.value}
               </span>
             </div>

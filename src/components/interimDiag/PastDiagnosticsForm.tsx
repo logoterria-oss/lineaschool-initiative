@@ -76,7 +76,7 @@ export default function PastDiagnosticsForm({
           />
         </div>
         <div className="sm:col-span-3 border-t border-gray-200 pt-4">
-          <h5 className="text-sm font-semibold text-gray-900">Нарушенные процессы</h5>
+          <h5 className="text-sm font-semibold text-gray-900">Нарушенные речевые процессы</h5>
           <p className="mt-1 text-xs text-gray-500">
             По умолчанию везде «норма» — измените только нарушенные процессы. Если процесс не
             обследовался, выберите «Не оценивался»: он не попадёт в цепочку динамики.

@@ -28,7 +28,7 @@ export default function InterimProcessesView({
 
   return (
     <section>
-      <h2 className="mb-4 text-lg font-bold text-gray-900">Динамика нарушенных процессов</h2>
+      <h2 className="mb-4 text-lg font-bold text-gray-900">Динамика нарушенных речевых процессов</h2>
       <div className="space-y-5">
         {groups.map((group, idx) => (
           <div key={group.title} className="chain-group">

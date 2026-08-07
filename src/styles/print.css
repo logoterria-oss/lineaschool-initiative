@@ -105,6 +105,108 @@
     page-break-inside: avoid;
   }
 
+  /* Цепочка должна помещаться в одну строку, как на сайте.
+     При 12pt длинные формулировки («не соответствует возрастной норме»)
+     не влезали, и шаги съезжали друг под друга.
+     Уменьшаем шрифт и переносим длинную фразу внутри шага
+     по словам, а не растягиваем её в одну длинную строку. */
+  .chain-line {
+    display: flex;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    gap: 2mm;
+    width: 100%;
+    font-size: 8.5pt;
+    line-height: 1.25;
+  }
+
+  /* Шаги делят ширину строки поровну, поэтому цепочка любой длины
+     (первичная + промежуточные + сейчас) остаётся в одной строке */
+  .chain-step {
+    flex: 1 1 0;
+    min-width: 0;
+    align-items: flex-start !important;
+    gap: 1.5mm !important;
+  }
+
+  /* Значение шага: перенос ТОЛЬКО по словам.
+     Разрывать слова нельзя — «соответств/ует» нечитаемо. */
+  .chain-step .chain-value {
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
+    text-align: left;
+  }
+
+  /* Подпись «Первичная · 07.02.2026».
+     Переносим её по словам: при 4-5 шагах подписи в одну строку
+     налезали друг на друга. */
+  .chain-step .chain-label {
+    font-size: 7pt;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: keep-all;
+  }
+
+  /* Чем больше шагов в цепочке, тем мельче шрифт —
+     иначе длинные формулировки не помещаются в ширину страницы */
+  .chain-line[data-steps="3"] {
+    font-size: 7.5pt;
+  }
+
+  .chain-line[data-steps="4"] {
+    font-size: 6.5pt;
+  }
+
+  .chain-line[data-steps="5"],
+  .chain-line[data-steps="6"],
+  .chain-line[data-steps="7"] {
+    font-size: 5.8pt;
+  }
+
+  /* Значение из нескольких слов не должно расползаться по высоте */
+  .chain-step .chain-value {
+    line-height: 1.2;
+  }
+
+  .chain-line[data-steps="4"] .chain-label,
+  .chain-line[data-steps="5"] .chain-label,
+  .chain-line[data-steps="6"] .chain-label,
+  .chain-line[data-steps="7"] .chain-label {
+    font-size: 5.5pt;
+  }
+
+  /* Стрелка между шагами не должна прижиматься к тексту
+     и выравнивается по первой строке значения */
+  .chain-step svg {
+    flex-shrink: 0;
+    margin-top: 3.2mm !important;
+    margin-bottom: 0 !important;
+  }
+
+  .chain-line[data-steps="4"] svg,
+  .chain-line[data-steps="5"] svg,
+  .chain-line[data-steps="6"] svg,
+  .chain-line[data-steps="7"] svg {
+    width: 9px;
+    height: 9px;
+    margin-top: 2.6mm !important;
+  }
+
+  /* Колонка «подпись + значение» внутри шага */
+  .chain-step > div {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  /* Подпись показателя над цепочкой */
+  .chain-row > p {
+    font-size: 9.5pt;
+    margin-bottom: 1mm;
+  }
+
   /* Группа процессов («1) Импрессивная речь» + её строки) может
      переноситься между страницами: группы длинные, и запрет разрыва
      оставлял внизу страниц много пустого места.

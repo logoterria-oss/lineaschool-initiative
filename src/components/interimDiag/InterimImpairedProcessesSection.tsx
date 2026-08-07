@@ -57,7 +57,7 @@ export default function InterimImpairedProcessesSection({
   };
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-1">Нарушенные процессы</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-1">Нарушенные речевые процессы</h2>
       <p className="text-sm text-gray-500 mb-6">
         {autoFilled
           ? 'Галочки проставлены автоматически по первичной диагностике. Их можно изменить вручную.'
