@@ -31,7 +31,7 @@ export default function InterimProcessesView({
       <h2 className="mb-4 text-lg font-bold text-gray-900">Динамика нарушенных процессов</h2>
       <div className="space-y-5">
         {groups.map((group, idx) => (
-          <div key={group.title}>
+          <div key={group.title} className="chain-group">
             <h3 className="mb-2 text-base font-semibold text-gray-800">
               {idx + 1}) {group.title}
             </h3>
@@ -47,7 +47,7 @@ export default function InterimProcessesView({
                 );
                 if (steps.length === 0) return null;
                 return (
-                  <div key={item.key} className="border-l-2 border-gray-200 pl-3">
+                  <div key={item.key} className="chain-row border-l-2 border-gray-200 pl-3">
                     <p className="mb-1 text-sm text-gray-700">{item.label}</p>
                     <ConclusionChain steps={steps} dynamic={processDynamic(steps)} />
                   </div>

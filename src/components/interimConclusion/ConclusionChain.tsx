@@ -23,11 +23,11 @@ export default function ConclusionChain({ steps, dynamic }: Props) {
   if (visible.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-end gap-x-2 gap-y-1 text-sm">
+    <div className="chain-line flex flex-wrap items-end gap-x-2 gap-y-1 text-sm">
       {visible.map((step, idx) => {
         const isLast = idx === visible.length - 1;
         return (
-          <div key={idx} className="flex items-end gap-2">
+          <div key={idx} className="chain-step flex items-end gap-2">
             <div className="flex flex-col">
               <span className="text-[11px] leading-none text-gray-500 mb-0.5">
                 {step.label}

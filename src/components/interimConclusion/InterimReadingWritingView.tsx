@@ -58,13 +58,13 @@ export default function InterimReadingWritingView({
       <h2 className="mb-4 text-lg font-bold text-gray-900">Динамика чтения и письма</h2>
       <div className="space-y-3">
         {charSteps.length > 0 && (
-          <div className="border-l-2 border-gray-200 pl-3">
+          <div className="chain-row border-l-2 border-gray-200 pl-3">
             <p className="mb-1 text-sm text-gray-700">Характер чтения</p>
             <ConclusionChain steps={charSteps} dynamic={readingCharDynamic(charSteps)} />
           </div>
         )}
         {rows.map((r) => (
-          <div key={r.key} className="border-l-2 border-gray-200 pl-3">
+          <div key={r.key} className="chain-row border-l-2 border-gray-200 pl-3">
             <p className="mb-1 text-sm text-gray-700">
               {r.label}
               {r.unit ? `, ${r.unit}` : ''}
