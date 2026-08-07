@@ -329,7 +329,7 @@ export default function InterimReadingWritingSection({
         />
 
         <ErrorTypesBlock
-          title="Орфографические ошибки"
+          title="Типы орфографических ошибок"
           addLabel="Добавить орфографическую ошибку"
           catalog={ORTHOGRAPHIC_ERROR_CATALOG}
           items={value.orthoErrorTypes}

@@ -203,7 +203,7 @@ const CheckModal = ({
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span className="text-sm font-medium">Дизорфография:</span>
+              <span className="text-sm font-medium">Орфографические:</span>
               <span className="text-lg font-bold text-red-600">{redCount}</span>
             </div>
           </div>

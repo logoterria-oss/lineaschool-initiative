@@ -16,7 +16,7 @@ const ErrorCounter = ({ greenCount, redCount }: ErrorCounterProps) => {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-full bg-red-500"></div>
-          <span className="text-sm font-medium text-gray-700">Дизорфография:</span>
+          <span className="text-sm font-medium text-gray-700">Орфографические:</span>
           <span className="text-2xl font-bold text-red-600">{redCount}</span>
         </div>
         <div className="flex items-center gap-2">

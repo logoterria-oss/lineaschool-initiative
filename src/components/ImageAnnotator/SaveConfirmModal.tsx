@@ -21,7 +21,7 @@ const SaveConfirmModal = ({ greenCount, redCount, onConfirm, onCancel }: SaveCon
             </p>
             <p className="text-sm text-gray-600">
               Дисграфия: <span className="text-green-600 font-semibold">{greenCount}</span>, 
-              Дизорфография: <span className="text-red-600 font-semibold">{redCount}</span>
+              Орфографические: <span className="text-red-600 font-semibold">{redCount}</span>
             </p>
             <p className="text-sm text-gray-700 mt-3">
               После сохранения маркеры будут объединены с изображением, и редактор закроется.

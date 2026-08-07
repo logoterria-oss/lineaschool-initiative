@@ -44,7 +44,7 @@ const CheckModalToolbar = ({
             className={markerColor === 'red' ? 'bg-red-500 hover:bg-red-600' : ''}
           >
             <Icon name="Highlighter" className="mr-1" size={14} />
-            Дизорфография
+            Орфографические
           </Button>
           <Button
             size="sm"

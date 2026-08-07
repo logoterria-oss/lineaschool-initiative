@@ -59,6 +59,9 @@ export interface InterimPersonalData {
   birthDate: string;
   age: string;
   grade: string;
+  // Дата проведения промежуточной диагностики.
+  // По умолчанию сегодняшняя, логопед может поставить другую.
+  examDate: string;
 }
 
 interface Props {
@@ -253,6 +256,17 @@ export default function InterimPersonalDataSection({ data, onChange, onSelectStu
             placeholder="Укажите класс"
             value={data.grade}
             onChange={(e) => onChange({ grade: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="examDate">Дата диагностики</Label>
+          <Input
+            id="examDate"
+            type="date"
+            className="mt-1"
+            value={data.examDate}
+            onChange={(e) => onChange({ examDate: e.target.value })}
           />
         </div>
       </div>

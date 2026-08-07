@@ -24,6 +24,7 @@ import {
   ProcessLevelsState,
 } from '@/components/interimDiag/impairedProcesses';
 import {
+  DysgraphicErrorItem,
   EMPTY_RW_STATE,
   ReadingWritingBaseline,
   ReadingWritingState,
@@ -40,6 +41,7 @@ export default function InterimDiagForm() {
     birthDate: '',
     age: '',
     grade: '',
+    examDate: new Date().toISOString().split('T')[0],
   });
 
   const [impaired, setImpaired] = useState<ImpairedProcessesState>({ ...EMPTY_IMPAIRED_STATE });
@@ -51,7 +53,8 @@ export default function InterimDiagForm() {
   const [studentSelected, setStudentSelected] = useState(false);
   const [history, setHistory] = useState<InterimStudent['history']>([]);
   const [primaryDate, setPrimaryDate] = useState<string | null>(null);
-  const todayDate = new Date().toISOString().split('T')[0];
+  // Дата текущей диагностики берётся из формы — логопед может её изменить
+  const todayDate = personal.examDate || new Date().toISOString().split('T')[0];
 
   const [primarySamples, setPrimarySamples] = useState<string[]>([]);
   const [interimSamples, setInterimSamples] = useState<string[]>([]);
@@ -174,9 +177,55 @@ export default function InterimDiagForm() {
           setAutoFilled(true);
           setStudentSelected(true);
 
+          const last = hist.length > 0 ? hist[hist.length - 1] : null;
+
+          // Дата рождения и класс могли быть внесены только что
+          setPersonal((prev) => ({
+            ...prev,
+            birthDate: prev.birthDate || found.birthDate || '',
+            grade: prev.grade || found.grade || '',
+          }));
+
+          // Списки типов ошибок пересобираем из первичной, сохраняя пометки
+          // логопеда: вычеркнутые «преодолённые» и добавленные вручную
+          const mergeErrors = (
+            fresh: DysgraphicErrorItem[],
+            prev: DysgraphicErrorItem[],
+          ): DysgraphicErrorItem[] => {
+            const marks = new Map(prev.map((p) => [p.label.toLowerCase(), p]));
+            const merged = fresh.map((f) => {
+              const old = marks.get(f.label.toLowerCase());
+              return old ? { ...f, struck: old.struck } : f;
+            });
+            const freshLabels = new Set(fresh.map((f) => f.label.toLowerCase()));
+            const manual = prev.filter((p) => p.added && !freshLabels.has(p.label.toLowerCase()));
+            return [...merged, ...manual];
+          };
+
+          setRw((prev) => ({
+            ...prev,
+            readingErrorTypes: mergeErrors(
+              collectPrimaryReadingErrors(found.primary),
+              prev.readingErrorTypes || [],
+            ),
+            errorTypes: mergeErrors(
+              collectPrimaryErrorTypes(found.primary),
+              prev.errorTypes || [],
+            ),
+            orthoErrorTypes: mergeErrors(
+              collectPrimaryOrthographicTypes(found.primary),
+              prev.orthoErrorTypes || [],
+            ),
+            // Характер чтения подставляем, только если логопед его ещё не выбрал
+            readingChar:
+              prev.readingChar ||
+              (last?.readingChar || '').trim() ||
+              baselineFromPrimary(found.primary).readingChar ||
+              '',
+          }));
+
           // «Стало» подтягиваем из последнего замера, но НЕ затираем то,
           // что логопед уже успел выставить руками в этой форме
-          const last = hist.length > 0 ? hist[hist.length - 1] : null;
           setLevels((prev) => {
             const next: ProcessLevelsState = { ...nextBaseline, ...prev };
             if (last?.levels) {
@@ -225,7 +274,8 @@ export default function InterimDiagForm() {
     }
     setSaving(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Дата диагностики — из формы (по умолчанию сегодняшняя)
+      const today = personal.examDate || new Date().toISOString().split('T')[0];
       // Снимок состояния промежуточной диагностики
       const formData = {
         childName: personal.childName,

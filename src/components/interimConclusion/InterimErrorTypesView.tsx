@@ -65,8 +65,8 @@ export default function InterimErrorTypesView({
       </p>
       <div className="space-y-4">
         <Block title="Ошибки чтения" items={readingErrorTypes} />
-        <Block title="Дисграфические ошибки" items={errorTypes} />
-        <Block title="Орфографические ошибки" items={orthoErrorTypes} />
+        <Block title="Типы дисграфических ошибок" items={errorTypes} />
+        <Block title="Типы орфографических ошибок" items={orthoErrorTypes} />
       </div>
     </section>
   );

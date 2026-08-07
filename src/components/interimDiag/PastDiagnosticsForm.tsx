@@ -199,13 +199,13 @@ export default function PastDiagnosticsForm({
             onChange={(v) => patch({ readingErrorTypes: v })}
           />
           <PastDiagnosticsErrorList
-            title="Дисграфические ошибки"
+            title="Типы дисграфических ошибок"
             catalog={DYSGRAPHIC_ERROR_CATALOG}
             selected={draft.errorTypes}
             onChange={(v) => patch({ errorTypes: v })}
           />
           <PastDiagnosticsErrorList
-            title="Орфографические ошибки"
+            title="Типы орфографических ошибок"
             catalog={ORTHOGRAPHIC_ERROR_CATALOG}
             selected={draft.orthoErrorTypes}
             onChange={(v) => patch({ orthoErrorTypes: v })}
