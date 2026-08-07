@@ -60,9 +60,6 @@ export default function InterimErrorTypesView({
   return (
     <section>
       <h2 className="mb-4 text-lg font-bold text-gray-900">Типы ошибок</h2>
-      <p className="mb-3 text-xs text-gray-500">
-        Зачёркнутые — преодолённые ошибки, красные со знаком «плюс» — появившиеся впервые.
-      </p>
       <div className="space-y-4">
         <Block title="Ошибки чтения" items={readingErrorTypes} />
         <Block title="Типы дисграфических ошибок" items={errorTypes} />
