@@ -127,10 +127,6 @@ export default function InterimDiagConclusion() {
                   <dt className="text-gray-500">Класс</dt>
                   <dd className="font-medium text-gray-900">{data.grade || '—'}</dd>
                 </div>
-                <div>
-                  <dt className="text-gray-500">Дата диагностики</dt>
-                  <dd className="font-medium text-gray-900">{fmtDate(todayDate) || '—'}</dd>
-                </div>
               </dl>
               {history.length > 0 && (
                 <p className="mt-3 text-sm text-gray-600">
@@ -195,11 +191,19 @@ export default function InterimDiagConclusion() {
               </section>
             )}
 
+            {/* Дата диагностики и подпись — в конце, как в первичном заключении */}
             <section className="border-t border-gray-200 pt-4">
-              <p className="text-sm text-gray-700">
-                Учитель-логопед:{' '}
-                <span className="font-medium text-gray-900">{data.logopedist || '—'}</span>
-              </p>
+              <div className="flex items-end justify-between text-sm text-gray-700">
+                <div>
+                  <span className="font-semibold">Дата диагностики:</span>{' '}
+                  <span className="text-gray-900">{fmtDate(todayDate) || '—'}</span>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold">Учитель-логопед:</div>
+                  <div className="mt-2 text-gray-900">{data.logopedist || '—'}</div>
+                  <div className="mt-6 w-48 border-b border-gray-400"></div>
+                </div>
+              </div>
             </section>
           </div>
         </div>
