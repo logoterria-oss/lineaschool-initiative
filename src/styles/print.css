@@ -150,32 +150,15 @@
     word-break: keep-all;
   }
 
-  /* Чем больше шагов в цепочке, тем мельче шрифт —
-     иначе длинные формулировки не помещаются в ширину страницы */
+  /* В цепочке максимум 3 замера: первичная → предыдущая → сейчас.
+     На трёх шагах колонки уже, поэтому шрифт чуть мельче. */
   .chain-line[data-steps="3"] {
     font-size: 7.5pt;
-  }
-
-  .chain-line[data-steps="4"] {
-    font-size: 6.5pt;
-  }
-
-  .chain-line[data-steps="5"],
-  .chain-line[data-steps="6"],
-  .chain-line[data-steps="7"] {
-    font-size: 5.8pt;
   }
 
   /* Значение из нескольких слов не должно расползаться по высоте */
   .chain-step .chain-value {
     line-height: 1.2;
-  }
-
-  .chain-line[data-steps="4"] .chain-label,
-  .chain-line[data-steps="5"] .chain-label,
-  .chain-line[data-steps="6"] .chain-label,
-  .chain-line[data-steps="7"] .chain-label {
-    font-size: 5.5pt;
   }
 
   /* Стрелка между шагами не должна прижиматься к тексту
@@ -184,15 +167,6 @@
     flex-shrink: 0;
     margin-top: 3.2mm !important;
     margin-bottom: 0 !important;
-  }
-
-  .chain-line[data-steps="4"] svg,
-  .chain-line[data-steps="5"] svg,
-  .chain-line[data-steps="6"] svg,
-  .chain-line[data-steps="7"] svg {
-    width: 9px;
-    height: 9px;
-    margin-top: 2.6mm !important;
   }
 
   /* Колонка «подпись + значение» внутри шага */

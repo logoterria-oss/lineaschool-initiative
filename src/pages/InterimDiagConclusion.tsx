@@ -131,8 +131,8 @@ export default function InterimDiagConclusion() {
               {history.length > 0 && (
                 <p className="mt-3 text-sm text-gray-600">
                   Динамика показана по цепочке: первичная диагностика
-                  {primaryDate ? ` от ${fmtDate(primaryDate)}` : ''} → {history.length}{' '}
-                  {history.length === 1 ? 'промежуточная' : 'промежуточных'} → текущая.
+                  {primaryDate ? ` от ${fmtDate(primaryDate)}` : ''} → предыдущая промежуточная →
+                  текущая.
                 </p>
               )}
             </section>
