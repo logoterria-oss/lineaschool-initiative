@@ -23,22 +23,20 @@ export default function ConclusionChain({ steps, dynamic }: Props) {
   if (visible.length === 0) return null;
 
   return (
-    /* Цепочка всегда в одну строку: шаги делят ширину поровну,
-       длинные формулировки переносятся внутри своей колонки */
+    /* Цепочка всегда в одну строку. Шаги идут вплотную друг к другу
+       по ширине содержимого: числа «22 → 31 → 34» не должны
+       расползаться на всю строку. */
     <div
-      className="chain-line flex flex-nowrap items-start gap-x-2 text-sm"
+      className="chain-line flex flex-nowrap items-start gap-x-3 text-sm"
       data-steps={visible.length}
     >
       {visible.map((step, idx) => {
         const isLast = idx === visible.length - 1;
         return (
-          /* Последний шаг не растягиваем: иначе стрелка динамики
-             уезжает вправо и отрывается от значения */
-          <div
-            key={idx}
-            className={`chain-step flex min-w-0 items-start gap-1.5 ${isLast ? 'flex-initial' : 'flex-1'}`}
-          >
-            <div className="flex min-w-0 flex-1 flex-col">
+          <div key={idx} className="chain-step flex min-w-0 shrink items-start gap-1.5">
+            {/* max-w — предел, после которого длинная формулировка
+                переносится по словам, а не тянет строку вправо */}
+            <div className="flex min-w-0 max-w-[13rem] flex-col">
               <span className="chain-label mb-0.5 text-[11px] leading-tight text-gray-500">
                 {step.label}
                 {step.date ? ` · ${fmtDate(step.date)}` : ''}
