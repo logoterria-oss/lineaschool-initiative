@@ -5,6 +5,7 @@ import DiagFormNavigation from '@/components/diag/DiagFormNavigation';
 import InterimProcessesView from '@/components/interimConclusion/InterimProcessesView';
 import InterimReadingWritingView from '@/components/interimConclusion/InterimReadingWritingView';
 import InterimErrorTypesView from '@/components/interimConclusion/InterimErrorTypesView';
+import InterimSamplesView from '@/components/interimConclusion/InterimSamplesView';
 import { fmtDate } from '@/components/interimConclusion/ConclusionChain';
 import { calculateAge, ageWithUnit } from '@/components/interimDiag/age';
 
@@ -163,6 +164,8 @@ export default function InterimDiagConclusion() {
               errorTypes={rw.errorTypes || []}
               orthoErrorTypes={rw.orthoErrorTypes || []}
             />
+
+            <InterimSamplesView samples={rw.writingSamples || []} date={todayDate} />
 
             {(data.teacherRecommendations || data.parentRecommendations) && (
               <section>

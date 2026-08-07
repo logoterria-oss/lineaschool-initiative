@@ -218,6 +218,26 @@
     page-break-inside: avoid;
   }
 
+  /* Диктант: фото не должно разрываться между страницами,
+     и его высота ограничена, чтобы не занимать целый лист */
+  .sample-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Фото во всю ширину листа: логопед должен разобрать почерк */
+  .sample-item img {
+    width: 100%;
+    max-height: 150mm;
+    object-fit: contain;
+  }
+
+  /* Заголовок «Образец письменной работы» не отрывается от фото */
+  .samples-section h2 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
   /* Скрыть контейнеры */
   .max-w-4xl,
   .container {
