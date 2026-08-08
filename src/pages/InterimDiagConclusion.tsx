@@ -168,7 +168,7 @@ export default function InterimDiagConclusion() {
             <InterimSamplesView samples={rw.writingSamples || []} date={todayDate} />
 
             {data.interimSummary && (
-              <section className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <section className="summary-section rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <h2 className="mb-2 text-lg font-bold text-gray-900">Общий вывод о динамике</h2>
                 <p className="whitespace-pre-wrap text-sm text-gray-700">
                   {data.interimSummary}
