@@ -5,6 +5,7 @@ import {
   PROCESS_LEVELS,
 } from '@/components/interimDiag/impairedProcesses';
 import { RWMetric, readingCharIndex } from '@/components/interimDiag/readingWriting';
+import { rateLabel } from '@/components/interimDiag/errorRate';
 import { ConclusionStep } from './ConclusionChain';
 
 export interface InterimHistoryItem {
@@ -12,6 +13,7 @@ export interface InterimHistoryItem {
   levels?: Record<string, string>;
   readingSpeed?: string;
   readingComprehension?: string;
+  dictationWords?: string;
   dysgraphicErrors?: string;
   dysorthographicErrors?: string;
   totalErrors?: string;
@@ -117,6 +119,73 @@ export function metricDynamic(steps: ConclusionStep[], moreIsBetter: boolean): P
   const b = toNum(steps[steps.length - 1].value);
   if (a === null || b === null || a === b) return 'same';
   return (moreIsBetter ? b > a : b < a) ? 'up' : 'down';
+}
+
+export type ErrorMetric = 'dysgraphicErrors' | 'dysorthographicErrors' | 'totalErrors';
+
+/**
+ * Цепочка ошибок в пересчёте на 100 слов.
+ * Абсолютные числа несопоставимы между диктантами разной длины,
+ * поэтому каждый замер приводим к общей базе — «ошибок на 100 слов».
+ * Если объём работы у замера не указан, показываем абсолютное число.
+ */
+export function errorRateChain(
+  metric: ErrorMetric,
+  baseline: Record<string, string>,
+  history: InterimHistoryItem[],
+  current: Record<string, string>,
+  primaryDate: string | null,
+  todayDate: string | null,
+): ConclusionStep[] {
+  const raw: RawStep[] = [];
+
+  const base = (baseline?.[metric] || '').trim();
+  if (base) {
+    raw.push({
+      date: primaryDate,
+      value: rateLabel(base, baseline?.dictationWords),
+      kind: 'primary',
+    });
+  }
+
+  const filled = (history || []).filter((h) => ((h[metric] as string) || '').trim() !== '');
+  if (filled.length > 0) {
+    const sorted = [...filled].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const last = sorted[sorted.length - 1];
+    raw.push({
+      date: last.date,
+      value: rateLabel((last[metric] as string) || '', last.dictationWords),
+      kind: 'previous',
+    });
+  }
+
+  const cur = (current?.[metric] || '').trim();
+  if (cur) {
+    raw.push({
+      date: todayDate,
+      value: rateLabel(cur, current?.dictationWords),
+      kind: 'current',
+    });
+  }
+
+  return withLabels(raw);
+}
+
+/**
+ * Динамика по плотности ошибок между двумя последними шагами цепочки.
+ * Числа уже пересчитаны на 100 слов, поэтому сравниваем их напрямую.
+ */
+export function errorRateDynamic(steps: ConclusionStep[]): ProcessDynamic {
+  if (steps.length < 2) return 'same';
+  // В шаге лежит текст вида «12,5 на 100 слов» — берём число из начала
+  const lead = (v: string): number | null => {
+    const m = (v || '').replace(',', '.').match(/-?\d+(\.\d+)?/);
+    return m ? Number(m[0]) : null;
+  };
+  const a = lead(steps[steps.length - 2].value);
+  const b = lead(steps[steps.length - 1].value);
+  if (a === null || b === null || a === b) return 'same';
+  return b < a ? 'up' : 'down';
 }
 
 // Цепочка характера чтения

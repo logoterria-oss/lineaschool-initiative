@@ -17,6 +17,7 @@ CORS = {
 METRICS = [
     'readingSpeed',
     'readingComprehension',
+    'dictationWords',
     'dysgraphicErrors',
     'dysorthographicErrors',
     'totalErrors',
@@ -244,6 +245,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                        COALESCE(form_data::jsonb ->> 'childName', student_name) AS child_name,
                        form_data::jsonb ->> 'readingSpeed'          AS reading_speed,
                        form_data::jsonb ->> 'readingComprehension'  AS reading_comprehension,
+                       form_data::jsonb ->> 'dictationWords'        AS dictation_words,
                        form_data::jsonb ->> 'dysgraphicErrors'      AS dysgraphic_errors,
                        form_data::jsonb ->> 'dysorthographicErrors' AS dysorthographic_errors,
                        form_data::jsonb ->> 'totalErrors'           AS total_errors,
@@ -299,6 +301,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'date': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
                     'readingSpeed': r['reading_speed'] or '',
                     'readingComprehension': r['reading_comprehension'] or '',
+                    'dictationWords': r['dictation_words'] or '',
                     'dysgraphicErrors': r['dysgraphic_errors'] or '',
                     'dysorthographicErrors': r['dysorthographic_errors'] or '',
                     'totalErrors': r['total_errors'] or '',

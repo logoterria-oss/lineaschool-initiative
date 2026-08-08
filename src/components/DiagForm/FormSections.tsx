@@ -109,6 +109,7 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
               readingSpeed: formData.readingSpeed,
               readingComprehension: formData.readingComprehension,
               writingSamples: formData.writingSamples,
+              dictationWords: formData.dictationWords,
               dysgraphicErrors: formData.dysgraphicErrors,
               dysorthographicErrors: formData.dysorthographicErrors,
               totalErrors: formData.totalErrors,

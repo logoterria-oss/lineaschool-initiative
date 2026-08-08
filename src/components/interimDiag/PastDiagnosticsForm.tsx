@@ -146,6 +146,16 @@ export default function PastDiagnosticsForm({
           />
         </div>
         <div>
+          <Label className="text-sm">Количество слов в работе</Label>
+          <Input
+            type="number"
+            min="0"
+            value={draft.dictationWords}
+            onChange={(e) => patch({ dictationWords: e.target.value })}
+            className="mt-1"
+          />
+        </div>
+        <div>
           <Label className="text-sm">Дисграфических ошибок</Label>
           <Input
             type="number"

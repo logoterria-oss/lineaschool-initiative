@@ -15,6 +15,7 @@ export interface PastEntry {
   date: string | null;
   readingSpeed: string;
   readingComprehension: string;
+  dictationWords: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
@@ -37,6 +38,7 @@ export const EMPTY: Omit<PastEntry, 'id'> = {
   date: '',
   readingSpeed: '',
   readingComprehension: '',
+  dictationWords: '',
   dysgraphicErrors: '',
   dysorthographicErrors: '',
   totalErrors: '',

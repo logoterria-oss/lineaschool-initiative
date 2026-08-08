@@ -5,6 +5,7 @@ import { ProcessDynamic } from './impairedProcesses';
 export type RWMetric =
   | 'readingSpeed'
   | 'readingComprehension'
+  | 'dictationWords'
   | 'dysgraphicErrors'
   | 'dysorthographicErrors'
   | 'totalErrors';
@@ -46,6 +47,7 @@ export interface ReadingWritingState {
   readingChar: string; // характер чтения (текущий уровень)
   readingErrorTypes: DysgraphicErrorItem[]; // список ошибок чтения
   writingSamples: string[]; // изображения (base64/URL)
+  dictationWords: string; // объём работы в словах (база для пересчёта на 100 слов)
   dysgraphicErrors: string; // количество
   dysorthographicErrors: string; // количество
   totalErrors: string; // всего ошибок
@@ -59,6 +61,7 @@ export interface ReadingWritingState {
 export interface ReadingWritingBaseline {
   readingSpeed: string;
   readingComprehension: string;
+  dictationWords: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
@@ -71,6 +74,7 @@ export const EMPTY_RW_STATE: ReadingWritingState = {
   readingChar: '',
   readingErrorTypes: [],
   writingSamples: [],
+  dictationWords: '',
   dysgraphicErrors: '',
   dysorthographicErrors: '',
   totalErrors: '',
@@ -287,6 +291,7 @@ export function baselineFromPrimary(p: InterimPrimaryData | undefined): ReadingW
   return {
     readingSpeed: p?.readingSpeed || '',
     readingComprehension: p?.readingComprehension || '',
+    dictationWords: p?.dictationWords || '',
     dysgraphicErrors: p?.dysgraphicErrors || '',
     dysorthographicErrors: p?.dysorthographicErrors || '',
     totalErrors: p?.totalErrors || '',

@@ -1,7 +1,10 @@
 import { RWMetric } from '@/components/interimDiag/readingWriting';
 import ConclusionChain from './ConclusionChain';
 import {
+  ErrorMetric,
   InterimHistoryItem,
+  errorRateChain,
+  errorRateDynamic,
   metricChain,
   metricDynamic,
   readingCharChain,
@@ -19,9 +22,13 @@ interface Props {
 const METRICS: { key: RWMetric; label: string; unit?: string; moreIsBetter: boolean }[] = [
   { key: 'readingSpeed', label: 'Скорость чтения', unit: 'сл/мин', moreIsBetter: true },
   { key: 'readingComprehension', label: 'Понимание прочитанного', unit: '%', moreIsBetter: true },
-  { key: 'dysgraphicErrors', label: 'Дисграфических ошибок', moreIsBetter: false },
-  { key: 'dysorthographicErrors', label: 'Орфографических ошибок', moreIsBetter: false },
-  { key: 'totalErrors', label: 'Ошибок всего', moreIsBetter: false },
+];
+
+// Ошибки показываем отдельно: их сравниваем в пересчёте на 100 слов
+const ERROR_METRICS: { key: ErrorMetric; label: string }[] = [
+  { key: 'dysgraphicErrors', label: 'Дисграфических ошибок' },
+  { key: 'dysorthographicErrors', label: 'Орфографических ошибок' },
+  { key: 'totalErrors', label: 'Ошибок всего' },
 ];
 
 export default function InterimReadingWritingView({
@@ -51,7 +58,12 @@ export default function InterimReadingWritingView({
     ),
   })).filter((r) => r.steps.length > 0);
 
-  if (charSteps.length === 0 && rows.length === 0) return null;
+  const errorRows = ERROR_METRICS.map((m) => ({
+    ...m,
+    steps: errorRateChain(m.key, baseline || {}, history, rw || {}, primaryDate, todayDate),
+  })).filter((r) => r.steps.length > 0);
+
+  if (charSteps.length === 0 && rows.length === 0 && errorRows.length === 0) return null;
 
   return (
     <section>
@@ -70,6 +82,12 @@ export default function InterimReadingWritingView({
               {r.unit ? `, ${r.unit}` : ''}
             </p>
             <ConclusionChain steps={r.steps} dynamic={metricDynamic(r.steps, r.moreIsBetter)} />
+          </div>
+        ))}
+        {errorRows.map((r) => (
+          <div key={r.key} className="chain-row border-l-2 border-gray-200 pl-3">
+            <p className="mb-1 text-sm text-gray-700">{r.label}</p>
+            <ConclusionChain steps={r.steps} dynamic={errorRateDynamic(r.steps)} />
           </div>
         ))}
       </div>

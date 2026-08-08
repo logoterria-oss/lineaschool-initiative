@@ -54,6 +54,7 @@ export const useFormDataManager = () => {
     readingSpeed: "",
     readingComprehension: "",
     writingSamples: [] as string[],
+    dictationWords: "",
     dysgraphicErrors: "",
     dysorthographicErrors: "",
     totalErrors: "",

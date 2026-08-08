@@ -65,6 +65,7 @@ export default function InterimDiagForm() {
   const [rwBaseline, setRwBaseline] = useState<ReadingWritingBaseline>({
     readingSpeed: '',
     readingComprehension: '',
+    dictationWords: '',
     dysgraphicErrors: '',
     dysorthographicErrors: '',
     totalErrors: '',
@@ -285,6 +286,7 @@ export default function InterimDiagForm() {
         // Текущие значения показателей — совместимые ключи для будущей цепочки
         readingSpeed: rw.readingSpeed,
         readingComprehension: rw.readingComprehension,
+        dictationWords: rw.dictationWords,
         dysgraphicErrors: rw.dysgraphicErrors,
         dysorthographicErrors: rw.dysorthographicErrors,
         totalErrors: rw.totalErrors,

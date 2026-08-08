@@ -46,6 +46,9 @@ export interface DiagData {
   readingSpeed: string;
   readingComprehension: string;
   writingSamples: string[];
+  // Объём диктанта в словах — нужен, чтобы сравнивать ошибки
+  // между работами разной длины (пересчёт на 100 слов)
+  dictationWords: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;

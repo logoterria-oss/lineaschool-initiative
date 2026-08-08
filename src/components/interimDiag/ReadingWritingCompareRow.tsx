@@ -16,14 +16,29 @@ export interface CompareRowProps {
   fromEditable: boolean;
   to: string;
   dyn: ProcessDynamic;
+  // Подпись под строкой: пересчёт ошибок на 100 слов
+  note?: string;
+  hint?: string;
   onFromChange: (v: string) => void;
   onChange: (v: string) => void;
 }
 
-export default function CompareRow({ label, unit, from, fromEditable, to, dyn, onFromChange, onChange }: CompareRowProps) {
+export default function CompareRow({
+  label,
+  unit,
+  from,
+  fromEditable,
+  to,
+  dyn,
+  note,
+  hint,
+  onFromChange,
+  onChange,
+}: CompareRowProps) {
   return (
     <div>
       <Label className="text-sm text-gray-700">{label}</Label>
+      {hint && <p className="mt-0.5 text-xs text-gray-500">{hint}</p>}
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {fromEditable ? (
           <div className="flex items-center gap-1">
@@ -54,6 +69,7 @@ export default function CompareRow({ label, unit, from, fromEditable, to, dyn, o
         {unit && <span className="text-sm text-gray-500">{unit}</span>}
         <DynamicArrow dyn={dyn} />
       </div>
+      {note && <p className="mt-1 text-xs text-gray-600">{note}</p>}
     </div>
   );
 }

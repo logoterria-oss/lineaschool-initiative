@@ -50,6 +50,8 @@ export interface DiagFormData {
   readingSpeed: string;
   readingComprehension: string;
   writingSamples: string[];
+  // Объём работы в словах — база для пересчёта ошибок на 100 слов
+  dictationWords: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;

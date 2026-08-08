@@ -20,6 +20,7 @@ export interface InterimPrimaryData {
   languageAnalysisTypes: string[];
   readingSpeed: string;
   readingComprehension: string;
+  dictationWords: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
@@ -39,6 +40,7 @@ export interface InterimHistoryEntry {
   levels: Record<string, string>;
   readingSpeed: string;
   readingComprehension: string;
+  dictationWords: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;

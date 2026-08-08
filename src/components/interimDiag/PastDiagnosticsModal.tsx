@@ -55,6 +55,7 @@ export default function PastDiagnosticsModal({ studentName, onClose, onSaved }: 
       date: it.date || '',
       readingSpeed: it.readingSpeed,
       readingComprehension: it.readingComprehension,
+      dictationWords: it.dictationWords || '',
       dysgraphicErrors: it.dysgraphicErrors,
       dysorthographicErrors: it.dysorthographicErrors,
       totalErrors: it.totalErrors,

@@ -23,6 +23,7 @@ import {
   hasPrimaryBaseline,
   readingCharIndex,
 } from './readingWriting';
+import { fmtRate, per100, rateChangeText, rateDynamic, rateLabel } from './errorRate';
 import DynamicChain, { ChainStep } from './DynamicChain';
 import { InterimHistoryEntry } from './InterimPersonalDataSection';
 import CompareRow from './ReadingWritingCompareRow';
@@ -175,6 +176,43 @@ export default function InterimReadingWritingSection({
     return <DynamicChain steps={steps} finalDynamic={dyn} />;
   };
 
+  /* Ошибки сравниваем не в штуках, а в пересчёте на 100 слов:
+     20 ошибок в диктанте на 50 слов и на 100 слов — разный результат.
+     Если объём работы где-то не указан, откатываемся на абсолютные числа. */
+  type ErrorMetric = 'dysgraphicErrors' | 'dysorthographicErrors' | 'totalErrors';
+
+  const baseWords = () => fromValue('dictationWords');
+
+  const errorDynamic = (metric: ErrorMetric): ProcessDynamic => {
+    const byRate = rateDynamic(fromValue(metric), baseWords(), value[metric], value.dictationWords);
+    if (per100(fromValue(metric), baseWords()) !== null) return byRate;
+    return dynamicFewerIsBetter(fromValue(metric), value[metric]);
+  };
+
+  const errorNote = (metric: ErrorMetric): string => {
+    const from = per100(fromValue(metric), baseWords());
+    const to = per100(value[metric], value.dictationWords);
+    if (from === null || to === null) return '';
+    const change = rateChangeText(fromValue(metric), baseWords(), value[metric], value.dictationWords);
+    return `${fmtRate(from)} → ${fmtRate(to)} на 100 слов — ${change}`;
+  };
+
+  // Цепочка ошибок в пересчёте на 100 слов
+  const renderErrorChain = (metric: ErrorMetric) => {
+    if (!history || history.length === 0) return null;
+    const steps: ChainStep[] = [];
+    const base = fromValue(metric);
+    if (base) steps.push({ date: primaryDate, value: rateLabel(base, baseWords()) });
+    history.forEach((h) => {
+      const v = (h[metric] as string) || '';
+      if (v) steps.push({ date: h.date, value: rateLabel(v, h.dictationWords) });
+    });
+    if (value[metric])
+      steps.push({ date: todayDate, value: rateLabel(value[metric], value.dictationWords) });
+    if (steps.length < 2) return null;
+    return <DynamicChain steps={steps} finalDynamic={errorDynamic(metric)} />;
+  };
+
   // Цепочка характера чтения: первичная → промежуточные → сейчас
   const readingCharSteps = (): ChainStep[] => {
     const steps: ChainStep[] = [];
@@ -283,15 +321,28 @@ export default function InterimReadingWritingSection({
 
         <div>
           <CompareRow
+            label="Количество слов в работе"
+            hint="Позволяет сравнивать ошибки между диктантами разной длины"
+            from={fromValue('dictationWords')}
+            fromEditable={fromEditable('dictationWords')}
+            to={value.dictationWords}
+            dyn="same"
+            onFromChange={(v) => setFrom('dictationWords', v)}
+            onChange={(v) => onChange({ dictationWords: v })}
+          />
+        </div>
+        <div>
+          <CompareRow
             label="Количество дисграфических ошибок"
             from={fromValue('dysgraphicErrors')}
             fromEditable={fromEditable('dysgraphicErrors')}
             to={value.dysgraphicErrors}
-            dyn={dynamicFewerIsBetter(fromValue('dysgraphicErrors'), value.dysgraphicErrors)}
+            dyn={errorDynamic('dysgraphicErrors')}
+            note={errorNote('dysgraphicErrors')}
             onFromChange={(v) => setFrom('dysgraphicErrors', v)}
             onChange={(v) => onChange({ dysgraphicErrors: v })}
           />
-          {renderChain('dysgraphicErrors', value.dysgraphicErrors, false)}
+          {renderErrorChain('dysgraphicErrors')}
         </div>
         <div>
           <CompareRow
@@ -299,11 +350,12 @@ export default function InterimReadingWritingSection({
             from={fromValue('dysorthographicErrors')}
             fromEditable={fromEditable('dysorthographicErrors')}
             to={value.dysorthographicErrors}
-            dyn={dynamicFewerIsBetter(fromValue('dysorthographicErrors'), value.dysorthographicErrors)}
+            dyn={errorDynamic('dysorthographicErrors')}
+            note={errorNote('dysorthographicErrors')}
             onFromChange={(v) => setFrom('dysorthographicErrors', v)}
             onChange={(v) => onChange({ dysorthographicErrors: v })}
           />
-          {renderChain('dysorthographicErrors', value.dysorthographicErrors, false)}
+          {renderErrorChain('dysorthographicErrors')}
         </div>
         <div>
           <CompareRow
@@ -311,11 +363,12 @@ export default function InterimReadingWritingSection({
             from={fromValue('totalErrors')}
             fromEditable={fromEditable('totalErrors')}
             to={value.totalErrors}
-            dyn={dynamicFewerIsBetter(fromValue('totalErrors'), value.totalErrors)}
+            dyn={errorDynamic('totalErrors')}
+            note={errorNote('totalErrors')}
             onFromChange={(v) => setFrom('totalErrors', v)}
             onChange={(v) => onChange({ totalErrors: v })}
           />
-          {renderChain('totalErrors', value.totalErrors, false)}
+          {renderErrorChain('totalErrors')}
         </div>
 
         <ErrorTypesBlock

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 
 interface WritingSkillProps {
   writingSamples: string[];
+  dictationWords: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
@@ -25,6 +26,7 @@ interface WritingSkillProps {
 
 export default function WritingSkillSection({
   writingSamples,
+  dictationWords,
   dysgraphicErrors,
   dysorthographicErrors,
   totalErrors,
@@ -90,6 +92,21 @@ export default function WritingSkillSection({
       </div>
 
       <div className="ml-4 space-y-4">
+        <div>
+          <Label htmlFor="dictation-words" className="text-base font-semibold">Количество слов в работе</Label>
+          <p className="text-sm text-gray-500 mt-1">
+            Нужно, чтобы сравнивать ошибки между работами разной длины
+          </p>
+          <Input
+            id="dictation-words"
+            type="number"
+            value={dictationWords}
+            onChange={(e) => onInputChange("dictationWords", e.target.value)}
+            className="mt-2 w-32"
+            min="0"
+          />
+        </div>
+
         <div>
           <Label htmlFor="dysgraphic-errors" className="text-base font-semibold">Количество дисграфических ошибок</Label>
           <Input

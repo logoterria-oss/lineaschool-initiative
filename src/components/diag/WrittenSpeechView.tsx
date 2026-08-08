@@ -67,6 +67,9 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
           </div>
         )}
         
+        {diagData.dictationWords && (
+          <div><strong>Объём работы:</strong> {diagData.dictationWords} слов</div>
+        )}
         <div><strong>Дисграфические ошибки:</strong> {diagData.dysgraphicErrors || 'Не указано'}</div>
         <div><strong>Орфографические ошибки:</strong> {diagData.dysorthographicErrors || 'Не указано'}</div>
         <div><strong>Ошибок всего:</strong> {diagData.totalErrors || 'Не указано'}</div>
