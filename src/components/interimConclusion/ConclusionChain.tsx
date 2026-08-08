@@ -57,8 +57,15 @@ export default function ConclusionChain({ steps, dynamic }: Props) {
                 fallback="MoveRight"
               />
             )}
+            {/* Стрелка улучшения — потолще, чтобы читалась наравне
+                с полужирным текстом рядом и не терялась при печати */}
             {isLast && dynamic === 'up' && (
-              <Icon name="ArrowUp" size={15} className="mt-[18px] shrink-0 text-green-600" />
+              <Icon
+                name="ArrowUp"
+                size={15}
+                strokeWidth={2.75}
+                className="mt-[18px] shrink-0 text-green-600"
+              />
             )}
             {isLast && dynamic === 'down' && (
               <Icon name="ArrowDown" size={15} className="mt-[18px] shrink-0 text-red-600" />

@@ -90,7 +90,11 @@ export default function InterimReadingWritingView({
               {r.summary && (
                 <p
                   className={`mt-0.5 text-xs ${
-                    dyn === 'up' ? 'text-green-700' : dyn === 'down' ? 'text-red-600' : 'text-gray-500'
+                    dyn === 'up'
+                      ? 'font-medium text-green-700'
+                      : dyn === 'down'
+                        ? 'text-red-600'
+                        : 'text-gray-500'
                   }`}
                 >
                   {r.summary}
@@ -109,7 +113,11 @@ export default function InterimReadingWritingView({
               {r.summary && (
                 <p
                   className={`mt-0.5 text-xs ${
-                    dyn === 'up' ? 'text-green-700' : dyn === 'down' ? 'text-red-600' : 'text-gray-500'
+                    dyn === 'up'
+                      ? 'font-medium text-green-700'
+                      : dyn === 'down'
+                        ? 'text-red-600'
+                        : 'text-gray-500'
                   }`}
                 >
                   {r.summary}
