@@ -20,8 +20,8 @@ function fmtDate(d: string | null): string {
 }
 
 function DynamicArrow({ dyn }: { dyn: ProcessDynamic }) {
-  if (dyn === 'up') return <Icon name="ArrowUp" size={16} className="text-green-600" />;
-  if (dyn === 'down') return <Icon name="ArrowDown" size={16} className="text-red-600" />;
+  if (dyn === 'up') return <Icon name="ArrowUp" size={16} strokeWidth={2.75} className="text-dynamic-up" />;
+  if (dyn === 'down') return <Icon name="ArrowDown" size={16} className="text-dynamic-down" />;
   return null;
 }
 

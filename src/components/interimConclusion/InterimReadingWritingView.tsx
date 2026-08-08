@@ -91,9 +91,9 @@ export default function InterimReadingWritingView({
                 <p
                   className={`mt-0.5 text-xs ${
                     dyn === 'up'
-                      ? 'font-medium text-green-700'
+                      ? 'font-semibold text-dynamic-up'
                       : dyn === 'down'
-                        ? 'text-red-600'
+                        ? 'font-medium text-dynamic-down'
                         : 'text-gray-500'
                   }`}
                 >
@@ -114,9 +114,9 @@ export default function InterimReadingWritingView({
                 <p
                   className={`mt-0.5 text-xs ${
                     dyn === 'up'
-                      ? 'font-medium text-green-700'
+                      ? 'font-semibold text-dynamic-up'
                       : dyn === 'down'
-                        ? 'text-red-600'
+                        ? 'font-medium text-dynamic-down'
                         : 'text-gray-500'
                   }`}
                 >

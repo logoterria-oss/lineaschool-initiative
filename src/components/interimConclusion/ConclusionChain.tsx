@@ -64,11 +64,11 @@ export default function ConclusionChain({ steps, dynamic }: Props) {
                 name="ArrowUp"
                 size={15}
                 strokeWidth={2.75}
-                className="mt-[18px] shrink-0 text-green-600"
+                className="mt-[18px] shrink-0 text-dynamic-up"
               />
             )}
             {isLast && dynamic === 'down' && (
-              <Icon name="ArrowDown" size={15} className="mt-[18px] shrink-0 text-red-600" />
+              <Icon name="ArrowDown" size={15} className="mt-[18px] shrink-0 text-dynamic-down" />
             )}
           </div>
         );

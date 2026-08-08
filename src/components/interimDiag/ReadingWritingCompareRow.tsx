@@ -4,8 +4,8 @@ import Icon from '@/components/ui/icon';
 import { ProcessDynamic } from './impairedProcesses';
 
 export function DynamicArrow({ dyn }: { dyn: ProcessDynamic }) {
-  if (dyn === 'up') return <Icon name="ArrowUp" size={18} className="text-green-600" />;
-  if (dyn === 'down') return <Icon name="ArrowDown" size={18} className="text-red-600" />;
+  if (dyn === 'up') return <Icon name="ArrowUp" size={18} strokeWidth={2.75} className="text-dynamic-up" />;
+  if (dyn === 'down') return <Icon name="ArrowDown" size={18} className="text-dynamic-down" />;
   return null;
 }
 

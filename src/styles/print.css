@@ -133,6 +133,15 @@
     font-size: 7.5pt;
   }
 
+  /* Цвет динамики печатаем как на экране: в режиме экономии чернил
+     браузер иначе приглушает зелёный и красный до серого,
+     и направление динамики на бумаге перестаёт читаться */
+  .text-dynamic-up,
+  .text-dynamic-down {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   /* Стрелка встаёт на линию первой строки значения */
   .chain-step svg {
     margin-top: 3.2mm !important;
