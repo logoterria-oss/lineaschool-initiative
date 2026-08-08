@@ -20,6 +20,10 @@ export interface InterimDraft {
   rw: ReadingWritingState;
   recommendations: InterimRecommendationsData;
   autoFilled: boolean;
+  /** Общий вывод о динамике: текст правки логопеда */
+  summary: string;
+  /** Трогал ли логопед текст — тогда автотекст не перетирает правку */
+  summaryEdited: boolean;
 }
 
 /**

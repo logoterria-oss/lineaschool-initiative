@@ -53,6 +53,10 @@ export function useInterimState() {
     logopedist: '',
   });
 
+  // Общий вывод: пустая строка = используется автотекст
+  const [summary, setSummary] = useState('');
+  const [summaryEdited, setSummaryEdited] = useState(false);
+
   /** Дата текущей диагностики — логопед может её изменить */
   const todayDate = personal.examDate || today();
 
@@ -73,6 +77,8 @@ export function useInterimState() {
     rw,
     recommendations,
     autoFilled,
+    summary,
+    summaryEdited,
   };
 
   /** Разложить готовый снимок обратно по разделам формы */
@@ -92,6 +98,8 @@ export function useInterimState() {
     setRw(d.rw);
     setRecommendations(d.recommendations);
     setAutoFilled(d.autoFilled);
+    setSummary(d.summary || '');
+    setSummaryEdited(!!d.summaryEdited);
   };
 
   return {
@@ -127,6 +135,10 @@ export function useInterimState() {
     setRw,
     recommendations,
     setRecommendations,
+    summary,
+    setSummary,
+    summaryEdited,
+    setSummaryEdited,
     todayDate,
     draftData,
     applyDraft,

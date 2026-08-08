@@ -189,6 +189,15 @@ export default function InterimDiagConclusion() {
               </section>
             )}
 
+            {data.interimSummary && (
+              <section className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h2 className="mb-2 text-lg font-bold text-gray-900">Общий вывод о динамике</h2>
+                <p className="whitespace-pre-wrap text-sm text-gray-700">
+                  {data.interimSummary}
+                </p>
+              </section>
+            )}
+
             {/* Дата диагностики и подпись — в конце, как в первичном заключении */}
             <section className="border-t border-gray-200 pt-4">
               <div className="flex items-end justify-between text-sm text-gray-700">

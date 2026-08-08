@@ -14,6 +14,8 @@ import { useFormDraft } from '@/hooks/useFormDraft';
 import type { InterimDraft } from '@/components/interimDiag/draft';
 import { isEmptyInterim } from '@/components/interimDiag/draft';
 import { useInterimState } from '@/components/interimDiag/useInterimState';
+import InterimSummarySection from '@/components/interimDiag/InterimSummarySection';
+import { buildInterimSummary } from '@/components/interimConclusion/buildSummary';
 import { buildInterimPayload } from '@/components/interimDiag/interimFormData';
 import { useEditReport } from '@/hooks/useEditReport';
 import EditModeBanner from '@/components/diag/EditModeBanner';
@@ -57,6 +59,7 @@ export default function InterimDiagForm() {
     primarySamples, setPrimarySamples, interimSamples, setInterimSamples,
     interimSamplesDate, setInterimSamplesDate, rwBaseline, setRwBaseline,
     rw, setRw, recommendations, setRecommendations,
+    summary, setSummary, summaryEdited, setSummaryEdited,
     todayDate, draftData, applyDraft,
     patchPersonal, patchRecommendations, patchRw,
   } = st;
@@ -284,6 +287,15 @@ export default function InterimDiagForm() {
     disabled: isEditing,
   });
 
+  // Общий вывод собирается автоматически из данных выше
+  const autoSummary = buildInterimSummary({
+    impaired,
+    baseline,
+    levels,
+    rwBaseline: { ...rwBaseline },
+    rw: { ...rw },
+  });
+
   const [saving, setSaving] = useState(false);
 
   const [incomplete, setIncomplete] = useState<IncompleteSection[]>([]);
@@ -321,7 +333,7 @@ export default function InterimDiagForm() {
       const res = await fetch('https://functions.poehali.dev/7bc33dbc-e8a0-47b4-83cc-d792dc7e1696', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildInterimPayload(draftData, today, editId)),
+        body: JSON.stringify(buildInterimPayload({ ...draftData, autoSummary }, today, editId)),
       });
 
       if (res.ok) {
@@ -414,6 +426,20 @@ export default function InterimDiagForm() {
               selected={studentSelected}
             />
             </SectionHighlight>
+            <InterimSummarySection
+              autoText={autoSummary}
+              value={summary}
+              edited={summaryEdited}
+              onChange={(v) => {
+                setSummary(v);
+                setSummaryEdited(true);
+              }}
+              onReset={() => {
+                setSummary('');
+                setSummaryEdited(false);
+              }}
+            />
+
             <SectionHighlight anchor="interim-recommendations" missing={gaps?.["interim-recommendations"]}>
             <InterimRecommendationsSection
               data={recommendations}
