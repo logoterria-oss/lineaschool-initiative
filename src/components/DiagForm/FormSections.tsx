@@ -3,6 +3,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import SectionLoader from "@/components/SectionLoader";
 import type { DiagFormData } from "@/types/diagFormData";
 import PersonalDataSection from "@/components/diag/PersonalDataSection";
+import SectionHighlight from "@/components/diag/SectionHighlight";
 
 // Ленивая загрузка секций для улучшения производительности
 const AnamnesticsSection = lazy(() => import("@/components/diag/AnamnesticsSection"));
@@ -15,12 +16,14 @@ const FinalSection = lazy(() => import("@/components/diag/FinalSection"));
 interface FormSectionsProps {
   formData: DiagFormData;
   onInputChange: (field: string, value: string | string[]) => void;
+  /** Пропущенные пункты по разделам — для подсветки после предупреждения */
+  missingBySection?: Record<string, string[]>;
 }
 
-const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
+const FormSections = ({ formData, onInputChange, missingBySection }: FormSectionsProps) => {
   return (
     <>
-      <div id="section-personal">
+      <SectionHighlight anchor="section-personal" missing={missingBySection?.["section-personal"]}>
       <ErrorBoundary>
         <PersonalDataSection 
           formData={{
@@ -42,9 +45,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           onInputChange={onInputChange}
         />
       </ErrorBoundary>
-      </div>
+      </SectionHighlight>
 
-      <div id="section-anamnestics">
+      <SectionHighlight anchor="section-anamnestics" missing={missingBySection?.["section-anamnestics"]}>
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <AnamnesticsSection 
@@ -72,9 +75,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
-      </div>
+      </SectionHighlight>
 
-      <div id="section-impressive">
+      <SectionHighlight anchor="section-impressive" missing={missingBySection?.["section-impressive"]}>
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <ImpressiveSpeechSection 
@@ -87,9 +90,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
-      </div>
+      </SectionHighlight>
 
-      <div id="section-expressive">
+      <SectionHighlight anchor="section-expressive" missing={missingBySection?.["section-expressive"]}>
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <ExpressiveSpeechSection 
@@ -106,9 +109,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
-      </div>
+      </SectionHighlight>
 
-      <div id="section-written">
+      <SectionHighlight anchor="section-written" missing={missingBySection?.["section-written"]}>
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <WrittenSpeechSection 
@@ -138,9 +141,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
-      </div>
+      </SectionHighlight>
 
-      <div id="section-conclusion">
+      <SectionHighlight anchor="section-conclusion" missing={missingBySection?.["section-conclusion"]}>
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <ConclusionSection 
@@ -157,9 +160,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
-      </div>
+      </SectionHighlight>
 
-      <div id="section-final">
+      <SectionHighlight anchor="section-final" missing={missingBySection?.["section-final"]}>
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <FinalSection 
@@ -173,7 +176,7 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
-      </div>
+      </SectionHighlight>
     </>
   );
 };

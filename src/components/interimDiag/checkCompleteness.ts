@@ -93,3 +93,14 @@ export function checkInterimCompleteness(args: {
 
   return result;
 }
+
+/** Пропущенные пункты в виде «якорь раздела → список полей» для подсветки */
+export function interimMissingBySection(
+  sections: IncompleteSection[],
+): Record<string, string[]> {
+  const map: Record<string, string[]> = {};
+  sections.forEach((s) => {
+    if (s.anchor) map[s.anchor] = s.fields;
+  });
+  return map;
+}

@@ -107,3 +107,12 @@ export function checkPrimaryCompleteness(data: DiagFormData): IncompleteSection[
 
   return result;
 }
+
+/** Пропущенные пункты в виде «якорь раздела → список полей» для подсветки */
+export function missingBySection(sections: IncompleteSection[]): Record<string, string[]> {
+  const map: Record<string, string[]> = {};
+  sections.forEach((s) => {
+    if (s.anchor) map[s.anchor] = s.fields;
+  });
+  return map;
+}

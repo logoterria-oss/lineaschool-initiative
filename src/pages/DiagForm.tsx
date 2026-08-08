@@ -8,21 +8,30 @@ import { Button } from "@/components/ui/button";
 import IncompleteSectionsDialog, {
   IncompleteSection,
 } from "@/components/diag/IncompleteSectionsDialog";
-import { checkPrimaryCompleteness } from "@/components/DiagForm/checkCompleteness";
+import {
+  checkPrimaryCompleteness,
+  missingBySection,
+} from "@/components/DiagForm/checkCompleteness";
 
 export default function DiagForm() {
   const { formData, handleInputChange } = useFormDataManager();
   const { handleCreateConclusion } = useConclusionLogic();
   const [incomplete, setIncomplete] = useState<IncompleteSection[]>([]);
+  // Подсветка включается после возврата из предупреждения
+  const [showGaps, setShowGaps] = useState(false);
+
+  // Пересчитываем на лету: подсветка гаснет по мере заполнения полей
+  const gaps = showGaps ? missingBySection(checkPrimaryCompleteness(formData)) : undefined;
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Перед сохранением показываем, какие разделы остались пустыми
-    const gaps = checkPrimaryCompleteness(formData);
-    if (gaps.length > 0) {
-      setIncomplete(gaps);
+    const found = checkPrimaryCompleteness(formData);
+    if (found.length > 0) {
+      setIncomplete(found);
       return;
     }
+    setShowGaps(false);
     handleCreateConclusion(formData);
   };
 
@@ -38,6 +47,7 @@ export default function DiagForm() {
             <FormSections 
               formData={formData}
               onInputChange={handleInputChange}
+              missingBySection={gaps}
             />
 
             <div className="flex justify-center mt-8 pb-8">
@@ -56,7 +66,10 @@ export default function DiagForm() {
       <IncompleteSectionsDialog
         open={incomplete.length > 0}
         sections={incomplete}
-        onCancel={() => setIncomplete([])}
+        onCancel={() => {
+          setIncomplete([]);
+          setShowGaps(true);
+        }}
         onConfirm={() => {
           setIncomplete([]);
           handleCreateConclusion(formData);
