@@ -5,7 +5,7 @@ import {
   PROCESS_LEVELS,
 } from '@/components/interimDiag/impairedProcesses';
 import { RWMetric, readingCharIndex } from '@/components/interimDiag/readingWriting';
-import { rateLabel } from '@/components/interimDiag/errorRate';
+import { per100, rateLabel } from '@/components/interimDiag/errorRate';
 import { ConclusionStep } from './ConclusionChain';
 
 export interface InterimHistoryItem {
@@ -127,7 +127,10 @@ export type ErrorMetric = 'dysgraphicErrors' | 'dysorthographicErrors' | 'totalE
  * Цепочка ошибок в пересчёте на 100 слов.
  * Абсолютные числа несопоставимы между диктантами разной длины,
  * поэтому каждый замер приводим к общей базе — «ошибок на 100 слов».
- * Если объём работы у замера не указан, показываем абсолютное число.
+ *
+ * Пересчёт включается только если объём работы известен у ВСЕХ замеров
+ * цепочки: смешивать в одной строке штуки и «на 100 слов» нельзя —
+ * такие числа несравнимы и вводят в заблуждение.
  */
 export function errorRateChain(
   metric: ErrorMetric,
@@ -137,38 +140,40 @@ export function errorRateChain(
   primaryDate: string | null,
   todayDate: string | null,
 ): ConclusionStep[] {
-  const raw: RawStep[] = [];
+  // Собираем замеры: значение показателя + объём работы этого же замера
+  const points: { date: string | null; value: string; words?: string; kind: StepKind }[] = [];
 
   const base = (baseline?.[metric] || '').trim();
   if (base) {
-    raw.push({
-      date: primaryDate,
-      value: rateLabel(base, baseline?.dictationWords),
-      kind: 'primary',
-    });
+    points.push({ date: primaryDate, value: base, words: baseline?.dictationWords, kind: 'primary' });
   }
 
   const filled = (history || []).filter((h) => ((h[metric] as string) || '').trim() !== '');
   if (filled.length > 0) {
     const sorted = [...filled].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     const last = sorted[sorted.length - 1];
-    raw.push({
+    points.push({
       date: last.date,
-      value: rateLabel((last[metric] as string) || '', last.dictationWords),
+      value: ((last[metric] as string) || '').trim(),
+      words: last.dictationWords,
       kind: 'previous',
     });
   }
 
   const cur = (current?.[metric] || '').trim();
   if (cur) {
-    raw.push({
-      date: todayDate,
-      value: rateLabel(cur, current?.dictationWords),
-      kind: 'current',
-    });
+    points.push({ date: todayDate, value: cur, words: current?.dictationWords, kind: 'current' });
   }
 
-  return withLabels(raw);
+  const canCompare = points.length > 0 && points.every((p) => per100(p.value, p.words) !== null);
+
+  return withLabels(
+    points.map((p) => ({
+      date: p.date,
+      value: canCompare ? rateLabel(p.value, p.words) : p.value,
+      kind: p.kind,
+    })),
+  );
 }
 
 // В шаге лежит текст вида «12,5 на 100 слов» — берём число из начала

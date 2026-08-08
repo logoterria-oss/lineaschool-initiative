@@ -197,19 +197,27 @@ export default function InterimReadingWritingSection({
     return `${fmtRate(from)} → ${fmtRate(to)} на 100 слов — ${change}`;
   };
 
-  // Цепочка ошибок в пересчёте на 100 слов
+  /* Цепочка ошибок. Пересчёт на 100 слов включаем только когда объём
+     работы известен у всех замеров — иначе в одной строке смешались бы
+     штуки и «на 100 слов», а такие числа несравнимы. */
   const renderErrorChain = (metric: ErrorMetric) => {
     if (!history || history.length === 0) return null;
-    const steps: ChainStep[] = [];
+    const points: { date: string | null; value: string; words?: string }[] = [];
     const base = fromValue(metric);
-    if (base) steps.push({ date: primaryDate, value: rateLabel(base, baseWords()) });
+    if (base) points.push({ date: primaryDate, value: base, words: baseWords() });
     history.forEach((h) => {
       const v = (h[metric] as string) || '';
-      if (v) steps.push({ date: h.date, value: rateLabel(v, h.dictationWords) });
+      if (v) points.push({ date: h.date, value: v, words: h.dictationWords });
     });
     if (value[metric])
-      steps.push({ date: todayDate, value: rateLabel(value[metric], value.dictationWords) });
-    if (steps.length < 2) return null;
+      points.push({ date: todayDate, value: value[metric], words: value.dictationWords });
+    if (points.length < 2) return null;
+
+    const canCompare = points.every((p) => per100(p.value, p.words) !== null);
+    const steps: ChainStep[] = points.map((p) => ({
+      date: p.date,
+      value: canCompare ? rateLabel(p.value, p.words) : p.value,
+    }));
     return <DynamicChain steps={steps} finalDynamic={errorDynamic(metric)} />;
   };
 
