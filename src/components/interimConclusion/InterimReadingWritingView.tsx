@@ -8,6 +8,7 @@ import {
   errorRateSummary,
   metricChain,
   metricDynamic,
+  metricSummary,
   readingCharChain,
   readingCharDynamic,
 } from './buildChains';
@@ -47,17 +48,17 @@ export default function InterimReadingWritingView({
     todayDate,
   );
 
-  const rows = METRICS.map((m) => ({
-    ...m,
-    steps: metricChain(
+  const rows = METRICS.map((m) => {
+    const steps = metricChain(
       m.key,
       baseline?.[m.key] || '',
       history,
       rw?.[m.key] || '',
       primaryDate,
       todayDate,
-    ),
-  })).filter((r) => r.steps.length > 0);
+    );
+    return { ...m, steps, summary: metricSummary(steps) };
+  }).filter((r) => r.steps.length > 0);
 
   const errorRows = ERROR_METRICS.map((m) => {
     const steps = errorRateChain(m.key, baseline || {}, history, rw || {}, primaryDate, todayDate);
@@ -76,15 +77,28 @@ export default function InterimReadingWritingView({
             <ConclusionChain steps={charSteps} dynamic={readingCharDynamic(charSteps)} />
           </div>
         )}
-        {rows.map((r) => (
-          <div key={r.key} className="chain-row border-l-2 border-gray-200 pl-3">
-            <p className="mb-1 text-sm text-gray-700">
-              {r.label}
-              {r.unit ? `, ${r.unit}` : ''}
-            </p>
-            <ConclusionChain steps={r.steps} dynamic={metricDynamic(r.steps, r.moreIsBetter)} />
-          </div>
-        ))}
+        {rows.map((r) => {
+          const dyn = metricDynamic(r.steps, r.moreIsBetter);
+          return (
+            <div key={r.key} className="chain-row border-l-2 border-gray-200 pl-3">
+              <p className="mb-1 text-sm text-gray-700">
+                {r.label}
+                {r.unit ? `, ${r.unit}` : ''}
+              </p>
+              <ConclusionChain steps={r.steps} dynamic={dyn} />
+              {/* Итог по всей цепочке: рост здесь — это улучшение */}
+              {r.summary && (
+                <p
+                  className={`mt-0.5 text-xs ${
+                    dyn === 'up' ? 'text-green-700' : dyn === 'down' ? 'text-red-600' : 'text-gray-500'
+                  }`}
+                >
+                  {r.summary}
+                </p>
+              )}
+            </div>
+          );
+        })}
         {errorRows.map((r) => {
           const dyn = errorRateDynamic(r.steps);
           return (

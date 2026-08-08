@@ -31,6 +31,10 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
   const isInterim = report.diag_type === 'interim';
   // У промежуточной своя страница заключения
   const reportLink = isInterim ? `/interim_diag/${report.id}` : `/diag/${report.id}`;
+  // Открываем ту же форму диагностики, но с данными сохранённого заключения
+  const editLink = isInterim
+    ? `/interim_diag_form?edit=${report.id}`
+    : `/diag_form?edit=${report.id}`;
 
   return (
     <Card>
@@ -54,6 +58,12 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
               <a href={reportLink} target="_blank" rel="noopener noreferrer">
                 <Icon name="FileText" size={14} className="mr-1" />
                 Заключение
+              </a>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <a href={editLink}>
+                <Icon name="Pencil" size={14} className="mr-1" />
+                Изменить
               </a>
             </Button>
             <Button size="sm" variant="outline" onClick={() => onCopyLink(reportLink)}>

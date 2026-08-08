@@ -121,6 +121,23 @@ export function metricDynamic(steps: ConclusionStep[], moreIsBetter: boolean): P
   return (moreIsBetter ? b > a : b < a) ? 'up' : 'down';
 }
 
+/**
+ * Итог по цепочке числового показателя (скорость чтения, понимание):
+ * на сколько процентов значение изменилось от первого замера к последнему.
+ */
+export function metricSummary(steps: ConclusionStep[]): string {
+  if (steps.length < 2) return '';
+  const a = toNum(steps[0].value);
+  const b = toNum(steps[steps.length - 1].value);
+  if (a === null || b === null) return '';
+  if (a === 0 && b === 0) return '';
+  if (a === 0) return 'появился результат';
+
+  const percent = Math.round(Math.abs((b - a) / a) * 100);
+  if (percent === 0) return 'без изменений';
+  return b > a ? `выросло на ${percent}%` : `снизилось на ${percent}%`;
+}
+
 export type ErrorMetric = 'dysgraphicErrors' | 'dysorthographicErrors' | 'totalErrors';
 
 /**

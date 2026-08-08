@@ -8,6 +8,13 @@ import {
   interimMissingBySection,
 } from '@/components/interimDiag/checkCompleteness';
 import SectionHighlight from '@/components/diag/SectionHighlight';
+import RestoreDraftDialog from '@/components/diag/RestoreDraftDialog';
+import DraftStatus from '@/components/diag/DraftStatus';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import type { InterimDraft } from '@/components/interimDiag/draft';
+import { isEmptyInterim } from '@/components/interimDiag/draft';
+import { useEditReport } from '@/hooks/useEditReport';
+import EditModeBanner from '@/components/diag/EditModeBanner';
 import Footer from '@/components/Footer';
 import DiagFormNavigation from '@/components/diag/DiagFormNavigation';
 import InterimPersonalDataSection, {
@@ -272,6 +279,87 @@ export default function InterimDiagForm() {
   const handleLevelChange = (key: ImpairedProcessKey, level: ProcessLevel) =>
     setLevels((prev) => ({ ...prev, [key]: level }));
 
+  /* Правка сохранённой промежуточной: форма открыта из админки по ?edit=ID.
+     Раскладываем сохранённый снимок обратно по разделам формы. */
+  const { editId, loading: loadingReport, isEditing } = useEditReport<Record<string, unknown>>(
+    (fd) => {
+      const g = <T,>(k: string, fallback: T): T => (fd[k] as T) ?? fallback;
+      setPersonal({
+        childName: g('childName', ''),
+        birthDate: g('birthDate', ''),
+        age: g('age', ''),
+        grade: g('grade', ''),
+        examDate: g('interimDate', new Date().toISOString().split('T')[0]),
+      });
+      setImpaired({ ...EMPTY_IMPAIRED_STATE, ...g('interimImpaired', {}) });
+      setBaseline(g('interimBaseline', {}));
+      setLevels(g('interimLevels', {}));
+      setPrimaryConclusion(g('conclusion', ''));
+      setHistory(g('interimHistory', []));
+      setPrimaryDate(g('primaryDate', null));
+      setRwBaseline((prev) => ({ ...prev, ...g('interimRwBaseline', {}) }));
+      setRw((prev) => ({ ...prev, ...g('interimReadingWriting', {}) }));
+      setRecommendations({
+        teacherRecommendations: g('teacherRecommendations', ''),
+        parentRecommendations: g('parentRecommendations', ''),
+        logopedist: g('logopedist', ''),
+      });
+      setStudentSelected(true);
+    },
+  );
+
+  /* Черновик промежуточной: собираем все разделы формы в один снимок,
+     чтобы данные пережили закрытие вкладки или обновление страницы. */
+  const draftData: InterimDraft = {
+    personal,
+    impaired,
+    baseline,
+    levels,
+    primaryConclusion,
+    studentSelected,
+    history: history || [],
+    primaryDate,
+    primarySamples,
+    interimSamples,
+    interimSamplesDate,
+    rwBaseline,
+    rw,
+    recommendations,
+    autoFilled,
+  };
+
+  const {
+    draft,
+    savedAt: draftSavedAt,
+    restore: restoreDraft,
+    discard: discardDraft,
+    finish: finishDraft,
+  } = useFormDraft<InterimDraft>({
+    formId: 'interim',
+    data: draftData,
+    childName: personal.childName,
+    isEmpty: isEmptyInterim,
+    disabled: isEditing,
+  });
+
+  const applyDraft = (d: InterimDraft) => {
+    setPersonal(d.personal);
+    setImpaired(d.impaired);
+    setBaseline(d.baseline);
+    setLevels(d.levels);
+    setPrimaryConclusion(d.primaryConclusion);
+    setStudentSelected(d.studentSelected);
+    setHistory(d.history);
+    setPrimaryDate(d.primaryDate);
+    setPrimarySamples(d.primarySamples);
+    setInterimSamples(d.interimSamples);
+    setInterimSamplesDate(d.interimSamplesDate);
+    setRwBaseline(d.rwBaseline);
+    setRw(d.rw);
+    setRecommendations(d.recommendations);
+    setAutoFilled(d.autoFilled);
+  };
+
   const [saving, setSaving] = useState(false);
 
   const [incomplete, setIncomplete] = useState<IncompleteSection[]>([]);
@@ -350,12 +438,14 @@ export default function InterimDiagForm() {
             .join('\n'),
           report_content: 'Промежуточная диагностика',
           form_data: formData,
+          ...(editId ? { report_id: editId } : {}),
         }),
       });
 
       if (res.ok) {
         const saved = await res.json();
         if (saved?.id) {
+          finishDraft();
           window.location.href = `/interim_diag/${saved.id}`;
           return;
         }
@@ -376,9 +466,14 @@ export default function InterimDiagForm() {
 
       <main className="flex-1 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Промежуточная диагностика
-          </h1>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isEditing ? 'Изменение заключения' : 'Промежуточная диагностика'}
+            </h1>
+            <DraftStatus savedAt={draftSavedAt} />
+          </div>
+
+          <EditModeBanner active={isEditing} loading={loadingReport} />
 
           <form className="space-y-8" onSubmit={onSubmit}>
             <SectionHighlight anchor="interim-personal" missing={gaps?.["interim-personal"]}>
@@ -452,12 +547,27 @@ export default function InterimDiagForm() {
                 disabled={saving}
                 className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-60"
               >
-                {saving ? 'Сохранение…' : 'Сохранить промежуточную диагностику'}
+                {saving
+                  ? 'Сохранение…'
+                  : isEditing
+                    ? 'Сохранить изменения'
+                    : 'Сохранить промежуточную диагностику'}
               </button>
             </div>
           </form>
         </div>
       </main>
+
+      <RestoreDraftDialog
+        open={!!draft && !isEditing}
+        savedAt={draft?.savedAt || ''}
+        childName={draft?.childName || ''}
+        onRestore={() => {
+          const d = restoreDraft();
+          if (d) applyDraft(d);
+        }}
+        onDiscard={discardDraft}
+      />
 
       <IncompleteSectionsDialog
         open={incomplete.length > 0}

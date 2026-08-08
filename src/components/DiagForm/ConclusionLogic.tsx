@@ -159,7 +159,12 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
     }
   };
 
-  const handleCreateConclusion = async (formData: DiagFormData, event?: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCreateConclusion = async (
+    formData: DiagFormData,
+    event?: React.MouseEvent<HTMLButtonElement>,
+    // id редактируемого заключения — тогда обновляем, а не создаём новое
+    editId?: number | null,
+  ) => {
     // Предотвращаем отправку формы
     if (event) {
       event.preventDefault();
@@ -201,7 +206,8 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
         therapist_name: 'Логопед',
         diagnosis: '',
         recommendations: '',
-        report_content: 'Логопедическое заключение'
+        report_content: 'Логопедическое заключение',
+        ...(editId ? { report_id: editId } : {})
       };
       
       console.log('🔄 Сохраняем полное заключение в базу данных...');

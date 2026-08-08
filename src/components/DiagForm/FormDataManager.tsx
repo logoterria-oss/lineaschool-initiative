@@ -89,6 +89,7 @@ export const useFormDataManager = () => {
 
   return {
     formData,
+    setFormData,
     handleInputChange
   };
 };

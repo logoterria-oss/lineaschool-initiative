@@ -67,6 +67,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if diag_type not in ('primary', 'interim'):
         diag_type = 'primary'
     
+    # Если пришёл report_id — обновляем существующее заключение,
+    # иначе создаём новое. Так работает кнопка «Изменить» в админке.
+    raw_id = body_data.get('report_id')
+    try:
+        report_id = int(raw_id) if raw_id not in (None, '') else None
+    except (TypeError, ValueError):
+        report_id = None
+
     # Генерируем токен доступа
     access_token = secrets.token_urlsafe(32)
     
@@ -74,7 +82,67 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=5)
         cursor = conn.cursor()
-        
+
+        if report_id:
+            # Обновляем запись, сохраняя прежний токен доступа,
+            # чтобы уже разосланные ссылки на заключение продолжали работать
+            cursor.execute("""
+                UPDATE t_p93118852_lineaschool_initiati.speech_therapy_reports
+                SET student_name = %s,
+                    student_age = %s,
+                    date_of_examination = %s,
+                    therapist_name = %s,
+                    diagnosis = %s,
+                    recommendations = %s,
+                    report_content = %s,
+                    form_data = %s,
+                    diag_type = %s,
+                    updated_at = NOW()
+                WHERE id = %s AND archived_at IS NULL
+                RETURNING id, access_token
+            """, (
+                student_name,
+                student_age,
+                date_of_examination,
+                therapist_name,
+                diagnosis,
+                recommendations,
+                report_content,
+                json.dumps(form_data),
+                diag_type,
+                report_id
+            ))
+            row = cursor.fetchone()
+            if not row:
+                return {
+                    'statusCode': 404,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': False,
+                        'error': 'Заключение не найдено'
+                    }),
+                    'isBase64Encoded': False
+                }
+            conn.commit()
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'success': True,
+                    'id': row[0],
+                    'access_token': row[1],
+                    'updated': True,
+                    'message': f'Заключение #{row[0]} обновлено'
+                }),
+                'isBase64Encoded': False
+            }
+
         # Вставляем запись в таблицу
         cursor.execute("""
             INSERT INTO t_p93118852_lineaschool_initiati.speech_therapy_reports 
@@ -96,7 +164,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         ))
         
         result = cursor.fetchone()
-        report_id = result[0]
+        new_id = result[0]
         
         conn.commit()
         
@@ -108,9 +176,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             },
             'body': json.dumps({
                 'success': True,
-                'id': report_id,
+                'id': new_id,
                 'access_token': access_token,
-                'message': f'Заключение #{report_id} успешно сохранено'
+                'message': f'Заключение #{new_id} успешно сохранено'
             }),
             'isBase64Encoded': False
         }
