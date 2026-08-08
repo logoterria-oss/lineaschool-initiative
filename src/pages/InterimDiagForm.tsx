@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
+import IncompleteSectionsDialog, {
+  IncompleteSection,
+} from '@/components/diag/IncompleteSectionsDialog';
+import { checkInterimCompleteness } from '@/components/interimDiag/checkCompleteness';
 import Footer from '@/components/Footer';
 import DiagFormNavigation from '@/components/diag/DiagFormNavigation';
 import InterimPersonalDataSection, {
@@ -266,13 +270,25 @@ export default function InterimDiagForm() {
 
   const [saving, setSaving] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const [incomplete, setIncomplete] = useState<IncompleteSection[]>([]);
+
+  const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Выбор ученика из базы не обязателен — данные можно заполнить полностью вручную
     if (!personal.childName.trim()) {
       alert('Укажите ФИО ребёнка в разделе «Персональные данные».');
       return;
     }
+    // Перед сохранением показываем незаполненные разделы
+    const gaps = checkInterimCompleteness({ personal, impaired, levels, rw, recommendations });
+    if (gaps.length > 0) {
+      setIncomplete(gaps);
+      return;
+    }
+    void saveReport();
+  };
+
+  const saveReport = async () => {
     setSaving(true);
     try {
       // Дата диагностики — из формы (по умолчанию сегодняшняя)
@@ -353,11 +369,13 @@ export default function InterimDiagForm() {
           </h1>
 
           <form className="space-y-8" onSubmit={onSubmit}>
+            <div id="interim-personal">
             <InterimPersonalDataSection
               data={personal}
               onChange={patchPersonal}
               onSelectStudent={handleSelectStudent}
             />
+            </div>
             <InterimPrimaryConclusionSection
               conclusion={primaryConclusion}
               selected={studentSelected}
@@ -379,6 +397,7 @@ export default function InterimDiagForm() {
               </span>
             </div>
 
+            <div id="interim-processes">
             <InterimImpairedProcessesSection
               value={impaired}
               baseline={baseline}
@@ -390,6 +409,8 @@ export default function InterimDiagForm() {
               onLevelChange={handleLevelChange}
               autoFilled={autoFilled}
             />
+            </div>
+            <div id="interim-rw">
             <InterimReadingWritingSection
               baseline={rwBaseline}
               value={rw}
@@ -403,12 +424,15 @@ export default function InterimDiagForm() {
               onChange={patchRw}
               selected={studentSelected}
             />
+            </div>
+            <div id="interim-recommendations">
             <InterimRecommendationsSection
               data={recommendations}
               onChange={patchRecommendations}
               examDate={personal.examDate}
               onExamDateChange={(date) => patchPersonal({ examDate: date })}
             />
+            </div>
 
             <div className="flex justify-end">
               <button
@@ -422,6 +446,16 @@ export default function InterimDiagForm() {
           </form>
         </div>
       </main>
+
+      <IncompleteSectionsDialog
+        open={incomplete.length > 0}
+        sections={incomplete}
+        onCancel={() => setIncomplete([])}
+        onConfirm={() => {
+          setIncomplete([]);
+          void saveReport();
+        }}
+      />
 
       <Footer />
 

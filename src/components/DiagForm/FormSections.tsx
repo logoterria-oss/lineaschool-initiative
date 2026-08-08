@@ -20,6 +20,7 @@ interface FormSectionsProps {
 const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
   return (
     <>
+      <div id="section-personal">
       <ErrorBoundary>
         <PersonalDataSection 
           formData={{
@@ -41,7 +42,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           onInputChange={onInputChange}
         />
       </ErrorBoundary>
+      </div>
 
+      <div id="section-anamnestics">
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <AnamnesticsSection 
@@ -69,7 +72,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
+      </div>
 
+      <div id="section-impressive">
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <ImpressiveSpeechSection 
@@ -82,7 +87,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
+      </div>
 
+      <div id="section-expressive">
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <ExpressiveSpeechSection 
@@ -99,7 +106,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
+      </div>
 
+      <div id="section-written">
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <WrittenSpeechSection 
@@ -129,7 +138,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
+      </div>
 
+      <div id="section-conclusion">
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <ConclusionSection 
@@ -146,7 +157,9 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
+      </div>
 
+      <div id="section-final">
       <ErrorBoundary>
         <Suspense fallback={<SectionLoader />}>
           <FinalSection 
@@ -160,6 +173,7 @@ const FormSections = ({ formData, onInputChange }: FormSectionsProps) => {
           />
         </Suspense>
       </ErrorBoundary>
+      </div>
     </>
   );
 };

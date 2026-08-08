@@ -1,16 +1,28 @@
+import { useState } from "react";
 import Footer from "@/components/Footer";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
 import FormSections from "@/components/DiagForm/FormSections";
 import { useFormDataManager } from "@/components/DiagForm/FormDataManager";
 import { useConclusionLogic } from "@/components/DiagForm/ConclusionLogic";
 import { Button } from "@/components/ui/button";
+import IncompleteSectionsDialog, {
+  IncompleteSection,
+} from "@/components/diag/IncompleteSectionsDialog";
+import { checkPrimaryCompleteness } from "@/components/DiagForm/checkCompleteness";
 
 export default function DiagForm() {
   const { formData, handleInputChange } = useFormDataManager();
   const { handleCreateConclusion } = useConclusionLogic();
+  const [incomplete, setIncomplete] = useState<IncompleteSection[]>([]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Перед сохранением показываем, какие разделы остались пустыми
+    const gaps = checkPrimaryCompleteness(formData);
+    if (gaps.length > 0) {
+      setIncomplete(gaps);
+      return;
+    }
     handleCreateConclusion(formData);
   };
 
@@ -40,6 +52,16 @@ export default function DiagForm() {
           </form>
         </div>
       </main>
+
+      <IncompleteSectionsDialog
+        open={incomplete.length > 0}
+        sections={incomplete}
+        onCancel={() => setIncomplete([])}
+        onConfirm={() => {
+          setIncomplete([]);
+          handleCreateConclusion(formData);
+        }}
+      />
 
       <Footer />
     </div>
