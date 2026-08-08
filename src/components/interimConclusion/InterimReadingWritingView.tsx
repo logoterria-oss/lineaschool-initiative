@@ -5,6 +5,7 @@ import {
   InterimHistoryItem,
   errorRateChain,
   errorRateDynamic,
+  errorRateSummary,
   metricChain,
   metricDynamic,
   readingCharChain,
@@ -58,10 +59,10 @@ export default function InterimReadingWritingView({
     ),
   })).filter((r) => r.steps.length > 0);
 
-  const errorRows = ERROR_METRICS.map((m) => ({
-    ...m,
-    steps: errorRateChain(m.key, baseline || {}, history, rw || {}, primaryDate, todayDate),
-  })).filter((r) => r.steps.length > 0);
+  const errorRows = ERROR_METRICS.map((m) => {
+    const steps = errorRateChain(m.key, baseline || {}, history, rw || {}, primaryDate, todayDate);
+    return { ...m, steps, summary: errorRateSummary(steps) };
+  }).filter((r) => r.steps.length > 0);
 
   if (charSteps.length === 0 && rows.length === 0 && errorRows.length === 0) return null;
 
@@ -84,12 +85,25 @@ export default function InterimReadingWritingView({
             <ConclusionChain steps={r.steps} dynamic={metricDynamic(r.steps, r.moreIsBetter)} />
           </div>
         ))}
-        {errorRows.map((r) => (
-          <div key={r.key} className="chain-row border-l-2 border-gray-200 pl-3">
-            <p className="mb-1 text-sm text-gray-700">{r.label}</p>
-            <ConclusionChain steps={r.steps} dynamic={errorRateDynamic(r.steps)} />
-          </div>
-        ))}
+        {errorRows.map((r) => {
+          const dyn = errorRateDynamic(r.steps);
+          return (
+            <div key={r.key} className="chain-row border-l-2 border-gray-200 pl-3">
+              <p className="mb-1 text-sm text-gray-700">{r.label}</p>
+              <ConclusionChain steps={r.steps} dynamic={dyn} />
+              {/* Итог по всей цепочке: от первого замера к последнему */}
+              {r.summary && (
+                <p
+                  className={`mt-0.5 text-xs ${
+                    dyn === 'up' ? 'text-green-700' : dyn === 'down' ? 'text-red-600' : 'text-gray-500'
+                  }`}
+                >
+                  {r.summary}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </section>
   );

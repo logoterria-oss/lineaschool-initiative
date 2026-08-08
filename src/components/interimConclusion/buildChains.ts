@@ -171,19 +171,39 @@ export function errorRateChain(
   return withLabels(raw);
 }
 
+// В шаге лежит текст вида «12,5 на 100 слов» — берём число из начала
+function leadNum(v: string): number | null {
+  const m = (v || '').replace(',', '.').match(/-?\d+(\.\d+)?/);
+  return m ? Number(m[0]) : null;
+}
+
 /**
- * Динамика по плотности ошибок между двумя последними шагами цепочки.
- * Числа уже пересчитаны на 100 слов, поэтому сравниваем их напрямую.
+ * Короткий вывод под цепочкой: на сколько процентов изменилась
+ * плотность ошибок между первым и последним замером.
+ * Пустая строка — если объём работы указан не везде и сравнивать нечего.
  */
+export function errorRateSummary(steps: ConclusionStep[]): string {
+  if (steps.length < 2) return '';
+  // Сравнивать проценты можно только если оба замера пересчитаны на 100 слов
+  const first = steps[0];
+  const last = steps[steps.length - 1];
+  if (!first.value.includes('на 100 слов') || !last.value.includes('на 100 слов')) return '';
+
+  const a = leadNum(first.value);
+  const b = leadNum(last.value);
+  if (a === null || b === null) return '';
+  if (a === 0 && b === 0) return 'ошибок нет';
+  if (a === 0) return 'ошибки появились';
+
+  const percent = Math.round(Math.abs((b - a) / a) * 100);
+  if (percent === 0) return 'без изменений';
+  return b < a ? `снизилось на ${percent}%` : `выросло на ${percent}%`;
+}
+
 export function errorRateDynamic(steps: ConclusionStep[]): ProcessDynamic {
   if (steps.length < 2) return 'same';
-  // В шаге лежит текст вида «12,5 на 100 слов» — берём число из начала
-  const lead = (v: string): number | null => {
-    const m = (v || '').replace(',', '.').match(/-?\d+(\.\d+)?/);
-    return m ? Number(m[0]) : null;
-  };
-  const a = lead(steps[steps.length - 2].value);
-  const b = lead(steps[steps.length - 1].value);
+  const a = leadNum(steps[steps.length - 2].value);
+  const b = leadNum(steps[steps.length - 1].value);
   if (a === null || b === null || a === b) return 'same';
   return b < a ? 'up' : 'down';
 }
