@@ -13,19 +13,19 @@ import DraftStatus from '@/components/diag/DraftStatus';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import type { InterimDraft } from '@/components/interimDiag/draft';
 import { isEmptyInterim } from '@/components/interimDiag/draft';
+import { useInterimState } from '@/components/interimDiag/useInterimState';
+import { buildInterimPayload } from '@/components/interimDiag/interimFormData';
 import { useEditReport } from '@/hooks/useEditReport';
 import EditModeBanner from '@/components/diag/EditModeBanner';
 import Footer from '@/components/Footer';
 import DiagFormNavigation from '@/components/diag/DiagFormNavigation';
 import InterimPersonalDataSection, {
-  InterimPersonalData,
   InterimStudent,
 } from '@/components/interimDiag/InterimPersonalDataSection';
 import InterimImpairedProcessesSection from '@/components/interimDiag/InterimImpairedProcessesSection';
 import InterimPrimaryConclusionSection from '@/components/interimDiag/InterimPrimaryConclusionSection';
 import InterimReadingWritingSection from '@/components/interimDiag/InterimReadingWritingSection';
 import InterimRecommendationsSection, {
-  InterimRecommendationsData,
 } from '@/components/interimDiag/InterimRecommendationsSection';
 import PastDiagnosticsModal from '@/components/interimDiag/PastDiagnosticsModal';
 import { buildPrimaryConclusion } from '@/components/interimDiag/primaryConclusion';
@@ -34,15 +34,12 @@ import {
   computeBaselineLevels,
   EMPTY_IMPAIRED_STATE,
   ImpairedProcessKey,
-  ImpairedProcessesState,
   ProcessLevel,
   ProcessLevelsState,
 } from '@/components/interimDiag/impairedProcesses';
 import {
   DysgraphicErrorItem,
   EMPTY_RW_STATE,
-  ReadingWritingBaseline,
-  ReadingWritingState,
   baselineFromPrimary,
   collectPrimaryErrorTypes,
   collectPrimaryOrthographicTypes,
@@ -51,53 +48,21 @@ import {
 } from '@/components/interimDiag/readingWriting';
 
 export default function InterimDiagForm() {
-  const [personal, setPersonal] = useState<InterimPersonalData>({
-    childName: '',
-    birthDate: '',
-    age: '',
-    grade: '',
-    examDate: new Date().toISOString().split('T')[0],
-  });
+  const st = useInterimState();
+  const {
+    personal, setPersonal, impaired, setImpaired, baseline, setBaseline,
+    levels, setLevels, primaryData, setPrimaryData, autoFilled, setAutoFilled,
+    primaryConclusion, setPrimaryConclusion, studentSelected, setStudentSelected,
+    history, setHistory, primaryDate, setPrimaryDate,
+    primarySamples, setPrimarySamples, interimSamples, setInterimSamples,
+    interimSamplesDate, setInterimSamplesDate, rwBaseline, setRwBaseline,
+    rw, setRw, recommendations, setRecommendations,
+    todayDate, draftData, applyDraft,
+    patchPersonal, patchRecommendations, patchRw,
+  } = st;
 
-  const [impaired, setImpaired] = useState<ImpairedProcessesState>({ ...EMPTY_IMPAIRED_STATE });
-  const [baseline, setBaseline] = useState<ProcessLevelsState>({});
-  const [levels, setLevels] = useState<ProcessLevelsState>({});
-  const [primaryData, setPrimaryData] = useState<InterimStudent['primary']>(undefined);
-  const [autoFilled, setAutoFilled] = useState(false);
-  const [primaryConclusion, setPrimaryConclusion] = useState('');
-  const [studentSelected, setStudentSelected] = useState(false);
-  const [history, setHistory] = useState<InterimStudent['history']>([]);
-  const [primaryDate, setPrimaryDate] = useState<string | null>(null);
-  // Дата текущей диагностики берётся из формы — логопед может её изменить
-  const todayDate = personal.examDate || new Date().toISOString().split('T')[0];
-
-  const [primarySamples, setPrimarySamples] = useState<string[]>([]);
-  const [interimSamples, setInterimSamples] = useState<string[]>([]);
-  const [interimSamplesDate, setInterimSamplesDate] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [pastOpen, setPastOpen] = useState(false);
-
-  const [rwBaseline, setRwBaseline] = useState<ReadingWritingBaseline>({
-    readingSpeed: '',
-    readingComprehension: '',
-    dictationWords: '',
-    dysgraphicErrors: '',
-    dysorthographicErrors: '',
-    totalErrors: '',
-    readingChar: '',
-  });
-  const [rw, setRw] = useState<ReadingWritingState>({ ...EMPTY_RW_STATE });
-
-  const [recommendations, setRecommendations] = useState<InterimRecommendationsData>({
-    teacherRecommendations: '',
-    parentRecommendations: '',
-    logopedist: '',
-  });
-  const patchRecommendations = (patch: Partial<InterimRecommendationsData>) =>
-    setRecommendations((prev) => ({ ...prev, ...patch }));
-
-  const patchPersonal = (patch: Partial<InterimPersonalData>) =>
-    setPersonal((prev) => ({ ...prev, ...patch }));
 
   const handleSelectStudent = (student: InterimStudent) => {
     const nextImpaired = computeImpairedFromPrimary(student.primary);
@@ -260,9 +225,6 @@ export default function InterimDiagForm() {
       .catch(() => {});
   };
 
-  const patchRw = (patch: Partial<ReadingWritingState>) =>
-    setRw((prev) => ({ ...prev, ...patch }));
-
   const rwHint = errorQualityHint(rwBaseline, rw);
 
   const handleImpairedChange = (key: ImpairedProcessKey, checked: boolean) => {
@@ -308,26 +270,6 @@ export default function InterimDiagForm() {
     },
   );
 
-  /* Черновик промежуточной: собираем все разделы формы в один снимок,
-     чтобы данные пережили закрытие вкладки или обновление страницы. */
-  const draftData: InterimDraft = {
-    personal,
-    impaired,
-    baseline,
-    levels,
-    primaryConclusion,
-    studentSelected,
-    history: history || [],
-    primaryDate,
-    primarySamples,
-    interimSamples,
-    interimSamplesDate,
-    rwBaseline,
-    rw,
-    recommendations,
-    autoFilled,
-  };
-
   const {
     draft,
     savedAt: draftSavedAt,
@@ -341,24 +283,6 @@ export default function InterimDiagForm() {
     isEmpty: isEmptyInterim,
     disabled: isEditing,
   });
-
-  const applyDraft = (d: InterimDraft) => {
-    setPersonal(d.personal);
-    setImpaired(d.impaired);
-    setBaseline(d.baseline);
-    setLevels(d.levels);
-    setPrimaryConclusion(d.primaryConclusion);
-    setStudentSelected(d.studentSelected);
-    setHistory(d.history);
-    setPrimaryDate(d.primaryDate);
-    setPrimarySamples(d.primarySamples);
-    setInterimSamples(d.interimSamples);
-    setInterimSamplesDate(d.interimSamplesDate);
-    setRwBaseline(d.rwBaseline);
-    setRw(d.rw);
-    setRecommendations(d.recommendations);
-    setAutoFilled(d.autoFilled);
-  };
 
   const [saving, setSaving] = useState(false);
 
@@ -393,53 +317,11 @@ export default function InterimDiagForm() {
     try {
       // Дата диагностики — из формы (по умолчанию сегодняшняя)
       const today = personal.examDate || new Date().toISOString().split('T')[0];
-      // Снимок состояния промежуточной диагностики
-      const formData = {
-        childName: personal.childName,
-        birthDate: personal.birthDate,
-        age: personal.age,
-        grade: personal.grade,
-        // Текущие значения показателей — совместимые ключи для будущей цепочки
-        readingSpeed: rw.readingSpeed,
-        readingComprehension: rw.readingComprehension,
-        dictationWords: rw.dictationWords,
-        dysgraphicErrors: rw.dysgraphicErrors,
-        dysorthographicErrors: rw.dysorthographicErrors,
-        totalErrors: rw.totalErrors,
-        interimReadingChar: rw.readingChar,
-        conclusion: primaryConclusion,
-        // Полный снимок разделов промежуточной
-        interimImpaired: impaired,
-        interimLevels: levels,
-        interimBaseline: baseline,
-        // Цепочка прошлых замеров, чтобы заключение показало
-        // «первичная → прошлые промежуточные → сейчас»
-        interimHistory: history || [],
-        primaryDate,
-        interimDate: today,
-        interimReadingWriting: rw,
-        interimRwBaseline: rwBaseline,
-        teacherRecommendations: recommendations.teacherRecommendations,
-        parentRecommendations: recommendations.parentRecommendations,
-        logopedist: recommendations.logopedist,
-      };
 
       const res = await fetch('https://functions.poehali.dev/7bc33dbc-e8a0-47b4-83cc-d792dc7e1696', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_name: personal.childName,
-          student_age: parseInt(personal.age) || null,
-          date_of_examination: today,
-          therapist_name: recommendations.logopedist || 'Логопед',
-          diag_type: 'interim',
-          recommendations: [recommendations.teacherRecommendations, recommendations.parentRecommendations]
-            .filter(Boolean)
-            .join('\n'),
-          report_content: 'Промежуточная диагностика',
-          form_data: formData,
-          ...(editId ? { report_id: editId } : {}),
-        }),
+        body: JSON.stringify(buildInterimPayload(draftData, today, editId)),
       });
 
       if (res.ok) {
