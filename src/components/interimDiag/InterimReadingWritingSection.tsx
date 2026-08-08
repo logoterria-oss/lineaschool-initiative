@@ -1,3 +1,4 @@
+import Icon from '@/components/ui/icon';
 import { useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import {
@@ -197,6 +198,17 @@ export default function InterimReadingWritingSection({
     return `${fmtRate(from)} → ${fmtRate(to)} на 100 слов — ${change}`;
   };
 
+  /* Подсказка: ошибки заполнены, а объём работы — нет.
+     Без объёма показатели нельзя сравнить между работами разной длины,
+     поэтому напоминаем внести количество слов. */
+  const ERROR_KEYS: ErrorMetric[] = ['dysgraphicErrors', 'dysorthographicErrors', 'totalErrors'];
+  const hasErrors = ERROR_KEYS.some((k) => (value[k] || '').trim() !== '');
+  const missingCurrentWords = hasErrors && (value.dictationWords || '').trim() === '';
+  const missingBaseWords =
+    hasErrors &&
+    ERROR_KEYS.some((k) => (fromValue(k) || '').trim() !== '') &&
+    (baseWords() || '').trim() === '';
+
   /* Цепочка ошибок. Пересчёт на 100 слов включаем только когда объём
      работы известен у всех замеров — иначе в одной строке смешались бы
      штуки и «на 100 слов», а такие числа несравнимы. */
@@ -338,6 +350,18 @@ export default function InterimReadingWritingSection({
             onFromChange={(v) => setFrom('dictationWords', v)}
             onChange={(v) => onChange({ dictationWords: v })}
           />
+          {(missingCurrentWords || missingBaseWords) && (
+            <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2.5">
+              <Icon name="TriangleAlert" size={16} className="mt-0.5 shrink-0 text-amber-600" />
+              <p className="text-xs text-amber-900">
+                {missingCurrentWords && missingBaseWords
+                  ? 'Укажите количество слов в обеих работах — иначе ошибки будут показаны в штуках, без пересчёта на 100 слов.'
+                  : missingCurrentWords
+                    ? 'Укажите количество слов в сегодняшней работе — иначе ошибки будут показаны в штуках, без пересчёта на 100 слов.'
+                    : 'Укажите количество слов в прошлой работе (поле «было») — иначе ошибки будут показаны в штуках, без пересчёта на 100 слов.'}
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <CompareRow
