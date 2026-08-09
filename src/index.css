@@ -233,4 +233,42 @@
   #root {
     overflow-x: hidden;
   }
+
+  /* Карточка заключения перестраивается по СВОЕЙ ширине, а не по ширине окна:
+     один и тот же список открывают и на отдельной странице во всю ширину,
+     и в кабинете руководителя — там боковое меню оставляет узкую колонку,
+     и обычные брейкпоинты по окну ломали вёрстку (кнопки в ряд, имя в столбик). */
+  .report-card-head {
+    container-type: inline-size;
+  }
+
+  /* Узкая карточка: кнопки уходят под имя сеткой 2×2 */
+  .report-card-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .report-card-actions > * {
+    width: 100%;
+  }
+
+  /* Места хватает — возвращаем кнопки в строку справа от имени */
+  @container (min-width: 720px) {
+    .report-card-head-row {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .report-card-actions {
+      display: flex;
+      flex-shrink: 0;
+      max-width: none;
+    }
+
+    .report-card-actions > * {
+      width: auto;
+    }
+  }
 }

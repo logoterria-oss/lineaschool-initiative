@@ -27,6 +27,13 @@ interface ReportCardProps {
   canDelete?: boolean;
 }
 
+/** Дата и время по-русски; пустая строка, если значения нет или оно битое */
+function fmtDateTime(value?: string): string {
+  if (!value) return '';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('ru-RU');
+}
+
 export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: ReportCardProps) {
   const isInterim = report.diag_type === 'interim';
   // У промежуточной своя страница заключения
@@ -38,10 +45,10 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
 
   return (
     <Card>
-      <CardHeader>
-        {/* На телефоне кнопки не помещаются в строку рядом с именем:
-            уводим их под описание и растягиваем на всю ширину. */}
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <CardHeader className="report-card-head">
+        {/* Раскладка зависит от ширины САМОЙ карточки (см. index.css):
+            в кабинете руководителя колонка узкая даже на большом мониторе. */}
+        <div className="report-card-head-row flex flex-col gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle className="text-lg">{report.student_name}</CardTitle>
@@ -57,14 +64,14 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
           </div>
           {/* Сетка в 2 колонки на телефоне: кнопки одинаковой ширины
               и достаточной высоты, чтобы попадать пальцем. */}
-          <div className="grid grid-cols-2 gap-2 sm:max-w-md lg:flex lg:max-w-none lg:shrink-0">
-            <Button size="sm" variant="outline" className="h-9 w-full lg:w-auto" asChild>
+          <div className="report-card-actions">
+            <Button size="sm" variant="outline" className="h-9" asChild>
               <a href={reportLink} target="_blank" rel="noopener noreferrer">
                 <Icon name="FileText" size={14} className="mr-1" />
                 Заключение
               </a>
             </Button>
-            <Button size="sm" variant="outline" className="h-9 w-full lg:w-auto" asChild>
+            <Button size="sm" variant="outline" className="h-9" asChild>
               <a href={editLink}>
                 <Icon name="Pencil" size={14} className="mr-1" />
                 Изменить
@@ -73,7 +80,7 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
             <Button
               size="sm"
               variant="outline"
-              className="h-9 w-full lg:w-auto"
+              className="h-9"
               onClick={() => onCopyLink(reportLink)}
             >
               <Icon name="Link" size={14} className="mr-1" />
@@ -84,7 +91,7 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
                 size="sm"
                 variant="outline"
                 onClick={() => onDelete(report.id)}
-                className="h-9 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 lg:w-auto"
+                className="h-9 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
               >
                 <Icon name="Trash2" size={14} className="mr-1" />
                 Удалить
@@ -107,8 +114,10 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
           </div>
         )}
         <div className="text-xs text-gray-500 mt-4">
-          Создано: {new Date(report.created_at).toLocaleString('ru-RU')} | 
-          Обновлено: {new Date(report.updated_at).toLocaleString('ru-RU')}
+          Создано: {fmtDateTime(report.created_at)}
+          {/* Дата правки бывает пустой у старых записей — тогда не показываем
+              строку вовсе, вместо «Invalid Date» */}
+          {fmtDateTime(report.updated_at) && ` | Обновлено: ${fmtDateTime(report.updated_at)}`}
         </div>
       </CardContent>
     </Card>
