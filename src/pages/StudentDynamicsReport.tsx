@@ -131,20 +131,6 @@ export default function StudentDynamicsReport() {
         const data = await res.json();
         setPoints(data.points || []);
         setStats(data.stats || null);
-
-        // Срез за текущую неделю ещё не снят — снимаем его сами при первом
-        // открытии отчёта на этой неделе и сразу показываем свежие данные.
-        if (data.needs_snapshot) {
-          await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: 'collect' }),
-          });
-          const fresh = await fetch(`${API_URL}?${query}`);
-          const freshData = await fresh.json();
-          setPoints(freshData.points || []);
-          setStats(freshData.stats || null);
-        }
       } catch {
         setError('Не удалось загрузить отчёт. Попробуйте позже.');
       } finally {
@@ -395,8 +381,9 @@ export default function StudentDynamicsReport() {
                   или в заморозке. Бросившие и завершившие обучение не считаются.
                 </li>
                 <li>
-                  Срез снимается <b>каждый понедельник</b> и сохраняется — так копится история,
-                  которой в CRM нет (она хранит только текущий момент).
+                  Данные считаются <b>задним числом из CRM</b> — по датам абонементов и занятий.
+                  Ничего не нужно запускать вручную: даже если отчёт не открывали полгода,
+                  все пропущенные недели восстановятся сами при следующем открытии.
                 </li>
                 <li>
                   При выборе месяцев или кварталов показывается <b>среднее</b> значение по всем
@@ -404,8 +391,9 @@ export default function StudentDynamicsReport() {
                 </li>
                 {hasEstimated && (
                   <li>
-                    Точки с <b>полым кружком</b> восстановлены задним числом по занятиям: активные —
-                    у кого на той неделе были уроки. Это близкая оценка, а не точный статус из CRM.
+                    Точки с <b>полым кружком</b> посчитаны задним числом: действующие — у кого в
+                    ту неделю действовал абонемент, активные — у кого были занятия. Точный срез
+                    статусов помечен как «CRM».
                   </li>
                 )}
               </ul>
@@ -437,7 +425,7 @@ export default function StudentDynamicsReport() {
                         <td className="px-4 py-2 text-center">
                           {p.estimated ? (
                             <span className="text-[10px] uppercase tracking-wide bg-amber-100 text-amber-700 rounded px-1.5 py-0.5">
-                              оценка
+                              расчёт
                             </span>
                           ) : (
                             <span className="text-[10px] uppercase tracking-wide bg-green-100 text-green-700 rounded px-1.5 py-0.5">

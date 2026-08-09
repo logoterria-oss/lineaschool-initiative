@@ -35,6 +35,12 @@ STATUS_NAMES = {
 # Бросившие и завершившие обучение сюда не входят.
 ENROLLED_STATUSES = (STATUS_ACTIVE, STATUS_FROZEN, STATUS_VACATION)
 
+# Сколько дней после окончания абонемента ученик всё ещё считается
+# действующим. Нужен при восстановлении истории: летом абонемент кончается,
+# но ребёнок остаётся учеником школы и возвращается осенью.
+# Значение подобрано так, чтобы расчёт сходился с живым срезом статусов.
+GRACE_DAYS = 90
+
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -193,6 +199,19 @@ def lesson_students(ls: dict) -> List[int]:
     return []
 
 
+def parse_crm_date(s):
+    """CRM-даты бывают 'DD.MM.YYYY' или 'YYYY-MM-DD [HH:MM:SS]'."""
+    if not s:
+        return None
+    s = str(s).strip()
+    for fmt in ("%d.%m.%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s[:10], fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def lesson_date(ls: dict):
     for key in ("date", "lesson_date", "b_date"):
         v = ls.get(key)
@@ -219,6 +238,15 @@ def save_snapshot(week: date, active: int, enrolled: int, breakdown: dict, sourc
     conn = _conn()
     cur = conn.cursor()
     if source == "lessons":
+        # Грубая оценка по занятиям — уступает и живому срезу, и пересчёту
+        conflict = """ON CONFLICT (week_start) DO UPDATE SET
+                        active_count = EXCLUDED.active_count,
+                        enrolled_count = EXCLUDED.enrolled_count,
+                        source = EXCLUDED.source,
+                        updated_at = NOW()
+                      WHERE student_count_weekly.source NOT IN ('crm', 'crm-history')"""
+    elif source == "crm-history":
+        # Пересчёт из CRM уточняет старые оценки, но не трогает живые срезы
         conflict = """ON CONFLICT (week_start) DO UPDATE SET
                         active_count = EXCLUDED.active_count,
                         enrolled_count = EXCLUDED.enrolled_count,
@@ -256,6 +284,147 @@ def handle_collect() -> Dict[str, Any]:
         "enrolled": counts["enrolled"],
         "breakdown": counts["breakdown"],
     })
+
+
+def _tariff_periods(token, cid):
+    """Периоды действия всех абонементов ученика."""
+    url = f"{S20_HOST}/v2api/1/customer-tariff/index?customer_id={cid}"
+    periods, page = [], 0
+    while True:
+        try:
+            r = requests.post(url, json={"page": page, "pageSize": 100},
+                              headers=get_headers(token), timeout=10)
+            if r.status_code != 200:
+                break
+            data = r.json()
+            items = data.get("items", [])
+            for t in items:
+                b = parse_crm_date(t.get("b_date"))
+                e = parse_crm_date(t.get("e_date"))
+                if b and e:
+                    periods.append((b, e))
+            if len(items) < 100:
+                break
+            page += 1
+        except Exception:
+            break
+    return periods
+
+
+def sync_tariff_spans(limit: int = 25) -> Dict[str, Any]:
+    """Обновить периоды абонементов для части учеников.
+
+    Запрос идёт на каждого ученика отдельно, а лимит времени функции —
+    5 секунд, поэтому обходим базу порциями: за вызов берём тех, чьи
+    данные не обновлялись дольше всех. За несколько вызовов покрывается
+    вся школа, дальше — просто поддержание свежести.
+    """
+    token = get_token()
+
+    conn = _conn()
+    cur = conn.cursor()
+    # Список учеников тянем из CRM только когда он ещё не собран:
+    # это отдельный небыстрый запрос, а лимит функции — 5 секунд.
+    cur.execute(f"SELECT customer_id, synced_at FROM {SCHEMA}.student_tariff_spans")
+    known = {r[0]: r[1] for r in cur.fetchall()}
+
+    cur.execute(f"SELECT customer_id FROM {SCHEMA}.student_roster")
+    ids = [r[0] for r in cur.fetchall()]
+    if not ids:
+        customers = get_all_customers(token)
+        ids = [c.get("id") for c in customers if c.get("id")]
+        for cid in ids:
+            cur.execute(
+                f"""INSERT INTO {SCHEMA}.student_roster (customer_id, synced_at)
+                    VALUES (%s, NOW()) ON CONFLICT (customer_id)
+                    DO UPDATE SET synced_at = NOW()""",
+                (cid,),
+            )
+        conn.commit()
+
+    # Сначала новые ученики, затем самые давно не обновлявшиеся
+    fresh = [i for i in ids if i not in known]
+    stale = sorted((i for i in ids if i in known), key=lambda i: known[i])
+    queue = (fresh + stale)[:limit]
+
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        results = list(ex.map(lambda c: (c, _tariff_periods(token, c)), queue))
+
+    for cid, periods in results:
+        cur.execute(
+            f"""INSERT INTO {SCHEMA}.student_tariff_spans (customer_id, periods, synced_at)
+                VALUES (%s, %s, NOW())
+                ON CONFLICT (customer_id) DO UPDATE SET
+                    periods = EXCLUDED.periods, synced_at = NOW()""",
+            (cid, json.dumps([[str(b), str(e)] for b, e in periods])),
+        )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"synced": len(results), "total_students": len(ids),
+            "known": len(known), "remaining": max(0, len(ids) - len(known) - len(results))}
+
+
+def rebuild_from_crm(weeks_back: int = 130, offset: int = 0) -> Dict[str, Any]:
+    """Пересчитать историю численности из данных CRM.
+
+    Численность на прошлую неделю не нужно копить снимками: у абонементов
+    есть даты начала и конца, у занятий — дата проведения. Поэтому любую
+    неделю можно восстановить задним числом в любой момент — отчёт не
+    зависит ни от расписания, ни от того, заходит ли кто-то в интерфейс.
+    """
+    token = get_token()
+    # Считаем отрезками: занятия за год CRM отдаёт дольше, чем живёт вызов
+    # функции, поэтому идём окнами по weeks_back недель со сдвигом offset.
+    last_week = monday_of(date.today()) - timedelta(weeks=offset)
+    first_week = last_week - timedelta(weeks=weeks_back)
+    this_week = last_week
+
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute(f"SELECT customer_id, periods FROM {SCHEMA}.student_tariff_spans")
+    spans = {}
+    for cid, periods in cur.fetchall():
+        out = []
+        for pair in (periods or []):
+            b = parse_crm_date(pair[0])
+            e = parse_crm_date(pair[1])
+            if b and e:
+                out.append((b, e))
+        if out:
+            spans[cid] = out
+    cur.close()
+    conn.close()
+
+    lessons = fetch_lessons(token, str(first_week), str(this_week + timedelta(days=6)))
+    lessons_by_week: Dict[date, set] = {}
+    for ls in lessons:
+        d = lesson_date(ls)
+        if d:
+            lessons_by_week.setdefault(monday_of(d), set()).update(lesson_students(ls))
+
+    saved = 0
+    wk = first_week
+    while wk <= this_week:
+        wk_end = wk + timedelta(days=6)
+        # «Действующие» — не только те, у кого абонемент активен прямо сейчас.
+        # Ученик на каникулах абонемент уже израсходовал, но из школы не ушёл
+        # и осенью вернётся. Поэтому после окончания абонемента даём период
+        # ожидания: человек считается действующим, пока не станет ясно,
+        # что он не вернулся. Без этого летний спад выглядел бы как отток.
+        enrolled = {cid for cid, periods in spans.items()
+                    if any(b <= wk_end and (e + timedelta(days=GRACE_DAYS)) >= wk
+                           for b, e in periods)}
+        studied = lessons_by_week.get(wk, set())
+        active = len(studied & enrolled) if (studied and enrolled) else len(studied)
+        if enrolled or studied:
+            save_snapshot(wk, active, len(enrolled), {}, "crm-history")
+            saved += 1
+        wk += timedelta(weeks=1)
+
+    return {"weeks": saved, "students_with_tariffs": len(spans),
+            "from": str(first_week), "to": str(this_week)}
 
 
 def fill_missing_weeks() -> Dict[str, Any]:
@@ -378,15 +547,34 @@ def period_label(key: str, group: str) -> str:
     return d.strftime("%d.%m.%Y")
 
 
+def weeks_since_last_snapshot() -> int:
+    """Сколько недель прошло с последней посчитанной недели."""
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute(f"SELECT MAX(week_start) FROM {SCHEMA}.student_count_weekly")
+    last = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    if not last:
+        return 8
+    return max(0, (monday_of(date.today()) - last).days // 7)
+
+
 def handle_series(date_from: str, date_to: str, group: str) -> Dict[str, Any]:
-    # Пропущенные недели восстанавливаем сами: отчётом пользуются редко,
-    # и график не должен зиять дырами за месяцы, когда в него не заходили.
+    # Свежие недели пересчитываем из CRM при каждом обращении. Данных о
+    # прошлом в CRM достаточно (даты абонементов и занятий), поэтому
+    # история не зависит ни от расписания, ни от того, заходил ли кто-то
+    # в отчёт: пропущенные недели восстановятся сами при следующем открытии.
     try:
-        filled = fill_missing_weeks()
-        if filled["filled"]:
-            print(f'Достроено недель: {filled["filled"]}')
+        # Окно пересчёта — от последней посчитанной недели до сегодня.
+        # Если в отчёт не заходили полгода, окно расширится ровно на этот
+        # пропуск и данные догонят сами. Ограничение сверху — чтобы уложиться
+        # в лимит времени функции; остаток догонится при следующем открытии.
+        gap = weeks_since_last_snapshot()
+        res = rebuild_from_crm(weeks_back=min(max(gap + 1, 3), 8), offset=0)
+        print(f'Пересчитано недель из CRM: {res.get("weeks")} (пропуск {gap})')
     except Exception as e:
-        print(f"fill_missing_weeks failed: {type(e).__name__}: {e}")
+        print(f"rebuild_from_crm failed: {type(e).__name__}: {e}")
 
     conn = _conn()
     cur = conn.cursor()
@@ -485,6 +673,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         action = body.get("mode") or mode
         if action == "collect":
             return handle_collect()
+        if action == "sync_tariffs":
+            limit = int(body.get("limit") or params.get("limit") or 25)
+            return _json(200, {"success": True, **sync_tariff_spans(limit)})
+        if action == "rebuild":
+            weeks = int(body.get("weeks") or params.get("weeks") or 12)
+            offset = int(body.get("offset") or params.get("offset") or 0)
+            return _json(200, {"success": True, **rebuild_from_crm(weeks, offset)})
         if action == "cron":
             # Точка для внешнего планировщика: снимает срез текущей недели
             # и заодно latает пропуски. Вызывать можно хоть каждый день —
