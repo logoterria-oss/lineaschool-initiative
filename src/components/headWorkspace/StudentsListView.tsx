@@ -38,7 +38,7 @@ const StudentsListView = () => {
       <StatusLegend />
 
       {loading ? (
-        <p className="text-gray-500">Загружаем данные из AlfaCRM. Это может занять несколько минут...</p>
+        <p className="text-gray-500">Загружаем данные из AlfaCRM...</p>
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : filtered.length === 0 ? (

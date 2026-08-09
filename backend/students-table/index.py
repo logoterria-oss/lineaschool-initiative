@@ -153,22 +153,41 @@ def get_all_customers(token):
 
 
 def get_lessons(token, date_from, date_to, status=3):
+    """Занятия за период.
+
+    Страниц много (несколько тысяч занятий с 2024 года), и CRM отвечает
+    примерно секунду на каждую. Последовательный обход занимал ~15 секунд,
+    поэтому первую страницу берём отдельно — из неё узнаём total,
+    а остальные тянем параллельно.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
     url = f"{S20_HOST}/v2api/1/lesson/index"
-    all_items = []
-    page = 0
-    while True:
+    page_size = 200
+
+    def fetch_page(page):
         payload = {"date_from": date_from, "date_to": date_to,
-                   "page": page, "pageSize": 200}
+                   "page": page, "pageSize": page_size}
         if status is not None:
             payload["status"] = status
         resp = requests.post(url, json=payload, headers=get_headers(token), timeout=30)
         resp.raise_for_status()
-        data = resp.json()
-        items = data.get("items", [])
-        all_items.extend(items)
-        if len(all_items) >= data.get("total", 0) or not items:
-            break
-        page += 1
+        return resp.json()
+
+    first = fetch_page(0)
+    all_items = first.get("items", [])
+    total = first.get("total", 0)
+    if not all_items or len(all_items) >= total:
+        return all_items
+
+    last_page = (total + page_size - 1) // page_size
+    pages = list(range(1, last_page))
+    if not pages:
+        return all_items
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for data in ex.map(fetch_page, pages):
+            all_items.extend(data.get("items", []))
     return all_items
 
 
@@ -969,20 +988,42 @@ def handle_statuses(token):
 
 
 def handle_list(token, name_filter=None):
-    customers = get_all_customers(token)
-    tariff_names = get_tariffs(token)
-    tariffs_by_customer = get_all_customer_tariffs(token, [c.get("id") for c in customers])
+    from concurrent.futures import ThreadPoolExecutor
 
     today = date.today()
     date_from = "2024-01-01"
     date_to = (today + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    # Все уроки за период (все статусы) — для диагностик и для расчёта активных недель.
-    try:
-        all_lessons = get_lessons(token, date_from, date_to, status=None)
-    except Exception as e:
-        print(f"lessons fetch failed: {e}")
-        all_lessons = []
+    # Занятия, справочники и данные из БД друг от друга не зависят —
+    # тянем одновременно, а не по очереди. Единственная зависимость:
+    # абонементы клиентов нужно запрашивать по списку клиентов,
+    # поэтому эта задача ждёт список внутри своего потока.
+    def load_lessons():
+        try:
+            return get_lessons(token, date_from, date_to, status=None)
+        except Exception as e:
+            print(f"lessons fetch failed: {e}")
+            return []
+
+    with ThreadPoolExecutor(max_workers=7) as ex:
+        f_customers = ex.submit(get_all_customers, token)
+        f_lessons = ex.submit(load_lessons)
+        f_tariff_names = ex.submit(get_tariffs, token)
+        f_overrides = ex.submit(load_overrides)
+        f_vacations = ex.submit(load_vacations)
+        f_comments = ex.submit(load_comments)
+        f_interactions = ex.submit(load_interactions)
+
+        customers = f_customers.result()
+        tariffs_by_customer = get_all_customer_tariffs(
+            token, [c.get("id") for c in customers]
+        )
+        all_lessons = f_lessons.result()
+        tariff_names = f_tariff_names.result()
+        overrides = f_overrides.result()
+        vacations = f_vacations.result()
+        comments = f_comments.result()
+        interactions = f_interactions.result()
 
     # Диагностические уроки по ученику: {cid: {date, note, report_id}}.
     diag_by_student = {}
@@ -1034,11 +1075,9 @@ def handle_list(token, name_filter=None):
         for d in diags:
             if d.get("report_id"):
                 report_ids.add(d["report_id"])
+    # report_ids известны только после разбора занятий, поэтому
+    # заключения догружаем здесь; остальное уже загружено выше параллельно.
     reports = load_reports(report_ids)
-    overrides = load_overrides()
-    vacations = load_vacations()
-    comments = load_comments()
-    interactions = load_interactions()
 
     items = []
     for c in customers:
