@@ -131,12 +131,49 @@ export const normalizeStudentName = (raw: string): string => {
   return withEmoji(text, emojis);
 };
 
-export const fetchStudents = async (): Promise<StudentRow[]> => {
+// Список учеников собирается из AlfaCRM и загружается несколько секунд,
+// а нужен сразу пяти вкладкам кабинета (ученики, каникулы, взаимодействия,
+// мониторинг, пользователи). Без кеша каждое переключение вкладки — новая
+// загрузка с нуля. Держим результат в памяти вкладки браузера:
+//  - параллельные запросы разделяют один и тот же ответ (dedupe),
+//  - повторный вход в раздел берёт готовые данные,
+//  - любое сохранение сбрасывает кеш, чтобы не показывать устаревшее.
+const STUDENTS_TTL_MS = 5 * 60 * 1000;
+
+let studentsCache: { at: number; data: StudentRow[] } | null = null;
+let studentsInFlight: Promise<StudentRow[]> | null = null;
+
+export const invalidateStudentsCache = (): void => {
+  studentsCache = null;
+  studentsInFlight = null;
+};
+
+const loadStudents = async (): Promise<StudentRow[]> => {
   const res = await fetch(`${API_URL}?mode=list`);
   if (!res.ok) throw new Error('Не удалось загрузить учеников');
   const data = await res.json();
   const items = (data.items as StudentRow[]) || [];
   return items.map((it) => ({ ...it, name: normalizeStudentName(it.name) }));
+};
+
+export const fetchStudents = async (force = false): Promise<StudentRow[]> => {
+  if (force) invalidateStudentsCache();
+
+  if (studentsCache && Date.now() - studentsCache.at < STUDENTS_TTL_MS) {
+    return studentsCache.data;
+  }
+  if (studentsInFlight) return studentsInFlight;
+
+  studentsInFlight = loadStudents()
+    .then((data) => {
+      studentsCache = { at: Date.now(), data };
+      return data;
+    })
+    .finally(() => {
+      studentsInFlight = null;
+    });
+
+  return studentsInFlight;
 };
 
 export const saveVacation = async (
@@ -149,6 +186,7 @@ export const saveVacation = async (
     body: JSON.stringify({ action: 'save_vacation', student_id: studentId, ...fields }),
   });
   if (!res.ok) throw new Error('Не удалось сохранить каникулы');
+  invalidateStudentsCache();
 };
 
 export const fetchAdmins = async (): Promise<Admin[]> => {
@@ -176,6 +214,7 @@ export const saveComment = async (
     body: JSON.stringify({ action: 'save_comment', student_id: studentId, ...fields }),
   });
   if (!res.ok) throw new Error('Не удалось сохранить комментарий');
+  invalidateStudentsCache();
   const data = await res.json();
   return data.id as number;
 };
@@ -187,6 +226,7 @@ export const deleteComment = async (id: number): Promise<void> => {
     body: JSON.stringify({ action: 'delete_comment', id }),
   });
   if (!res.ok) throw new Error('Не удалось удалить комментарий');
+  invalidateStudentsCache();
 };
 
 export const saveInteraction = async (
@@ -208,6 +248,7 @@ export const saveInteraction = async (
     body: JSON.stringify({ action: 'save_interaction', student_id: studentId, ...fields }),
   });
   if (!res.ok) throw new Error('Не удалось сохранить взаимодействие');
+  invalidateStudentsCache();
   const data = await res.json();
   return { id: data.id as number, replies: (data.replies || []) as InteractionReply[] };
 };
@@ -219,6 +260,7 @@ export const deleteInteraction = async (id: number): Promise<void> => {
     body: JSON.stringify({ action: 'delete_interaction', id }),
   });
   if (!res.ok) throw new Error('Не удалось удалить взаимодействие');
+  invalidateStudentsCache();
 };
 
 export const setInteractionOk = async (
@@ -231,6 +273,7 @@ export const setInteractionOk = async (
     body: JSON.stringify({ action: 'set_interaction_ok', student_id: studentId, ok }),
   });
   if (!res.ok) throw new Error('Не удалось изменить статус');
+  invalidateStudentsCache();
 };
 
 // Сохранить ручную правку (формы нарушений и/или возраст) — приоритет над данными CRM.
@@ -248,4 +291,5 @@ export const saveStudentOverride = async (
     }),
   });
   if (!res.ok) throw new Error('Не удалось сохранить изменения');
+  invalidateStudentsCache();
 };

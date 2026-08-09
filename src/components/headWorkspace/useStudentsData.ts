@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   StudentRow,
   StatusFilter,
@@ -15,14 +15,21 @@ export const useStudentsData = () => {
   const [tariffFilter, setTariffFilter] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
+  const load = useCallback((force = false) => {
     setLoading(true);
     setError('');
-    fetchStudents()
+    return fetchStudents(force)
       .then(setItems)
       .catch((e) => setError(e instanceof Error ? e.message : 'Ошибка загрузки'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Принудительно перечитать данные из CRM, минуя кеш
+  const refresh = useCallback(() => load(true), [load]);
 
   const tariffOptions = useMemo(() => {
     const set = new Set<string>();
@@ -82,6 +89,7 @@ export const useStudentsData = () => {
     items,
     loading,
     error,
+    refresh,
     filter,
     setFilter,
     tariffFilter,
