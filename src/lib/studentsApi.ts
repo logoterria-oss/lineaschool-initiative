@@ -75,6 +75,9 @@ export interface StudentRow {
   status_name: string;
   age: number | null;
   age_manual: boolean;
+  // Населённый пункт и часовой пояс из анкеты родителя («МСК+4»)
+  city: string;
+  city_timezone: string;
   conclusion: string;
   conclusion_manual: boolean;
   recommendations: string | null;

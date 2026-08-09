@@ -1,0 +1,45 @@
+-- Пересчёт часовых поясов в анкетах: в справочнике регионов было 8 ошибок
+-- (Новосибирск сохранялся как МСК+0 вместо МСК+4, Пермь и Уфа как МСК+1
+-- вместо МСК+2 и т.д.). Исправляем уже сохранённые записи по региону.
+UPDATE t_p93118852_lineaschool_initiati.parent_questionnaire
+SET city_timezone = CASE
+    WHEN lower(city_region) LIKE '%калининградская%' THEN 'МСК-1'
+    WHEN lower(city_region) LIKE '%ульяновская%'
+      OR lower(city_region) LIKE '%саратовская%'
+      OR lower(city_region) LIKE '%астраханская%'
+      OR lower(city_region) LIKE '%самарская%'
+      OR lower(city_region) LIKE '%удмуртская%' THEN 'МСК+1'
+    WHEN lower(city_region) LIKE '%свердловская%'
+      OR lower(city_region) LIKE '%челябинская%'
+      OR lower(city_region) LIKE '%тюменская%'
+      OR lower(city_region) LIKE '%курганская%'
+      OR lower(city_region) LIKE '%ханты-мансийский%'
+      OR lower(city_region) LIKE '%ямало-ненецкий%'
+      OR lower(city_region) LIKE '%оренбургская%'
+      OR lower(city_region) LIKE '%башкортостан%'
+      OR lower(city_region) LIKE '%пермский%' THEN 'МСК+2'
+    WHEN lower(city_region) LIKE '%омская%' THEN 'МСК+3'
+    WHEN lower(city_region) LIKE '%новосибирская%'
+      OR lower(city_region) LIKE '%томская%'
+      OR lower(city_region) LIKE '%кемеровская%'
+      OR lower(city_region) LIKE '%алтайский%'
+      OR lower(city_region) LIKE '%алтай%'
+      OR lower(city_region) LIKE '%красноярский%'
+      OR lower(city_region) LIKE '%тыва%'
+      OR lower(city_region) LIKE '%хакасия%' THEN 'МСК+4'
+    WHEN lower(city_region) LIKE '%иркутская%'
+      OR lower(city_region) LIKE '%бурятия%' THEN 'МСК+5'
+    WHEN lower(city_region) LIKE '%забайкальский%'
+      OR lower(city_region) LIKE '%якутия%'
+      OR lower(city_region) LIKE '%саха%'
+      OR lower(city_region) LIKE '%амурская%' THEN 'МСК+6'
+    WHEN lower(city_region) LIKE '%хабаровский%'
+      OR lower(city_region) LIKE '%приморский%'
+      OR lower(city_region) LIKE '%еврейская%' THEN 'МСК+7'
+    WHEN lower(city_region) LIKE '%сахалинская%'
+      OR lower(city_region) LIKE '%магаданская%' THEN 'МСК+8'
+    WHEN lower(city_region) LIKE '%камчатский%'
+      OR lower(city_region) LIKE '%чукотский%' THEN 'МСК+9'
+    ELSE city_timezone
+END
+WHERE city_region IS NOT NULL AND city_region <> '';

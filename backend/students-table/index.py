@@ -610,6 +610,45 @@ def load_overrides():
     return out
 
 
+def _name_key(name):
+    """Ключ для сопоставления ФИО: фамилия + имя, без отчества и регистра.
+
+    В CRM и в анкете ФИО пишут по-разному (лишние пробелы, «ё», отчество
+    то есть, то нет), поэтому сравниваем по двум первым словам.
+    """
+    s = (name or "").lower().replace("ё", "е")
+    s = re.sub(r"[^а-яa-z\s-]", " ", s)
+    parts = [p for p in s.split() if p]
+    return " ".join(parts[:2])
+
+
+def load_cities():
+    """Город и часовой пояс из анкет родителей: {ключ ФИО: {city, timezone}}.
+
+    Берём последнюю по времени анкету ребёнка: родитель мог заполнить
+    анкету повторно и указать новый населённый пункт после переезда.
+    """
+    out = {}
+    conn = db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT child_name, city, city_timezone "
+            f"FROM {SCHEMA}.parent_questionnaire "
+            f"WHERE city IS NOT NULL AND city <> '' "
+            f"ORDER BY created_at ASC"
+        )
+        for r in cur.fetchall():
+            key = _name_key(r.get("child_name"))
+            if not key:
+                continue
+            out[key] = {
+                "city": (r.get("city") or "").strip(),
+                "timezone": (r.get("city_timezone") or "").strip(),
+            }
+    conn.close()
+    return out
+
+
 def load_interactions():
     """Взаимодействия по ученикам: {student_id: [ {..., replies:[...]} ]}."""
     out = {}
@@ -1013,6 +1052,7 @@ def handle_list(token, name_filter=None):
         f_vacations = ex.submit(load_vacations)
         f_comments = ex.submit(load_comments)
         f_interactions = ex.submit(load_interactions)
+        f_cities = ex.submit(load_cities)
 
         customers = f_customers.result()
         tariffs_by_customer = get_all_customer_tariffs(
@@ -1024,6 +1064,7 @@ def handle_list(token, name_filter=None):
         vacations = f_vacations.result()
         comments = f_comments.result()
         interactions = f_interactions.result()
+        cities = f_cities.result()
 
     # Диагностические уроки по ученику: {cid: {date, note, report_id}}.
     diag_by_student = {}
@@ -1165,9 +1206,15 @@ def handle_list(token, name_filter=None):
                 # Абонемент общий — помечаем, что он разделён между сиблингами.
                 row_tariff = {**tariff, "shared_with_siblings": True}
 
+            # Населённый пункт и часовой пояс — из анкеты родителя,
+            # сопоставление по ФИО ребёнка (в CRM отдельного поля города нет).
+            city_info = cities.get(_name_key(display_name)) or {}
+
             items.append({
                 "id": row_id,
                 "name": display_name,
+                "city": city_info.get("city") or "",
+                "city_timezone": city_info.get("timezone") or "",
                 "status_id": status_id,
                 "status_name": STATUS_NAMES.get(status_id, "—"),
                 "age": row_age,

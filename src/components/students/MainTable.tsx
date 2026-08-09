@@ -147,6 +147,35 @@ const ConclusionCell = ({
   );
 };
 
+// Часовой пояс приходит из анкеты родителя в виде «МСК+4».
+// В таблице показываем в привычном виде: «г. Новосибирск (Мск+4)».
+const TimezoneCell = ({ s }: { s: StudentRow }) => {
+  const city = (s.city || '').trim();
+  if (!city) {
+    return <td className="px-3 py-3 align-top text-gray-300">—</td>;
+  }
+
+  // «г Новосибирск» из справочника адресов → «г. Новосибирск»
+  const cityLabel = city.replace(/^(г|с|д|п|пгт|рп|ст|х|аул|село|деревня)\s+/i, (m) =>
+    `${m.trim()}. `,
+  );
+  const tz = (s.city_timezone || '').replace(/^МСК/i, 'Мск');
+  const isMoscowTime = /Мск\+0$/i.test(tz);
+
+  return (
+    <td className="px-3 py-3 align-top whitespace-nowrap text-gray-700">
+      {cityLabel}
+      {tz && (
+        // Разницу с Москвой подсвечиваем: именно она влияет на расписание
+        <span className={isMoscowTime ? 'text-gray-400' : 'font-medium text-purple-600'}>
+          {' '}
+          ({tz})
+        </span>
+      )}
+    </td>
+  );
+};
+
 const MainTable = ({
   rows,
   onSaveConclusion,
@@ -164,6 +193,7 @@ const MainTable = ({
             <th className="px-3 py-3 font-semibold w-12">№</th>
             <th className="px-3 py-3 font-semibold">Фамилия Имя</th>
             <th className="px-3 py-3 font-semibold">Возраст</th>
+            <th className="px-3 py-3 font-semibold">Часовой пояс</th>
             <th className="px-3 py-3 font-semibold">Формы нарушений чтения и письма</th>
             <th className="px-3 py-3 font-semibold">Абонемент</th>
           </tr>
@@ -176,6 +206,7 @@ const MainTable = ({
                 <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
               </td>
               <AgeCell s={s} onSave={onSaveAge} />
+              <TimezoneCell s={s} />
               <ConclusionCell s={s} onSave={onSaveConclusion} />
               <td className="px-3 py-3 align-top">
                 {s.tariff ? (
