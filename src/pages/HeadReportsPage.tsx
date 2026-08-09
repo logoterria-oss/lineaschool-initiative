@@ -24,6 +24,15 @@ const REPORTS = [
     iconBg: 'bg-indigo-100',
     iconColor: 'text-indigo-600',
   },
+  {
+    id: 'student-dynamics',
+    label: 'Динамика количества учеников',
+    description: 'Активные и действующие ученики по неделям, месяцам, кварталам',
+    icon: 'LineChart' as const,
+    color: 'border-blue-200 hover:border-blue-400',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+  },
 ];
 
 const HeadReportsPage = () => {
@@ -53,7 +62,11 @@ const HeadReportsPage = () => {
               {REPORTS.map((report) => (
                 <button
                   key={report.id}
-                  onClick={() => setOpenReport(report.id)}
+                  onClick={() =>
+                    report.id === 'student-dynamics'
+                      ? navigate('/admin/report/student-dynamics')
+                      : setOpenReport(report.id)
+                  }
                   className={`w-full flex items-center gap-4 bg-white rounded-xl border-2 ${report.color} p-5 text-left shadow-sm hover:shadow-md transition-all duration-200`}
                 >
                   <div className={`p-3 rounded-lg ${report.iconBg} flex-shrink-0`}>

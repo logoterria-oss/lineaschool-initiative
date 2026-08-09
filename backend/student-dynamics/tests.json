@@ -1,0 +1,4 @@
+{"tests":[
+{"name":"CORS preflight","method":"OPTIONS","path":"/","expectedStatus":200},
+{"name":"Series returns points","method":"GET","path":"/?group=week","expectedStatus":200,"expectedBody":{"group":"string"},"bodyMatcher":"partial"}
+]}

@@ -31,6 +31,7 @@ import HeadStaffViolationsPage from "./pages/HeadStaffViolationsPage";
 import AdvanceIncomeReport from "./pages/AdvanceIncomeReport";
 import RetentionReport from "./pages/RetentionReport";
 import RetentionDynamics from "./pages/RetentionDynamics";
+import StudentDynamicsReport from "./pages/StudentDynamicsReport";
 import ReportsAdmin from "./components/ReportsAdmin";
 import TelegramSetup from "./pages/TelegramSetup";
 import PaymentLeadsPage from "./pages/PaymentLeadsPage";
@@ -83,6 +84,7 @@ const App = () => (
             <Route path="/admin/report/advance-income" element={<AdvanceIncomeReport />} />
             <Route path="/admin/report/retention" element={<RetentionReport />} />
             <Route path="/admin/report/retention-dynamics" element={<RetentionDynamics />} />
+            <Route path="/admin/report/student-dynamics" element={<StudentDynamicsReport />} />
             <Route path="/admin/reports" element={<ReportsAdmin />} />
             <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
             <Route path="/telegram-setup" element={<TelegramSetup />} />
