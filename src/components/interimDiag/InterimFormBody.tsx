@@ -72,6 +72,23 @@ export default function InterimFormBody({
         hint={rwHint}
         onChange={setPrimaryConclusion}
       />
+
+      <InterimHomeworkSection
+        autoText={autoHomework}
+        value={homework}
+        edited={homeworkEdited}
+        loading={homeworkLoading}
+        selected={studentSelected}
+        onChange={(v) => {
+          setHomework(v);
+          setHomeworkEdited(true);
+        }}
+        onReset={() => {
+          setHomework('');
+          setHomeworkEdited(false);
+        }}
+      />
+
       <div className="flex flex-col items-start gap-2">
         <button
           type="button"
@@ -126,22 +143,6 @@ export default function InterimFormBody({
         onReset={() => {
           setSummary('');
           setSummaryEdited(false);
-        }}
-      />
-
-      <InterimHomeworkSection
-        autoText={autoHomework}
-        value={homework}
-        edited={homeworkEdited}
-        loading={homeworkLoading}
-        selected={studentSelected}
-        onChange={(v) => {
-          setHomework(v);
-          setHomeworkEdited(true);
-        }}
-        onReset={() => {
-          setHomework('');
-          setHomeworkEdited(false);
         }}
       />
 
