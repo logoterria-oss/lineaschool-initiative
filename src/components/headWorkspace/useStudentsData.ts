@@ -53,6 +53,35 @@ export const useStudentsData = () => {
     );
   };
 
+  // Город правится вручную, когда анкеты нет. Часовой пояс приходит
+  // вместе с выбранным населённым пунктом и уходит в примечание CRM.
+  const handleSaveCity = async (
+    student: StudentRow,
+    city: string,
+    region: string,
+    timezone: string,
+  ) => {
+    await saveStudentOverride(student.id, {
+      city,
+      city_region: region,
+      city_timezone: timezone,
+      crm_customer_id: student.crm_customer_id,
+    });
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === student.id
+          ? {
+              ...it,
+              city,
+              city_region: region,
+              city_timezone: timezone,
+              city_manual: city !== '',
+            }
+          : it,
+      ),
+    );
+  };
+
   const handleSaveAge = async (id: number, age: number | null) => {
     await saveStudentOverride(id, { age });
     setItems((prev) =>
@@ -100,6 +129,7 @@ export const useStudentsData = () => {
     setSearch,
     handleSaveConclusion,
     handleSaveAge,
+    handleSaveCity,
     filtered,
     vacationsRows,
     vacationsNoDate,

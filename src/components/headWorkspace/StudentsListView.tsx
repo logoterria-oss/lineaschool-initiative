@@ -18,6 +18,7 @@ const StudentsListView = () => {
     setSearch,
     handleSaveConclusion,
     handleSaveAge,
+    handleSaveCity,
     filtered,
     refresh,
   } = useStudentsData();
@@ -61,7 +62,12 @@ const StudentsListView = () => {
       ) : (
         <>
           <p className="text-sm font-semibold text-gray-600 mb-3">Всего: {filtered.length}</p>
-          <MainTable rows={filtered} onSaveConclusion={handleSaveConclusion} onSaveAge={handleSaveAge} />
+          <MainTable
+            rows={filtered}
+            onSaveConclusion={handleSaveConclusion}
+            onSaveAge={handleSaveAge}
+            onSaveCity={handleSaveCity}
+          />
         </>
       )}
     </div>

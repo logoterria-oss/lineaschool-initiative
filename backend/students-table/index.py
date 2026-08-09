@@ -597,7 +597,8 @@ def load_overrides():
     out = {}
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT student_id, conclusion, age, interaction_ok "
+            f"SELECT student_id, conclusion, age, interaction_ok, "
+            f"city, city_region, city_timezone "
             f"FROM {SCHEMA}.student_overrides"
         )
         for r in cur.fetchall():
@@ -605,6 +606,9 @@ def load_overrides():
                 "conclusion": r.get("conclusion"),
                 "age": r.get("age"),
                 "interaction_ok": r.get("interaction_ok"),
+                "city": r.get("city"),
+                "city_region": r.get("city_region"),
+                "city_timezone": r.get("city_timezone"),
             }
     conn.close()
     return out
@@ -819,6 +823,21 @@ def handle_save_override(body):
             fields["age"] = int(a) if a not in (None, "") else None
         except (TypeError, ValueError):
             fields["age"] = None
+    # Город вводят вручную, когда анкеты нет. Часовой пояс и регион
+    # приходят вместе с выбранным населённым пунктом из справочника адресов.
+    if "city" in body:
+        c = body.get("city")
+        c = c.strip() if isinstance(c, str) else ""
+        fields["city"] = c or None
+        # Очистили город — очищаем и пояс с регионом, иначе останется
+        # часовой пояс от прежнего населённого пункта.
+        if not c:
+            fields["city_region"] = None
+            fields["city_timezone"] = None
+        else:
+            for key in ("city_region", "city_timezone"):
+                v = body.get(key)
+                fields[key] = v.strip() if isinstance(v, str) and v.strip() else None
 
     if not fields:
         return _json(400, {"error": "nothing to update"})
@@ -838,7 +857,45 @@ def handle_save_override(body):
         )
         conn.commit()
     conn.close()
-    return _json(200, {"success": True})
+
+    # Город, внесённый вручную, дублируем в примечание карточки CRM —
+    # там же, где появляется город из анкеты, в том же формате.
+    crm_updated = None
+    if fields.get("city"):
+        # У сиблингов id строки искусственный (cid * 1000 + N) — карточка
+        # в CRM одна на двоих, поэтому её id приходит отдельным полем.
+        crm_id = body.get("crm_customer_id") or student_id
+        crm_updated = _push_city_to_crm(
+            int(crm_id),
+            fields.get("city") or "",
+            fields.get("city_region") or "",
+            fields.get("city_timezone") or "",
+        )
+
+    return _json(200, {"success": True, "crmUpdated": crm_updated})
+
+
+def _push_city_to_crm(student_id, city, region, timezone):
+    """Пишет город в примечание карточки AlfaCRM (как это делает анкета).
+
+    Ошибку CRM не считаем провалом сохранения: в базе правка уже есть,
+    иначе координатор потеряет введённые данные из-за недоступности CRM.
+    """
+    url = "https://functions.poehali.dev/27be949a-2324-46cd-b3fa-f72058a31ddc"
+    try:
+        resp = requests.post(url, json={
+            "customerId": student_id,
+            "city": city,
+            "region": region,
+            "timezone": timezone,
+        }, timeout=25)
+        if resp.status_code != 200:
+            print(f"crm city update failed: {resp.status_code}")
+            return False
+        return bool(resp.json().get("updated"))
+    except Exception as e:
+        print(f"crm city update error: {e}")
+        return False
 
 
 def handle_save_comment(body):
@@ -1208,13 +1265,28 @@ def handle_list(token, name_filter=None):
 
             # Населённый пункт и часовой пояс — из анкеты родителя,
             # сопоставление по ФИО ребёнка (в CRM отдельного поля города нет).
+            # Ручная правка приоритетнее: анкету заполнили не все.
             city_info = cities.get(_name_key(display_name)) or {}
+            row_city = city_info.get("city") or ""
+            row_city_tz = city_info.get("timezone") or ""
+            row_city_region = ""
+            city_manual = False
+            if ov and (ov.get("city") or "").strip():
+                row_city = ov["city"].strip()
+                row_city_tz = (ov.get("city_timezone") or "").strip()
+                row_city_region = (ov.get("city_region") or "").strip()
+                city_manual = True
 
             items.append({
                 "id": row_id,
                 "name": display_name,
-                "city": city_info.get("city") or "",
-                "city_timezone": city_info.get("timezone") or "",
+                "city": row_city,
+                "city_timezone": row_city_tz,
+                "city_region": row_city_region,
+                "city_manual": city_manual,
+                # id карточки в CRM: у сиблингов строк несколько,
+                # а карточка одна — id строки для CRM не подходит.
+                "crm_customer_id": cid,
                 "status_id": status_id,
                 "status_name": STATUS_NAMES.get(status_id, "—"),
                 "age": row_age,

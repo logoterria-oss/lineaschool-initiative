@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { StudentRow } from '@/lib/studentsApi';
 import { NameWithDot, ageLabel } from './studentsTableHelpers';
+import CitySelect from '@/components/ui/CitySelect';
 
 const AgeCell = ({
   s,
@@ -149,29 +150,101 @@ const ConclusionCell = ({
 
 // Часовой пояс приходит из анкеты родителя в виде «МСК+4».
 // В таблице показываем в привычном виде: «г. Новосибирск (Мск+4)».
-const TimezoneCell = ({ s }: { s: StudentRow }) => {
-  const city = (s.city || '').trim();
-  if (!city) {
-    return <td className="px-3 py-3 align-top text-gray-300">—</td>;
+// Анкету заполнили не все, поэтому город можно указать вручную —
+// он подтягивает часовой пояс из справочника адресов, как в анкете.
+const TimezoneCell = ({
+  s,
+  onSave,
+}: {
+  s: StudentRow;
+  onSave: (s: StudentRow, city: string, region: string, timezone: string) => Promise<void>;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [city, setCity] = useState(s.city || '');
+  const [region, setRegion] = useState(s.city_region || '');
+  const [timezone, setTimezone] = useState(s.city_timezone || '');
+  const [saving, setSaving] = useState(false);
+
+  const start = () => {
+    setCity(s.city || '');
+    setRegion(s.city_region || '');
+    setTimezone(s.city_timezone || '');
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await onSave(s, city.trim(), region, timezone);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <td className="px-3 py-3 align-top min-w-[260px]">
+        <CitySelect
+          value={city}
+          timezoneLabel={timezone}
+          onChange={(c, tzLabel, reg) => {
+            setCity(c);
+            setTimezone(tzLabel || '');
+            setRegion(reg || '');
+          }}
+          placeholder="Населённый пункт..."
+        />
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" onClick={save} disabled={saving}>
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setEditing(false)} disabled={saving}>
+            Отмена
+          </Button>
+        </div>
+      </td>
+    );
   }
 
+  const raw = (s.city || '').trim();
   // «г Новосибирск» из справочника адресов → «г. Новосибирск»
-  const cityLabel = city.replace(/^(г|с|д|п|пгт|рп|ст|х|аул|село|деревня)\s+/i, (m) =>
+  const cityLabel = raw.replace(/^(г|с|д|п|пгт|рп|ст|х|аул|село|деревня)\s+/i, (m) =>
     `${m.trim()}. `,
   );
   const tz = (s.city_timezone || '').replace(/^МСК/i, 'Мск');
   const isMoscowTime = /Мск\+0$/i.test(tz);
 
   return (
-    <td className="px-3 py-3 align-top whitespace-nowrap text-gray-700">
-      {cityLabel}
-      {tz && (
-        // Разницу с Москвой подсвечиваем: именно она влияет на расписание
-        <span className={isMoscowTime ? 'text-gray-400' : 'font-medium text-purple-600'}>
-          {' '}
-          ({tz})
+    <td className="px-3 py-3 align-top whitespace-nowrap text-gray-700 group">
+      <div className="flex items-start gap-2">
+        <span>
+          {raw ? (
+            <>
+              {cityLabel}
+              {tz && (
+                // Разницу с Москвой подсвечиваем: она влияет на расписание
+                <span className={isMoscowTime ? 'text-gray-400' : 'font-medium text-purple-600'}>
+                  {' '}
+                  ({tz})
+                </span>
+              )}
+              {s.city_manual && (
+                <span className="ml-1 text-[10px] text-purple-500 align-middle">(вручную)</span>
+              )}
+            </>
+          ) : (
+            <span className="text-gray-300">—</span>
+          )}
         </span>
-      )}
+        <button
+          onClick={start}
+          title="Указать населённый пункт"
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-600 transition-opacity flex-shrink-0"
+        >
+          <Icon name="Pencil" size={14} />
+        </button>
+      </div>
     </td>
   );
 };
@@ -180,10 +253,12 @@ const MainTable = ({
   rows,
   onSaveConclusion,
   onSaveAge,
+  onSaveCity,
 }: {
   rows: StudentRow[];
   onSaveConclusion: (id: number, value: string) => Promise<void>;
   onSaveAge: (id: number, age: number | null) => Promise<void>;
+  onSaveCity: (s: StudentRow, city: string, region: string, timezone: string) => Promise<void>;
 }) => (
   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
     <div className="overflow-x-auto">
@@ -206,7 +281,7 @@ const MainTable = ({
                 <NameWithDot name={s.name} statusId={s.status_id} statusName={s.status_name} />
               </td>
               <AgeCell s={s} onSave={onSaveAge} />
-              <TimezoneCell s={s} />
+              <TimezoneCell s={s} onSave={onSaveCity} />
               <ConclusionCell s={s} onSave={onSaveConclusion} />
               <td className="px-3 py-3 align-top">
                 {s.tariff ? (

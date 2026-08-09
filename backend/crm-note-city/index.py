@@ -195,6 +195,18 @@ def _add_phone_to_customer(token: str, branch: str, customer: Dict[str, Any], ph
     return True
 
 
+def _get_customer_by_id(token: str, branch: str, customer_id: int) -> Optional[Dict[str, Any]]:
+    '''Карточка клиента по id — для правок из раздела «Ученики».'''
+    url = f'{S20_HOST}/v2api/{branch}/customer/index'
+    resp = requests.post(url, json={'id': customer_id, 'page': 0, 'pageSize': 1},
+                         headers=_headers(token), timeout=15)
+    if resp.status_code != 200:
+        print(f'Customer fetch failed: {resp.status_code} {resp.text[:200]}')
+        return None
+    items = resp.json().get('items') or []
+    return items[0] if items else None
+
+
 def _update_note(token: str, branch: str, customer: Dict[str, Any], city_line: str, city: str = '') -> bool:
     '''Добавляет city_line в начало примечания, не затирая остальной текст.'''
     customer_id = customer.get('id')
@@ -209,10 +221,19 @@ def _update_note(token: str, branch: str, customer: Dict[str, Any], city_line: s
         print('City line already present at top — skip')
         return True
 
-    # Убираем ЛЮБЫЕ прежние строки про этот же город (город в начале строки),
-    # чтобы не плодить дубли и старые варианты форматирования.
+    # Убираем прежние строки о населённом пункте: и точный дубль,
+    # и строку с ЛЮБЫМ другим городом (иначе после переезда или правки
+    # в примечании копятся оба адреса и непонятно, какой актуален).
     city_norm = (city or '').strip()
     lines = [ln for ln in current_note.split('\n')] if current_note else []
+
+    # «г Пермь (Пермский край, МСК+2)» — населённый пункт с типом
+    # и часовым поясом в скобках. Узнаём такую строку по этому шаблону.
+    city_pattern = re.compile(
+        r'^(г|с|д|п|пгт|рп|ст|х|аул|село|деревня|город|посёлок|поселок)\s+[^(]+'
+        r'\(.*мск[+-]?\d*.*\)$',
+        re.IGNORECASE,
+    )
 
     def _is_city_line(ln: str) -> bool:
         s = ln.strip()
@@ -222,7 +243,7 @@ def _update_note(token: str, branch: str, customer: Dict[str, Any], city_line: s
             return True
         if city_norm and (s == city_norm or s.startswith(city_norm + ' (')):
             return True
-        return False
+        return bool(city_pattern.match(s))
 
     lines = [ln for ln in lines if not _is_city_line(ln)]
     new_note = city_line + ('\n' + '\n'.join(lines) if lines else '')
@@ -275,17 +296,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     timezone = body.get('timezone') or ''
     child_name = body.get('childName') or ''
     parent_name = body.get('parentName') or ''
+    customer_id = body.get('customerId')
 
     city_line = _build_city_line(city, region, timezone)
     if not city_line:
         return {'statusCode': 200, 'headers': cors, 'body': json.dumps({'updated': False, 'reason': 'no_city'})}
+
+    branch_env = os.environ.get('ALFACRM_BRANCH_ID', '1')
+
+    # Правка из раздела «Ученики»: карточка CRM уже известна по id,
+    # искать по телефону и ФИО не нужно.
+    if customer_id:
+        token = _crm_token()
+        if not token:
+            return {'statusCode': 200, 'headers': cors,
+                    'body': json.dumps({'updated': False, 'reason': 'no_crm'})}
+        customer = _get_customer_by_id(token, branch_env, int(customer_id))
+        if not customer:
+            return {'statusCode': 200, 'headers': cors,
+                    'body': json.dumps({'updated': False, 'reason': 'not_found'})}
+        ok = _update_note(token, branch_env, customer, city_line, city)
+        return {
+            'statusCode': 200,
+            'headers': cors,
+            'body': json.dumps({
+                'updated': ok,
+                'matchedBy': 'id',
+                'customerId': customer.get('id'),
+                'cityLine': city_line,
+            }, ensure_ascii=False),
+        }
 
     has_phone = len(_norm_phone(phone)) == 11
     has_name = bool((child_name or '').strip() or (parent_name or '').strip())
     if not has_phone and not has_name:
         return {'statusCode': 200, 'headers': cors, 'body': json.dumps({'updated': False, 'reason': 'no_phone'})}
 
-    branch = os.environ.get('ALFACRM_BRANCH_ID', '1')
+    branch = branch_env
 
     token = _crm_token()
     if not token:

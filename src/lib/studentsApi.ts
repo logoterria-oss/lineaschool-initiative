@@ -78,6 +78,11 @@ export interface StudentRow {
   // Населённый пункт и часовой пояс из анкеты родителя («МСК+4»)
   city: string;
   city_timezone: string;
+  city_region: string;
+  // true — город внесён вручную, а не взят из анкеты
+  city_manual: boolean;
+  // id карточки в AlfaCRM: у сиблингов строк две, а карточка одна
+  crm_customer_id: number;
   conclusion: string;
   conclusion_manual: boolean;
   recommendations: string | null;
@@ -282,7 +287,15 @@ export const setInteractionOk = async (
 // Сохранить ручную правку (формы нарушений и/или возраст) — приоритет над данными CRM.
 export const saveStudentOverride = async (
   studentId: number,
-  fields: { conclusion?: string; age?: number | null },
+  fields: {
+    conclusion?: string;
+    age?: number | null;
+    city?: string;
+    city_region?: string;
+    city_timezone?: string;
+    // id карточки CRM — нужен, чтобы записать город в примечание
+    crm_customer_id?: number;
+  },
 ): Promise<void> => {
   const res = await fetch(API_URL, {
     method: 'POST',

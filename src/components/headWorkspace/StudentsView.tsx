@@ -56,6 +56,29 @@ const StudentsView = () => {
     );
   };
 
+  // Город правится вручную, когда анкеты нет: часовой пояс подтягивается
+  // из справочника адресов и уходит в примечание карточки CRM.
+  const handleSaveCity = async (
+    student: StudentRow,
+    city: string,
+    region: string,
+    timezone: string,
+  ) => {
+    await saveStudentOverride(student.id, {
+      city,
+      city_region: region,
+      city_timezone: timezone,
+      crm_customer_id: student.crm_customer_id,
+    });
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === student.id
+          ? { ...it, city, city_region: region, city_timezone: timezone, city_manual: city !== '' }
+          : it,
+      ),
+    );
+  };
+
   const handleSaveAge = async (id: number, age: number | null) => {
     await saveStudentOverride(id, { age });
     setItems((prev) =>
@@ -222,6 +245,7 @@ const StudentsView = () => {
                   rows={filtered}
                   onSaveConclusion={handleSaveConclusion}
                   onSaveAge={handleSaveAge}
+                  onSaveCity={handleSaveCity}
                 />
               )}
               {tab === 'progress' && <ProgressTable rows={filtered} />}
