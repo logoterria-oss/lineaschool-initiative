@@ -258,6 +258,60 @@ def handle_collect() -> Dict[str, Any]:
     })
 
 
+def fill_missing_weeks() -> Dict[str, Any]:
+    """Достроить недели, за которые среза нет.
+
+    Главная защита от пропусков: заходить в отчёт каждую неделю никто не
+    обязан, а данные всё равно должны быть непрерывными. Занятия в CRM
+    хранятся всегда, поэтому любую пропущенную неделю можно восстановить
+    задним числом — независимо от того, открывал кто-то отчёт или нет.
+    """
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute(f"SELECT week_start FROM {SCHEMA}.student_count_weekly")
+    have = {r[0] for r in cur.fetchall()}
+    cur.close()
+    conn.close()
+
+    this_week = monday_of(date.today())
+    if not have:
+        return {"filled": 0, "weeks": []}
+
+    # Ищем дыры между самой ранней записью и текущей неделей
+    start = min(have)
+    missing = []
+    wk = start
+    while wk <= this_week:
+        if wk not in have:
+            missing.append(wk)
+        wk += timedelta(weeks=1)
+
+    if not missing:
+        return {"filled": 0, "weeks": []}
+
+    # Тянем занятия одним запросом на весь пропущенный диапазон
+    token = get_token()
+    d_from = min(missing) - timedelta(weeks=8)
+    lessons = fetch_lessons(token, str(d_from), str(this_week + timedelta(days=6)))
+
+    by_week: Dict[date, set] = {}
+    for ls in lessons:
+        d = lesson_date(ls)
+        if d:
+            by_week.setdefault(monday_of(d), set()).update(lesson_students(ls))
+
+    filled = []
+    for wk in missing:
+        students = by_week.get(wk, set())
+        window = set()
+        for i in range(8):
+            window |= by_week.get(wk - timedelta(weeks=i), set())
+        save_snapshot(wk, len(students), len(window), {}, "lessons")
+        filled.append(str(wk))
+
+    return {"filled": len(filled), "weeks": filled}
+
+
 def handle_backfill(weeks_from: str, weeks_to: str) -> Dict[str, Any]:
     """Восстановить прошлые недели по занятиям.
 
@@ -325,6 +379,15 @@ def period_label(key: str, group: str) -> str:
 
 
 def handle_series(date_from: str, date_to: str, group: str) -> Dict[str, Any]:
+    # Пропущенные недели восстанавливаем сами: отчётом пользуются редко,
+    # и график не должен зиять дырами за месяцы, когда в него не заходили.
+    try:
+        filled = fill_missing_weeks()
+        if filled["filled"]:
+            print(f'Достроено недель: {filled["filled"]}')
+    except Exception as e:
+        print(f"fill_missing_weeks failed: {type(e).__name__}: {e}")
+
     conn = _conn()
     cur = conn.cursor()
     where, params = [], []
@@ -422,6 +485,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         action = body.get("mode") or mode
         if action == "collect":
             return handle_collect()
+        if action == "cron":
+            # Точка для внешнего планировщика: снимает срез текущей недели
+            # и заодно latает пропуски. Вызывать можно хоть каждый день —
+            # повторный вызов в ту же неделю просто обновит запись.
+            filled = fill_missing_weeks()
+            res = handle_collect()
+            payload = json.loads(res["body"])
+            payload["filled_weeks"] = filled["filled"]
+            res["body"] = json.dumps(payload, ensure_ascii=False)
+            return res
         if action == "backfill":
             today = date.today()
             d_from = body.get("from") or params.get("from") or "2024-01-01"

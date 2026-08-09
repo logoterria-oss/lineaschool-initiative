@@ -1328,10 +1328,57 @@ def handle_list(token, name_filter=None):
     items = [it for it in items if not _is_test_customer(it.get("name"))]
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
+
+    # Попутно фиксируем недельный срез численности для отчёта «Динамика
+    # количества учеников». Список учеников открывают почти каждый день,
+    # поэтому история копится сама — без расписания и без захода в отчёт.
+    try:
+        record_weekly_snapshot(items)
+    except Exception as e:
+        print(f"weekly snapshot skipped: {type(e).__name__}: {e}")
+
     if name_filter:
         nf = name_filter.lower()
         items = [it for it in items if nf in (it.get("name") or "").lower()]
     return _json(200, {"items": items})
+
+
+def record_weekly_snapshot(items):
+    """Записать срез численности за текущую неделю, если его ещё нет.
+
+    Пишем один раз в неделю: повторные открытия списка ничего не делают,
+    лишней нагрузки на базу нет.
+    """
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+
+    active = sum(1 for it in items if it.get("status_id") == 1)
+    # Действующие: активные + каникулы + заморозка (без бросивших/завершивших)
+    enrolled = sum(1 for it in items if it.get("status_id") in (1, 4, 5))
+
+    breakdown = {}
+    for it in items:
+        nm = it.get("status_name") or "—"
+        breakdown[nm] = breakdown.get(nm, 0) + 1
+
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    cur = conn.cursor()
+    cur.execute(
+        f"""INSERT INTO {SCHEMA}.student_count_weekly
+            (week_start, active_count, enrolled_count, status_breakdown, source)
+            VALUES (%s, %s, %s, %s, 'crm')
+            ON CONFLICT (week_start) DO UPDATE SET
+                active_count = EXCLUDED.active_count,
+                enrolled_count = EXCLUDED.enrolled_count,
+                status_breakdown = EXCLUDED.status_breakdown,
+                source = 'crm',
+                updated_at = NOW()
+            WHERE student_count_weekly.source <> 'crm'""",
+        (week_start, active, enrolled, json.dumps(breakdown, ensure_ascii=False)),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 def handler(event, context):
