@@ -135,8 +135,7 @@ export default function SubscriptionsSection({ onPay }: Props) {
                                       {plan.interimDiagnostics}{' '}
                                       {plan.interimDiagnostics === 1
                                         ? 'промежуточная диагностика'
-                                        : 'промежуточные диагностики'}{' '}
-                                      в подарок
+                                        : 'промежуточные диагностики'}
                                     </span>
                                   </div>
                                 )}

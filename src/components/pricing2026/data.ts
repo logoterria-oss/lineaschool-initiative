@@ -52,18 +52,22 @@ const buildPlans = (basePrice: number, groupPerWeek: number, individualPerWeek: 
   return steps.map(({ title, weeks, discount, interim, popular }) => {
     const group = groupPerWeek * weeks;
     const individual = individualPerWeek * weeks;
-    const total = group + individual;
+    const lessons = group + individual;
     const pricePerLesson = discount
       ? Math.round((basePrice * (1 - discount / 100)) / 10) * 10
       : basePrice;
 
     return {
       title,
-      totalLessons: total,
+      // В общем числе занятий учитываем и промежуточные диагностики:
+      // они входят в абонемент как обычная встреча, а не идут подарком.
+      totalLessons: lessons + interim,
       groupLessons: group,
       individualLessons: individual,
       pricePerLesson,
-      totalPrice: pricePerLesson * total,
+      // Стоимость считается только по учебным занятиям — диагностики
+      // цену абонемента не увеличивают.
+      totalPrice: pricePerLesson * lessons,
       discountPercent: discount || undefined,
       interimDiagnostics: interim || undefined,
       popular,
