@@ -39,8 +39,10 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
+        {/* На телефоне кнопки не помещаются в строку рядом с именем:
+            уводим их под описание и растягиваем на всю ширину. */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle className="text-lg">{report.student_name}</CardTitle>
               <Badge className={isInterim ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' : 'bg-blue-100 text-blue-700 hover:bg-blue-100'}>
@@ -53,20 +55,27 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
               Логопед: {report.therapist_name}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" asChild>
+          {/* Сетка в 2 колонки на телефоне: кнопки одинаковой ширины
+              и достаточной высоты, чтобы попадать пальцем. */}
+          <div className="grid grid-cols-2 gap-2 sm:max-w-md lg:flex lg:max-w-none lg:shrink-0">
+            <Button size="sm" variant="outline" className="h-9 w-full lg:w-auto" asChild>
               <a href={reportLink} target="_blank" rel="noopener noreferrer">
                 <Icon name="FileText" size={14} className="mr-1" />
                 Заключение
               </a>
             </Button>
-            <Button size="sm" variant="outline" asChild>
+            <Button size="sm" variant="outline" className="h-9 w-full lg:w-auto" asChild>
               <a href={editLink}>
                 <Icon name="Pencil" size={14} className="mr-1" />
                 Изменить
               </a>
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onCopyLink(reportLink)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 w-full lg:w-auto"
+              onClick={() => onCopyLink(reportLink)}
+            >
               <Icon name="Link" size={14} className="mr-1" />
               Ссылка
             </Button>
@@ -75,7 +84,7 @@ export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: 
                 size="sm"
                 variant="outline"
                 onClick={() => onDelete(report.id)}
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                className="h-9 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 lg:w-auto"
               >
                 <Icon name="Trash2" size={14} className="mr-1" />
                 Удалить
