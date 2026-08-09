@@ -6,6 +6,7 @@ Returns: JSON с точками графика или результатом с�
 
 import json
 import os
+import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List
 
@@ -112,6 +113,24 @@ def fetch_customers(token, is_study=None, removed=None):
     return out
 
 
+def is_test_customer(name):
+    """Техническая карточка для проверок («Тест-ученик-1», «Тестовый ученик»).
+
+    Такие записи заводят в CRM для тестов, и в отчёт о численности они
+    попадать не должны — иначе завышают цифры. Правило то же, что в списке
+    учеников: проверяем только начало имени и по границе слова, чтобы
+    настоящие фамилии вроде «Тестова» не пропали.
+    """
+    s = (name or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    if re.match(r"^(тест|test)(\b|[-_\s]|\d)", s):
+        return True
+    if re.match(r"^тестов(ый|ая|ое|ые)\b", s):
+        return True
+    return False
+
+
 def get_all_customers(token):
     """Все ученики школы. Архивных помечаем — они считаются выбывшими."""
     seen, merged = set(), []
@@ -131,7 +150,8 @@ def get_all_customers(token):
 
 def current_counts(token) -> Dict[str, Any]:
     """Текущий срез: сколько активных и сколько всего действующих."""
-    customers = get_all_customers(token)
+    customers = [c for c in get_all_customers(token)
+                 if not is_test_customer(c.get("name"))]
     breakdown: Dict[int, int] = {}
     for c in customers:
         # Архивный клиент = выбыл, независимо от статуса в карточке
@@ -311,7 +331,7 @@ def _tariff_periods(token, cid):
     return periods
 
 
-def sync_tariff_spans(limit: int = 25) -> Dict[str, Any]:
+def sync_tariff_spans(limit: int = 25, refresh_roster: bool = False) -> Dict[str, Any]:
     """Обновить периоды абонементов для части учеников.
 
     Запрос идёт на каждого ученика отдельно, а лимит времени функции —
@@ -328,19 +348,28 @@ def sync_tariff_spans(limit: int = 25) -> Dict[str, Any]:
     cur.execute(f"SELECT customer_id, synced_at FROM {SCHEMA}.student_tariff_spans")
     known = {r[0]: r[1] for r in cur.fetchall()}
 
-    cur.execute(f"SELECT customer_id FROM {SCHEMA}.student_roster")
+    cur.execute(f"SELECT customer_id FROM {SCHEMA}.student_roster WHERE name IS NOT NULL")
     ids = [r[0] for r in cur.fetchall()]
-    if not ids:
+    # Пустой список или записи без имён (старый формат) — тянем из CRM заново,
+    # чтобы проставить признак технической карточки.
+    if not ids or refresh_roster:
         customers = get_all_customers(token)
-        ids = [c.get("id") for c in customers if c.get("id")]
-        for cid in ids:
+        for c in customers:
+            cid = c.get("id")
+            if not cid:
+                continue
             cur.execute(
-                f"""INSERT INTO {SCHEMA}.student_roster (customer_id, synced_at)
-                    VALUES (%s, NOW()) ON CONFLICT (customer_id)
-                    DO UPDATE SET synced_at = NOW()""",
-                (cid,),
+                f"""INSERT INTO {SCHEMA}.student_roster (customer_id, name, is_test, synced_at)
+                    VALUES (%s, %s, %s, NOW()) ON CONFLICT (customer_id)
+                    DO UPDATE SET name = EXCLUDED.name,
+                                  is_test = EXCLUDED.is_test,
+                                  synced_at = NOW()""",
+                (cid, c.get("name"), is_test_customer(c.get("name"))),
             )
         conn.commit()
+        # Технические карточки в отчёте не нужны — периоды для них не тянем
+        ids = [c.get("id") for c in customers
+               if c.get("id") and not is_test_customer(c.get("name"))]
 
     # Сначала новые ученики, затем самые давно не обновлявшиеся
     fresh = [i for i in ids if i not in known]
@@ -383,7 +412,10 @@ def rebuild_from_crm(weeks_back: int = 130, offset: int = 0) -> Dict[str, Any]:
 
     conn = _conn()
     cur = conn.cursor()
-    cur.execute(f"SELECT customer_id, periods FROM {SCHEMA}.student_tariff_spans")
+    # Технические карточки CRM в отчёт не попадают
+    cur.execute(f"""SELECT s.customer_id, s.periods FROM {SCHEMA}.student_tariff_spans s
+                    LEFT JOIN {SCHEMA}.student_roster r ON r.customer_id = s.customer_id
+                    WHERE COALESCE(r.is_test, FALSE) = FALSE""")
     spans = {}
     for cid, periods in cur.fetchall():
         out = []
@@ -394,6 +426,11 @@ def rebuild_from_crm(weeks_back: int = 130, offset: int = 0) -> Dict[str, Any]:
                 out.append((b, e))
         if out:
             spans[cid] = out
+
+    # Занятия технических карточек тоже не считаем: иначе тестовый ученик
+    # попадёт в «активных» той недели, когда по нему проводили проверку.
+    cur.execute(f"SELECT customer_id FROM {SCHEMA}.student_roster WHERE is_test = TRUE")
+    test_ids = {r[0] for r in cur.fetchall()}
     cur.close()
     conn.close()
 
@@ -402,7 +439,9 @@ def rebuild_from_crm(weeks_back: int = 130, offset: int = 0) -> Dict[str, Any]:
     for ls in lessons:
         d = lesson_date(ls)
         if d:
-            lessons_by_week.setdefault(monday_of(d), set()).update(lesson_students(ls))
+            students = set(lesson_students(ls)) - test_ids
+            if students:
+                lessons_by_week.setdefault(monday_of(d), set()).update(students)
 
     saved = 0
     wk = first_week
@@ -675,7 +714,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return handle_collect()
         if action == "sync_tariffs":
             limit = int(body.get("limit") or params.get("limit") or 25)
-            return _json(200, {"success": True, **sync_tariff_spans(limit)})
+            refresh = bool(body.get("refresh_roster") or params.get("refresh_roster"))
+            return _json(200, {"success": True, **sync_tariff_spans(limit, refresh)})
         if action == "rebuild":
             weeks = int(body.get("weeks") or params.get("weeks") or 12)
             offset = int(body.get("offset") or params.get("offset") or 0)
