@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import LineaStudies from "./pages/LineaStudies";
 import Pricing from "./pages/Pricing";
+import Pricing20262027 from "./pages/Pricing20262027";
 import OfferPage from "./pages/OfferPage";
 import Privacy from "./pages/Privacy";
 import DiagForm from "./pages/DiagForm";
@@ -59,6 +60,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/lineastudies" element={<LineaStudies />} />
             <Route path="/price" element={<Pricing />} />
+            {/* Новые цены 2026–2027: пока без перехода с главной */}
+            <Route path="/price_2026-2027" element={<Pricing20262027 />} />
             <Route path="/oferta_2025" element={<OfferPage />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/sveden" element={<EducationInfo />} />
