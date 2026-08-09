@@ -7,6 +7,7 @@ import json
 import os
 from typing import Dict, Any, Optional
 import requests
+from telegram_send import notify_all
 
 def save_lead_to_db(parent_name: str, student_name: str, contact: str,
                     messengers: list = None, telegram: str = ''):
@@ -198,28 +199,12 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
     message = ''.join(message_parts)
     
     recipient_ids = [chat_id, '976372702']
-    # Пробуем несколько хостов Telegram Bot API: если прямой api.telegram.org
-    # недоступен с площадки функций, срабатывает зеркало. Общий бюджет времени
-    # держим маленьким, чтобы функция не упала по лимиту 30 сек и не потеряла
-    # уже сохранённую в CRM/БД заявку.
-    hosts = ['https://api.telegram.org', 'https://api.telegram.org.']
-    for recipient_id in recipient_ids:
-        sent = False
-        for host in hosts:
-            try:
-                response = requests.post(
-                    f'{host}/bot{bot_token}/sendMessage',
-                    json={'chat_id': recipient_id, 'text': message},
-                    timeout=4
-                )
-                print(f'Telegram response to {recipient_id} via {host}: {response.status_code} - {response.text}')
-                if response.status_code == 200:
-                    sent = True
-                    break
-            except Exception as e:
-                print(f'Telegram notification failed for {recipient_id} via {host}: {str(e)}')
-        if not sent:
-            print(f'Telegram notification NOT delivered to {recipient_id} (all hosts failed)')
+    # Отправляем через перебор адресов Telegram: DNS отдаёт несколько IP,
+    # и часть из них с площадки функций недоступна (соединение виснет).
+    # Раньше из-за этого терялось примерно 9 уведомлений из 10.
+    results = notify_all(bot_token, recipient_ids, message)
+    print(f'Telegram delivery: {results}')
+
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     print(f'=== INCOMING REQUEST ===')
@@ -243,62 +228,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     if method == 'GET':
-        import time as _time
-        from urllib.request import Request as URequest, urlopen as uopen
-        from urllib.error import HTTPError as UHTTPError
-
-        questionnaire_token = os.environ.get('TELEGRAM_QUESTIONNAIRE_BOT_TOKEN')
-        leads_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
-        payment_token = os.environ.get('TELEGRAM_PAYMENT_BOT_TOKEN')
+        # Быстрая проверка ботов: шлём тестовое сообщение тем же надёжным
+        # способом, что и боевые уведомления, чтобы результат совпадал
+        # с реальной доставкой. Таймауты короткие — лимит функции 5 секунд.
         admin_chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
         recipient_ids = [rid for rid in [admin_chat_id, '976372702'] if rid]
 
-        def tg_call(token, tg_method, body=None):
-            started = _time.time()
-            url = f'https://api.telegram.org/bot{token}/{tg_method}'
-            try:
-                data = json.dumps(body).encode('utf-8') if body is not None else None
-                req = URequest(url, data=data, headers={'Content-Type': 'application/json'})
-                with uopen(req, timeout=25) as resp:
-                    parsed = json.loads(resp.read().decode('utf-8'))
-                    return {'ok': parsed.get('ok'), 'http_status': resp.status, 'ms': round((_time.time() - started) * 1000), 'response': parsed}
-            except UHTTPError as he:
-                err_body = ''
-                try:
-                    err_body = he.read().decode('utf-8')[:300]
-                except Exception:
-                    pass
-                return {'ok': False, 'http_status': he.code, 'ms': round((_time.time() - started) * 1000), 'error': f'HTTP {he.code}', 'response': err_body}
-            except Exception as e:
-                return {'ok': False, 'http_status': None, 'ms': round((_time.time() - started) * 1000), 'error': f'{type(e).__name__}: {str(e)}'}
-
         results = {'bots': {}}
-        bots = [
-            ('Анкеты', 'TELEGRAM_QUESTIONNAIRE_BOT_TOKEN', questionnaire_token),
-            ('Лиды', 'TELEGRAM_LEADS_BOT_TOKEN', leads_token),
-            ('Оплаты', 'TELEGRAM_PAYMENT_BOT_TOKEN', payment_token),
-        ]
-        for bot_name, token_env, token in bots:
-            entry = {
-                'token_env': token_env,
-                'token_present': bool(token),
-                'token_length': len(token) if token else 0,
-                'getMe': None,
-                'sends': [],
-            }
+        for bot_name, token_env in (
+            ('Лиды', 'TELEGRAM_LEADS_BOT_TOKEN'),
+            ('Оплаты', 'TELEGRAM_PAYMENT_BOT_TOKEN'),
+            ('Анкеты', 'TELEGRAM_QUESTIONNAIRE_BOT_TOKEN'),
+        ):
+            token = os.environ.get(token_env)
             if not token:
-                entry['getMe'] = {'ok': False, 'error': 'token not configured'}
-                results['bots'][bot_name] = entry
+                results['bots'][bot_name] = {'token_present': False, 'sends': {}}
                 continue
-            entry['getMe'] = tg_call(token, 'getMe')
-            for chat_id in recipient_ids:
-                send_res = tg_call(token, 'sendMessage', {
-                    'chat_id': chat_id,
-                    'text': f'✅ Тест бота «LineaSchool — {bot_name}»: сообщение доставлено!',
-                })
-                send_res['chat_id'] = chat_id
-                entry['sends'].append(send_res)
-            results['bots'][bot_name] = entry
+            sends = notify_all(
+                token, recipient_ids,
+                f'Проверка связи: бот «{bot_name}» работает.',
+                timeout=1.2,
+            )
+            results['bots'][bot_name] = {'token_present': True, 'sends': sends}
 
         print(f'TG debug results: {json.dumps(results, ensure_ascii=False)}')
         return {'statusCode': 200, 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, 'body': json.dumps(results, ensure_ascii=False)}

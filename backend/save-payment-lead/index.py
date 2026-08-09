@@ -9,6 +9,7 @@ import psycopg2
 import urllib.request
 from typing import Dict, Any
 from crm_match import match_name
+from telegram_send import notify_all
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'POST')
@@ -79,22 +80,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         bot_token = os.environ.get('TELEGRAM_PAYMENT_BOT_TOKEN')
         
         if chat_id and bot_token:
+            # Отправляем перебором адресов Telegram: DNS отдаёт несколько IP,
+            # и часть из них с площадки функций недоступна — соединение виснет
+            # до таймаута, уведомление теряется. Раньше сбой первого получателя
+            # ещё и обрывал отправку второму, так как цикл был в общем try.
             try:
                 message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
-                tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-                recipient_ids = [chat_id, '976372702']
-                for recipient_id in recipient_ids:
-                    data = {
-                        'chat_id': recipient_id,
-                        'text': message
-                    }
-                    req = urllib.request.Request(
-                        tg_url,
-                        data=json.dumps(data).encode('utf-8'),
-                        headers={'Content-Type': 'application/json'}
-                    )
-                    with urllib.request.urlopen(req) as response:
-                        print(f'Telegram notification sent to {recipient_id} for order {order_id}')
+                results = notify_all(bot_token, [chat_id, '976372702'], message)
+                print(f'Telegram delivery for order {order_id}: {results}')
             except Exception as tg_error:
                 print(f'Telegram notification failed: {str(tg_error)}')
         
