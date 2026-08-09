@@ -614,6 +614,24 @@ def load_overrides():
     return out
 
 
+def _is_test_customer(name):
+    """Техническая карточка для проверок («Тест-ученик-1», «Тестовый ученик»).
+
+    Проверяем только начало имени и по границе слова: фамилии вроде
+    «Тестова» или «Тестоедов» настоящие и скрываться не должны.
+    """
+    s = (name or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    # «тест», «тест-ученик-1», «test student»
+    if re.match(r"^(тест|test)(\b|[-_\s]|\d)", s):
+        return True
+    # «тестовый ученик», «тестовая запись» — но не фамилия «Тестова Мария»
+    if re.match(r"^тестов(ый|ая|ое|ые)\b", s):
+        return True
+    return False
+
+
 def _name_key(name):
     """Ключ для сопоставления ФИО: фамилия + имя, без отчества и регистра.
 
@@ -1304,6 +1322,10 @@ def handle_list(token, name_filter=None):
                 "interactions": interactions.get(row_id) or interactions.get(cid) or [],
                 "interaction_ok": ov.get("interaction_ok") if ov else None,
             })
+
+    # Технические карточки, заведённые в CRM для проверок, из рабочих
+    # списков убираем: они искажают счётчики учеников и контроль ДЗ.
+    items = [it for it in items if not _is_test_customer(it.get("name"))]
 
     items.sort(key=lambda x: (x.get("name") or "").lower())
     if name_filter:

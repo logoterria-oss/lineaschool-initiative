@@ -409,6 +409,20 @@ def _hw_surname_first(name: str) -> str:
     return f"{result} {emojis}".strip() if emojis else result
 
 
+def _hw_is_test_customer(name: str) -> bool:
+    """Технические карточки CRM («Тест-ученик-1») — в контроль ДЗ не берём.
+
+    Проверяем начало имени по границе слова, чтобы настоящие фамилии
+    («Тестова», «Тестоедов») остались в списке.
+    """
+    s = (name or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    if re.match(r"^(тест|test)(\b|[-_\s]|\d)", s):
+        return True
+    return bool(re.match(r"^тестов(ый|ая|ое|ые)\b", s))
+
+
 def _hw_json(status, body, cors_headers):
     return {
         "statusCode": status,
@@ -576,6 +590,9 @@ def _hw_all(params, cors_headers):
             })
         students.append({"id": cid, "name": entry["name"], "lessons": ldates})
 
+    # Технические карточки CRM в контроль ДЗ не показываем
+    students = [s for s in students if not _hw_is_test_customer(s.get("name"))]
+
     students.sort(key=lambda s: s["name"].lower())
 
     return _hw_json(200, {"students": students, "month": month, "months": available}, cors_headers)
@@ -639,6 +656,9 @@ def _hw_table(params, cors_headers):
                 "status": saved.get((entry["id"], d), ""),
             })
         result.append({"id": entry["id"], "name": entry["name"], "lessons": ldates})
+
+    # Технические карточки CRM в контроль ДЗ не показываем
+    result = [s for s in result if not _hw_is_test_customer(s.get("name"))]
 
     result.sort(key=lambda s: s["name"].lower())
     return _hw_json(200, {"students": result, "month": month, "months": available}, cors_headers)
