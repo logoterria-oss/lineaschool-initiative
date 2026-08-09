@@ -2,6 +2,7 @@ import type { InterimPersonalData, InterimStudent } from './InterimPersonalDataS
 import type { ImpairedProcessesState, ProcessLevelsState } from './impairedProcesses';
 import type { InterimRecommendationsData } from './InterimRecommendationsSection';
 import type { ReadingWritingBaseline, ReadingWritingState } from './readingWriting';
+import type { HwMark } from '@/components/interimConclusion/buildHomework';
 
 /** Полный снимок промежуточной диагностики для черновика */
 export interface InterimDraft {
@@ -24,6 +25,11 @@ export interface InterimDraft {
   summary: string;
   /** Трогал ли логопед текст — тогда автотекст не перетирает правку */
   summaryEdited: boolean;
+  /** Выполнение ДЗ: текст правки логопеда */
+  homework?: string;
+  homeworkEdited?: boolean;
+  /** Отметки из «Контроля ДЗ» — чтобы черновик открылся с готовым отчётом */
+  homeworkMarks?: HwMark[];
 }
 
 /**

@@ -9,6 +9,7 @@ import type { InterimDraft } from './draft';
 import { isEmptyInterim } from './draft';
 import { useEditReport } from '@/hooks/useEditReport';
 import { buildInterimSummary } from '@/components/interimConclusion/buildSummary';
+import { buildHomeworkReport } from '@/components/interimConclusion/buildHomework';
 import { buildInterimPayload } from './interimFormData';
 import type { useInterimState } from './useInterimState';
 import { EMPTY_IMPAIRED_STATE } from './impairedProcesses';
@@ -39,6 +40,11 @@ export function useInterimSubmit(st: InterimState) {
     setRw,
     recommendations,
     setRecommendations,
+    setSummary,
+    setSummaryEdited,
+    homeworkMarks,
+    setHomework,
+    setHomeworkEdited,
     draftData,
     applyDraft,
   } = st;
@@ -68,6 +74,19 @@ export function useInterimSubmit(st: InterimState) {
         parentRecommendations: g('parentRecommendations', ''),
         logopedist: g('logopedist', ''),
       });
+      // Тексты вывода и отчёта по ДЗ восстанавливаем как ручную правку:
+      // иначе при повторном сохранении они пересобрались бы заново
+      // и потеряли формулировки, которые логопед уже утвердил.
+      const savedSummary = g('interimSummary', '');
+      if (savedSummary) {
+        setSummary(savedSummary);
+        setSummaryEdited(true);
+      }
+      const savedHomework = g('interimHomework', '');
+      if (savedHomework) {
+        setHomework(savedHomework);
+        setHomeworkEdited(true);
+      }
       setStudentSelected(true);
     },
   );
@@ -95,6 +114,9 @@ export function useInterimSubmit(st: InterimState) {
     rw: { ...rw },
   });
 
+  // Отчёт по ДЗ — из отметок раздела «Контроль ДЗ»
+  const autoHomework = buildHomeworkReport(homeworkMarks || [], personal.examDate);
+
   const [saving, setSaving] = useState(false);
 
   const [incomplete, setIncomplete] = useState<IncompleteSection[]>([]);
@@ -116,7 +138,7 @@ export function useInterimSubmit(st: InterimState) {
       const res = await fetch('https://functions.poehali.dev/7bc33dbc-e8a0-47b4-83cc-d792dc7e1696', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildInterimPayload({ ...draftData, autoSummary }, today, editId)),
+        body: JSON.stringify(buildInterimPayload({ ...draftData, autoSummary, autoHomework }, today, editId)),
       });
 
       if (res.ok) {
@@ -163,6 +185,7 @@ export function useInterimSubmit(st: InterimState) {
     discardDraft,
     applyDraft,
     autoSummary,
+    autoHomework,
     saving,
     incomplete,
     setIncomplete,

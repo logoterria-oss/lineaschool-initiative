@@ -6,6 +6,7 @@ import type { InterimRecommendationsData } from './InterimRecommendationsSection
 import type { ReadingWritingBaseline, ReadingWritingState } from './readingWriting';
 import { EMPTY_RW_STATE } from './readingWriting';
 import type { InterimDraft } from './draft';
+import type { HwMark } from '@/components/interimConclusion/buildHomework';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -57,6 +58,12 @@ export function useInterimState() {
   const [summary, setSummary] = useState('');
   const [summaryEdited, setSummaryEdited] = useState(false);
 
+  // Выполнение ДЗ: отметки из «Контроля ДЗ» + правка логопеда
+  const [homeworkMarks, setHomeworkMarks] = useState<HwMark[]>([]);
+  const [homeworkLoading, setHomeworkLoading] = useState(false);
+  const [homework, setHomework] = useState('');
+  const [homeworkEdited, setHomeworkEdited] = useState(false);
+
   /** Дата текущей диагностики — логопед может её изменить */
   const todayDate = personal.examDate || today();
 
@@ -79,6 +86,9 @@ export function useInterimState() {
     autoFilled,
     summary,
     summaryEdited,
+    homework,
+    homeworkEdited,
+    homeworkMarks,
   };
 
   /** Разложить готовый снимок обратно по разделам формы */
@@ -100,6 +110,9 @@ export function useInterimState() {
     setAutoFilled(d.autoFilled);
     setSummary(d.summary || '');
     setSummaryEdited(!!d.summaryEdited);
+    setHomework(d.homework || '');
+    setHomeworkEdited(!!d.homeworkEdited);
+    setHomeworkMarks(d.homeworkMarks || []);
   };
 
   return {
@@ -139,6 +152,14 @@ export function useInterimState() {
     setSummary,
     summaryEdited,
     setSummaryEdited,
+    homework,
+    setHomework,
+    homeworkEdited,
+    setHomeworkEdited,
+    homeworkMarks,
+    setHomeworkMarks,
+    homeworkLoading,
+    setHomeworkLoading,
     todayDate,
     draftData,
     applyDraft,

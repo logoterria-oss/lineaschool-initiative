@@ -8,7 +8,7 @@ import type { InterimDraft } from './draft';
 
 /** Снимок промежуточной диагностики, как он хранится в form_data */
 export function buildInterimFormData(
-  draft: InterimDraft & { autoSummary?: string },
+  draft: InterimDraft & { autoSummary?: string; autoHomework?: string },
   examDate: string,
 ) {
   const { personal, rw, rwBaseline, impaired, levels, baseline, recommendations } = draft;
@@ -42,12 +42,14 @@ export function buildInterimFormData(
     logopedist: recommendations.logopedist,
     // Итоговый текст вывода — тот, что реально увидит читатель заключения
     interimSummary: draft.summaryEdited ? draft.summary : draft.autoSummary || '',
+    // Отчёт о выполнении домашних заданий
+    interimHomework: draft.homeworkEdited ? draft.homework || '' : draft.autoHomework || '',
   };
 }
 
 /** Тело запроса на сохранение (или обновление, если передан editId) */
 export function buildInterimPayload(
-  draft: InterimDraft & { autoSummary?: string },
+  draft: InterimDraft & { autoSummary?: string; autoHomework?: string },
   examDate: string,
   editId: number | null,
 ) {

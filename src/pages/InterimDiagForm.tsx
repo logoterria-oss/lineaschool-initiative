@@ -33,6 +33,7 @@ export default function InterimDiagForm() {
     discardDraft,
     applyDraft,
     autoSummary,
+    autoHomework,
     saving,
     incomplete,
     setIncomplete,
@@ -71,6 +72,7 @@ export default function InterimDiagForm() {
             st={st}
             gaps={gaps}
             autoSummary={autoSummary}
+            autoHomework={autoHomework}
             saving={saving}
             isEditing={isEditing}
             rwHint={rwHint}

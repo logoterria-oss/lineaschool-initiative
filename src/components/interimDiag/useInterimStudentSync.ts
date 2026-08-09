@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { InterimStudent } from './InterimPersonalDataSection';
 import type { useInterimState } from './useInterimState';
 import { buildPrimaryConclusion } from './primaryConclusion';
@@ -46,7 +47,29 @@ export function useInterimStudentSync(st: InterimState) {
     setRwBaseline,
     rw,
     setRw,
+    setHomeworkMarks,
+    setHomeworkLoading,
   } = st;
+
+  /**
+   * Отметки выполнения ДЗ по ученику из раздела «Контроль ДЗ».
+   * Запрос отдельный и лёгкий (только база, без обращения к CRM),
+   * поэтому не тормозит остальное автозаполнение формы.
+   */
+  const loadHomework = (name: string) => {
+    if (!name.trim()) {
+      setHomeworkMarks([]);
+      return;
+    }
+    setHomeworkLoading(true);
+    fetch(
+      `https://functions.poehali.dev/6d9e6094-fd18-47ec-b45f-ad3ee4ba7cc2?mode=hw_history&name=${encodeURIComponent(name)}`,
+    )
+      .then((r) => r.json())
+      .then((d) => setHomeworkMarks(Array.isArray(d?.items) ? d.items : []))
+      .catch(() => setHomeworkMarks([]))
+      .finally(() => setHomeworkLoading(false));
+  };
 
   const handleSelectStudent = (student: InterimStudent) => {
     const nextImpaired = computeImpairedFromPrimary(student.primary);
@@ -83,6 +106,9 @@ export function useInterimStudentSync(st: InterimState) {
       errorTypes: collectPrimaryErrorTypes(student.primary),
       orthoErrorTypes: collectPrimaryOrthographicTypes(student.primary),
     });
+
+    // Отчёт по ДЗ не зависит от прошлых заключений — грузим по имени сразу
+    loadHomework(student.name);
 
     // Загружаем фото диктанта первичной и последней промежуточной (отдельный лёгкий запрос)
     setPrimarySamples([]);
@@ -198,6 +224,21 @@ export function useInterimStudentSync(st: InterimState) {
       })
       .catch(() => {});
   };
+
+  // ФИО могли ввести руками, не выбирая из подсказок: тогда остальные
+  // данные не подтянутся, а отчёт по ДЗ собрать всё равно можно —
+  // он привязан только к имени. Ждём паузу в наборе, чтобы не дёргать
+  // сервер на каждую букву.
+  useEffect(() => {
+    const name = personal.childName.trim();
+    if (name.length < 4) {
+      setHomeworkMarks([]);
+      return;
+    }
+    const t = setTimeout(() => loadHomework(name), 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personal.childName]);
 
   const rwHint = errorQualityHint(rwBaseline, rw);
 

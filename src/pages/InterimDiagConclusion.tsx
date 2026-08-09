@@ -176,6 +176,15 @@ export default function InterimDiagConclusion() {
               </section>
             )}
 
+            {data.interimHomework && (
+              <section className="summary-section rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h2 className="mb-2 text-lg font-bold text-gray-900">Выполнение ДЗ</h2>
+                <p className="whitespace-pre-wrap text-sm text-gray-700">
+                  {data.interimHomework}
+                </p>
+              </section>
+            )}
+
             {(data.teacherRecommendations || data.parentRecommendations) && (
               <section>
                 <h2 className="mb-3 text-lg font-bold text-gray-900">Рекомендации</h2>

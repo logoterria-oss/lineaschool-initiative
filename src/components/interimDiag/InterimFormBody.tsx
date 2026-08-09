@@ -8,6 +8,7 @@ import InterimPrimaryConclusionSection from './InterimPrimaryConclusionSection';
 import InterimReadingWritingSection from './InterimReadingWritingSection';
 import InterimRecommendationsSection from './InterimRecommendationsSection';
 import InterimSummarySection from './InterimSummarySection';
+import InterimHomeworkSection from './InterimHomeworkSection';
 import type { useInterimState } from './useInterimState';
 import type { ImpairedProcessKey, ProcessLevel } from './impairedProcesses';
 
@@ -17,6 +18,7 @@ interface Props {
   st: InterimState;
   gaps: Record<string, string[]> | undefined;
   autoSummary: string;
+  autoHomework: string;
   saving: boolean;
   isEditing: boolean;
   rwHint: string;
@@ -33,6 +35,7 @@ export default function InterimFormBody({
   st,
   gaps,
   autoSummary,
+  autoHomework,
   saving,
   isEditing,
   rwHint,
@@ -50,6 +53,7 @@ export default function InterimFormBody({
     primarySamples, interimSamples, interimSamplesDate, rwBaseline,
     rw, recommendations,
     summary, setSummary, summaryEdited, setSummaryEdited,
+    homework, setHomework, homeworkEdited, setHomeworkEdited, homeworkLoading,
     todayDate, patchPersonal, patchRecommendations, patchRw,
   } = st;
 
@@ -122,6 +126,22 @@ export default function InterimFormBody({
         onReset={() => {
           setSummary('');
           setSummaryEdited(false);
+        }}
+      />
+
+      <InterimHomeworkSection
+        autoText={autoHomework}
+        value={homework}
+        edited={homeworkEdited}
+        loading={homeworkLoading}
+        selected={studentSelected}
+        onChange={(v) => {
+          setHomework(v);
+          setHomeworkEdited(true);
+        }}
+        onReset={() => {
+          setHomework('');
+          setHomeworkEdited(false);
         }}
       />
 

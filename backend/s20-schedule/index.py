@@ -423,6 +423,54 @@ def _hw_is_test_customer(name: str) -> bool:
     return bool(re.match(r"^тестов(ый|ая|ое|ые)\b", s))
 
 
+def _hw_history(params, cors_headers):
+    """История отметок ДЗ по одному ученику — для отчёта в диагностике.
+
+    Берём только из БД: в отчёт идут исключительно проставленные цвета.
+    Занятия без отметки — это недоработка педагога, а не ученика,
+    поэтому в CRM за расписанием не ходим (и отвечаем мгновенно).
+
+    Имя в таблице ДЗ хранится как «Фамилия Имя», а у сиблингов —
+    общей строкой («Марк и Сеня Константиновы»), поэтому сверяем
+    по набору слов, а не по точному совпадению.
+    """
+    name = (params.get("name") or "").strip()
+    if not name:
+        return _hw_json(400, {"error": "Не указано имя"}, cors_headers)
+
+    schema = os.environ.get("MAIN_DB_SCHEMA", "public")
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT student_name, lesson_date, status FROM {schema}.homework_status "
+        f"WHERE status <> '' ORDER BY lesson_date"
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    def tokens(s):
+        s = re.sub(r"[^а-яa-z\s-]", " ", (s or "").lower().replace("ё", "е"))
+        return {t for t in s.split() if len(t) >= 3}
+
+    want = tokens(name)
+    if not want:
+        return _hw_json(200, {"items": []}, cors_headers)
+
+    items = []
+    for student_name, lesson_date, status in rows:
+        have = tokens(student_name)
+        # Совпали фамилия и имя — либо ученик входит в общую строку сиблингов
+        if len(want & have) >= 2:
+            items.append({
+                "date": (lesson_date or "").strip(),
+                "status": status,
+                "shared": len(have - want) > 0,
+            })
+
+    return _hw_json(200, {"items": items}, cors_headers)
+
+
 def _hw_json(status, body, cors_headers):
     return {
         "statusCode": status,
@@ -687,6 +735,10 @@ def handler(event: dict, context) -> dict:
     # --- Контроль ДЗ: таблица учеников педагога с датами уроков ---
     if mode == "hw":
         return _hw_table(params, cors_headers)
+
+    # --- Контроль ДЗ: история отметок по одному ученику (для диагностики) ---
+    if mode == "hw_history":
+        return _hw_history(params, cors_headers)
 
     # --- Контроль ДЗ: сводная по всем педагогам ---
     if mode == "hw_all":
