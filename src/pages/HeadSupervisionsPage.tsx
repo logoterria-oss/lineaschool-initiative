@@ -5,7 +5,7 @@ import Icon from '@/components/ui/icon';
 import SupervisionForm from '@/components/supervision/SupervisionForm';
 import SupervisionsTable from '@/components/supervision/SupervisionsTable';
 import { createSupervision, SupervisionInput } from '@/lib/supervisionsApi';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const SUBSECTIONS = [
   {
