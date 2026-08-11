@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const PAGE_PX = 794; // ширина A4 при 96 dpi
+const SCALE = 2; // чёткость картинки
 
 // Готовит offscreen-контейнер фиксированной ширины и кладёт в него узел.
 const mountOffscreen = (node: HTMLElement): HTMLElement => {
@@ -31,53 +32,40 @@ const waitImages = async (root: HTMLElement) => {
   );
 };
 
-// Разбиваем контент на «неразрывные» блоки: заголовки секций и отдельные
-// параграфы / списки / карточки. Так абзацы не разрезаются между страницами.
-const collectBlocks = (content: HTMLElement): HTMLElement[] => {
-  const blocks: HTMLElement[] = [];
-  const sections = Array.from(content.children) as HTMLElement[];
-  const src = sections.length ? sections : [content];
+/**
+ * Границы абзацев по вертикали (в пикселях от начала контента).
+ * По ним подбираем места разрыва страниц, чтобы не резать текст посередине.
+ */
+const collectBreakPoints = (root: HTMLElement, holderTop: number): number[] => {
+  const points = new Set<number>();
 
-  for (const section of src) {
-    const kids = Array.from(section.children) as HTMLElement[];
-    if (kids.length === 0) {
-      blocks.push(section);
-      continue;
+  const walk = (el: HTMLElement, depth: number) => {
+    for (const kid of Array.from(el.children) as HTMLElement[]) {
+      const rect = kid.getBoundingClientRect();
+      if (rect.height > 0) {
+        points.add(Math.round(rect.top - holderTop));
+        points.add(Math.round(rect.bottom - holderTop));
+      }
+      // Глубже второго уровня не идём: мелкие строки списков дробят разметку.
+      if (depth < 2) walk(kid, depth + 1);
     }
-    for (const kid of kids) blocks.push(kid);
-  }
-  return blocks;
+  };
+
+  walk(root, 0);
+  return Array.from(points).sort((a, b) => a - b);
 };
 
-// Рендерит один DOM-блок в картинку нужной ширины (в мм) и её высоту.
-const renderBlock = async (
-  block: HTMLElement,
-  imgWmm: number,
-): Promise<{ data: string; hMM: number }> => {
-  const wrap = document.createElement('div');
-  wrap.style.width = '100%';
-  wrap.style.background = '#ffffff';
-  const clone = block.cloneNode(true) as HTMLElement;
-  clone.style.margin = '0';
-  wrap.appendChild(clone);
-
-  const holder = mountOffscreen(wrap);
-  try {
-    await waitImages(holder);
-    const canvas = await html2canvas(holder, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-    });
-    const data = canvas.toDataURL('image/png');
-    const hMM = (canvas.height * imgWmm) / canvas.width;
-    return { data, hMM };
-  } finally {
-    holder.remove();
+/** Ближайшая граница абзаца выше желаемого разреза. */
+const fitBreak = (points: number[], from: number, limit: number): number => {
+  let best = 0;
+  for (const p of points) {
+    if (p > from && p <= limit) best = p;
+    if (p > limit) break;
   }
+  return best;
 };
 
-// Сохраняет регламент в PDF-файл: с титульным заголовком и без разрезания абзацев.
+// Сохраняет регламент в PDF: один снимок страницы, разрезанный по абзацам.
 export const saveElementToPdf = async (
   el: HTMLElement,
   fileName: string,
@@ -88,46 +76,86 @@ export const saveElementToPdf = async (
   const pageH = pdf.internal.pageSize.getHeight();
   const margin = 12;
   const imgW = pageW - margin * 2;
-  const usableH = pageH - margin;
+  const usableH = pageH - margin * 2;
 
-  // Титульный заголовок как отдельный блок.
-  const titleEl = document.createElement('div');
-  titleEl.style.padding = '0 0 8px';
-  titleEl.innerHTML = `<h1 style="font-size:22px;font-weight:800;color:#111827;line-height:1.3;margin:0 0 16px;">${title}</h1>`;
+  // Собираем «страницу» целиком: заголовок + весь контент.
+  const wrap = document.createElement('div');
+  wrap.style.width = '100%';
+  wrap.style.background = '#ffffff';
+  wrap.style.padding = '0 0 8px';
+  wrap.innerHTML =
+    `<h1 style="font-size:22px;font-weight:800;color:#111827;` +
+    `line-height:1.3;margin:0 0 16px;">${title}</h1>`;
 
-  const blocks = [titleEl, ...collectBlocks(el)];
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.style.margin = '0';
+  clone.style.border = 'none';
+  clone.style.boxShadow = 'none';
+  clone.style.borderRadius = '0';
+  wrap.appendChild(clone);
 
-  let y = margin;
-  for (const block of blocks) {
-    const { data, hMM } = await renderBlock(block, imgW);
-    if (hMM <= 0) continue;
+  const holder = mountOffscreen(wrap);
 
-    // Блок целиком не влезает в остаток страницы — переносим на новую.
-    if (y + hMM > usableH && y > margin) {
-      pdf.addPage();
-      y = margin;
-    }
+  try {
+    await waitImages(holder);
 
-    // Блок выше целой страницы (крупная картинка) — режем его как изображение.
-    if (hMM > pageH - margin * 2) {
-      let heightLeft = hMM;
-      let pos = y;
-      pdf.addImage(data, 'PNG', margin, pos, imgW, hMM);
-      heightLeft -= pageH - y - margin;
-      while (heightLeft > 0) {
-        pdf.addPage();
-        pos = margin - (hMM - heightLeft);
-        pdf.addImage(data, 'PNG', margin, pos, imgW, hMM);
-        heightLeft -= pageH - margin * 2;
+    const holderTop = holder.getBoundingClientRect().top;
+    const breaks = collectBreakPoints(wrap, holderTop);
+
+    // Один снимок всего документа — вместо сотен отдельных.
+    const canvas = await html2canvas(holder, {
+      scale: SCALE,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+    });
+
+    const fullWpx = canvas.width;
+    const fullHpx = canvas.height;
+    // Сколько пикселей исходной вёрстки помещается на страницу PDF.
+    const pxPerMM = fullWpx / imgW;
+    const pageHpx = Math.floor(usableH * pxPerMM);
+
+    const page = document.createElement('canvas');
+    const ctx = page.getContext('2d');
+    if (!ctx) return;
+
+    let offset = 0;
+    let first = true;
+
+    while (offset < fullHpx) {
+      let sliceH = Math.min(pageHpx, fullHpx - offset);
+
+      // Ищем ближайшую границу абзаца, чтобы не разрезать текст.
+      if (offset + sliceH < fullHpx) {
+        const cut = fitBreak(breaks, offset / SCALE, (offset + sliceH) / SCALE);
+        const cutPx = Math.round(cut * SCALE) - offset;
+        if (cutPx > pageHpx * 0.4) sliceH = cutPx;
       }
-      y = margin;
-      pdf.addPage();
-      continue;
+
+      page.width = fullWpx;
+      page.height = sliceH;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, fullWpx, sliceH);
+      ctx.drawImage(canvas, 0, offset, fullWpx, sliceH, 0, 0, fullWpx, sliceH);
+
+      if (!first) pdf.addPage();
+      first = false;
+
+      pdf.addImage(
+        page.toDataURL('image/jpeg', 0.92),
+        'JPEG',
+        margin,
+        margin,
+        imgW,
+        sliceH / pxPerMM,
+      );
+
+      offset += sliceH;
     }
 
-    pdf.addImage(data, 'PNG', margin, y, imgW, hMM);
-    y += hMM + 3;
+    pdf.save(fileName);
+  } finally {
+    holder.remove();
   }
-
-  pdf.save(fileName);
 };

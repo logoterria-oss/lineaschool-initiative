@@ -24,6 +24,9 @@ const IndividualRegulation = ({ onBack, hideHeader = false }: { onBack: () => vo
         'Регламент — индивидуальные занятия.pdf',
         'Регламент педагога: индивидуальные занятия',
       );
+    } catch (e) {
+      console.error('PDF error:', e);
+      alert('Не удалось сохранить PDF. Попробуйте ещё раз.');
     } finally {
       setSaving(false);
     }

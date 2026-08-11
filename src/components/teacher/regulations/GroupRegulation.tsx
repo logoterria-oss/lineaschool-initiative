@@ -39,6 +39,9 @@ const GroupRegulation = ({ onBack, hideHeader = false }: { onBack: () => void; h
         'Регламент — групповые занятия.pdf',
         'Регламент педагога: групповые занятия',
       );
+    } catch (e) {
+      console.error('PDF error:', e);
+      alert('Не удалось сохранить PDF. Попробуйте ещё раз.');
     } finally {
       setSaving(false);
     }
