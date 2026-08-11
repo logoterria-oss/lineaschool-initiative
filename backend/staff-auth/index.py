@@ -313,6 +313,8 @@ def handler(event: dict, context) -> dict:
             return handle_verify_session(conn, event)
         if action == "service_assignees":
             return handle_service_assignees(conn, event)
+        if action == "service_status":
+            return handle_service_status(conn)
         return resp(400, {"error": "unknown_action"})
     finally:
         conn.close()
@@ -631,6 +633,23 @@ def session_staff(conn, event):
             f"FROM {SCHEMA}.staff_sessions ss JOIN {SCHEMA}.staff s ON s.id = ss.staff_id "
             f"WHERE ss.token = %s AND ss.expires_at > now()", (token,))
         return cur.fetchone()
+
+
+def handle_service_status(conn) -> dict:
+    """Готова ли связь для внешнего окна. Значение ключа не раскрывает."""
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT count(*) AS n FROM {SCHEMA}.staff "
+            f"WHERE status = 'active' AND password_hash <> '' AND role = ANY(%s)",
+            (list(INTERACTION_ROLES),),
+        )
+        n = cur.fetchone()["n"]
+
+    return resp(200, {
+        "service_key_configured": bool(os.environ.get("INTERACTION_SERVICE_KEY")),
+        "staff_with_access": n,
+        "ready": bool(os.environ.get("INTERACTION_SERVICE_KEY")) and n > 0,
+    })
 
 
 def _service_ok(event) -> bool:
