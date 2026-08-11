@@ -19,11 +19,14 @@ S20_EMAIL = os.environ.get("ALFACRM_EMAIL", "abram.viktoriya.00@mail.ru")
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
+    "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token, X-Service-Key",
 }
 
 ROLES = {"teacher", "diag", "admin", "head"}
 SESSION_DAYS = 30
+
+# Роли с доступом к окну взаимодействия
+INTERACTION_ROLES = ("head", "admin")
 
 
 def resp(status, body):
@@ -261,7 +264,11 @@ def sync_phone_to_s20(full_name, old_phone, new_phone):
 
 
 def handler(event: dict, context) -> dict:
-    """Авторизация сотрудников: регистрация по телефону, вход, проверка сессии, смена пароля."""
+    """Авторизация сотрудников: регистрация по телефону, вход, проверка сессии, смена пароля.
+
+    Также обслуживает внешний сервис окна взаимодействия: проверяет по токену,
+    кто вошёл, и отдаёт актуальный список сотрудников с доступом к окну.
+    """
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
@@ -302,6 +309,10 @@ def handler(event: dict, context) -> dict:
             return handle_set_phone(conn, event, body)
         if action == "logout":
             return handle_logout(conn, event)
+        if action == "verify_session":
+            return handle_verify_session(conn, event)
+        if action == "service_assignees":
+            return handle_service_assignees(conn, event)
         return resp(400, {"error": "unknown_action"})
     finally:
         conn.close()
@@ -620,6 +631,58 @@ def session_staff(conn, event):
             f"FROM {SCHEMA}.staff_sessions ss JOIN {SCHEMA}.staff s ON s.id = ss.staff_id "
             f"WHERE ss.token = %s AND ss.expires_at > now()", (token,))
         return cur.fetchone()
+
+
+def _service_ok(event) -> bool:
+    """Сервисный ключ — чтобы внешний сервис окна мог обращаться, а посторонние нет."""
+    expected = os.environ.get("INTERACTION_SERVICE_KEY") or ""
+    if not expected:
+        return False
+    headers = event.get("headers") or {}
+    got = headers.get("X-Service-Key") or headers.get("x-service-key") or ""
+    return secrets.compare_digest(got, expected)
+
+
+def handle_verify_session(conn, event):
+    """Проверка сессии для внешнего сервиса окна взаимодействия.
+
+    Внешний сервис присылает токен сотрудника и получает его ФИО, роль
+    и права на окно. Аккаунты остаются здесь и никуда не копируются.
+    """
+    if not _service_ok(event):
+        return resp(403, {"error": "bad_service_key"})
+
+    row = session_staff(conn, event)
+    if not row:
+        return resp(401, {"error": "no_session"})
+    if row["status"] != "active":
+        return resp(403, {"error": row["status"]})
+
+    staff = public_staff(row)
+    staff["can_use_interaction"] = row["role"] in INTERACTION_ROLES
+    return resp(200, {"ok": True, "staff": staff})
+
+
+def handle_service_assignees(conn, event):
+    """Список сотрудников с доступом к окну — для внешнего сервиса.
+
+    Данные всегда актуальные: заводим сотрудника в админке — он сразу
+    доступен в окне, без копирования и синхронизации.
+    """
+    if not _service_ok(event):
+        return resp(403, {"error": "bad_service_key"})
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"SELECT id, full_name, phone, role, job_title, avatar_url "
+            f"FROM {SCHEMA}.staff "
+            f"WHERE status = 'active' AND password_hash <> '' "
+            f"AND role = ANY(%s) ORDER BY role, full_name",
+            (list(INTERACTION_ROLES),),
+        )
+        rows = cur.fetchall()
+
+    return resp(200, {"staff": [dict(r) for r in rows]})
 
 
 def handle_me(conn, event):

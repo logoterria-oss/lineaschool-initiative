@@ -295,7 +295,7 @@ def _resp(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
+            'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token',
             'Access-Control-Max-Age': '86400',
         },
         'body': json.dumps(body, ensure_ascii=False, default=str),
@@ -653,6 +653,27 @@ def _get_max_chats(limit: int = 200) -> Dict[str, Any]:
         return {'ok': False, 'error': str(e)}
 
 
+def _staff_by_token(cur, event) -> Optional[Dict[str, Any]]:
+    """Кто открыл окно. Токен тот же, что и во всей админке."""
+    headers = event.get('headers') or {}
+    token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+    if not token:
+        token = (event.get('queryStringParameters') or {}).get('token')
+    if not token:
+        return None
+
+    cur.execute(
+        "SELECT s.full_name, s.role FROM staff_sessions ss "
+        "JOIN staff s ON s.id = ss.staff_id "
+        "WHERE ss.token = %s AND ss.expires_at > now() AND s.status = 'active'",
+        (token,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    return {'full_name': row[0], 'role': row[1]}
+
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method = event.get('httpMethod', 'GET')
     if method == 'OPTIONS':
@@ -664,6 +685,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = _db()
     try:
         cur = conn.cursor()
+
+        # Вебхуки каналов приходят от Max и Telegram — они без токена.
+        # Всё остальное открыто только вошедшим сотрудникам с доступом к окну.
+        raw_body = event.get('body') or '{}'
+        try:
+            peek = json.loads(raw_body)
+        except Exception:
+            peek = {}
+        is_channel_hook = action in ('webhook', 'tg-webhook') or (
+            method == 'POST' and not action and (
+                'messages' in peek or 'message' in peek or peek.get('event')
+            )
+        )
+
+        if not is_channel_hook:
+            staff = _staff_by_token(cur, event)
+            if not staff:
+                return _resp(401, {'error': 'no_session'})
+            if staff['role'] not in ('head', 'admin'):
+                return _resp(403, {'error': 'no_access'})
 
         if method == 'GET' and action == 'dialogs':
             data = _list_dialogs(cur)
@@ -771,6 +812,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 m = body['messages']
                 msg = (m[0] if isinstance(m, list) and m else m) if not isinstance(m, dict) else m
 
+            # Пустой пакет от Wappi (например, messages: []) — сообщения нет.
+            if not isinstance(msg, dict):
+                return _resp(200, {'ok': True, 'skipped': 'empty'})
+
             wh_type = msg.get('wh_type') or ''
             if wh_type == 'delivery_status' or msg.get('status') in ('error', 'sent', 'delivered'):
                 return _resp(200, {'ok': True, 'skipped': 'delivery_status'})
@@ -814,6 +859,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if isinstance(body.get('messages'), (list, dict)):
                 m = body['messages']
                 msg = (m[0] if isinstance(m, list) and m else m) if not isinstance(m, dict) else m
+
+            # Пустой пакет от Wappi (например, messages: []) — сообщения нет.
+            if not isinstance(msg, dict):
+                return _resp(200, {'ok': True, 'skipped': 'empty'})
 
             wh_type = msg.get('wh_type') or ''
 

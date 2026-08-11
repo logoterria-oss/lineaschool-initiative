@@ -86,6 +86,24 @@
       "expectedStatus": 200,
       "expectedBody": {"ok": true},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Verify session rejects without service key",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "verify_session"},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "bad_service_key"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Service assignees rejects without service key",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "service_assignees"},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "bad_service_key"},
+      "bodyMatcher": "partial"
     }
   ]
 }

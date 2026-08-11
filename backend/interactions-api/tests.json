@@ -7,17 +7,47 @@
       "expectedStatus": 200
     },
     {
-      "name": "List dialogs",
+      "name": "Dialogs require auth",
       "method": "GET",
       "path": "/?action=dialogs",
-      "expectedStatus": 200
+      "expectedStatus": 401,
+      "expectedBody": {"error": "no_session"},
+      "bodyMatcher": "partial"
     },
     {
-      "name": "Unknown action",
+      "name": "Dialogs reject bad token",
+      "method": "GET",
+      "path": "/?action=dialogs&token=definitely-not-a-valid-token",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "no_session"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Messages require auth",
+      "method": "GET",
+      "path": "/?action=messages&dialog_id=3",
+      "expectedStatus": 401
+    },
+    {
+      "name": "Send requires auth",
       "method": "POST",
-      "path": "/",
-      "body": {"foo": "bar"},
-      "expectedStatus": 400
+      "path": "/?action=send",
+      "body": {"dialog_id": 3, "text": "test", "author": "Тест"},
+      "expectedStatus": 401
+    },
+    {
+      "name": "Set contacts requires auth",
+      "method": "POST",
+      "path": "/?action=set-contacts",
+      "body": {"dialog_id": 3, "phone": "89991234567", "tgUsername": "@ivan"},
+      "expectedStatus": 401
+    },
+    {
+      "name": "Set channel requires auth",
+      "method": "POST",
+      "path": "/?action=set-channel",
+      "body": {"dialog_id": 3, "channel": "telegram"},
+      "expectedStatus": 401
     },
     {
       "name": "TG webhook skips own message",
@@ -38,29 +68,11 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Set contacts manually",
+      "name": "Max webhook still open",
       "method": "POST",
-      "path": "/?action=set-contacts",
-      "body": {"dialog_id": 3, "phone": "89991234567", "tgUsername": "@ivan"},
-      "expectedStatus": 200,
-      "expectedBody": {"ok": true},
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Set channel telegram",
-      "method": "POST",
-      "path": "/?action=set-channel",
-      "body": {"dialog_id": 3, "channel": "telegram"},
-      "expectedStatus": 200,
-      "expectedBody": {"ok": true, "channel": "telegram"},
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Set channel bad value",
-      "method": "POST",
-      "path": "/?action=set-channel",
-      "body": {"dialog_id": 3, "channel": "sms"},
-      "expectedStatus": 400
+      "path": "/?action=webhook",
+      "body": {"messages": []},
+      "expectedStatus": 200
     }
   ]
 }

@@ -1,5 +1,20 @@
 const API_URL = 'https://functions.poehali.dev/c251547a-6d0d-4d86-9a3c-1b5bd6054b77';
 
+/** Токен сотрудника — тот же, что и во всей админке. */
+const authHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
+  const token = localStorage.getItem('staff_token') || '';
+  return token ? { ...extra, 'X-Auth-Token': token } : extra;
+};
+
+const apiGet = (query: string) => fetch(`${API_URL}${query}`, { headers: authHeaders() });
+
+const apiPost = (query: string, payload: unknown) =>
+  fetch(`${API_URL}${query}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+
 export type CrmStatus = 'staff' | 'teacher' | 'client' | 'lead' | 'parent' | 'unknown';
 
 export interface DialogItem {
@@ -31,13 +46,13 @@ export interface MessageItem {
 }
 
 export async function fetchDialogs(): Promise<DialogItem[]> {
-  const r = await fetch(`${API_URL}?action=dialogs`);
+  const r = await apiGet('?action=dialogs');
   const data = await r.json();
   return data.dialogs || [];
 }
 
 export async function fetchAssignees(): Promise<string[]> {
-  const r = await fetch(`${API_URL}?action=assignees`);
+  const r = await apiGet('?action=assignees');
   if (!r.ok) return [];
   const data = await r.json();
   return data.assignees || [];
@@ -52,7 +67,7 @@ export interface CrmContact {
 }
 
 export async function searchCrmContacts(query: string): Promise<CrmContact[]> {
-  const r = await fetch(`${API_URL}?action=crm-search&q=${encodeURIComponent(query)}`);
+  const r = await apiGet(`?action=crm-search&q=${encodeURIComponent(query)}`);
   if (!r.ok) return [];
   const data = await r.json();
   return data.results || [];
@@ -65,17 +80,13 @@ export async function createDialog(contact: {
   status: string;
   initiator?: string;
 }): Promise<{ ok: boolean; dialogId?: number; message?: string }> {
-  const r = await fetch(`${API_URL}?action=create-dialog`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(contact),
-  });
+  const r = await apiPost('?action=create-dialog', contact);
   const data = await r.json();
   return { ok: !!data.ok, dialogId: data.dialog_id, message: data.message };
 }
 
 export async function fetchMessages(dialogId: number): Promise<MessageItem[]> {
-  const r = await fetch(`${API_URL}?action=messages&dialog_id=${dialogId}`);
+  const r = await apiGet(`?action=messages&dialog_id=${dialogId}`);
   const data = await r.json();
   return data.messages || [];
 }
@@ -85,21 +96,13 @@ export async function sendMessage(
   text: string,
   author: string,
 ): Promise<{ ok: boolean; message?: string }> {
-  const r = await fetch(`${API_URL}?action=send`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dialog_id: dialogId, text, author }),
-  });
+  const r = await apiPost('?action=send', { dialog_id: dialogId, text, author });
   const data = await r.json();
   return { ok: !!data.ok, message: data.message };
 }
 
 export async function assignDialog(dialogId: number, assignee: string): Promise<boolean> {
-  const r = await fetch(`${API_URL}?action=assign`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dialog_id: dialogId, assignee }),
-  });
+  const r = await apiPost('?action=assign', { dialog_id: dialogId, assignee });
   const data = await r.json();
   return !!data.ok;
 }
@@ -108,7 +111,7 @@ export async function resolveCrm(
   dialogId: number,
   force = false,
 ): Promise<{ crmStatus: CrmStatus; crmLabel: string | null; childName: string | null }> {
-  const r = await fetch(`${API_URL}?action=resolve-crm&dialog_id=${dialogId}${force ? '&force=1' : ''}`);
+  const r = await apiGet(`?action=resolve-crm&dialog_id=${dialogId}${force ? '&force=1' : ''}`);
   const data = await r.json();
   return {
     crmStatus: data.crmStatus || 'unknown',
@@ -121,21 +124,13 @@ export async function setContacts(
   dialogId: number,
   contacts: { phone?: string; tgUsername?: string },
 ): Promise<boolean> {
-  const r = await fetch(`${API_URL}?action=set-contacts`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dialog_id: dialogId, ...contacts }),
-  });
+  const r = await apiPost('?action=set-contacts', { dialog_id: dialogId, ...contacts });
   const data = await r.json();
   return !!data.ok;
 }
 
 export async function setChannel(dialogId: number, channel: string): Promise<boolean> {
-  const r = await fetch(`${API_URL}?action=set-channel`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dialog_id: dialogId, channel }),
-  });
+  const r = await apiPost('?action=set-channel', { dialog_id: dialogId, channel });
   const data = await r.json();
   return !!data.ok;
 }
