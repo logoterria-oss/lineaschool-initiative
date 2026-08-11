@@ -171,11 +171,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
 
         # Получаем все заключения из БД с сортировкой по дате создания
+        # ВАЖНО: form_data целиком не тянем — там лежат фото работ (десятки МБ).
+        # Из него нужно единственное поле logopedist, достаём его в самой БД.
         cursor.execute("""
             SELECT id, student_name, student_age, date_of_examination, 
                    therapist_name, created_at, access_token,
                    COALESCE(diag_type, 'primary') AS diag_type,
-                   form_data
+                   NULLIF(BTRIM(COALESCE(form_data::jsonb ->> 'logopedist', '')), '') AS logopedist
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
             WHERE archived_at IS NULL
             ORDER BY created_at DESC
@@ -188,15 +190,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         for report in reports:
             # Реальное имя диагноста хранится в form_data.logopedist,
             # а therapist_name — служебное значение (обычно "Логопед").
-            logopedist = ''
-            fd = report.get('form_data')
-            if fd:
-                try:
-                    fd_obj = fd if isinstance(fd, dict) else json.loads(fd)
-                    logopedist = (fd_obj.get('logopedist') or '').strip()
-                except (json.JSONDecodeError, TypeError, AttributeError):
-                    logopedist = ''
-            therapist = logopedist or report['therapist_name']
+            therapist = report.get('logopedist') or report['therapist_name']
             dtype = report.get('diag_type') or 'primary'
             # У промежуточной диагностики своя страница заключения
             url_prefix = 'interim_diag' if dtype == 'interim' else 'diag'
