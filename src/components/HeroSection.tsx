@@ -65,20 +65,20 @@ export default function HeroSection() {
             <BeforeAfterSlider
               examples={[
                 {
-                  beforeImage: "https://cdn.poehali.dev/files/725de2f7-1ddd-4b52-b0a9-30cf01c3264b.jpg",
-                  afterImage: "https://cdn.poehali.dev/files/01e04738-94b7-4b8f-b05c-efd09c13e969.jpg",
+                  beforeImage: "/img/725de2f7-1ddd-4b52-b0a9-30cf01c3264b.webp",
+                  afterImage: "/img/01e04738-94b7-4b8f-b05c-efd09c13e969.webp",
                   beforeAlt: "Письменная работа до коррекции",
                   afterAlt: "Письменная работа после коррекции"
                 },
                 {
-                  beforeImage: "https://cdn.poehali.dev/files/32fa35dc-fd5c-408f-8566-f4d0bb8233a2.jpg",
-                  afterImage: "https://cdn.poehali.dev/files/a1f4f9c7-ebc3-45e9-8a7c-1aa2ee8e3e12.jpg",
+                  beforeImage: "/img/32fa35dc-fd5c-408f-8566-f4d0bb8233a2.webp",
+                  afterImage: "/img/a1f4f9c7-ebc3-45e9-8a7c-1aa2ee8e3e12.webp",
                   beforeAlt: "Чтение до коррекции",
                   afterAlt: "Чтение после коррекции"
                 },
                 {
-                  beforeImage: "https://cdn.poehali.dev/files/95564d1d-1f1a-418d-a7cd-800349eec864.jpg",
-                  afterImage: "https://cdn.poehali.dev/files/c64fbf92-77f6-4b7b-a3df-209a755afc79.jpg",
+                  beforeImage: "/img/95564d1d-1f1a-418d-a7cd-800349eec864.webp",
+                  afterImage: "/img/c64fbf92-77f6-4b7b-a3df-209a755afc79.webp",
                   beforeAlt: "Почерк до коррекции дисграфии",
                   afterAlt: "Почерк после коррекции дисграфии"
                 },
@@ -89,7 +89,7 @@ export default function HeroSection() {
                   afterAlt: "Диктант после коррекции"
                 },
                 {
-                  beforeImage: "https://cdn.poehali.dev/files/38939dc8-5c83-4e82-9ce5-87240e6e9152.jpg",
+                  beforeImage: "/img/38939dc8-5c83-4e82-9ce5-87240e6e9152.webp",
                   afterImage: "https://cdn.poehali.dev/files/a81bb81f-ab4c-4668-8a90-83d89679b37f.jpg",
                   beforeAlt: "Сочинение до коррекции",
                   afterAlt: "Сочинение после коррекции"

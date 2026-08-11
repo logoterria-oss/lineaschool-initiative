@@ -1,54 +1,64 @@
-
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// Обычные импорты вместо lazy loading для стабильности
+// Публичные страницы — грузятся сразу, их видят клиенты.
 import Index from "./pages/Index";
-import LineaStudies from "./pages/LineaStudies";
-import Pricing from "./pages/Pricing";
-import Pricing20262027 from "./pages/Pricing20262027";
-import OfferPage from "./pages/OfferPage";
-import Privacy from "./pages/Privacy";
-import DiagForm from "./pages/DiagForm";
-import InterimDiagForm from "./pages/InterimDiagForm";
-import DiagConclusion from "./pages/DiagConclusion";
-import InterimDiagConclusion from "./pages/InterimDiagConclusion";
-import ParentQuestionnaire from "./pages/ParentQuestionnaire";
-import QuestionnaireResponses from "./pages/QuestionnaireResponses";
-import AdminDashboard from "./pages/AdminDashboard";
-import RoleSelectPage from "./pages/RoleSelectPage";
-import TeacherDashboard from "./pages/TeacherDashboard";
-import TeacherPersonalCabinet from "./pages/TeacherPersonalCabinet";
-import ManagerDashboard from "./pages/ManagerDashboard";
-import HeadDashboard from "./pages/HeadDashboard";
-import HeadReportsPage from "./pages/HeadReportsPage";
-import HeadSupervisionsPage from "./pages/HeadSupervisionsPage";
-import HeadViolationsPage from "./pages/HeadViolationsPage";
-import AdminRegulationsPage from "./pages/AdminRegulationsPage";
-import HeadStaffViolationsPage from "./pages/HeadStaffViolationsPage";
-import AdvanceIncomeReport from "./pages/AdvanceIncomeReport";
-import RetentionReport from "./pages/RetentionReport";
-import RetentionDynamics from "./pages/RetentionDynamics";
-import StudentDynamicsReport from "./pages/StudentDynamicsReport";
-import ReportsAdmin from "./components/ReportsAdmin";
-import TelegramSetup from "./pages/TelegramSetup";
-import PaymentLeadsPage from "./pages/PaymentLeadsPage";
-import ExtensionPage from "./pages/ExtensionPage";
-import SchedulePage from "./pages/SchedulePage";
-import StudentsTablePage from "./pages/StudentsTablePage";
-import SettingsPage from "./pages/SettingsPage";
-import StaffManagePage from "./pages/StaffManagePage";
-import StaffProfilePage from "./pages/StaffProfilePage";
-import StaffHomePage from "./pages/StaffHomePage";
-import HeadWorkspace from "./pages/HeadWorkspace";
-import AdminWorkspace from "./pages/AdminWorkspace";
-import EducationInfo from "./pages/EducationInfo";
 import NotFound from "./pages/NotFound";
 
+// Остальное подгружается только при переходе на страницу,
+// чтобы посетитель главной не скачивал всю админку.
+const LineaStudies = lazy(() => import("./pages/LineaStudies"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Pricing20262027 = lazy(() => import("./pages/Pricing20262027"));
+const OfferPage = lazy(() => import("./pages/OfferPage"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const EducationInfo = lazy(() => import("./pages/EducationInfo"));
+const ExtensionPage = lazy(() => import("./pages/ExtensionPage"));
+const ParentQuestionnaire = lazy(() => import("./pages/ParentQuestionnaire"));
+const DiagForm = lazy(() => import("./pages/DiagForm"));
+const InterimDiagForm = lazy(() => import("./pages/InterimDiagForm"));
+const DiagConclusion = lazy(() => import("./pages/DiagConclusion"));
+const InterimDiagConclusion = lazy(() => import("./pages/InterimDiagConclusion"));
+
+const QuestionnaireResponses = lazy(() => import("./pages/QuestionnaireResponses"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const RoleSelectPage = lazy(() => import("./pages/RoleSelectPage"));
+const TeacherDashboard = lazy(() => import("./pages/TeacherDashboard"));
+const TeacherPersonalCabinet = lazy(() => import("./pages/TeacherPersonalCabinet"));
+const ManagerDashboard = lazy(() => import("./pages/ManagerDashboard"));
+const HeadDashboard = lazy(() => import("./pages/HeadDashboard"));
+const HeadReportsPage = lazy(() => import("./pages/HeadReportsPage"));
+const HeadSupervisionsPage = lazy(() => import("./pages/HeadSupervisionsPage"));
+const HeadViolationsPage = lazy(() => import("./pages/HeadViolationsPage"));
+const AdminRegulationsPage = lazy(() => import("./pages/AdminRegulationsPage"));
+const HeadStaffViolationsPage = lazy(() => import("./pages/HeadStaffViolationsPage"));
+const AdvanceIncomeReport = lazy(() => import("./pages/AdvanceIncomeReport"));
+const RetentionReport = lazy(() => import("./pages/RetentionReport"));
+const RetentionDynamics = lazy(() => import("./pages/RetentionDynamics"));
+const StudentDynamicsReport = lazy(() => import("./pages/StudentDynamicsReport"));
+const ReportsAdmin = lazy(() => import("./components/ReportsAdmin"));
+const TelegramSetup = lazy(() => import("./pages/TelegramSetup"));
+const PaymentLeadsPage = lazy(() => import("./pages/PaymentLeadsPage"));
+const SchedulePage = lazy(() => import("./pages/SchedulePage"));
+const StudentsTablePage = lazy(() => import("./pages/StudentsTablePage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const StaffManagePage = lazy(() => import("./pages/StaffManagePage"));
+const StaffProfilePage = lazy(() => import("./pages/StaffProfilePage"));
+const StaffHomePage = lazy(() => import("./pages/StaffHomePage"));
+const HeadWorkspace = lazy(() => import("./pages/HeadWorkspace"));
+const AdminWorkspace = lazy(() => import("./pages/AdminWorkspace"));
+
 const queryClient = new QueryClient();
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="h-8 w-8 rounded-full border-2 border-gray-200 border-t-green-500 animate-spin" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -56,7 +66,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/lineastudies" element={<LineaStudies />} />
             <Route path="/price" element={<Pricing />} />
@@ -103,6 +114,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -17,7 +17,7 @@ export default function TestimonialsSection() {
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
       videoUrl: "/IMG_1146 (1).mov",
-      posterUrl: "https://cdn.poehali.dev/files/524d8cc7-dbd7-43eb-b572-f226aa3bd4ed.png",
+      posterUrl: "/img/524d8cc7-dbd7-43eb-b572-f226aa3bd4ed.webp",
       gradient: "from-green-400 to-teal-500"
     },
     {
@@ -25,7 +25,7 @@ export default function TestimonialsSection() {
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
       videoUrl: "/IMG_1145 (1).mov",
-      posterUrl: "https://cdn.poehali.dev/files/aa2deff0-fd00-4b4c-885e-1d594dabb2fa.png",
+      posterUrl: "/img/aa2deff0-fd00-4b4c-885e-1d594dabb2fa.webp",
       gradient: "from-green-400 to-teal-500"
     },
     {
@@ -33,7 +33,7 @@ export default function TestimonialsSection() {
       name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
       videoUrl: "/IMG_1149.MOV",
-      posterUrl: "https://cdn.poehali.dev/files/9ee7762b-6dde-4de8-bc8a-9404b8633499.png",
+      posterUrl: "/img/9ee7762b-6dde-4de8-bc8a-9404b8633499.webp",
       gradient: "from-green-400 to-teal-500"
     },
     {
@@ -57,7 +57,7 @@ export default function TestimonialsSection() {
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
       videoUrl: "/IMG_1144 (1).mov",
-      posterUrl: "https://cdn.poehali.dev/files/f9c45555-2e89-4491-a5be-deab8dae18ca.png",
+      posterUrl: "/img/f9c45555-2e89-4491-a5be-deab8dae18ca.webp",
       gradient: "from-green-400 to-teal-500"
     },
     {
@@ -65,7 +65,7 @@ export default function TestimonialsSection() {
       name: "Мария, мама Ромы (11 лет)",
       description: "",
       videoUrl: "/IMG_1156.MOV",
-      posterUrl: "https://cdn.poehali.dev/files/dcaa1950-dbe7-475a-8abc-1e3fc58a1585.png",
+      posterUrl: "/img/dcaa1950-dbe7-475a-8abc-1e3fc58a1585.webp",
       gradient: "from-green-400 to-teal-500"
     }
   ];
