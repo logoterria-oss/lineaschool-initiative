@@ -125,7 +125,7 @@ export function useInterimSubmit(st: InterimState) {
   // Пересчитываем на лету: подсветка гаснет по мере заполнения
   const gaps = showGaps
     ? interimMissingBySection(
-        checkInterimCompleteness({ personal, impaired, levels, rw, recommendations }),
+        checkInterimCompleteness({ personal, impaired, levels, rw, rwBaseline, recommendations }),
       )
     : undefined;
 
@@ -169,7 +169,14 @@ export function useInterimSubmit(st: InterimState) {
       return;
     }
     // Перед сохранением показываем незаполненные разделы
-    const gaps = checkInterimCompleteness({ personal, impaired, levels, rw, recommendations });
+    const gaps = checkInterimCompleteness({
+      personal,
+      impaired,
+      levels,
+      rw,
+      rwBaseline,
+      recommendations,
+    });
     if (gaps.length > 0) {
       setIncomplete(gaps);
       return;

@@ -15,10 +15,33 @@ import {
 
 interface Props {
   baseline: Record<string, string>;
-  rw: Record<string, string>;
+  // rw может содержать не только строки (списки ошибок, baselineOverride)
+  rw: Record<string, unknown>;
   history: InterimHistoryItem[];
   primaryDate: string | null;
   todayDate: string | null;
+}
+
+/**
+ * Значения «было» с учётом ручного ввода логопеда.
+ *
+ * В первичных диагностиках до августа 2026 не было поля «количество слов
+ * в работе», поэтому логопед вносит объём прошлой работы вручную на
+ * промежуточной — он попадает в baselineOverride. Без этого объёма ошибки
+ * невозможно привести к «на 100 слов», и заключение показывало штуки.
+ */
+function mergeBaseline(
+  baseline: Record<string, string>,
+  rw: Record<string, unknown>,
+): Record<string, string> {
+  const override = (rw?.baselineOverride || {}) as Record<string, string>;
+  const merged: Record<string, string> = { ...(baseline || {}) };
+  Object.entries(override).forEach(([key, value]) => {
+    const manual = (value || '').trim();
+    // Данные первичной приоритетнее ручного ввода
+    if (manual !== '' && (merged[key] || '').trim() === '') merged[key] = manual;
+  });
+  return merged;
 }
 
 const METRICS: { key: RWMetric; label: string; unit?: string; moreIsBetter: boolean }[] = [
@@ -40,10 +63,14 @@ export default function InterimReadingWritingView({
   primaryDate,
   todayDate,
 }: Props) {
+  // «Было» = данные первичной + то, что логопед дозаполнил вручную
+  const base = mergeBaseline(baseline, rw);
+  const cur = (rw || {}) as Record<string, string>;
+
   const charSteps = readingCharChain(
-    baseline?.readingChar || '',
+    base?.readingChar || '',
     history,
-    rw?.readingChar || '',
+    cur?.readingChar || '',
     primaryDate,
     todayDate,
   );
@@ -51,9 +78,9 @@ export default function InterimReadingWritingView({
   const rows = METRICS.map((m) => {
     const steps = metricChain(
       m.key,
-      baseline?.[m.key] || '',
+      base?.[m.key] || '',
       history,
-      rw?.[m.key] || '',
+      cur?.[m.key] || '',
       primaryDate,
       todayDate,
     );
@@ -61,7 +88,7 @@ export default function InterimReadingWritingView({
   }).filter((r) => r.steps.length > 0);
 
   const errorRows = ERROR_METRICS.map((m) => {
-    const steps = errorRateChain(m.key, baseline || {}, history, rw || {}, primaryDate, todayDate);
+    const steps = errorRateChain(m.key, base, history, cur, primaryDate, todayDate);
     return { ...m, steps, summary: errorRateSummary(steps) };
   }).filter((r) => r.steps.length > 0);
 

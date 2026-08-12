@@ -1,7 +1,8 @@
 import type { IncompleteSection } from '@/components/diag/IncompleteSectionsDialog';
 import type { ImpairedProcessesState, ProcessLevel } from './impairedProcesses';
 import { IMPAIRED_GROUPS } from './impairedProcesses';
-import type { ReadingWritingState } from './readingWriting';
+import type { ReadingWritingBaseline, ReadingWritingState } from './readingWriting';
+import { effectiveBaseline } from './readingWriting';
 
 interface PersonalData {
   childName: string;
@@ -27,9 +28,10 @@ export function checkInterimCompleteness(args: {
   impaired: ImpairedProcessesState;
   levels: Record<string, ProcessLevel | ''>;
   rw: ReadingWritingState;
+  rwBaseline?: ReadingWritingBaseline;
   recommendations: RecommendationsData;
 }): IncompleteSection[] {
-  const { personal, impaired, levels, rw, recommendations } = args;
+  const { personal, impaired, levels, rw, rwBaseline, recommendations } = args;
   const result: IncompleteSection[] = [];
 
   const personalGaps: string[] = [];
@@ -78,6 +80,18 @@ export function checkInterimCompleteness(args: {
   if (empty(rw.dysgraphicErrors)) rwGaps.push('Количество дисграфических ошибок');
   if (empty(rw.dysorthographicErrors)) rwGaps.push('Количество орфографических ошибок');
   if (empty(rw.totalErrors)) rwGaps.push('Ошибок всего');
+
+  /* Объём прошлой работы. Без него ошибки нельзя привести к «на 100 слов»,
+     и в заключении они выпадают в штуки. В первичных диагностиках до
+     августа 2026 этого поля не было вовсе — там его вносят вручную. */
+  if (rwBaseline) {
+    const errorsFilled =
+      !empty(rw.dysgraphicErrors) || !empty(rw.dysorthographicErrors) || !empty(rw.totalErrors);
+    const baseWords = effectiveBaseline('dictationWords', rwBaseline, rw);
+    if (errorsFilled && empty(baseWords)) {
+      rwGaps.push('Количество слов в прошлой работе (поле «было»)');
+    }
+  }
   if (rwGaps.length > 0) {
     result.push({ title: 'Чтение и письмо', fields: rwGaps, anchor: 'interim-rw' });
   }

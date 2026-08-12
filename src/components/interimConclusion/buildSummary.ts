@@ -71,6 +71,17 @@ export function buildInterimSummary({
   const worsened: string[] = [];
   const reachedNorm: string[] = [];
 
+  /* «Было» = данные первичной + дозаполненное логопедом вручную.
+     В первичных до августа 2026 не было поля «количество слов в работе»,
+     логопед вносит его на промежуточной — иначе ошибки не привести
+     к «на 100 слов». */
+  const override = (rw?.baselineOverride || {}) as Record<string, string>;
+  const rwBase: Record<string, unknown> = { ...(rwBaseline || {}) };
+  Object.entries(override).forEach(([key, value]) => {
+    const manual = (value || '').trim();
+    if (manual !== '' && (str(rwBase[key]) || '').trim() === '') rwBase[key] = manual;
+  });
+
   // 1. Речевые процессы: сравниваем уровень «было» и «стало»
   (Object.keys(impaired || {}) as ImpairedProcessKey[])
     .filter((k) => impaired[k])
@@ -101,7 +112,7 @@ export function buildInterimSummary({
   ];
 
   readingMetrics.forEach(({ key, label }) => {
-    const a = num(str(rwBaseline?.[key]));
+    const a = num(str(rwBase?.[key]));
     const b = num(str(rw?.[key]));
     if (a === null || b === null) return;
 
@@ -126,7 +137,7 @@ export function buildInterimSummary({
   const errorsSame: string[] = [];
 
   errorMetrics.forEach(({ key, label }) => {
-    const a = per100(str(rwBaseline?.[key]), str(rwBaseline?.dictationWords));
+    const a = per100(str(rwBase?.[key]), str(rwBase?.dictationWords));
     const b = per100(str(rw?.[key]), str(rw?.dictationWords));
     if (a === null || b === null) return;
 
