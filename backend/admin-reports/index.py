@@ -175,7 +175,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Из него нужно единственное поле logopedist, достаём его в самой БД.
         cursor.execute("""
             SELECT id, student_name, student_age, date_of_examination, 
-                   therapist_name, created_at, access_token,
+                   therapist_name, created_at, access_token, public_code,
                    COALESCE(diag_type, 'primary') AS diag_type,
                    NULLIF(BTRIM(COALESCE(form_data::jsonb ->> 'logopedist', '')), '') AS logopedist
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
@@ -194,15 +194,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             dtype = report.get('diag_type') or 'primary'
             # У промежуточной диагностики своя страница заключения
             url_prefix = 'interim_diag' if dtype == 'interim' else 'diag'
+            # Новые заключения открываются по короткому коду,
+            # у выданных раньше кода нет — там остаётся порядковый номер.
+            public_key = report.get('public_code') or report['id']
             reports_list.append({
                 'id': report['id'],
+                'public_code': report.get('public_code'),
                 'student_name': report['student_name'],
                 'student_age': report['student_age'],
                 'date_of_examination': report['date_of_examination'].isoformat() if report['date_of_examination'] else None,
                 'therapist_name': therapist,
                 'diag_type': dtype,
                 'created_at': report['created_at'].isoformat() if report['created_at'] else None,
-                'report_url': f"/{url_prefix}/{report['id']}"
+                'report_url': f"/{url_prefix}/{public_key}"
             })
         
         return {

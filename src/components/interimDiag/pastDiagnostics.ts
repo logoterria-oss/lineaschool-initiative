@@ -11,6 +11,8 @@ export function defaultLevels(): ProcessLevelsState {
 
 export interface PastEntry {
   id: number;
+  // Код для публичной ссылки; у заключений, созданных раньше, его нет
+  publicCode?: string | null;
   diagType: 'primary' | 'interim';
   date: string | null;
   readingSpeed: string;

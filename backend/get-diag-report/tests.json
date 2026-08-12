@@ -1,11 +1,9 @@
 {
   "tests": [
     {
-      "name": "Получение существующего заключения",
+      "name": "Старое заключение открывается по номеру",
       "method": "GET",
-      "queryStringParameters": {
-        "id": "19"
-      },
+      "path": "/?id=19",
       "expectedStatus": 200,
       "expectedBody": {
         "success": true,
@@ -14,11 +12,30 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Получение несуществующего заключения",
+      "name": "Новое заключение открывается по коду",
       "method": "GET",
-      "queryStringParameters": {
-        "id": "999999"
+      "path": "/?id=942475",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "id": 233
       },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Новое заключение недоступно по номеру",
+      "method": "GET",
+      "path": "/?id=233",
+      "expectedStatus": 404,
+      "expectedBody": {
+        "success": false
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Несуществующее заключение",
+      "method": "GET",
+      "path": "/?id=999999",
       "expectedStatus": 404,
       "expectedBody": {
         "success": false

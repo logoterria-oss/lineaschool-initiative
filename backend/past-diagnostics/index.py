@@ -240,6 +240,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cursor.execute(
                 f"""
                 SELECT id,
+                       public_code,
                        diag_type,
                        date_of_examination,
                        COALESCE(form_data::jsonb ->> 'childName', student_name) AS child_name,
@@ -297,6 +298,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'errorTypes': _clean_list(dysgraphic_types),
                     'orthoErrorTypes': _clean_list(ortho_types),
                     'id': r['id'],
+                    # Код для публичной ссылки; у старых заключений его нет
+                    'publicCode': r['public_code'],
                     'diagType': r['diag_type'] or 'interim',
                     'date': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
                     'readingSpeed': r['reading_speed'] or '',

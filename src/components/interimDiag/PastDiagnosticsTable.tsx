@@ -73,7 +73,11 @@ export default function PastDiagnosticsTable({
               </td>
               <td className="py-2 text-right whitespace-nowrap">
                 <a
-                  href={it.diagType === 'primary' ? `/diag/${it.id}` : `/interim_diag/${it.id}`}
+                  href={
+                    it.diagType === 'primary'
+                      ? `/diag/${it.publicCode || it.id}`
+                      : `/interim_diag/${it.publicCode || it.id}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mr-2 inline-block align-middle text-gray-400 hover:text-primary"

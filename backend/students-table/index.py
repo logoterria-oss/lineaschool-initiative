@@ -517,7 +517,7 @@ def build_diagnostics(diags, first_lesson_date, active_weeks, reports):
         link = f"https://lineaschool.ru/diag/{rid}" if rid else None
         conclusion = ""
         if rid:
-            rep = reports.get(rid)
+            rep = reports.get(str(rid))
             if rep:
                 conclusion = rep.get("conclusion") or ""
         bubbles.append({
@@ -547,24 +547,31 @@ def build_diagnostics(diags, first_lesson_date, active_weeks, reports):
 
 
 def extract_report_id(topic):
-    """Из темы урока достаём id заключения: .../diag/{id}."""
+    """Из темы урока достаём ключ заключения: .../diag/{id} или /diag/{код}."""
     if not topic:
         return None
     m = re.search(r"/diag/(\d+)", topic)
-    return int(m.group(1)) if m else None
+    return m.group(1) if m else None
 
 
 def load_reports(report_ids):
-    """id -> {conclusion, age, link} из speech_therapy_reports."""
+    """ключ -> {conclusion, age, public_code} из speech_therapy_reports.
+
+    Ключ в ссылке — либо порядковый номер (старые заключения),
+    либо короткий код (новые), поэтому ищем по обоим полям.
+    """
     if not report_ids:
         return {}
-    ids = ",".join(str(int(i)) for i in report_ids)
+    keys = [str(i).strip() for i in report_ids if str(i).strip().isdigit()]
+    if not keys:
+        return {}
+    ids = ",".join(f"'{k}'" for k in keys)
     conn = db()
     out = {}
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT id, student_age, form_data FROM {SCHEMA}.speech_therapy_reports "
-            f"WHERE id IN ({ids})"
+            f"SELECT id, student_age, form_data, public_code FROM {SCHEMA}.speech_therapy_reports "
+            f"WHERE id::text IN ({ids}) OR public_code IN ({ids})"
         )
         for r in cur.fetchall():
             conclusion = ""
@@ -586,7 +593,10 @@ def load_reports(report_ids):
                         age = int(a) if str(a).isdigit() else age
                 except Exception as e:
                     print(f"form_data parse failed for {r['id']}: {e}")
-            out[r["id"]] = {"conclusion": conclusion, "age": age}
+            info = {"conclusion": conclusion, "age": age}
+            out[str(r["id"])] = info
+            if r.get("public_code"):
+                out[str(r["public_code"])] = info
     conn.close()
     return out
 
@@ -1222,7 +1232,7 @@ def handle_list(token, name_filter=None):
             p_rid = primary.get("report_id") if primary else None
             if p_rid:
                 report_link = f"https://lineaschool.ru/diag/{p_rid}"
-                rep = reports.get(p_rid)
+                rep = reports.get(str(p_rid))
                 if rep:
                     conclusion = rep.get("conclusion") or ""
                     age = rep.get("age")

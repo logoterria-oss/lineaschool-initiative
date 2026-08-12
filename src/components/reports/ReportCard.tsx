@@ -17,6 +17,9 @@ export interface SpeechTherapyReport {
   created_at: string;
   updated_at: string;
   diag_type?: string;
+  // Короткий код для публичной ссылки. У заключений,
+  // созданных до его введения, поля нет — там остаётся номер.
+  public_code?: string | null;
 }
 
 interface ReportCardProps {
@@ -36,12 +39,15 @@ function fmtDateTime(value?: string): string {
 
 export default function ReportCard({ report, onDelete, onCopyLink, canDelete }: ReportCardProps) {
   const isInterim = report.diag_type === 'interim';
+  // Публичная ссылка идёт по короткому коду; у старых заключений его нет —
+  // они по-прежнему открываются по порядковому номеру.
+  const publicKey = report.public_code || report.id;
   // У промежуточной своя страница заключения
-  const reportLink = isInterim ? `/interim_diag/${report.id}` : `/diag/${report.id}`;
+  const reportLink = isInterim ? `/interim_diag/${publicKey}` : `/diag/${publicKey}`;
   // Открываем ту же форму диагностики, но с данными сохранённого заключения
   const editLink = isInterim
-    ? `/interim_diag_form?edit=${report.id}`
-    : `/diag_form?edit=${report.id}`;
+    ? `/interim_diag_form?edit=${publicKey}`
+    : `/diag_form?edit=${publicKey}`;
 
   return (
     <Card>

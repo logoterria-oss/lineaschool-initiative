@@ -145,7 +145,9 @@ export function useInterimSubmit(st: InterimState) {
         const saved = await res.json();
         if (saved?.id) {
           finishDraft();
-          window.location.href = `/interim_diag/${saved.id}`;
+          // В публичной ссылке — короткий код вместо порядкового номера
+          const publicKey = saved.public_code || saved.id;
+          window.location.href = `/interim_diag/${publicKey}`;
           return;
         }
         alert('Промежуточная диагностика сохранена!');

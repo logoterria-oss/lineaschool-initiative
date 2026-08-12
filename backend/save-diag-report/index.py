@@ -77,6 +77,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     # Генерируем токен доступа
     access_token = secrets.token_urlsafe(32)
+
+    SCHEMA = 't_p93118852_lineaschool_initiati'
+
+    def gen_public_code(cur) -> str:
+        """6-значный код для публичной ссылки. Подбираем свободный."""
+        for _ in range(50):
+            code = ''.join(secrets.choice('0123456789') for _ in range(6))
+            cur.execute(
+                f"SELECT 1 FROM {SCHEMA}.speech_therapy_reports WHERE public_code = %s",
+                (code,)
+            )
+            if not cur.fetchone():
+                return code
+        return ''.join(secrets.choice('0123456789') for _ in range(6))
     
     # Подключение к базе данных
     try:
@@ -99,7 +113,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     diag_type = %s,
                     updated_at = NOW()
                 WHERE id = %s AND archived_at IS NULL
-                RETURNING id, access_token
+                RETURNING id, access_token, public_code
             """, (
                 student_name,
                 student_age,
@@ -137,18 +151,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'success': True,
                     'id': row[0],
                     'access_token': row[1],
+                    'public_code': row[2],
                     'updated': True,
                     'message': f'Заключение #{row[0]} обновлено'
                 }),
                 'isBase64Encoded': False
             }
 
+        # Новым заключениям выдаём короткий код для публичной ссылки
+        public_code = gen_public_code(cursor)
+
         # Вставляем запись в таблицу
         cursor.execute("""
             INSERT INTO t_p93118852_lineaschool_initiati.speech_therapy_reports 
             (student_name, student_age, date_of_examination, therapist_name, 
-             diagnosis, recommendations, report_content, form_data, access_token, diag_type, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+             diagnosis, recommendations, report_content, form_data, access_token, diag_type, public_code, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             RETURNING id
         """, (
             student_name,
@@ -160,7 +178,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             report_content,
             json.dumps(form_data),
             access_token,
-            diag_type
+            diag_type,
+            public_code
         ))
         
         result = cursor.fetchone()
@@ -178,6 +197,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'success': True,
                 'id': new_id,
                 'access_token': access_token,
+                'public_code': public_code,
                 'message': f'Заключение #{new_id} успешно сохранено'
             }),
             'isBase64Encoded': False

@@ -229,9 +229,14 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
           // Успешно сохранили в БД
           const reportId = saveResult.id;
           console.log('✅ Заключение сохранено в базу данных с ID:', reportId);
-          
+
+          // В публичной ссылке — короткий код, а не порядковый номер:
+          // по номеру можно было бы подобрать чужие заключения.
+          // У заключений, созданных до введения кодов, его нет — там остаётся номер.
+          const publicKey = saveResult.public_code || reportId;
+
           // Создаем ссылку на заключение
-          const conclusionUrl = `${window.location.origin}/diag/${reportId}`;
+          const conclusionUrl = `${window.location.origin}/diag/${publicKey}`;
           
           // Показываем пользователю информацию
           const message = `✅ Заключение создано!\n\n📋 Заключение №${reportId}\n🔗 Ссылка для просмотра: ${conclusionUrl}\n\n💡 Заключение сохранено в системе`;
@@ -246,8 +251,8 @@ ${recommendationsList.split('; ').map(rec => `• ${rec}`).join('\n')}
           }
           
           // Переходим на страницу заключения
-          console.log('Переходим к заключению:', `/diag/${reportId}`);
-          navigate(`/diag/${reportId}`);
+          console.log('Переходим к заключению:', `/diag/${publicKey}`);
+          navigate(`/diag/${publicKey}`);
           return;
           
         } else {

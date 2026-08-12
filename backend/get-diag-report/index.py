@@ -72,16 +72,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Получаем заключение из БД
-        cursor.execute("""
+        # В ссылке может быть короткий код (новые заключения)
+        # или порядковый номер (заключения, выданные раньше).
+        key = str(report_id).strip()
+        base_select = """
             SELECT id, student_name, student_age, date_of_examination, 
                    therapist_name, diagnosis, recommendations, report_content, 
                    form_data, access_token, created_at
             FROM t_p93118852_lineaschool_initiati.speech_therapy_reports 
-            WHERE id = %s AND archived_at IS NULL
-        """, (report_id,))
-        
-        report = cursor.fetchone()
+        """
+
+        report = None
+        if key.isdigit() and len(key) == 6:
+            cursor.execute(
+                base_select + "WHERE public_code = %s AND archived_at IS NULL",
+                (key,)
+            )
+            report = cursor.fetchone()
+
+        if not report and key.isdigit():
+            cursor.execute(
+                base_select + "WHERE id = %s AND public_code IS NULL AND archived_at IS NULL",
+                (int(key),)
+            )
+            report = cursor.fetchone()
         
         if not report:
             return {

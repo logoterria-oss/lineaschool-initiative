@@ -13,14 +13,14 @@ export function useEditReport<T>(onLoaded: (formData: T) => void) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get('edit');
-    const id = raw ? parseInt(raw, 10) : NaN;
-    if (!Number.isFinite(id)) return;
+    // В ссылке может быть короткий код (новые заключения) или номер (старые).
+    // Ведущие нули кода важны, поэтому ключ держим строкой.
+    const key = (new URLSearchParams(window.location.search).get('edit') || '').trim();
+    if (!/^\d+$/.test(key)) return;
 
-    setEditId(id);
     setLoading(true);
 
-    fetch(`${GET_REPORT_URL}?id=${id}`)
+    fetch(`${GET_REPORT_URL}?id=${key}`)
       .then((r) => r.json())
       .then((data) => {
         const fd = data?.form_data ?? data?.formData;
@@ -28,6 +28,8 @@ export function useEditReport<T>(onLoaded: (formData: T) => void) {
           setError('Не удалось загрузить заключение');
           return;
         }
+        // Для перезаписи нужен настоящий номер записи, а не код из ссылки
+        if (typeof data?.id === 'number') setEditId(data.id);
         onLoaded(typeof fd === 'string' ? JSON.parse(fd) : fd);
       })
       .catch(() => setError('Не удалось загрузить заключение'))
