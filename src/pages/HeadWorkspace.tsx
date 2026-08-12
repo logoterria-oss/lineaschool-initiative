@@ -24,6 +24,7 @@ import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import InteractionWindow from '@/components/interaction/InteractionWindow';
+import WorkTimeView from '@/components/workLog/WorkTimeView';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 
 const HeadWorkspace = () => {
@@ -75,6 +76,8 @@ const HeadWorkspace = () => {
   const content = useMemo(() => {
     if (!active) return null;
     if (active.id === 'interaction-window') return <InteractionWindow />;
+    // Кнопка «Провести изменения» открывает тот же раздел сразу на форме
+    if (active.id === 'work-log-add') return <WorkTimeView initialTab="add" />;
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'students-list': return <StudentsListView />;
@@ -92,6 +95,7 @@ const HeadWorkspace = () => {
       case 'reports': return <ReportsView />;
       case 'homework': return <HomeworkControlSection />;
       case 'worktime': return <WorkScheduleSection readOnly />;
+      case 'work-log': return <WorkTimeView />;
       case 'regulations': return <RegulationsView />;
       case 'supervisions': return <SupervisionsView />;
       case 'violations': return <TeacherViolationsManager withRole />;
@@ -101,6 +105,7 @@ const HeadWorkspace = () => {
   }, [active]);
 
   const interactionActive = active?.id === 'interaction-window';
+  const workLogActive = active?.id === 'work-log-add';
 
   const collapsed = interactionActive;
   const lbl = collapsed
@@ -165,6 +170,16 @@ const HeadWorkspace = () => {
             {unread}
           </span>
         )}
+      </button>
+
+      <button
+        onClick={() => setActive({ id: 'work-log-add', label: 'Провести изменения', kind: 'stub', icon: 'ClipboardPen' })}
+        className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
+          workLogActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
+        }`}
+      >
+        <Icon name="ClipboardPen" size={16} className="flex-shrink-0" />
+        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Провести изменения</span>
       </button>
 
       <nav className="bg-white rounded-2xl border border-gray-200 shadow-sm p-2">

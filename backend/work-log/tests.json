@@ -1,0 +1,43 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Без входа список закрыт",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Без входа сводка закрыта",
+      "method": "GET",
+      "path": "/?action=stats",
+      "expectedStatus": 401,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Без входа запись не создать",
+      "method": "POST",
+      "path": "/",
+      "body": {"task_code": "Ппк", "task_title": "Перенос", "minutes": 10},
+      "expectedStatus": 401,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Чужой токен не пускает",
+      "method": "GET",
+      "path": "/?token=nonexistent-token-12345",
+      "expectedStatus": 401,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
