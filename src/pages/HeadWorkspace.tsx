@@ -136,6 +136,16 @@ const HeadWorkspace = () => {
             )}
           </div>
         </div>
+        {me?.phone && (
+          <div
+            className={`mt-2 flex items-center gap-1.5 text-xs text-gray-500 ${
+              collapsed ? 'opacity-0 lg:group-hover:opacity-100 transition-opacity' : ''
+            }`}
+          >
+            <Icon name="Phone" size={13} className="flex-shrink-0 text-gray-400" />
+            <span className="truncate">{me.phone}</span>
+          </div>
+        )}
         <button
           onClick={() => navigate('/admin/profile')}
           className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-2 rounded-lg transition-colors"
