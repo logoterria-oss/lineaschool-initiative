@@ -110,14 +110,24 @@ const AdminWorkspace = () => {
             )}
           </div>
         </div>
-        {me?.phone && (
+        {(me?.phone || me?.email) && (
           <div
-            className={`mt-2 flex items-center gap-1.5 text-xs text-gray-500 ${
+            className={`mt-2 flex items-center gap-3 text-xs text-gray-500 ${
               collapsed ? 'opacity-0 lg:group-hover:opacity-100 transition-opacity' : ''
             }`}
           >
-            <Icon name="Phone" size={13} className="flex-shrink-0 text-gray-400" />
-            <span className="truncate">{me.phone}</span>
+            {me?.phone && (
+              <span className="flex items-center gap-1.5 min-w-0">
+                <Icon name="Phone" size={13} className="flex-shrink-0 text-gray-400" />
+                <span className="truncate">{me.phone}</span>
+              </span>
+            )}
+            {me?.email && (
+              <span className="flex items-center gap-1.5 min-w-0" title={me.email}>
+                <Icon name="Mail" size={13} className="flex-shrink-0 text-gray-400" />
+                <span className="truncate">{me.email}</span>
+              </span>
+            )}
           </div>
         )}
         <button
