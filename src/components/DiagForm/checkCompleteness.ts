@@ -51,12 +51,12 @@ const SECTIONS: { title: string; anchor: string; rules: Rule[] }[] = [
   {
     title: 'Экспрессивная речь',
     anchor: 'section-expressive',
+    // Словообразование и номинативная функция отдельными полями в форме
+    // не заполняются — они выводятся из связной речи, поэтому не требуем
     rules: [
       { key: 'motorRealization', label: 'Моторная реализация' },
-      { key: 'wordFormation', label: 'Словообразование' },
       { key: 'grammaticalStructure', label: 'Грамматический строй' },
       { key: 'connectedSpeech', label: 'Связная речь' },
-      { key: 'nominativeFunction', label: 'Номинативная функция' },
     ],
   },
   {
@@ -76,6 +76,7 @@ const SECTIONS: { title: string; anchor: string; rules: Rule[] }[] = [
   {
     title: 'Заключение',
     anchor: 'section-conclusion',
+    // Достаточно любой отмеченной группы — проверка ниже, в checkPrimaryCompleteness
     rules: [{ key: 'speechDisorders', label: 'Нарушения речи' }],
   },
   {
@@ -95,9 +96,20 @@ export function checkPrimaryCompleteness(data: DiagFormData): IncompleteSection[
   const result: IncompleteSection[] = [];
 
   SECTIONS.forEach((section) => {
-    // «Норма развития» снимает требование к разделу «Заключение»:
-    // при норме нарушения не указываются
-    if (section.anchor === 'section-conclusion' && data.normaDevelopment) return;
+    if (section.anchor === 'section-conclusion') {
+      // «Норма развития» снимает требование: при норме нарушения не указываются.
+      // Также достаточно отметок в любой из групп заключения — виды дислексии,
+      // дисграфии или синдромы тоже считаются заполненным заключением.
+      const filled =
+        data.normaDevelopment ||
+        !isEmpty(data.speechDisorders) ||
+        !isEmpty(data.dyslexiaTypes) ||
+        !isEmpty(data.dysgraphiaTypes) ||
+        !isEmpty(data.brainSyndromes);
+      if (filled) return;
+      result.push({ title: section.title, fields: ['Нарушения речи'], anchor: section.anchor });
+      return;
+    }
 
     const fields = section.rules.filter((r) => isEmpty(data[r.key])).map((r) => r.label);
     if (fields.length > 0) {
