@@ -19,6 +19,18 @@
       "path": "/",
       "body": {"teacher_id": 4, "student_id": 1, "lesson_date": "2026-06-07", "status": "blue"},
       "expectedStatus": 400
+    },
+    {
+      "name": "HW history without name returns 400",
+      "method": "GET",
+      "path": "/?mode=hw_history",
+      "expectedStatus": 400
+    },
+    {
+      "name": "HW history by short name",
+      "method": "GET",
+      "path": "/?mode=hw_history&name=%D0%9C%D0%BE%D0%B8%D1%81%D0%B5%D0%B5%D0%B2%20%D0%90%D0%BB%D0%B5%D0%BA%D1%81%D0%B5%D0%B9%20%D0%A1%D0%B5%D1%80%D0%B3%D0%B5%D0%B5%D0%B2%D0%B8%D1%87",
+      "expectedStatus": 200
     }
   ]
 }
