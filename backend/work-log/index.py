@@ -118,14 +118,24 @@ def delete_entry(cur, me: Dict[str, Any], data: Dict[str, Any]) -> Dict[str, Any
     return _json({'ok': True, 'deleted': cur.rowcount})
 
 
+def _all_scope(me: Dict[str, Any], params: Dict[str, Any]) -> bool:
+    """Смотрим по всем сотрудникам или только свои записи.
+
+    По умолчанию — только свои, даже у руководителя: раздел «Учёт рабочего
+    времени» у всех личный. Сводка по школе открывается явным scope=all
+    и доступна только руководителю.
+    """
+    return me['role'] == 'head' and (params.get('scope') or '').strip() == 'all'
+
+
 def list_entries(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
-    """Список записей. Не руководитель видит только свои."""
+    """Список записей: свои либо по всем сотрудникам (только руководитель)."""
     date_from, date_to = _period_range(params)
 
     where = ['log_date >= %s', 'log_date <= %s']
     args: list = [date_from, date_to]
 
-    if me['role'] == 'head':
+    if _all_scope(me, params):
         staff_id = (params.get('staff_id') or '').strip()
         if staff_id.isdigit():
             where.append('staff_id = %s')
@@ -148,16 +158,18 @@ def list_entries(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, A
         'date_from': date_from,
         'date_to': date_to,
         'can_see_all': me['role'] == 'head',
+        'scope_all': _all_scope(me, params),
     })
 
 
 def stats(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     """Сводка за период: по сотрудникам, по типам задач и по дням."""
     date_from, date_to = _period_range(params)
+    scope_all = _all_scope(me, params)
 
     where = ['log_date >= %s', 'log_date <= %s']
     args: list = [date_from, date_to]
-    if me['role'] != 'head':
+    if not scope_all:
         where.append('staff_id = %s')
         args.append(me['id'])
     cond = ' AND '.join(where)
@@ -193,8 +205,8 @@ def stats(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         f"SELECT COUNT(*) AS tasks, COALESCE(SUM(minutes), 0) AS minutes "
         f"FROM {SCHEMA}.work_log WHERE log_date >= (%s::date - INTERVAL '1 month') "
         f"AND log_date < %s::date" +
-        ('' if me['role'] == 'head' else ' AND staff_id = %s'),
-        [date_from, date_from] + ([] if me['role'] == 'head' else [me['id']]),
+        ('' if scope_all else ' AND staff_id = %s'),
+        [date_from, date_from] + ([] if scope_all else [me['id']]),
     )
     prev = dict(cur.fetchone() or {'tasks': 0, 'minutes': 0})
 
@@ -213,6 +225,7 @@ def stats(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         'by_task': by_task,
         'by_day': by_day,
         'can_see_all': me['role'] == 'head',
+        'scope_all': scope_all,
     })
 
 

@@ -66,6 +66,7 @@ export interface WorkLogStats {
   by_task: TaskStat[];
   by_day: DayStat[];
   can_see_all: boolean;
+  scope_all: boolean;
 }
 
 export async function addWorkLog(input: WorkLogInput): Promise<{ ok: boolean; message?: string }> {
@@ -88,15 +89,18 @@ export async function deleteWorkLog(id: number): Promise<boolean> {
   return !!data.ok;
 }
 
+/** allStaff — сводка по всем сотрудникам (только руководитель), иначе свои записи */
 export async function listWorkLog(range: {
   date_from?: string;
   date_to?: string;
   staff_id?: number;
+  allStaff?: boolean;
 }): Promise<{ items: WorkLogEntry[]; canSeeAll: boolean }> {
   const q = new URLSearchParams();
   if (range.date_from) q.set('date_from', range.date_from);
   if (range.date_to) q.set('date_to', range.date_to);
   if (range.staff_id) q.set('staff_id', String(range.staff_id));
+  if (range.allStaff) q.set('scope', 'all');
   const r = await fetch(`${API_URL}?${q.toString()}`, { headers: authHeaders() });
   if (!r.ok) return { items: [], canSeeAll: false };
   const data = await r.json();
@@ -106,10 +110,12 @@ export async function listWorkLog(range: {
 export async function fetchWorkLogStats(range: {
   date_from?: string;
   date_to?: string;
+  allStaff?: boolean;
 }): Promise<WorkLogStats | null> {
   const q = new URLSearchParams({ action: 'stats' });
   if (range.date_from) q.set('date_from', range.date_from);
   if (range.date_to) q.set('date_to', range.date_to);
+  if (range.allStaff) q.set('scope', 'all');
   const r = await fetch(`${API_URL}?${q.toString()}`, { headers: authHeaders() });
   if (!r.ok) return null;
   return r.json();

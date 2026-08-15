@@ -9,6 +9,8 @@ interface Props {
   /** Обновляется извне, чтобы перезагрузить список после новой записи */
   reloadKey?: number;
   onChanged?: () => void;
+  /** Записи всех сотрудников — только для руководителя */
+  allStaff?: boolean;
 }
 
 const fmtDate = (d: string) => {
@@ -16,14 +18,14 @@ const fmtDate = (d: string) => {
   return p.length === 3 ? `${p[2]}.${p[1]}` : d;
 };
 
-const WorkLogList = ({ dateFrom, dateTo, reloadKey = 0, onChanged }: Props) => {
+const WorkLogList = ({ dateFrom, dateTo, reloadKey = 0, onChanged, allStaff }: Props) => {
   const { toast } = useToast();
   const [items, setItems] = useState<WorkLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const r = await listWorkLog({ date_from: dateFrom, date_to: dateTo });
+    const r = await listWorkLog({ date_from: dateFrom, date_to: dateTo, allStaff });
     setItems(r.items);
     setLoading(false);
   };
@@ -31,7 +33,7 @@ const WorkLogList = ({ dateFrom, dateTo, reloadKey = 0, onChanged }: Props) => {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFrom, dateTo, reloadKey]);
+  }, [dateFrom, dateTo, reloadKey, allStaff]);
 
   const remove = async (e: WorkLogEntry) => {
     if (!confirm(`Удалить запись «${e.task_title}»?`)) return;
@@ -92,7 +94,9 @@ const WorkLogList = ({ dateFrom, dateTo, reloadKey = 0, onChanged }: Props) => {
                         {e.comment}
                       </div>
                     )}
-                    <div className="text-[11px] text-gray-400 mt-0.5">{e.staff_name}</div>
+                    {allStaff && (
+                      <div className="text-[11px] text-gray-400 mt-0.5">{e.staff_name}</div>
+                    )}
                   </div>
                   <span className="text-xs text-gray-600 shrink-0 mt-0.5">
                     {formatMinutes(e.minutes)}

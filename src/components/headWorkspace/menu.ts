@@ -39,6 +39,7 @@ export const HEAD_MENU: MenuGroup[] = [
       { id: 'rate', label: 'Ставка', kind: 'stub', icon: 'Wallet' },
       { id: 'worktime', label: 'Рабочее время', kind: 'component', icon: 'Clock' },
       { id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' },
+      { id: 'work-log-all', label: 'Учёт рабочего времени сотрудников', kind: 'component', icon: 'Users' },
       { id: 'supervisions', label: 'Супервизии', kind: 'component', icon: 'UserCheck' },
       { id: 'violations', label: 'Дисциплинарные нарушения', kind: 'component', icon: 'TriangleAlert' },
       { id: 'regulations', label: 'Регламенты', kind: 'component', icon: 'ScrollText' },

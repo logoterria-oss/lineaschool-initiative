@@ -23,7 +23,7 @@ export const ADMIN_MENU: AdminItem[] = [
   { id: 'interactions', label: 'Взаимодействия', kind: 'component', icon: 'MessagesSquare' },
   { id: 'vacations', label: 'Даты каникул', kind: 'component', icon: 'CalendarOff' },
   { id: 'progress', label: 'Мониторинг прогресса', kind: 'component', icon: 'TrendingUp' },
-  { id: 'work-log', label: 'Мой учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' },
+  { id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' },
   { id: 'violations', label: 'Дисциплинарные нарушения педагогов', kind: 'component', icon: 'TriangleAlert' },
   { id: 'regulations', label: 'Регламент работы администратора', kind: 'stub', icon: 'ScrollText' },
 ];

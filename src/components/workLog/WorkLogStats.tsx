@@ -7,6 +7,8 @@ interface Props {
   dateFrom: string;
   dateTo: string;
   reloadKey?: number;
+  /** Сводка по всем сотрудникам — только для руководителя */
+  allStaff?: boolean;
 }
 
 /** Стрелка и подпись изменения к прошлому периоду */
@@ -25,16 +27,16 @@ function Delta({ now, prev, label }: { now: number; prev: number; label: string 
   );
 }
 
-const WorkLogStatsView = ({ dateFrom, dateTo, reloadKey = 0 }: Props) => {
+const WorkLogStatsView = ({ dateFrom, dateTo, reloadKey = 0, allStaff }: Props) => {
   const [data, setData] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetchWorkLogStats({ date_from: dateFrom, date_to: dateTo })
+    fetchWorkLogStats({ date_from: dateFrom, date_to: dateTo, allStaff })
       .then(setData)
       .finally(() => setLoading(false));
-  }, [dateFrom, dateTo, reloadKey]);
+  }, [dateFrom, dateTo, reloadKey, allStaff]);
 
   if (loading) return <div className="text-gray-500 py-10 text-center">Загрузка…</div>;
   if (!data || data.total_tasks === 0) {
@@ -69,7 +71,7 @@ const WorkLogStatsView = ({ dateFrom, dateTo, reloadKey = 0 }: Props) => {
         </div>
       </div>
 
-      {data.can_see_all && data.by_staff.length > 0 && (
+      {data.scope_all && data.by_staff.length > 0 && (
         <div>
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
             По сотрудникам
