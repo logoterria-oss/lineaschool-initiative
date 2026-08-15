@@ -45,9 +45,9 @@ const WorkTimeView = ({ initialTab = 'stats' }: Props) => {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex border-b border-gray-200 flex-1 min-w-[260px]">
+          <TabButton id="add" icon="PlusCircle" label="Добавить" />
           <TabButton id="stats" icon="BarChart2" label="Статистика" />
           <TabButton id="list" icon="ClipboardList" label="Записи" />
-          <TabButton id="add" icon="PlusCircle" label="Добавить" />
         </div>
         {tab !== 'add' && (
           <input
