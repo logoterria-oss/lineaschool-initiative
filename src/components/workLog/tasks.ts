@@ -31,7 +31,7 @@ export const TASK_CATEGORIES: TaskCategory[] = [
       { code: 'Отп', title: 'Отмена по техническим причинам', subjectLabel: 'Ученик' },
       { code: 'СП', title: 'Списание при неявке или отмене менее чем за 4 часа', subjectLabel: 'Ученик' },
       { code: 'ИР', title: 'Изменение расписания', subjectLabel: 'Ученик' },
-      { code: 'ФК', title: 'Фиксация каникул', subjectLabel: 'Ученик' },
+      { code: 'ФК', title: 'Фиксация времени каникул (без заморозки)', subjectLabel: 'Ученик' },
       { code: 'ЗА', title: 'Заморозка абонемента', subjectLabel: 'Ученик' },
     ],
   },
