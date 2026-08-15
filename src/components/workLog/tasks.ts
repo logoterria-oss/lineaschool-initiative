@@ -32,7 +32,7 @@ export const TASK_CATEGORIES: TaskCategory[] = [
       { code: 'СП', title: 'Списание при неявке или отмене менее чем за 4 часа', subjectLabel: 'Ученик' },
       { code: 'ИР', title: 'Изменение расписания', subjectLabel: 'Ученик' },
       { code: 'ФК', title: 'Фиксация времени каникул (без заморозки)', subjectLabel: 'Ученик' },
-      { code: 'ЗА', title: 'Заморозка абонемента', subjectLabel: 'Ученик' },
+      { code: 'ЗА', title: 'Фиксация времени каникул (абонемент заморожен)', subjectLabel: 'Ученик' },
     ],
   },
   {
