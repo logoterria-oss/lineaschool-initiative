@@ -78,6 +78,7 @@ def public_staff(row):
         "status": row["status"],
         "avatar_url": row.get("avatar_url"),
         "job_title": row.get("job_title"),
+        "email": row.get("email"),
     }
 
 
@@ -490,7 +491,7 @@ def handle_verify_email(conn, body):
     code = (body.get("code") or "").strip()
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT id, full_name, phone, role, status, avatar_url, job_title "
+            f"SELECT id, full_name, phone, email, role, status, avatar_url, job_title "
             f"FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
         staff = cur.fetchone()
         if not staff:
@@ -600,7 +601,7 @@ def handle_login(conn, body):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT id, full_name, phone, password_hash, role, status, avatar_url, job_title "
+            f"SELECT id, full_name, phone, email, password_hash, role, status, avatar_url, job_title "
             f"FROM {SCHEMA}.staff WHERE phone = %s", (phone,))
         row = cur.fetchone()
         if not row or not verify_password(password, row["password_hash"]):
@@ -629,7 +630,7 @@ def session_staff(conn, event):
         return None
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f"SELECT s.id, s.full_name, s.phone, s.role, s.status, s.password_hash, s.avatar_url, s.job_title "
+            f"SELECT s.id, s.full_name, s.phone, s.email, s.role, s.status, s.password_hash, s.avatar_url, s.job_title "
             f"FROM {SCHEMA}.staff_sessions ss JOIN {SCHEMA}.staff s ON s.id = ss.staff_id "
             f"WHERE ss.token = %s AND ss.expires_at > now()", (token,))
         return cur.fetchone()
