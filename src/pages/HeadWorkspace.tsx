@@ -198,7 +198,6 @@ const HeadWorkspace = () => {
           workLogActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
         }`}
       >
-        <Icon name="ClipboardPen" size={16} className="flex-shrink-0" />
         <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Провести изменения</span>
       </button>
 
