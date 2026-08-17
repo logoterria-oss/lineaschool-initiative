@@ -9,6 +9,7 @@ interface WrittenSpeechData {
   readingComprehension: string;
   writingSamples: string[];
   dictationWords: string;
+  grade: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
@@ -79,6 +80,7 @@ export default function WrittenSpeechSection({ formData, onInputChange }: Writte
         <WritingSkillSection 
           writingSamples={formData.writingSamples}
           dictationWords={formData.dictationWords}
+          grade={formData.grade}
           dysgraphicErrors={formData.dysgraphicErrors}
           dysorthographicErrors={formData.dysorthographicErrors}
           totalErrors={formData.totalErrors}

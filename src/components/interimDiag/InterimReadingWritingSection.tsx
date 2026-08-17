@@ -30,6 +30,8 @@ import { InterimHistoryEntry } from './InterimPersonalDataSection';
 import CompareRow from './ReadingWritingCompareRow';
 import ErrorTypesBlock from './ReadingWritingErrorTypesBlock';
 import ReadingWritingSamples from './ReadingWritingSamples';
+import DictationPicker from '@/components/dictations/DictationPicker';
+import { INTERIM_SETS } from '@/components/dictations/dictationCatalog';
 
 const MAX_WRITING_SAMPLES = 2;
 
@@ -45,6 +47,7 @@ interface Props {
   onImageClick: (src: string) => void;
   onChange: (patch: Partial<ReadingWritingState>) => void;
   selected: boolean;
+  grade?: string;
 }
 
 export default function InterimReadingWritingSection({
@@ -59,6 +62,7 @@ export default function InterimReadingWritingSection({
   onImageClick,
   onChange,
   selected,
+  grade,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -350,6 +354,20 @@ export default function InterimReadingWritingSection({
             onFromChange={(v) => setFrom('dictationWords', v)}
             onChange={(v) => onChange({ dictationWords: v })}
           />
+          <div className="mt-2">
+            <Label className="text-sm text-gray-700">Диктант сегодняшней работы</Label>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Выберите диктант — количество слов подставится само
+            </p>
+            <DictationPicker
+              sets={INTERIM_SETS}
+              words={value.dictationWords}
+              grade={grade}
+              hideWordsInput
+              onWordsChange={(v) => onChange({ dictationWords: v })}
+              className="mt-2"
+            />
+          </div>
           {(missingCurrentWords || missingBaseWords) && (
             <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2.5">
               <Icon name="TriangleAlert" size={16} className="mt-0.5 shrink-0 text-amber-600" />

@@ -1,4 +1,6 @@
 import { Input } from '@/components/ui/input';
+import DictationPicker from '@/components/dictations/DictationPicker';
+import { PRIMARY_SET, INTERIM_SETS } from '@/components/dictations/dictationCatalog';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import {
@@ -147,11 +149,10 @@ export default function PastDiagnosticsForm({
         </div>
         <div>
           <Label className="text-sm">Количество слов в работе</Label>
-          <Input
-            type="number"
-            min="0"
-            value={draft.dictationWords}
-            onChange={(e) => patch({ dictationWords: e.target.value })}
+          <DictationPicker
+            sets={draft.diagType === 'primary' ? [PRIMARY_SET] : INTERIM_SETS}
+            words={draft.dictationWords}
+            onWordsChange={(v) => patch({ dictationWords: v })}
             className="mt-1"
           />
         </div>

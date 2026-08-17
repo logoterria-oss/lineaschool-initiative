@@ -130,6 +130,7 @@ export default function InterimFormBody({
         onImageClick={onImageClick}
         onChange={patchRw}
         selected={studentSelected}
+        grade={personal.grade}
       />
       </SectionHighlight>
       <InterimSummarySection

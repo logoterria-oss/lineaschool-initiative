@@ -1,10 +1,13 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import DictationPicker from "@/components/dictations/DictationPicker";
+import { PRIMARY_SET } from "@/components/dictations/dictationCatalog";
 
 interface WritingSkillProps {
   writingSamples: string[];
   dictationWords: string;
+  grade?: string;
   dysgraphicErrors: string;
   dysorthographicErrors: string;
   totalErrors: string;
@@ -27,6 +30,7 @@ interface WritingSkillProps {
 export default function WritingSkillSection({
   writingSamples,
   dictationWords,
+  grade,
   dysgraphicErrors,
   dysorthographicErrors,
   totalErrors,
@@ -97,13 +101,12 @@ export default function WritingSkillSection({
           <p className="text-sm text-gray-500 mt-1">
             Нужно, чтобы сравнивать ошибки между работами разной длины
           </p>
-          <Input
-            id="dictation-words"
-            type="number"
-            value={dictationWords}
-            onChange={(e) => onInputChange("dictationWords", e.target.value)}
-            className="mt-2 w-32"
-            min="0"
+          <DictationPicker
+            sets={[PRIMARY_SET]}
+            words={dictationWords}
+            grade={grade}
+            onWordsChange={(v) => onInputChange("dictationWords", v)}
+            className="mt-2"
           />
         </div>
 

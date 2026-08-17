@@ -122,6 +122,7 @@ const FormSections = ({ formData, onInputChange, missingBySection }: FormSection
               readingComprehension: formData.readingComprehension,
               writingSamples: formData.writingSamples,
               dictationWords: formData.dictationWords,
+              grade: formData.grade,
               dysgraphicErrors: formData.dysgraphicErrors,
               dysorthographicErrors: formData.dysorthographicErrors,
               totalErrors: formData.totalErrors,
