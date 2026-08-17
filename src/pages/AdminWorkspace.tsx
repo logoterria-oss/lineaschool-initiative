@@ -14,7 +14,6 @@ import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import LeadsListView from '@/components/adminWorkspace/LeadsListView';
-import InteractionWindow from '@/components/interaction/InteractionWindow';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 
@@ -58,7 +57,6 @@ const AdminWorkspace = () => {
 
   const content = useMemo(() => {
     if (!active) return null;
-    if (active.id === 'interaction-window') return <InteractionWindow />;
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'schedule': return <ScheduleView />;
@@ -71,15 +69,13 @@ const AdminWorkspace = () => {
       case 'leads-list': return <LeadsListView />;
       case 'staff-list': return <StaffListView readOnly />;
       case 'work-log': return <WorkTimeView />;
-      case 'interaction-window': return <InteractionWindow />;
       default: return <StubView label={active.label} />;
     }
   }, [active]);
 
-  const interactionActive = active?.id === 'interaction-window';
   const workLogActive = active?.id === 'work-log';
 
-  const collapsed = interactionActive;
+  const collapsed = false;
   const lbl = collapsed
     ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] lg:group-hover:ml-0 transition-all duration-200'
     : 'flex-1';
@@ -137,11 +133,11 @@ const AdminWorkspace = () => {
         </button>
       </div>
 
-      <button
-        onClick={() => window.open('https://okno-vzaimodejstviya--preview.poehali.dev/interaction', '_blank', 'noopener')}
-        className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
-          interactionActive ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
-        }`}
+      <a
+        href="https://okno-vzaimodejstviya--preview.poehali.dev/interaction"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors bg-green-500 hover:bg-green-600"
       >
         <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
         {newAssigned > 0 && (
@@ -162,7 +158,7 @@ const AdminWorkspace = () => {
             {unread}
           </span>
         )}
-      </button>
+      </a>
 
       <button
         onClick={() => setActive({ id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' })}
