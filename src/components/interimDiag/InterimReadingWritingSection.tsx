@@ -355,7 +355,7 @@ export default function InterimReadingWritingSection({
             onChange={(v) => onChange({ dictationWords: v })}
           />
           <div className="mt-2">
-            <Label className="text-sm text-gray-700">Диктант сегодняшней работы</Label>
+            <Label className="text-sm text-gray-700">*Диктант сегодняшней работы</Label>
             <p className="mt-0.5 text-xs text-gray-500">
               Выберите диктант — количество слов подставится само
             </p>
