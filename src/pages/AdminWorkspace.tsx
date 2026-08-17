@@ -138,7 +138,7 @@ const AdminWorkspace = () => {
       </div>
 
       <button
-        onClick={() => setActive({ id: 'interaction-window', label: 'Окно взаимодействия', kind: 'stub', icon: 'MessagesSquare' })}
+        onClick={() => window.open('https://okno-vzaimodejstviya--preview.poehali.dev/interaction', '_blank', 'noopener')}
         className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
           interactionActive ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
         }`}
