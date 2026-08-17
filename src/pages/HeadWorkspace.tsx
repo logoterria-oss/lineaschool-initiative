@@ -23,7 +23,7 @@ import StaffListView from '@/components/headWorkspace/StaffListView';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
-import InteractionWindow from '@/components/interaction/InteractionWindow';
+import { INTERACTION_URL } from '@/lib/interactionUrl';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import StaffWorkTimeView from '@/components/workLog/StaffWorkTimeView';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
@@ -76,7 +76,6 @@ const HeadWorkspace = () => {
 
   const content = useMemo(() => {
     if (!active) return null;
-    if (active.id === 'interaction-window') return <InteractionWindow />;
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'students-list': return <StudentsListView />;
@@ -99,15 +98,13 @@ const HeadWorkspace = () => {
       case 'regulations': return <RegulationsView />;
       case 'supervisions': return <SupervisionsView />;
       case 'violations': return <TeacherViolationsManager withRole />;
-      case 'interaction-window': return <InteractionWindow />;
       default: return <StubView label={active.label} />;
     }
   }, [active]);
 
-  const interactionActive = active?.id === 'interaction-window';
   const workLogActive = active?.id === 'work-log';
 
-  const collapsed = interactionActive;
+  const collapsed = false;
   const lbl = collapsed
     ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200'
     : 'flex-1';
@@ -165,13 +162,13 @@ const HeadWorkspace = () => {
         </button>
       </div>
 
-      <button
-        onClick={() => setActive({ id: 'interaction-window', label: 'Окно взаимодействия', kind: 'stub', icon: 'MessagesSquare' })}
-        className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
-          interactionActive ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
-        }`}
+      <a
+        href={INTERACTION_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors bg-green-500 hover:bg-green-600"
       >
-        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
+        <span>Окно взаимодействия</span>
         {newAssigned > 0 && (
           <span
             title="Новые чаты, где вас назначили ответственным"
@@ -190,7 +187,7 @@ const HeadWorkspace = () => {
             {unread}
           </span>
         )}
-      </button>
+      </a>
 
       <button
         onClick={() => setActive({ id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' })}

@@ -15,6 +15,7 @@ import TeacherViolationsManager from '@/components/violations/TeacherViolationsM
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import LeadsListView from '@/components/adminWorkspace/LeadsListView';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
+import { INTERACTION_URL } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 
 const AdminWorkspace = () => {
@@ -134,7 +135,7 @@ const AdminWorkspace = () => {
       </div>
 
       <a
-        href="https://okno-vzaimodejstviya--preview.poehali.dev/interaction"
+        href={INTERACTION_URL}
         target="_blank"
         rel="noopener noreferrer"
         className="w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors bg-green-500 hover:bg-green-600"
