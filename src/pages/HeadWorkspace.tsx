@@ -30,7 +30,7 @@ import { useInteractionBadges } from '@/components/interaction/useInteractionBad
 
 const HeadWorkspace = () => {
   const navigate = useNavigate();
-  const { newAssigned, unread } = useInteractionBadges();
+  const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
   const [me, setMe] = useState<Staff | null>(null);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [active, setActive] = useState<SubItem | null>(null);
@@ -166,6 +166,7 @@ const HeadWorkspace = () => {
         href={INTERACTION_URL}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={markAssignedSeen}
         className="w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors bg-green-500 hover:bg-green-600"
       >
         <span>Окно взаимодействия</span>

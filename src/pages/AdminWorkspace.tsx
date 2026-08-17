@@ -20,7 +20,7 @@ import { useInteractionBadges } from '@/components/interaction/useInteractionBad
 
 const AdminWorkspace = () => {
   const navigate = useNavigate();
-  const { newAssigned, unread } = useInteractionBadges();
+  const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
   const [me, setMe] = useState<Staff | null>(null);
   const [active, setActive] = useState<AdminItem | null>(null);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
@@ -138,6 +138,7 @@ const AdminWorkspace = () => {
         href={INTERACTION_URL}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={markAssignedSeen}
         className="w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors bg-green-500 hover:bg-green-600"
       >
         <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
