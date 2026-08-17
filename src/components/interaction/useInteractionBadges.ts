@@ -40,13 +40,19 @@ const readSeen = (user: string): number[] => {
 //   newAssigned — чаты, где сотрудника назначили ответственным и он их ещё не открывал (звёздочка)
 //   unread      — непрочитанные сообщения в чатах, где сотрудник ответственный (конверт)
 export function useInteractionBadges() {
-  const currentUser = sessionStorage.getItem('staff_name') || '';
   const [dialogs, setDialogs] = useState<DialogItem[]>([]);
   const [seenVersion, setSeenVersion] = useState(0);
+  // Имя появляется после проверки входа, поэтому перечитываем его,
+  // а не берём один раз при загрузке страницы.
+  const [currentUser, setCurrentUser] = useState(
+    () => sessionStorage.getItem('staff_name') || '',
+  );
 
   useEffect(() => {
     let stop = false;
     const load = () => {
+      const name = sessionStorage.getItem('staff_name') || '';
+      setCurrentUser((prev) => (prev === name ? prev : name));
       fetchDialogs().then((list) => {
         if (!stop) setDialogs(list);
       });
@@ -80,12 +86,18 @@ export function useInteractionBadges() {
   const isMine = (d: DialogItem) => sameStaff(d.assignee, currentUser);
   const mine = dialogs.filter(isMine);
 
-  // Какие чаты сотрудник уже видел. Отметки окна взаимодействия нам недоступны
-  // (это другой сайт), поэтому ведём свой список и обновляем его при переходе туда.
   void seenVersion;
+
+  /* Новые переданные чаты считает само окно взаимодействия — оно знает,
+     открывал сотрудник чат или нет. Берём его ответ как есть.
+     Если сервер такого признака не прислал (старая версия) — откатываемся
+     на свой список просмотренных чатов. */
+  const serverKnows = mine.some((d) => d.newAssigned !== undefined);
   const seen = readSeen(currentUser);
 
-  const newAssigned = mine.filter((d) => !seen.includes(d.id)).length;
+  const newAssigned = serverKnows
+    ? mine.filter((d) => d.newAssigned).length
+    : mine.filter((d) => !seen.includes(d.id)).length;
   const unread = mine.reduce((sum, d) => sum + (d.unread || 0), 0);
 
   /** Вызывать при открытии окна: назначенные чаты перестают считаться новыми. */

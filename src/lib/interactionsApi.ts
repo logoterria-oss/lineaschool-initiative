@@ -24,6 +24,10 @@ export interface DialogItem {
   crmStatus: CrmStatus | null;
   crmLabel: string | null;
   childName: string | null;
+  /** Чат передали сотруднику, и он его ещё не открывал — считает сервер */
+  newAssigned?: boolean;
+  /** Сообщений пришло с момента передачи чата */
+  sinceAssign?: number;
 }
 
 /** Диалоги берём из внешнего окна взаимодействия — там живут все переписки. */
