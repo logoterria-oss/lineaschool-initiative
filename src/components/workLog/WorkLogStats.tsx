@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { WorkLogStats as Stats, fetchWorkLogStats, formatMinutes } from '@/lib/workLogApi';
 import { ROLE_LABELS, StaffRole } from '@/lib/staffApi';
+import WorkLogInsights from './WorkLogInsights';
 
 interface Props {
   dateFrom: string;
@@ -9,6 +10,8 @@ interface Props {
   reloadKey?: number;
   /** Сводка по всем сотрудникам — только для руководителя */
   allStaff?: boolean;
+  /** Учитывается ли время (у администратора — только задачи) */
+  withTime?: boolean;
 }
 
 /** Стрелка и подпись изменения к прошлому периоду */
@@ -27,7 +30,13 @@ function Delta({ now, prev, label }: { now: number; prev: number; label: string 
   );
 }
 
-const WorkLogStatsView = ({ dateFrom, dateTo, reloadKey = 0, allStaff }: Props) => {
+const WorkLogStatsView = ({
+  dateFrom,
+  dateTo,
+  reloadKey = 0,
+  allStaff,
+  withTime = true,
+}: Props) => {
   const [data, setData] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,6 +67,7 @@ const WorkLogStatsView = ({ dateFrom, dateTo, reloadKey = 0, allStaff }: Props) 
           <div className="text-2xl font-bold text-gray-900 mb-1">{data.total_tasks}</div>
           <Delta now={data.total_tasks} prev={data.prev_tasks} label={String(data.prev_tasks)} />
         </div>
+        {withTime && (
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="text-xs text-gray-500 mb-1">Рабочее время</div>
           <div className="text-2xl font-bold text-gray-900 mb-1">
@@ -69,7 +79,10 @@ const WorkLogStatsView = ({ dateFrom, dateTo, reloadKey = 0, allStaff }: Props) 
             label={formatMinutes(data.prev_minutes)}
           />
         </div>
+        )}
       </div>
+
+      <WorkLogInsights data={data} withTime={withTime} />
 
       {data.scope_all && data.by_staff.length > 0 && (
         <div>
@@ -118,9 +131,11 @@ const WorkLogStatsView = ({ dateFrom, dateTo, reloadKey = 0, allStaff }: Props) 
                 </span>
                 <span className="text-sm text-gray-800 flex-1 min-w-0 truncate">{t.task_title}</span>
                 <span className="text-sm font-semibold text-gray-900 shrink-0">{t.tasks}</span>
-                <span className="text-xs text-gray-500 shrink-0 w-20 text-right">
-                  {formatMinutes(t.minutes)}
-                </span>
+                {withTime && (
+                  <span className="text-xs text-gray-500 shrink-0 w-20 text-right">
+                    {formatMinutes(t.minutes)}
+                  </span>
+                )}
               </div>
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div

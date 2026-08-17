@@ -54,6 +54,28 @@ export interface DayStat {
   minutes: number;
 }
 
+export interface CategoryStat {
+  category: string;
+  tasks: number;
+  minutes: number;
+}
+
+export interface WeekStat {
+  week: string;
+  tasks: number;
+  minutes: number;
+}
+
+export interface WeekCategoryStat extends WeekStat {
+  category: string;
+}
+
+export interface SubjectStat {
+  subject: string;
+  tasks: number;
+  minutes: number;
+}
+
 export interface WorkLogStats {
   ok: boolean;
   date_from: string;
@@ -65,6 +87,11 @@ export interface WorkLogStats {
   by_staff: StaffStat[];
   by_task: TaskStat[];
   by_day: DayStat[];
+  by_category?: CategoryStat[];
+  by_week?: WeekStat[];
+  by_week_category?: WeekCategoryStat[];
+  by_subject?: SubjectStat[];
+  active_days?: number;
   can_see_all: boolean;
   scope_all: boolean;
 }

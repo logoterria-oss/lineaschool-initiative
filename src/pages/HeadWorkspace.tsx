@@ -79,7 +79,7 @@ const HeadWorkspace = () => {
       case 'reports': return <ReportsView />;
       case 'homework': return <HomeworkControlSection />;
       case 'worktime': return <WorkScheduleSection readOnly />;
-      case 'work-log': return <WorkTimeView />;
+      case 'work-log': return <WorkTimeView mode="head" />;
       case 'work-log-all': return <StaffWorkTimeView />;
       case 'regulations': return <RegulationsView />;
       case 'supervisions': return <SupervisionsView />;

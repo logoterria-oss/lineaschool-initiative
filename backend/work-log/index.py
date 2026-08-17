@@ -83,8 +83,12 @@ def add_entry(cur, me: Dict[str, Any], data: Dict[str, Any]) -> Dict[str, Any]:
         minutes = int(data.get('minutes') or 0)
     except (TypeError, ValueError):
         minutes = 0
-    if minutes <= 0:
+    # Время обязательно только руководителю: администратор отмечает
+    # сам факт выполненной задачи, без затраченного времени.
+    if me['role'] == 'head' and minutes <= 0:
         return _json({'ok': False, 'message': 'Укажите время на задачу'}, 400)
+    if minutes < 0:
+        minutes = 0
 
     cur.execute(
         f"INSERT INTO {SCHEMA}.work_log "
@@ -200,6 +204,57 @@ def stats(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     )
     by_day = [dict(r) for r in cur.fetchall()]
 
+    # Разрез по направлениям работы (категориям задач)
+    cur.execute(
+        f"SELECT category, COUNT(*) AS tasks, COALESCE(SUM(minutes), 0) AS minutes "
+        f"FROM {SCHEMA}.work_log WHERE {cond} "
+        f"GROUP BY category ORDER BY minutes DESC",
+        args,
+    )
+    by_category = [dict(r) for r in cur.fetchall()]
+
+    # Динамика по неделям — в целом и по направлениям.
+    # Берём период шире, чтобы график недель был содержательным.
+    wide_where = ["log_date >= (%s::date - INTERVAL '8 weeks')", 'log_date <= %s']
+    wide_args: list = [date_to, date_to]
+    if not scope_all:
+        wide_where.append('staff_id = %s')
+        wide_args.append(me['id'])
+    wide_cond = ' AND '.join(wide_where)
+
+    cur.execute(
+        f"SELECT to_char(date_trunc('week', log_date), 'YYYY-MM-DD') AS week, "
+        f"COUNT(*) AS tasks, COALESCE(SUM(minutes), 0) AS minutes "
+        f"FROM {SCHEMA}.work_log WHERE {wide_cond} "
+        f"GROUP BY 1 ORDER BY 1",
+        wide_args,
+    )
+    by_week = [dict(r) for r in cur.fetchall()]
+
+    cur.execute(
+        f"SELECT to_char(date_trunc('week', log_date), 'YYYY-MM-DD') AS week, category, "
+        f"COUNT(*) AS tasks, COALESCE(SUM(minutes), 0) AS minutes "
+        f"FROM {SCHEMA}.work_log WHERE {wide_cond} "
+        f"GROUP BY 1, 2 ORDER BY 1, 2",
+        wide_args,
+    )
+    by_week_category = [dict(r) for r in cur.fetchall()]
+
+    # Активные дни и объекты работы (по кому чаще всего задачи)
+    cur.execute(
+        f"SELECT COUNT(DISTINCT log_date) AS days FROM {SCHEMA}.work_log WHERE {cond}",
+        args,
+    )
+    active_days = int((cur.fetchone() or {}).get('days') or 0)
+
+    cur.execute(
+        f"SELECT subject, COUNT(*) AS tasks, COALESCE(SUM(minutes), 0) AS minutes "
+        f"FROM {SCHEMA}.work_log WHERE {cond} AND subject IS NOT NULL AND subject <> '' "
+        f"GROUP BY subject ORDER BY tasks DESC LIMIT 10",
+        args,
+    )
+    by_subject = [dict(r) for r in cur.fetchall()]
+
     # Тот же период месяцем ранее — для показа динамики
     cur.execute(
         f"SELECT COUNT(*) AS tasks, COALESCE(SUM(minutes), 0) AS minutes "
@@ -224,6 +279,11 @@ def stats(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         'by_staff': by_staff,
         'by_task': by_task,
         'by_day': by_day,
+        'by_category': by_category,
+        'by_week': by_week,
+        'by_week_category': by_week_category,
+        'by_subject': by_subject,
+        'active_days': active_days,
         'can_see_all': me['role'] == 'head',
         'scope_all': scope_all,
     })

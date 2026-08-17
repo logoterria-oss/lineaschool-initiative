@@ -55,7 +55,7 @@ const AdminWorkspace = () => {
       case 'students-list': return <StudentsListView />;
       case 'leads-list': return <LeadsListView />;
       case 'staff-list': return <StaffListView readOnly />;
-      case 'work-log': return <WorkTimeView />;
+      case 'work-log': return <WorkTimeView mode="admin" />;
       default: return <StubView label={active.label} />;
     }
   }, [active]);

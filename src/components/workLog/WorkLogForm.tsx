@@ -2,30 +2,40 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { TASK_CATEGORIES, MINUTE_PRESETS, TaskType } from './tasks';
+import { HEAD_TASK_CATEGORIES } from './headTasks';
 import { addWorkLog, formatMinutes } from '@/lib/workLogApi';
 
 interface Props {
   onSaved?: () => void;
+  /** Руководитель отмечает задачу и время, администратор — только задачу */
+  mode?: 'head' | 'admin';
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-const WorkLogForm = ({ onSaved }: Props) => {
+const WorkLogForm = ({ onSaved, mode = 'admin' }: Props) => {
   const { toast } = useToast();
-  const [catId, setCatId] = useState(TASK_CATEGORIES[0].id);
+  const withTime = mode === 'head';
+  const categories = withTime ? HEAD_TASK_CATEGORIES : TASK_CATEGORIES;
+
+  const [catId, setCatId] = useState(categories[0].id);
   const [task, setTask] = useState<TaskType | null>(null);
   const [logDate, setLogDate] = useState(today());
   const [minutes, setMinutes] = useState<number>(0);
   const [subject, setSubject] = useState('');
+  const [customTitle, setCustomTitle] = useState('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const category = TASK_CATEGORIES.find((c) => c.id === catId) || TASK_CATEGORIES[0];
+  const category = categories.find((c) => c.id === catId) || categories[0];
+  // «Своя задача» — название пишут руками
+  const isCustom = task?.code === 'ПР';
 
   const reset = () => {
     setTask(null);
     setMinutes(0);
     setSubject('');
+    setCustomTitle('');
     setComment('');
   };
 
@@ -34,23 +44,31 @@ const WorkLogForm = ({ onSaved }: Props) => {
       toast({ title: 'Выберите действие', variant: 'destructive' });
       return;
     }
-    if (!minutes || minutes <= 0) {
+    if (isCustom && !customTitle.trim()) {
+      toast({ title: 'Впишите название задачи', variant: 'destructive' });
+      return;
+    }
+    if (withTime && (!minutes || minutes <= 0)) {
       toast({ title: 'Укажите время на задачу', variant: 'destructive' });
       return;
     }
     setSaving(true);
+    const title = isCustom ? customTitle.trim() : task.title;
     const r = await addWorkLog({
       log_date: logDate,
       task_code: task.code,
-      task_title: task.title,
+      task_title: title,
       category: catId,
       subject: subject.trim(),
       comment: comment.trim(),
-      minutes,
+      minutes: withTime ? minutes : 0,
     });
     setSaving(false);
     if (r.ok) {
-      toast({ title: 'Записано', description: `${task.title} · ${formatMinutes(minutes)}` });
+      toast({
+        title: 'Записано',
+        description: withTime ? `${title} · ${formatMinutes(minutes)}` : title,
+      });
       reset();
       onSaved?.();
     } else {
@@ -61,7 +79,7 @@ const WorkLogForm = ({ onSaved }: Props) => {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2">
-        {TASK_CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <button
             key={c.id}
             onClick={() => {
@@ -134,6 +152,21 @@ const WorkLogForm = ({ onSaved }: Props) => {
             )}
           </div>
 
+          {isCustom && (
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">
+                Название задачи <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder="Например: запись обучающего видео"
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          )}
+
+          {withTime && (
           <div>
             <label className="text-xs text-gray-500 mb-1 block">
               Время на задачу <span className="text-red-500">*</span>
@@ -165,6 +198,7 @@ const WorkLogForm = ({ onSaved }: Props) => {
               <span className="text-sm text-gray-500">минут</span>
             </div>
           </div>
+          )}
 
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Комментарий (необязательно)</label>

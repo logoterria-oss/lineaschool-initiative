@@ -11,6 +11,8 @@ interface Props {
   onChanged?: () => void;
   /** Записи всех сотрудников — только для руководителя */
   allStaff?: boolean;
+  /** Показывать затраченное время (у администратора время не ведётся) */
+  withTime?: boolean;
 }
 
 const fmtDate = (d: string) => {
@@ -18,7 +20,14 @@ const fmtDate = (d: string) => {
   return p.length === 3 ? `${p[2]}.${p[1]}` : d;
 };
 
-const WorkLogList = ({ dateFrom, dateTo, reloadKey = 0, onChanged, allStaff }: Props) => {
+const WorkLogList = ({
+  dateFrom,
+  dateTo,
+  reloadKey = 0,
+  onChanged,
+  allStaff,
+  withTime = true,
+}: Props) => {
   const { toast } = useToast();
   const [items, setItems] = useState<WorkLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +85,7 @@ const WorkLogList = ({ dateFrom, dateTo, reloadKey = 0, onChanged, allStaff }: P
             <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
               <span className="font-semibold text-sm text-gray-800">{fmtDate(d)}</span>
               <span className="text-xs text-gray-500">
-                {rows.length} задач · {formatMinutes(total)}
+                {rows.length} задач{withTime ? ` · ${formatMinutes(total)}` : ''}
               </span>
             </div>
             <div className="divide-y divide-gray-50">
@@ -98,9 +107,11 @@ const WorkLogList = ({ dateFrom, dateTo, reloadKey = 0, onChanged, allStaff }: P
                       <div className="text-[11px] text-gray-400 mt-0.5">{e.staff_name}</div>
                     )}
                   </div>
-                  <span className="text-xs text-gray-600 shrink-0 mt-0.5">
-                    {formatMinutes(e.minutes)}
-                  </span>
+                  {withTime && (
+                    <span className="text-xs text-gray-600 shrink-0 mt-0.5">
+                      {formatMinutes(e.minutes)}
+                    </span>
+                  )}
                   <button
                     onClick={() => remove(e)}
                     className="p-1 text-gray-300 hover:text-red-500 shrink-0"

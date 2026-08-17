@@ -17,6 +17,8 @@ type Tab = 'stats' | 'list' | 'add';
 interface Props {
   /** С какой вкладки открыть раздел */
   initialTab?: Tab;
+  /** Руководитель отмечает задачи и время, администратор — только задачи */
+  mode?: 'head' | 'admin';
 }
 
 /**
@@ -24,7 +26,8 @@ interface Props {
  * табличку за месяц и динамику своих показателей. Данные — только свои,
  * сводка по всем сотрудникам живёт в отдельном разделе для руководителя.
  */
-const WorkTimeView = ({ initialTab = 'add' }: Props) => {
+const WorkTimeView = ({ initialTab = 'add', mode = 'admin' }: Props) => {
+  const withTime = mode === 'head';
   const [tab, setTab] = useState<Tab>(initialTab);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [reloadKey, setReloadKey] = useState(0);
@@ -51,7 +54,7 @@ const WorkTimeView = ({ initialTab = 'add' }: Props) => {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex border-b border-gray-200 flex-1 min-w-[260px]">
           <TabButton id="add" icon="PlusCircle" label="Добавить" />
-          <TabButton id="list" icon="ClipboardList" label="Таблица учёта" />
+          <TabButton id="list" icon="ClipboardList" label="Таблица" />
           <TabButton id="stats" icon="BarChart2" label="Моя статистика" />
         </div>
         {tab !== 'add' && (
@@ -66,6 +69,7 @@ const WorkTimeView = ({ initialTab = 'add' }: Props) => {
 
       {tab === 'add' && (
         <WorkLogForm
+          mode={mode}
           onSaved={() => {
             bump();
             setTab('list');
@@ -73,9 +77,17 @@ const WorkTimeView = ({ initialTab = 'add' }: Props) => {
         />
       )}
       {tab === 'list' && (
-        <WorkLogList dateFrom={from} dateTo={to} reloadKey={reloadKey} onChanged={bump} />
+        <WorkLogList
+          dateFrom={from}
+          dateTo={to}
+          reloadKey={reloadKey}
+          onChanged={bump}
+          withTime={withTime}
+        />
       )}
-      {tab === 'stats' && <WorkLogStatsView dateFrom={from} dateTo={to} reloadKey={reloadKey} />}
+      {tab === 'stats' && (
+        <WorkLogStatsView dateFrom={from} dateTo={to} reloadKey={reloadKey} withTime={withTime} />
+      )}
     </div>
   );
 };
