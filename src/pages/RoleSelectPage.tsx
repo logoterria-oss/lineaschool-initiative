@@ -9,6 +9,7 @@ import {
   ROLE_LABELS,
   StaffRole,
 } from '@/lib/staffApi';
+import { homePathForRole } from '@/lib/useRoleGuard';
 import EmailVerifyModal from '@/components/staffAuth/EmailVerifyModal';
 import ForgotPasswordModal from '@/components/staffAuth/ForgotPasswordModal';
 
@@ -59,16 +60,6 @@ const roles = [
 ];
 
 const REG_ROLES: StaffRole[] = ['teacher', 'diag', 'admin', 'head'];
-
-const homePathForRole = (role: StaffRole): string => {
-  switch (role) {
-    case 'head': return '/admin/head-workspace';
-    case 'diag': return '/admin/diag';
-    case 'teacher': return '/admin/teacher-lk';
-    case 'admin': return '/admin/admin-workspace';
-    default: return '/admin/home';
-  }
-};
 
 type Mode = 'personal' | 'shared' | 'register';
 

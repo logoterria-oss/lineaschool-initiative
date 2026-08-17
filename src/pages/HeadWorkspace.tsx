@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
-import { fetchMe, logoutStaff, Staff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
+import { logoutStaff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
+import { useRoleGuard } from '@/lib/useRoleGuard';
 import { HEAD_MENU, SubItem } from '@/components/headWorkspace/menu';
 import StudentsListView from '@/components/headWorkspace/StudentsListView';
 import LeadsListView from '@/components/headWorkspace/LeadsListView';
@@ -32,29 +33,12 @@ import { useInteractionBadges } from '@/components/interaction/useInteractionBad
 const HeadWorkspace = () => {
   const navigate = useNavigate();
   const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
-  const [me, setMe] = useState<Staff | null>(null);
+  const { me, checking } = useRoleGuard('head');
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [active, setActive] = useState<SubItem | null>(null);
 
-  const cachedName = sessionStorage.getItem('staff_name') || '';
-  const cachedRole = (sessionStorage.getItem('staff_role') as StaffRole) || null;
-
-  useEffect(() => {
-    (async () => {
-      const staff = await fetchMe();
-      if (staff) {
-        setMe(staff);
-        sessionStorage.setItem('staff_name', staff.full_name);
-        sessionStorage.setItem('staff_role', staff.role);
-      } else if (!cachedName) {
-        navigate('/admin');
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fullName = me?.full_name || cachedName || 'Сотрудник';
-  const role = (me?.role || cachedRole) as StaffRole | null;
+  const fullName = me?.full_name || 'Сотрудник';
+  const role = (me?.role || null) as StaffRole | null;
 
   const toggleGroup = (id: string) =>
     setOpenGroups((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
@@ -255,6 +239,14 @@ const HeadWorkspace = () => {
       </button>
     </aside>
   );
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
+        <Icon name="Loader2" size={28} className="text-green-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
