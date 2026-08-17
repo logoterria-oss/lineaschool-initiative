@@ -75,6 +75,20 @@ INDIVIDUAL_TEACHERS = {
     15: "Екатерина Мацвей",
 }
 
+# У части педагогов номер в CRM не совпадает с номером в графике работы.
+# Приводим номер из CRM к номеру графика, иначе уроки не сопоставятся с окнами.
+S20_TO_LOCAL_TEACHER = {17: 20}
+LOCAL_TO_S20_TEACHER = {v: k for k, v in S20_TO_LOCAL_TEACHER.items()}
+
+
+def to_local_teacher(teacher_id) -> int:
+    try:
+        tid = int(teacher_id)
+    except (TypeError, ValueError):
+        return -1
+    return S20_TO_LOCAL_TEACHER.get(tid, tid)
+
+
 S20_DAY_TO_WEEKDAY = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6}
 WEEKDAY_NAMES = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
 
@@ -252,12 +266,13 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
 
     work_schedule = get_work_schedule_from_db()
 
+    # Занятость педагога считаем по ВСЕМ урокам — и индивидуальным, и групповым.
+    # Группа занимает педагога целиком, поэтому этот час не может быть свободным
+    # окном под индивидуальное занятие.
     regular_busy_by_weekday = {}
     for rl in regular_lessons:
-        teacher_id = (rl.get("teacher_ids") or [None])[0]
-        if teacher_id not in INDIVIDUAL_TEACHERS:
-            continue
-        if rl.get("lesson_type_id") != 1:
+        teacher_ids = [to_local_teacher(t) for t in (rl.get("teacher_ids") or []) if t is not None]
+        if not any(t in INDIVIDUAL_TEACHERS for t in teacher_ids):
             continue
         time_from = rl.get("time_from_v", "")
         time_to = rl.get("time_to_v", "")
@@ -277,15 +292,14 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
                     weekdays.append(wd)
 
         for wd in weekdays:
-            regular_busy_by_weekday.setdefault((wd, int(teacher_id)), []).append({
-                "time_from": time_from, "time_to": time_to,
-                "b_date": b_date, "e_date": e_date,
-            })
+            for tid in teacher_ids:
+                regular_busy_by_weekday.setdefault((wd, tid), []).append({
+                    "time_from": time_from, "time_to": time_to,
+                    "b_date": b_date, "e_date": e_date,
+                })
 
     booked_by_date = {}
     for lesson in booked_lessons:
-        if lesson.get("lesson_type_id") != 1:
-            continue
         if lesson.get("status") == 3:
             continue
         lesson_date = lesson.get("date", "")[:10]
@@ -296,7 +310,7 @@ def compute_free_slots(regular_lessons: list, booked_lessons: list,
         if " " in time_to:
             time_to = time_to.split(" ")[-1][:5]
         for tid in lesson.get("teacher_ids", []):
-            booked_by_date.setdefault((lesson_date, int(tid)), []).append({
+            booked_by_date.setdefault((lesson_date, to_local_teacher(tid)), []).append({
                 "time_from": time_from, "time_to": time_to,
             })
 
@@ -1094,11 +1108,12 @@ def handler(event: dict, context) -> dict:
         except Exception:
             booked_lessons = []
 
-        # booked_by_date[(date_str, teacher_id)] = [{time_from, time_to, lesson_id}]
+        # booked_by_date[(date_str, teacher_id)] = [{time_from, time_to, lesson_id, is_group}]
+        # Учитываем и индивидуальные, и групповые уроки: группа занимает педагога
+        # целиком, поэтому её час не может быть свободным окном под индивидуальное.
         booked_by_date = {}
         for lesson in booked_lessons:
-            if lesson.get("lesson_type_id") != 1:
-                continue
+            is_group = lesson.get("lesson_type_id") == 2
             lesson_date = (lesson.get("date") or "")[:10]
             tf = lesson.get("time_from", "")
             tt = lesson.get("time_to", "")
@@ -1109,9 +1124,10 @@ def handler(event: dict, context) -> dict:
             tf = tf[:5]
             tt = tt[:5]
             for tid in lesson.get("teacher_ids", []):
-                key = (lesson_date, int(tid))
+                key = (lesson_date, to_local_teacher(tid))
                 booked_by_date.setdefault(key, []).append({
-                    "time_from": tf, "time_to": tt, "lesson_id": lesson.get("id"),
+                    "time_from": tf, "time_to": tt,
+                    "lesson_id": lesson.get("id"), "is_group": is_group,
                 })
 
         tomorrow = today.date() + timedelta(days=1)
@@ -1133,14 +1149,16 @@ def handler(event: dict, context) -> dict:
                         # Выходной/отпуск педагога — слот недействителен, не показываем
                         if slot_blocked_by_absence(absences.get(int(teacher_id)), date_str, tf, tt):
                             continue
-                        # Проверяем: занят ли этот слот
+                        # Проверяем: занят ли этот слот. Групповое занятие
+                        # приоритетнее — при накладке окно точно не свободно.
                         busy = False
                         booked_lesson_id = None
                         for booked in booked_by_date.get((date_str, int(teacher_id)), []):
                             if booked["time_from"] < tt and booked["time_to"] > tf:
                                 busy = True
                                 booked_lesson_id = booked.get("lesson_id")
-                                break
+                                if booked.get("is_group"):
+                                    break
                         entry = {
                             "time_from": tf,
                             "time_to": tt,
@@ -1170,7 +1188,7 @@ def handler(event: dict, context) -> dict:
 
     if mode == "free_slots":
         date_to_slots = (today + timedelta(days=27)).strftime("%Y-%m-%d")
-        teacher_ids = list(INDIVIDUAL_TEACHERS.keys())
+        teacher_ids = [LOCAL_TO_S20_TEACHER.get(t, t) for t in INDIVIDUAL_TEACHERS]
         regular_lessons = get_regular_lessons(token, teacher_ids)
         booked_lessons = get_lessons(token, today.strftime("%Y-%m-%d"), date_to_slots)
         slots_by_weekday = compute_free_slots(
