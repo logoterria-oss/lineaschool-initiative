@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "name": "Смены за месяц",
+      "method": "GET",
+      "path": "/?month=2026-08",
+      "expectedStatus": 200,
+      "expectedBody": {"month": "2026-08"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Месяц обязателен",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

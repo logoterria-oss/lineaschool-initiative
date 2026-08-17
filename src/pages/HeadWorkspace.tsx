@@ -23,6 +23,7 @@ import StaffListView from '@/components/headWorkspace/StaffListView';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
+import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import { INTERACTION_URL } from '@/lib/interactionUrl';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import StaffWorkTimeView from '@/components/workLog/StaffWorkTimeView';
@@ -78,6 +79,7 @@ const HeadWorkspace = () => {
     if (!active) return null;
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
+      case 'admin-shifts': return <AdminShiftsView />;
       case 'students-list': return <StudentsListView />;
       case 'leads': return <LeadsListView />;
       case 'interactions': return <InteractionsView />;

@@ -15,6 +15,7 @@ import TeacherViolationsManager from '@/components/violations/TeacherViolationsM
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import LeadsListView from '@/components/adminWorkspace/LeadsListView';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
+import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import { INTERACTION_URL } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 
@@ -60,6 +61,7 @@ const AdminWorkspace = () => {
     if (!active) return null;
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
+      case 'admin-shifts': return <AdminShiftsView />;
       case 'schedule': return <ScheduleView />;
       case 'payments-status': return <PaymentsStatusView />;
       case 'interactions': return <InteractionsView />;

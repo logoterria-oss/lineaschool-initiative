@@ -1,0 +1,202 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Icon from '@/components/ui/icon';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AdminShift,
+  KIND_META,
+  ShiftAdmin,
+  ShiftKind,
+  deleteShift,
+  fetchShifts,
+  saveShift,
+} from '@/lib/adminShiftsApi';
+import ShiftEditor from './ShiftEditor';
+
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+const shortName = (full: string) => {
+  const parts = (full || '').trim().split(/\s+/);
+  if (parts.length < 2) return full;
+  return `${parts[0]} ${parts[1][0]}.`;
+};
+
+/** Сетка месяца: массив дат «YYYY-MM-DD» либо null для пустых клеток */
+function monthGrid(month: string): (string | null)[] {
+  const [y, m] = month.split('-').map(Number);
+  const first = new Date(y, m - 1, 1);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const lead = (first.getDay() + 6) % 7;
+  const cells: (string | null)[] = Array(lead).fill(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+const shiftMonth = (month: string, delta: number) => {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const monthTitle = (month: string) => {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+};
+
+/** График работы администраторов — календарь смен по датам */
+const AdminShiftsView = () => {
+  const { toast } = useToast();
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [shifts, setShifts] = useState<AdminShift[]>([]);
+  const [admins, setAdmins] = useState<ShiftAdmin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editDate, setEditDate] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const data = await fetchShifts(month);
+    setShifts(data.shifts);
+    setAdmins(data.admins);
+    setLoading(false);
+  }, [month]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const byDate = useMemo(() => {
+    const map: Record<string, AdminShift[]> = {};
+    for (const s of shifts) {
+      const key = s.shift_date.slice(0, 10);
+      (map[key] ||= []).push(s);
+    }
+    return map;
+  }, [shifts]);
+
+  const cells = useMemo(() => monthGrid(month), [month]);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const handleSave = async (p: {
+    staff_id: number;
+    date: string;
+    time_from: string;
+    time_to: string;
+    kind: ShiftKind;
+    note: string;
+  }) => {
+    const ok = await saveShift(p);
+    if (!ok) {
+      toast({ title: 'Не удалось сохранить', variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Смена сохранена' });
+    load();
+  };
+
+  const handleDelete = async (staffId: number, date: string) => {
+    const ok = await deleteShift(staffId, date);
+    if (!ok) {
+      toast({ title: 'Не удалось убрать смену', variant: 'destructive' });
+      return;
+    }
+    load();
+  };
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setMonth(shiftMonth(month, -1))}
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50"
+          >
+            <Icon name="ChevronLeft" size={18} />
+          </button>
+          <div className="min-w-[170px] text-center font-semibold text-gray-900 first-letter:uppercase">
+            {monthTitle(month)}
+          </div>
+          <button
+            onClick={() => setMonth(shiftMonth(month, 1))}
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50"
+          >
+            <Icon name="ChevronRight" size={18} />
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 ml-auto text-xs text-gray-500">
+          {(Object.keys(KIND_META) as ShiftKind[]).map((k) => (
+            <span key={k} className="inline-flex items-center gap-1.5">
+              <span className={`w-2.5 h-2.5 rounded-full ${KIND_META[k].dot}`} />
+              {KIND_META[k].label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 rounded-2xl overflow-hidden">
+        {WEEKDAYS.map((w) => (
+          <div key={w} className="bg-gray-50 text-center text-xs font-medium text-gray-500 py-2">
+            {w}
+          </div>
+        ))}
+
+        {cells.map((date, i) => {
+          if (!date) return <div key={`empty-${i}`} className="bg-gray-50 min-h-[92px]" />;
+          const day = Number(date.slice(8, 10));
+          const list = byDate[date] || [];
+          const isToday = date === today;
+          return (
+            <button
+              key={date}
+              onClick={() => setEditDate(date)}
+              className={`bg-white min-h-[92px] p-1.5 text-left align-top hover:bg-green-50/60 transition-colors ${
+                isToday ? 'ring-2 ring-inset ring-green-400' : ''
+              }`}
+            >
+              <div className={`text-xs mb-1 ${isToday ? 'font-bold text-green-700' : 'text-gray-400'}`}>
+                {day}
+              </div>
+              <div className="space-y-0.5">
+                {list.slice(0, 3).map((s) => (
+                  <div
+                    key={s.id}
+                    className={`text-[11px] leading-tight rounded px-1 py-0.5 truncate border ${KIND_META[s.kind].cls}`}
+                    title={`${s.staff_name}${s.kind === 'work' ? ` ${s.time_from}–${s.time_to}` : ` — ${KIND_META[s.kind].label}`}`}
+                  >
+                    {shortName(s.staff_name)}
+                    {s.kind === 'work' ? ` ${s.time_from}` : ''}
+                  </div>
+                ))}
+                {list.length > 3 && (
+                  <div className="text-[11px] text-gray-400 px-1">ещё {list.length - 3}</div>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {loading && <div className="text-sm text-gray-400 mt-3">Загружаем график…</div>}
+      {!loading && shifts.length === 0 && (
+        <div className="text-sm text-gray-500 mt-3">
+          Смен пока нет. Нажмите на любой день, чтобы поставить смену.
+        </div>
+      )}
+
+      {editDate && (
+        <ShiftEditor
+          date={editDate}
+          admins={admins}
+          shifts={shifts}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onClose={() => setEditDate(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default AdminShiftsView;
