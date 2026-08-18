@@ -6,11 +6,13 @@ import {
   KIND_META,
   ShiftAdmin,
   ShiftKind,
+  ShiftTask,
   deleteShift,
   fetchShifts,
   saveShift,
 } from '@/lib/adminShiftsApi';
 import ShiftEditor from './ShiftEditor';
+import ShiftDayDetails from './ShiftDayDetails';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -53,12 +55,16 @@ const AdminShiftsView = () => {
   const [admins, setAdmins] = useState<ShiftAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [editDate, setEditDate] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<ShiftTask[]>([]);
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
+  const [tapDate, setTapDate] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     const data = await fetchShifts(month);
     setShifts(data.shifts);
     setAdmins(data.admins);
+    setTasks(data.tasks);
     setLoading(false);
   }, [month]);
 
@@ -74,6 +80,12 @@ const AdminShiftsView = () => {
     }
     return map;
   }, [shifts]);
+
+  const tasksByDate = useMemo(() => {
+    const map: Record<string, ShiftTask[]> = {};
+    for (const t of tasks) (map[t.log_date] ||= []).push(t);
+    return map;
+  }, [tasks]);
 
   const cells = useMemo(() => monthGrid(month), [month]);
   const today = new Date().toISOString().slice(0, 10);
@@ -147,33 +159,61 @@ const AdminShiftsView = () => {
           const day = Number(date.slice(8, 10));
           const list = byDate[date] || [];
           const isToday = date === today;
+          const marked = list.some((s) => s.started_at || s.finished_at);
           return (
-            <button
+            <div
               key={date}
-              onClick={() => setEditDate(date)}
-              className={`bg-white min-h-[92px] p-1.5 text-left align-top hover:bg-green-50/60 transition-colors ${
+              className={`relative bg-white min-h-[92px] ${
                 isToday ? 'ring-2 ring-inset ring-green-400' : ''
               }`}
+              onMouseEnter={() => marked && setHoverDate(date)}
+              onMouseLeave={() => setHoverDate(null)}
             >
-              <div className={`text-xs mb-1 ${isToday ? 'font-bold text-green-700' : 'text-gray-400'}`}>
-                {day}
-              </div>
-              <div className="space-y-0.5">
-                {list.slice(0, 3).map((s) => (
-                  <div
-                    key={s.id}
-                    className={`text-[11px] leading-tight rounded px-1 py-0.5 truncate border ${KIND_META[s.kind].cls}`}
-                    title={`${s.staff_name}${s.kind === 'work' ? ` ${s.time_from}–${s.time_to}` : ` — ${KIND_META[s.kind].label}`}`}
-                  >
-                    {shortName(s.staff_name)}
-                    {s.kind === 'work' ? ` ${s.time_from}` : ''}
-                  </div>
-                ))}
-                {list.length > 3 && (
-                  <div className="text-[11px] text-gray-400 px-1">ещё {list.length - 3}</div>
-                )}
-              </div>
-            </button>
+              <button
+                onClick={() => (marked ? setTapDate(date) : setEditDate(date))}
+                onDoubleClick={() => setEditDate(date)}
+                className="w-full h-full min-h-[92px] p-1.5 text-left align-top hover:bg-green-50/60 transition-colors"
+              >
+                <div
+                  className={`text-xs mb-1 ${isToday ? 'font-bold text-green-700' : 'text-gray-400'}`}
+                >
+                  {day}
+                </div>
+                <div className="space-y-0.5">
+                  {list.slice(0, 3).map((s) => (
+                    <div
+                      key={s.id}
+                      className={`flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 border ${KIND_META[s.kind].cls}`}
+                      title={`${s.staff_name}${s.kind === 'work' ? ` ${s.time_from}–${s.time_to}` : ` — ${KIND_META[s.kind].label}`}`}
+                    >
+                      <span className="truncate flex-1">
+                        {shortName(s.staff_name)}
+                        {s.kind === 'work' && s.time_from ? ` ${s.time_from}` : ''}
+                      </span>
+                      {(s.started_at || s.finished_at) && (
+                        <span className="flex items-center shrink-0">
+                          {s.started_at && <Icon name="Check" size={11} className="-mr-1" />}
+                          {s.finished_at && <Icon name="Check" size={11} />}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {list.length > 3 && (
+                    <div className="text-[11px] text-gray-400 px-1">ещё {list.length - 3}</div>
+                  )}
+                </div>
+              </button>
+
+              {hoverDate === date && (
+                <div className="hidden sm:block absolute z-30 top-full left-0 mt-1">
+                  <ShiftDayDetails
+                    date={date}
+                    shifts={list}
+                    tasks={tasksByDate[date] || []}
+                  />
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
@@ -183,6 +223,22 @@ const AdminShiftsView = () => {
         <div className="text-sm text-gray-500 mt-3">
           Смен пока нет. Нажмите на любой день, чтобы поставить смену.
         </div>
+      )}
+      {!loading && shifts.length > 0 && (
+        <div className="text-xs text-gray-400 mt-3">
+          Две галочки в ячейке — смена открыта и закрыта. Наведите на день (или коснитесь на
+          телефоне), чтобы увидеть время и задачи. Двойной клик — редактировать смену.
+        </div>
+      )}
+
+      {tapDate && (
+        <ShiftDayDetails
+          asModal
+          date={tapDate}
+          shifts={byDate[tapDate] || []}
+          tasks={tasksByDate[tapDate] || []}
+          onClose={() => setTapDate(null)}
+        />
       )}
 
       {editDate && (

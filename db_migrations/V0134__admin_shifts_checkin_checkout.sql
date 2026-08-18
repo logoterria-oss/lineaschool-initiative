@@ -1,0 +1,3 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.admin_shifts
+  ADD COLUMN IF NOT EXISTS started_at TIMESTAMP NULL,
+  ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP NULL;

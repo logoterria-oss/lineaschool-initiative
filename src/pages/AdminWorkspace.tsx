@@ -17,6 +17,7 @@ import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import LeadsListView from '@/components/adminWorkspace/LeadsListView';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
+import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import { INTERACTION_URL } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 
@@ -118,6 +119,7 @@ const AdminWorkspace = () => {
           <Icon name="UserCog" size={16} className="flex-shrink-0" />
           <span className={collapsed ? lbl : ''}>Мой профиль</span>
         </button>
+        <ShiftToggleButton />
       </div>
 
       <a

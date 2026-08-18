@@ -9,6 +9,23 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Отметка смены без входа закрыта",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "start", "date": "2026-08-18"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Состояние смены без входа закрыто",
+      "method": "GET",
+      "path": "/?action=my-shift&date=2026-08-18",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Месяц обязателен",
       "method": "GET",
       "path": "/",
