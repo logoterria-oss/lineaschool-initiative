@@ -1,5 +1,5 @@
 import Icon from '@/components/ui/icon';
-import { AdminShift, ShiftTask, KIND_META, shiftTime } from '@/lib/adminShiftsApi';
+import { AdminShift, ShiftTask, shiftTime } from '@/lib/adminShiftsApi';
 import { formatMinutes } from '@/lib/workLogApi';
 
 interface Props {
@@ -29,14 +29,7 @@ const ShiftDayDetails = ({ date, shifts, tasks, asModal, onClose }: Props) => {
         const totalMinutes = own.reduce((sum, t) => sum + (t.minutes || 0), 0);
         return (
           <div key={s.id} className="border-t border-gray-100 pt-2 first:border-0 first:pt-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-sm font-medium text-gray-900">{s.staff_name}</span>
-              <span
-                className={`text-[10px] rounded-full border px-1.5 py-0.5 ${KIND_META[s.kind].cls}`}
-              >
-                {KIND_META[s.kind].label}
-              </span>
-            </div>
+            <div className="text-sm font-medium text-gray-900">{s.staff_name}</div>
 
             <div className="mt-1 space-y-0.5 text-xs">
               <div

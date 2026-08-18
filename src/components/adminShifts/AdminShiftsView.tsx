@@ -3,7 +3,6 @@ import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import {
   AdminShift,
-  KIND_META,
   ShiftAdmin,
   ShiftKind,
   ShiftTask,
@@ -138,12 +137,15 @@ const AdminShiftsView = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 ml-auto text-xs text-gray-500">
-          {(Object.keys(KIND_META) as ShiftKind[]).map((k) => (
-            <span key={k} className="inline-flex items-center gap-1.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${KIND_META[k].dot}`} />
-              {KIND_META[k].label}
-            </span>
-          ))}
+          <span className="inline-flex items-center gap-1">
+            <Icon name="Check" size={13} className="text-green-600" />
+            смена открыта
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Icon name="Check" size={13} className="text-green-600" />
+            <Icon name="Check" size={13} className="text-green-600 -ml-2" />
+            смена закрыта
+          </span>
         </div>
       </div>
 
@@ -183,13 +185,10 @@ const AdminShiftsView = () => {
                   {list.slice(0, 3).map((s) => (
                     <div
                       key={s.id}
-                      className={`flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 border ${KIND_META[s.kind].cls}`}
-                      title={`${s.staff_name}${s.kind === 'work' ? ` ${s.time_from}–${s.time_to}` : ` — ${KIND_META[s.kind].label}`}`}
+                      className="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 border bg-green-100 text-green-800 border-green-200"
+                      title={s.staff_name}
                     >
-                      <span className="truncate flex-1">
-                        {shortName(s.staff_name)}
-                        {s.kind === 'work' && s.time_from ? ` ${s.time_from}` : ''}
-                      </span>
+                      <span className="truncate flex-1">{shortName(s.staff_name)}</span>
                       {(s.started_at || s.finished_at) && (
                         <span className="flex items-center shrink-0">
                           {s.started_at && <Icon name="Check" size={11} className="-mr-1" />}

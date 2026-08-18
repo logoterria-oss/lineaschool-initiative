@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { AdminShift, KIND_META, ShiftAdmin, ShiftKind } from '@/lib/adminShiftsApi';
-
-const TIME_OPTIONS: string[] = [];
-for (let h = 7; h <= 22; h++) {
-  TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:00`);
-  if (h < 22) TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:30`);
-}
+import { AdminShift, ShiftAdmin, ShiftKind, shiftTime } from '@/lib/adminShiftsApi';
 
 const fmtDate = (d: string) =>
   new Date(`${d}T00:00:00`).toLocaleDateString('ru-RU', {
@@ -28,16 +22,13 @@ interface Props {
 /** Окно редактирования смен на конкретный день */
 const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props) => {
   const [staffId, setStaffId] = useState<number>(admins[0]?.id || 0);
-  const [kind, setKind] = useState<ShiftKind>('work');
-  const [from, setFrom] = useState('09:00');
-  const [to, setTo] = useState('18:00');
   const [note, setNote] = useState('');
 
   const dayShifts = shifts.filter((s) => s.shift_date.slice(0, 10) === date);
 
   const submit = () => {
     if (!staffId) return;
-    onSave({ staff_id: staffId, date, time_from: from, time_to: to, kind, note });
+    onSave({ staff_id: staffId, date, time_from: '', time_to: '', kind: 'work' as ShiftKind, note });
     setNote('');
   };
 
@@ -61,11 +52,13 @@ const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props)
               {dayShifts.map((s) => (
                 <div
                   key={s.id}
-                  className={`flex items-center gap-2 border rounded-xl px-3 py-2 text-sm ${KIND_META[s.kind].cls}`}
+                  className="flex items-center gap-2 border border-green-200 bg-green-50 text-green-900 rounded-xl px-3 py-2 text-sm"
                 >
                   <span className="font-medium truncate">{s.staff_name}</span>
-                  <span className="ml-auto whitespace-nowrap">
-                    {s.kind === 'work' ? `${s.time_from}–${s.time_to}` : KIND_META[s.kind].label}
+                  <span className="ml-auto whitespace-nowrap text-xs opacity-80">
+                    {s.started_at
+                      ? `${shiftTime(s.started_at)}${s.finished_at ? `–${shiftTime(s.finished_at)}` : '…'}`
+                      : 'не отмечался'}
                   </span>
                   <button
                     onClick={() => onDelete(s.staff_id, date)}
@@ -94,44 +87,6 @@ const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props)
                 </option>
               ))}
             </select>
-
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(KIND_META) as ShiftKind[]).map((k) => (
-                <button
-                  key={k}
-                  onClick={() => setKind(k)}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                    kind === k ? KIND_META[k].cls : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {KIND_META[k].label}
-                </button>
-              ))}
-            </div>
-
-            {kind === 'work' && (
-              <div className="flex items-center gap-2">
-                <select
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
-                >
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <span className="text-gray-400">–</span>
-                <select
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
-                >
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <input
               value={note}
