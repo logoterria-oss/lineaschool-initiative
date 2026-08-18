@@ -32,6 +32,14 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Без входа частые задачи закрыты",
+      "method": "GET",
+      "path": "/?action=suggestions",
+      "expectedStatus": 401,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Чужой токен не пускает",
       "method": "GET",
       "path": "/?token=nonexistent-token-12345",

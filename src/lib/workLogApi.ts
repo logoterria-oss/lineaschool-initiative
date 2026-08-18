@@ -148,6 +148,21 @@ export async function fetchWorkLogStats(range: {
   return r.json();
 }
 
+export interface FrequentTask {
+  title: string;
+  uses: number;
+  minutes: number;
+  last_date: string;
+}
+
+/** Задачи из «Другого», вписанные вручную 2 и более раз — показываем готовыми кнопками */
+export async function fetchFrequentTasks(): Promise<FrequentTask[]> {
+  const r = await fetch(`${API_URL}?action=suggestions`, { headers: authHeaders() });
+  if (!r.ok) return [];
+  const data = await r.json();
+  return data.items || [];
+}
+
 /** «95» → «1 ч 35 мин» */
 export function formatMinutes(total: number): string {
   const m = Math.max(0, Math.round(total || 0));

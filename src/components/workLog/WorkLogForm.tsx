@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { TASK_CATEGORIES, MINUTE_PRESETS, TaskType } from './tasks';
 import { HEAD_TASK_CATEGORIES } from './headTasks';
-import { addWorkLog, formatMinutes } from '@/lib/workLogApi';
+import { addWorkLog, formatMinutes, fetchFrequentTasks, FrequentTask } from '@/lib/workLogApi';
 
 interface Props {
   onSaved?: () => void;
@@ -26,10 +26,19 @@ const WorkLogForm = ({ onSaved, mode = 'admin' }: Props) => {
   const [customTitle, setCustomTitle] = useState('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
+  const [frequent, setFrequent] = useState<FrequentTask[]>([]);
 
   const category = categories.find((c) => c.id === catId) || categories[0];
   // «Своя задача» — название пишут руками
   const isCustom = task?.code === 'ПР';
+
+  const loadFrequent = useCallback(async () => {
+    setFrequent(await fetchFrequentTasks());
+  }, []);
+
+  useEffect(() => {
+    loadFrequent();
+  }, [loadFrequent]);
 
   const reset = () => {
     setTask(null);
@@ -70,6 +79,7 @@ const WorkLogForm = ({ onSaved, mode = 'admin' }: Props) => {
         description: withTime ? `${title} · ${formatMinutes(minutes)}` : title,
       });
       reset();
+      loadFrequent();
       onSaved?.();
     } else {
       toast({ title: r.message || 'Не удалось сохранить', variant: 'destructive' });
@@ -125,6 +135,46 @@ const WorkLogForm = ({ onSaved, mode = 'admin' }: Props) => {
             );
           })}
         </div>
+
+        {catId === 'other' && frequent.length > 0 && (
+          <div className="mt-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Icon name="Sparkles" size={13} className="text-amber-500" />
+              <span className="text-xs text-gray-500">
+                Ваши частые задачи — накопились из «Другого»
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {frequent.map((f) => {
+                const picked = isCustom && customTitle === f.title;
+                return (
+                  <button
+                    key={f.title}
+                    onClick={() => {
+                      const custom = category.items.find((t) => t.code === 'ПР');
+                      if (custom) setTask(custom);
+                      setCustomTitle(f.title);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                      picked
+                        ? 'bg-amber-500 border-amber-500 text-white'
+                        : 'bg-amber-50/60 border-amber-200 text-gray-700 hover:border-amber-400'
+                    }`}
+                  >
+                    {f.title}
+                    <span
+                      className={`text-[10px] font-semibold rounded-full px-1.5 ${
+                        picked ? 'bg-white/25 text-white' : 'bg-white text-amber-600'
+                      }`}
+                    >
+                      {f.uses}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {task && (

@@ -166,6 +166,26 @@ def list_entries(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, A
     })
 
 
+def suggestions(cur, me: Dict[str, Any]) -> Dict[str, Any]:
+    """Задачи из «Другого», которые вписывали вручную больше одного раза.
+
+    Такие повторяющиеся задачи возвращаются как готовые кнопки —
+    чтобы не набирать одно и то же название заново.
+    """
+    cur.execute(
+        f"SELECT min(btrim(task_title)) AS title, COUNT(*) AS uses, "
+        f"COALESCE(SUM(minutes), 0) AS minutes, MAX(log_date) AS last_date "
+        f"FROM {SCHEMA}.work_log "
+        f"WHERE task_code = 'ПР' AND staff_role = %s AND btrim(task_title) <> '' "
+        f"GROUP BY lower(btrim(task_title)) "
+        f"HAVING COUNT(*) >= 2 "
+        f"ORDER BY COUNT(*) DESC, MAX(log_date) DESC LIMIT 12",
+        (me['role'],),
+    )
+    items = [dict(r) for r in cur.fetchall()]
+    return _json({'ok': True, 'items': items})
+
+
 def stats(cur, me: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     """Сводка за период: по сотрудникам, по типам задач и по дням."""
     date_from, date_to = _period_range(params)
@@ -311,6 +331,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if method == 'GET':
                 if action == 'stats':
                     result = stats(cur, me, params)
+                elif action == 'suggestions':
+                    result = suggestions(cur, me)
                 else:
                     result = list_entries(cur, me, params)
                 conn.commit()
