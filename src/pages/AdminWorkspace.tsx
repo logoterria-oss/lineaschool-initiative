@@ -149,12 +149,12 @@ const AdminWorkspace = () => {
       </a>
 
       <button
-        onClick={() => setActive({ id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' })}
+        onClick={() => setActive({ id: 'work-log', label: 'Журнал административного учёта', kind: 'component', icon: 'ClipboardPen' })}
         className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
           workLogActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
         }`}
       >
-        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Учёт рабочего времени</span>
+        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Журнал административного учёта</span>
       </button>
 
       <nav className="bg-white rounded-2xl border border-gray-200 shadow-sm p-2">
