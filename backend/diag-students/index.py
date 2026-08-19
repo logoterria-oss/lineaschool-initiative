@@ -92,6 +92,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         rows = cursor.fetchall()
 
+        # Резервные даты рождения: из анкет родителей и из любых заключений,
+        # где дата указана (в свежем заключении её могли не заполнить)
+        cursor.execute("""
+            SELECT lower(regexp_replace(trim(child_name), '\\s+', ' ', 'g')) AS key,
+                   birth_date, grade
+            FROM t_p93118852_lineaschool_initiati.parent_questionnaire
+            WHERE COALESCE(birth_date, '') <> ''
+        """)
+        fallback_bd = {}
+        fallback_grade = {}
+        for r in cursor.fetchall():
+            fallback_bd[r['key']] = r['birth_date']
+            if r.get('grade'):
+                fallback_grade[r['key']] = r['grade']
+
+        cursor.execute("""
+            SELECT lower(regexp_replace(trim(COALESCE(NULLIF(form_data::jsonb ->> 'childName', ''), student_name)), '\\s+', ' ', 'g')) AS key,
+                   form_data::jsonb ->> 'birthDate' AS birth_date
+            FROM t_p93118852_lineaschool_initiati.speech_therapy_reports
+            WHERE archived_at IS NULL AND COALESCE(form_data::jsonb ->> 'birthDate', '') <> ''
+            ORDER BY date_of_examination DESC NULLS LAST, id DESC
+        """)
+        for r in cursor.fetchall():
+            fallback_bd.setdefault(r['key'], r['birth_date'])
+
+        def name_key(v: str) -> str:
+            return ' '.join((v or '').lower().split())
+
         def as_list(v):
             if isinstance(v, list):
                 return [str(x) for x in v]
@@ -102,11 +130,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             name = (r.get('child_name') or r.get('student_name') or '').strip()
             if not name:
                 continue
+            k = name_key(name)
             students.append({
                 'id': r['id'],
                 'name': name,
-                'birthDate': r.get('birth_date') or '',
-                'grade': r.get('grade') or '',
+                'birthDate': (r.get('birth_date') or '') or fallback_bd.get(k, ''),
+                'grade': (r.get('grade') or '') or fallback_grade.get(k, ''),
                 'examDate': r['date_of_examination'].isoformat() if r['date_of_examination'] else None,
                 'primary': {
                     'wordUnderstanding': r.get('word_understanding') or '',

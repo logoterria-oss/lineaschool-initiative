@@ -108,9 +108,9 @@ export default function InterimPersonalDataSection({ data, onChange, onSelectStu
             if (name.includes('тест')) return false;
             if (name.includes('проверк')) return false;
             if (name.includes('абраменко') && name.includes('виктория')) return false;
-            // Отсекаем неполные ФИО (меньше трёх слов: должны быть фамилия, имя, отчество)
+            // Отсекаем совсем неполные записи (нужны минимум фамилия и имя)
             const words = raw.split(/\s+/).filter((w) => /[а-яёa-z]/i.test(w));
-            if (words.length < 3) return false;
+            if (words.length < 2) return false;
             return true;
           });
           setStudents(filtered);
@@ -129,9 +129,14 @@ export default function InterimPersonalDataSection({ data, onChange, onSelectStu
   }, []);
 
   const matches = useMemo(() => {
-    const q = data.childName.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) => s.name.toLowerCase().includes(q));
+    const norm = (v: string) => v.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
+    const words = norm(data.childName).split(' ').filter(Boolean);
+    if (!words.length) return students;
+    // Ищем по любому порядку слов: «Егор Сытин» найдёт «Сытин Егор Иванович»
+    return students.filter((s) => {
+      const name = norm(s.name);
+      return words.every((w) => name.includes(w));
+    });
   }, [students, data.childName]);
 
   const selectStudent = (s: InterimStudent) => {
