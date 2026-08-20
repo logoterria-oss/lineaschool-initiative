@@ -110,6 +110,12 @@ const isSingleImpaired = (v: string) => {
 const arrHas = (arr: string[], substr: string) =>
   (arr || []).some((x) => norm(x).includes(substr));
 
+// Ищет в массиве строку по ключевому слову
+const findItem = (arr: string[], kw: string) => (arr || []).find((x) => norm(x).includes(kw));
+
+// Процесс нарушен, если формулировка найдена и её уровень — не «норма»
+const itemImpaired = (item: string | undefined) => !!item && matchLevel(item) !== 'норма';
+
 /**
  * Вычисляет автоматические галочки раздела «Нарушенные процессы»
  * на основе данных первичной диагностики.
@@ -129,24 +135,22 @@ export function computeImpairedFromPrimary(
   const motor = p.motorRealization || [];
 
   // Звукопроизношение: нарушено в первичной И в заключении «артикуляторно-акустическая дисграфия»
-  const soundImpairedInPrimary = arrHas(motor, 'нарушен');
+  const soundImpairedInPrimary = (motor || []).some(
+    (x) => norm(x).includes('нарушен') && matchLevel(x) !== 'норма',
+  );
   const hasArtAcousticDysgraphia = arrHas(p.dysgraphiaTypes || [], 'артикуляторно-акустическая');
   state.soundProduction = soundImpairedInPrimary && hasArtAcousticDysgraphia;
 
-  state.syllableStructure = arrHas(motor, 'слоговая структура слова нарушена');
-  state.kineticPraxis = arrHas(motor, 'кинетический артикуляционный праксис нарушен');
+  state.syllableStructure = itemImpaired(findItem(motor, 'слоговая структура'));
+  state.kineticPraxis = itemImpaired(findItem(motor, 'кинетический'));
   state.grammaticalStructure = isSingleImpaired(p.grammaticalStructure);
 
   const connected = p.connectedSpeech || [];
-  state.connectedSpeech = arrHas(connected, 'нарушен');
+  state.connectedSpeech = itemImpaired(findItem(connected, 'нарушен'));
 
-  // 3) Языковой анализ и синтез — нарушено, если «не соответствует» или «не сформирован»
+  // 3) Языковой анализ и синтез — нарушено, если уровень не «норма»
   const la = p.languageAnalysis || [];
-  const laImpaired = (kw: string) =>
-    (la || []).some((x) => {
-      const s = norm(x);
-      return s.includes(kw) && (s.includes('не соответствует') || s.includes('не сформирован'));
-    });
+  const laImpaired = (kw: string) => itemImpaired(findItem(la, kw));
   state.phonematicAnalysis = laImpaired('фонематическ');
   state.syllableAnalysis = laImpaired('слогов');
   state.sentenceAnalysis = laImpaired('уровне предложения');
@@ -161,10 +165,19 @@ function matchLevel(text: string): ProcessLevel {
   const s = norm(text);
   if (s.includes('грубо')) return 'грубо нарушено';
   if (s.includes('приближ')) return 'приближено к возрастной норме';
+  // Сначала явные формулировки нормы: «не нарушена», «в норме», «— норма», «: норма»
+  if (
+    s.includes('не нарушен') ||
+    s.includes('в норме') ||
+    /(^|[\s:\-–—])норма$/.test(s) ||
+    s === 'норма'
+  ) {
+    return 'норма';
+  }
   if (s.includes('не соответствует') || s.includes('не сформиров') || s.includes('нарушен')) {
     return 'не соответствует возрастной норме';
   }
-  if (s === 'норма' || (s.includes('норма') && !s.includes('не '))) {
+  if (s.includes('норма') && !s.includes('не ')) {
     return 'норма';
   }
   // Отмечено как нарушенное, но точной фразы нет — берём средний «нарушенный» уровень

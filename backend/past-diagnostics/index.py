@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import secrets
 from typing import Dict, Any
 import psycopg2
@@ -118,18 +119,33 @@ def _levels_to_primary_fields(levels: Dict[str, str]) -> Dict[str, Any]:
         if levels.get(key):
             out[field] = levels[key]
 
+    def is_norm(v: str) -> bool:
+        return (v or '').strip().lower() == 'норма'
+
     motor = []
-    if levels.get('soundProduction'):
-        motor.append(f"звукопроизношение нарушено: {levels['soundProduction']}")
-    if levels.get('syllableStructure'):
-        motor.append(f"слоговая структура слова нарушена: {levels['syllableStructure']}")
-    if levels.get('kineticPraxis'):
-        motor.append(f"кинетический артикуляционный праксис нарушен: {levels['kineticPraxis']}")
+    sound = levels.get('soundProduction')
+    if sound:
+        motor.append('норма' if is_norm(sound) else f"звукопроизношение нарушено: {sound}")
+    syl = levels.get('syllableStructure')
+    if syl:
+        motor.append(
+            'слоговая структура слова не нарушена' if is_norm(syl)
+            else f"слоговая структура слова нарушена: {syl}"
+        )
+    kin = levels.get('kineticPraxis')
+    if kin:
+        motor.append(
+            'кинетический артикуляционный праксис в норме' if is_norm(kin)
+            else f"кинетический артикуляционный праксис нарушен: {kin}"
+        )
     if motor:
         out['motorRealization'] = motor
 
-    if levels.get('connectedSpeech'):
-        out['connectedSpeech'] = [f"связная речь нарушена: {levels['connectedSpeech']}"]
+    conn_speech = levels.get('connectedSpeech')
+    if conn_speech:
+        out['connectedSpeech'] = (
+            ['норма'] if is_norm(conn_speech) else [f"связная речь нарушена: {conn_speech}"]
+        )
 
     analysis = []
     if levels.get('phonematicAnalysis'):
@@ -158,6 +174,13 @@ def _match_level(text: str) -> str:
     s = (text or '').strip().lower()
     if not s:
         return ''
+    if 'грубо' in s:
+        return 'грубо нарушено'
+    if 'приближ' in s:
+        return 'приближено к возрастной норме'
+    # Явные формулировки нормы разбираем раньше слова «нарушен»
+    if 'не нарушен' in s or 'в норме' in s or re.search(r'(^|[\s:\-–—])норма$', s):
+        return 'норма'
     for word, level in LEVEL_WORDS:
         if word in s:
             return level
