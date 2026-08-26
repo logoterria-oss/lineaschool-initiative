@@ -56,6 +56,14 @@ export function currentPeriod(d: Date = new Date()): ReportPeriod {
   return list.find((p) => m >= p.fromMonth && m <= p.toMonth) ?? list[list.length - 1];
 }
 
+/** Период, следующий за указанным (может быть из следующего года). */
+export function nextPeriod(p: ReportPeriod): ReportPeriod {
+  const list = periodsForYear(p.year);
+  const idx = list.findIndex((x) => x.key === p.key);
+  if (idx >= 0 && idx < list.length - 1) return list[idx + 1];
+  return periodsForYear(p.year + 1)[0];
+}
+
 /** Период, предшествующий указанному (может быть из прошлого года). */
 export function previousPeriod(p: ReportPeriod): ReportPeriod {
   const list = periodsForYear(p.year);

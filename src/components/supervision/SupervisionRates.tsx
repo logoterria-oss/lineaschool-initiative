@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { useToast } from '@/hooks/use-toast';
 import { Supervision, fetchSupervisions } from '@/lib/supervisionsApi';
 import {
   GROUP_TEACHERS,
@@ -10,12 +11,18 @@ import {
 import {
   ReportPeriod,
   currentPeriod,
+  nextPeriod,
   periodsRange,
   previousPeriod,
 } from '@/lib/supervisionPeriods';
-import { BASE_RATE, fmtRate, rateFromScore } from '@/lib/supervisionRate';
-
-const ALL_TEACHERS = [...INDIVIDUAL_TEACHERS, ...GROUP_TEACHERS];
+import { BASE_RATE, rateFromScore } from '@/lib/supervisionRate';
+import {
+  TeacherRate,
+  fetchTeacherRates,
+  rateKey,
+  saveTeacherRate,
+} from '@/lib/teacherRatesApi';
+import RateCell from './RateCell';
 
 const selectCls =
   'h-10 px-3 rounded-md border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400';
@@ -28,15 +35,19 @@ interface Row {
   form: LessonForm;
   count: number;
   avg: number | null;
-  prevRate: number;
-  prevCount: number;
-  nextRate: number;
+  currentRate: number;
+  currentManual: boolean;
+  plannedRate: number;
+  plannedManual: boolean;
+  plannedLocked: boolean;
   needed: number | null;
   nextTierRate: number | null;
 }
 
 const SupervisionRates = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<Supervision[]>([]);
+  const [rates, setRates] = useState<TeacherRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -49,13 +60,23 @@ const SupervisionRates = () => {
     [periods, periodKey],
   );
   const prev = useMemo(() => previousPeriod(period), [period]);
+  const upcoming = useMemo(() => nextPeriod(period), [period]);
 
   useEffect(() => {
-    fetchSupervisions()
-      .then(setItems)
+    Promise.all([fetchSupervisions(), fetchTeacherRates()])
+      .then(([sup, rt]) => {
+        setItems(sup);
+        setRates(rt);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Ошибка загрузки'))
       .finally(() => setLoading(false));
   }, []);
+
+  const savedByKey = useMemo(() => {
+    const map = new Map<string, TeacherRate>();
+    rates.forEach((r) => map.set(rateKey(r.teacher_id, r.lesson_form, r.period_key), r));
+    return map;
+  }, [rates]);
 
   const rows = useMemo<Row[]>(() => {
     const inPeriod = (s: Supervision, p: ReportPeriod) =>
@@ -66,7 +87,6 @@ const SupervisionRates = () => {
         ? null
         : Math.round((list.reduce((s, i) => s + i.total_score, 0) / list.length) * 10) / 10;
 
-    // Пары «педагог + форма» берём из справочника и из фактических супервизий
     const pairs = new Map<string, { teacherId: number; teacherName: string; form: LessonForm }>();
     const add = (teacherId: number, teacherName: string, form: LessonForm) =>
       pairs.set(`${teacherId}-${form}`, { teacherId, teacherName, form });
@@ -83,8 +103,22 @@ const SupervisionRates = () => {
         const avg = avgOf(cur);
         const prevAvg = avgOf(old);
 
-        const prevRate = prevAvg === null ? BASE_RATE : rateFromScore(form, prevAvg).rate;
-        const next = avg === null ? null : rateFromScore(form, avg);
+        const saved = savedByKey.get(rateKey(teacherId, form, period.key));
+        // Планируемую на этот период могли зафиксировать в прошлом периоде
+        const savedPrev = savedByKey.get(rateKey(teacherId, form, prev.key));
+
+        // Текущая ставка: ручная правка → зафиксированная в прошлом периоде → расчёт по прошлым баллам
+        const autoCurrent = prevAvg === null ? BASE_RATE : rateFromScore(form, prevAvg).rate;
+        const lockedFromPrev =
+          savedPrev?.planned_locked && savedPrev.planned_rate != null
+            ? savedPrev.planned_rate
+            : null;
+        const currentRate = saved?.current_rate ?? lockedFromPrev ?? autoCurrent;
+
+        // Планируемая: ручная правка → расчёт по баллам текущего периода
+        const calc = avg === null ? null : rateFromScore(form, avg);
+        const autoPlanned = calc ? calc.rate : currentRate;
+        const plannedRate = saved?.planned_rate ?? autoPlanned;
 
         return {
           teacherId,
@@ -92,16 +126,64 @@ const SupervisionRates = () => {
           form,
           count: cur.length,
           avg,
-          prevRate,
-          prevCount: old.length,
-          nextRate: next ? next.rate : prevRate,
-          needed: next?.next ? next.next.needed : null,
-          nextTierRate: next?.next ? next.next.rate : null,
+          currentRate,
+          currentManual: saved?.current_rate != null,
+          plannedRate,
+          plannedManual: saved?.planned_rate != null,
+          plannedLocked: !!saved?.planned_locked,
+          needed: calc?.next ? calc.next.needed : null,
+          nextTierRate: calc?.next ? calc.next.rate : null,
         };
       })
-      .filter((r) => r.count > 0 || r.prevCount > 0)
+      .filter((r) => r.count > 0 || savedByKey.has(rateKey(r.teacherId, r.form, period.key)))
       .sort((a, b) => a.teacherName.localeCompare(b.teacherName, 'ru'));
-  }, [items, period, prev]);
+  }, [items, period, prev, savedByKey]);
+
+  const persist = async (
+    row: Row,
+    patch: { current_rate?: number | null; planned_rate?: number | null; planned_locked?: boolean },
+  ) => {
+    const saved = savedByKey.get(rateKey(row.teacherId, row.form, period.key));
+    const payload = {
+      teacher_id: row.teacherId,
+      teacher_name: row.teacherName,
+      lesson_form: row.form,
+      period_key: period.key,
+      current_rate: saved?.current_rate ?? null,
+      planned_rate: saved?.planned_rate ?? null,
+      planned_locked: saved?.planned_locked ?? false,
+      ...patch,
+    };
+    try {
+      const res = await saveTeacherRate(payload);
+      setRates((prevRates) => {
+        const k = rateKey(res.teacher_id, res.lesson_form, res.period_key);
+        const rest = prevRates.filter(
+          (r) => rateKey(r.teacher_id, r.lesson_form, r.period_key) !== k,
+        );
+        return [...rest, res];
+      });
+    } catch (e) {
+      toast({
+        title: 'Не удалось сохранить',
+        description: e instanceof Error ? e.message : '',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const toggleLock = async (row: Row) => {
+    const locking = !row.plannedLocked;
+    await persist(row, {
+      planned_locked: locking,
+      // При фиксации запоминаем сумму, чтобы она не «поплыла» от новых супервизий
+      planned_rate: locking ? row.plannedRate : row.plannedManual ? row.plannedRate : null,
+    });
+    toast({
+      title: locking ? 'Ставка зафиксирована' : 'Фиксация снята',
+      description: `${row.teacherName} · ${upcoming.label}`,
+    });
+  };
 
   if (loading) return <p className="text-gray-500">Загрузка…</p>;
   if (error) return <p className="text-red-600">{error}</p>;
@@ -125,12 +207,13 @@ const SupervisionRates = () => {
             </select>
           </div>
           <p className="text-sm text-gray-500 pb-2">
-            Прошлый период: <span className="font-medium text-gray-700">{prev.label}</span>
+            Планируемая ставка — на период{' '}
+            <span className="font-medium text-gray-700">{upcoming.label}</span>
           </p>
         </div>
         <p className="mt-3 text-xs text-gray-500">
-          Ставка на следующий период считается по среднему баллу супервизий за выбранный период.
-          Базовая ставка — {fmtRate(BASE_RATE)}.
+          Планируемая ставка рассчитывается по среднему баллу супервизий за выбранный период.
+          Любую сумму можно изменить вручную — нажмите на неё. Базовая ставка — {BASE_RATE} ₽/час.
         </p>
       </div>
 
@@ -142,21 +225,22 @@ const SupervisionRates = () => {
               <th className="text-left font-medium px-4 py-3">Форма</th>
               <th className="text-left font-medium px-4 py-3">Супервизий</th>
               <th className="text-left font-medium px-4 py-3">Средний балл</th>
-              <th className="text-left font-medium px-4 py-3">Прошлая ставка</th>
+              <th className="text-left font-medium px-4 py-3">Текущая ставка</th>
               <th className="text-left font-medium px-4 py-3">Планируемая ставка</th>
+              <th className="text-left font-medium px-4 py-3">Фиксация</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
                   За выбранный период супервизий нет
                 </td>
               </tr>
             )}
             {rows.map((r) => {
-              const up = r.nextRate > r.prevRate;
-              const down = r.nextRate < r.prevRate;
+              const up = r.plannedRate > r.currentRate;
+              const down = r.plannedRate < r.currentRate;
               return (
                 <tr key={`${r.teacherId}-${r.form}`} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{r.teacherName}</td>
@@ -168,37 +252,53 @@ const SupervisionRates = () => {
                     ) : (
                       <span className="font-semibold text-gray-900">
                         {r.avg}
-                        <span className="text-gray-400 font-normal">
-                          {' '}
-                          из {maxTotalScore(r.form)}
-                        </span>
+                        <span className="text-gray-400 font-normal"> из {maxTotalScore(r.form)}</span>
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {r.prevCount > 0 ? (
-                      fmtRate(r.prevRate)
-                    ) : (
-                      <span className="text-gray-400">{fmtRate(r.prevRate)} (база)</span>
-                    )}
+                  <td className="px-4 py-3 text-gray-700">
+                    <RateCell
+                      value={r.currentRate}
+                      manual={r.currentManual}
+                      onSave={(v) => persist(r, { current_rate: v })}
+                    />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`font-semibold ${
-                          up ? 'text-emerald-600' : down ? 'text-red-600' : 'text-gray-900'
-                        }`}
-                      >
-                        {fmtRate(r.nextRate)}
-                      </span>
+                      <RateCell
+                        value={r.plannedRate}
+                        manual={r.plannedManual}
+                        disabled={r.plannedLocked}
+                        className={up ? 'text-emerald-600' : down ? 'text-red-600' : 'text-gray-900'}
+                        onSave={(v) => persist(r, { planned_rate: v })}
+                      />
                       {up && <Icon name="TrendingUp" size={16} className="text-emerald-600" />}
                       {down && <Icon name="TrendingDown" size={16} className="text-red-600" />}
                     </div>
-                    {r.needed !== null && r.nextTierRate !== null && r.avg !== null && (
+                    {!r.plannedLocked && r.needed !== null && r.nextTierRate !== null && (
                       <p className="text-xs text-gray-400 mt-0.5">
-                        до {fmtRate(r.nextTierRate)} не хватает {r.needed} балла
+                        до {r.nextTierRate} ₽/час не хватает {r.needed} балла
                       </p>
                     )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleLock(r)}
+                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                        r.plannedLocked
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={
+                        r.plannedLocked
+                          ? 'Снять фиксацию'
+                          : `Зафиксировать ставку на ${upcoming.label}`
+                      }
+                    >
+                      <Icon name={r.plannedLocked ? 'Lock' : 'LockOpen'} size={14} />
+                      {r.plannedLocked ? 'Зафиксирована' : 'Зафиксировать'}
+                    </button>
                   </td>
                 </tr>
               );
