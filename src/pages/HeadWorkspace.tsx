@@ -22,6 +22,7 @@ import RecurringPaymentsView from '@/components/headWorkspace/RecurringPaymentsV
 import UsersView from '@/components/headWorkspace/UsersView';
 import StaffListView from '@/components/headWorkspace/StaffListView';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
+import SupervisionRates from '@/components/supervision/SupervisionRates';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
@@ -83,6 +84,7 @@ const HeadWorkspace = () => {
       case 'work-log-all': return <StaffWorkTimeView />;
       case 'regulations': return <RegulationsView />;
       case 'supervisions': return <SupervisionsView />;
+      case 'rate': return <SupervisionRates />;
       case 'violations': return <TeacherViolationsManager withRole />;
       default: return <StubView label={active.label} />;
     }
