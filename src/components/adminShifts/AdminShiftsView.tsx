@@ -8,6 +8,7 @@ import {
   ShiftTask,
   deleteShift,
   fetchShifts,
+  moscowToday,
   saveShift,
 } from '@/lib/adminShiftsApi';
 import ShiftEditor from './ShiftEditor';
@@ -87,7 +88,7 @@ const AdminShiftsView = () => {
   }, [tasks]);
 
   const cells = useMemo(() => monthGrid(month), [month]);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = moscowToday();
 
   const handleSave = async (p: {
     staff_id: number;

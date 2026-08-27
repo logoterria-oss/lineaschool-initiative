@@ -13,6 +13,11 @@ CORS = {
 KINDS = ("work", "dayoff", "vacation", "sick")
 SCHEMA = "t_p93118852_lineaschool_initiati"
 
+# Школа работает по Москве, а сервер живёт в UTC.
+# Все отметки смен и «сегодня» считаем в московском времени.
+MSK_NOW = "(now() AT TIME ZONE 'Europe/Moscow')"
+MSK_TODAY = f"({MSK_NOW})::date"
+
 
 def db_conn():
     return psycopg2.connect(os.environ["DATABASE_URL"])
@@ -112,18 +117,14 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
                 )
                 row = cur.fetchone()
 
-            if act == "start":
-                cur.execute(
-                    "UPDATE admin_shifts SET started_at = now(), updated_at = now() "
-                    "WHERE id = %s RETURNING started_at, finished_at",
-                    (row["id"],),
-                )
-            else:
-                cur.execute(
-                    "UPDATE admin_shifts SET finished_at = now(), updated_at = now() "
-                    "WHERE id = %s RETURNING started_at, finished_at",
-                    (row["id"],),
-                )
+            field = "started_at" if act == "start" else "finished_at"
+            cur.execute(
+                f"UPDATE admin_shifts SET {field} = {MSK_NOW}, updated_at = {MSK_NOW} "
+                f"WHERE id = %s RETURNING "
+                f"to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
+                f"to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at",
+                (row["id"],),
+            )
             marks = dict(cur.fetchone())
             conn.commit()
         return _json(200, {"ok": True, **marks})
@@ -144,8 +145,9 @@ def my_shift_state(event: dict) -> dict:
             if len(date) != 10:
                 return _json(400, {"error": "date required"})
             cur.execute(
-                "SELECT started_at, finished_at, kind FROM admin_shifts "
-                "WHERE staff_id = %s AND shift_date = %s",
+                "SELECT to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
+                "to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at, kind "
+                "FROM admin_shifts WHERE staff_id = %s AND shift_date = %s",
                 (me["id"], date),
             )
             row = cur.fetchone()
@@ -168,13 +170,13 @@ def on_shift_now() -> dict:
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                "SELECT sh.staff_id, sh.staff_name, s.job_title, s.role, "
-                "to_char(sh.started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at "
-                "FROM admin_shifts sh "
-                "LEFT JOIN staff s ON s.id = sh.staff_id "
-                "WHERE sh.shift_date = CURRENT_DATE "
-                "AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
-                "ORDER BY sh.started_at",
+                f"SELECT sh.staff_id, sh.staff_name, s.job_title, s.role, "
+                f"to_char(sh.started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at "
+                f"FROM admin_shifts sh "
+                f"LEFT JOIN staff s ON s.id = sh.staff_id "
+                f"WHERE sh.shift_date = {MSK_TODAY} "
+                f"AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
+                f"ORDER BY sh.started_at",
                 (),
             )
             rows = [dict(r) for r in cur.fetchall()]
@@ -197,7 +199,8 @@ def get_shifts(event: dict) -> dict:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 "SELECT id, staff_id, staff_name, shift_date, time_from, time_to, kind, note, "
-                "started_at, finished_at "
+                "to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
+                "to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at "
                 "FROM admin_shifts "
                 "WHERE shift_date >= %s::date "
                 "AND shift_date < (%s::date + INTERVAL '1 month') "
@@ -266,9 +269,10 @@ def save_shift(event: dict) -> dict:
                 "ON CONFLICT (staff_id, shift_date) DO UPDATE SET "
                 "time_from = EXCLUDED.time_from, time_to = EXCLUDED.time_to, "
                 "kind = EXCLUDED.kind, note = EXCLUDED.note, "
-                "staff_name = EXCLUDED.staff_name, updated_at = now() "
-                "RETURNING id, staff_id, staff_name, shift_date, time_from, time_to, kind, note, "
-                "started_at, finished_at",
+                f"staff_name = EXCLUDED.staff_name, updated_at = {MSK_NOW} "
+                f"RETURNING id, staff_id, staff_name, shift_date, time_from, time_to, kind, note, "
+                f"to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
+                f"to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at",
                 (staff_id, staff_name, date, time_from, time_to, kind, note),
             )
             saved = dict(cur.fetchone())

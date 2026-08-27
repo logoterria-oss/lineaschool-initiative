@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
-import { fetchMyShift, markMyShift, shiftTime, MyShiftState } from '@/lib/adminShiftsApi';
+import {
+  fetchMyShift,
+  markMyShift,
+  moscowToday,
+  shiftTime,
+  MyShiftState,
+} from '@/lib/adminShiftsApi';
 import { notifyShiftChange } from '@/lib/interactionsApi';
 import { notifyShiftChanged } from '@/components/interaction/useOnShiftAdmins';
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => moscowToday();
 
 /**
  * Кнопка отметки смены администратора.

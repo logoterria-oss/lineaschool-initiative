@@ -31,7 +31,7 @@ const OnShiftHint = ({ admins, collapsed }: { admins: OnShiftAdmin[]; collapsed?
           <li
             key={a.staff_id}
             className="text-[11px] text-gray-600 flex items-center gap-1 truncate"
-            title={`${a.staff_name} · с ${shiftTime(a.started_at)}`}
+            title={`${a.staff_name} · с ${shiftTime(a.started_at)} МСК`}
           >
             <Icon name="UserCheck" size={11} className="text-green-500 flex-shrink-0" />
             <span className="truncate">{shortName(a.staff_name)}</span>

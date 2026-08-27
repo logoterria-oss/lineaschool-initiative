@@ -92,12 +92,26 @@ export async function markMyShift(
   return { started_at: data.started_at, finished_at: data.finished_at, planned: true };
 }
 
-/** «2026-08-18T08:03:11» → «8:03» */
+/**
+ * Время отметки смены: «2026-08-18T08:03:11» → «08:03».
+ * Сервер уже присылает московское время, поэтому берём часы и минуты как есть —
+ * иначе у сотрудника из другого часового пояса цифры «поедут».
+ */
 export function shiftTime(ts: string | null): string {
   if (!ts) return '';
-  const d = new Date(ts.includes('T') ? ts : ts.replace(' ', 'T'));
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const m = String(ts).match(/(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : '';
+}
+
+/** Сегодняшняя дата по Москве — школа живёт по московскому времени */
+export function moscowToday(): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  return parts;
 }
 
 export async function saveShift(payload: {
