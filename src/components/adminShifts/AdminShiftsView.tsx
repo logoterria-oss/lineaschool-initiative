@@ -177,8 +177,7 @@ const AdminShiftsView = () => {
               onMouseLeave={() => setHover(null)}
             >
               <button
-                onClick={() => (marked ? setTapDate(date) : setEditDate(date))}
-                onDoubleClick={() => setEditDate(date)}
+                onClick={() => setEditDate(date)}
                 className="w-full h-full min-h-[92px] p-1.5 text-left align-top hover:bg-green-50/60 transition-colors"
               >
                 <div
@@ -207,6 +206,16 @@ const AdminShiftsView = () => {
                   )}
                 </div>
               </button>
+
+              {marked && (
+                <button
+                  onClick={() => setTapDate(date)}
+                  title="Что было в этот день"
+                  className="sm:hidden absolute top-1 right-1 text-gray-300 hover:text-gray-500"
+                >
+                  <Icon name="Info" size={14} />
+                </button>
+              )}
             </div>
           );
         })}
@@ -230,8 +239,8 @@ const AdminShiftsView = () => {
       )}
       {!loading && shifts.length > 0 && (
         <div className="text-xs text-gray-400 mt-3">
-          Две галочки в ячейке — смена открыта и закрыта. Наведите на день (или коснитесь на
-          телефоне), чтобы увидеть время и задачи. Двойной клик — редактировать смену.
+          Две галочки в ячейке — смена открыта и закрыта. Наведите на день, чтобы увидеть время и
+          задачи. Клик по дню — назначить администратора и поставить задачи.
         </div>
       )}
 
