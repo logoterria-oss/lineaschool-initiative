@@ -172,7 +172,7 @@ const AdminShiftsView = () => {
                 isToday ? 'ring-2 ring-inset ring-green-400' : ''
               }`}
               onMouseEnter={(e) =>
-                marked && setHover({ date, rect: e.currentTarget.getBoundingClientRect() })
+                list.length > 0 && setHover({ date, rect: e.currentTarget.getBoundingClientRect() })
               }
               onMouseLeave={() => setHover(null)}
             >
