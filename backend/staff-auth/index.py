@@ -693,16 +693,27 @@ def handle_service_assignees(conn, event):
         return resp(403, {"error": "bad_service_key"})
 
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # on_shift — админ сегодня отметился «на смене» и ещё не закрыл её.
+        # Смена бывает только у администраторов, у руководителей всегда false.
         cur.execute(
-            f"SELECT id, full_name, phone, role, job_title, avatar_url "
-            f"FROM {SCHEMA}.staff "
-            f"WHERE status = 'active' AND password_hash <> '' "
-            f"AND role = ANY(%s) ORDER BY role, full_name",
+            f"SELECT s.id, s.full_name, s.phone, s.role, s.job_title, s.avatar_url, "
+            f"(s.role = 'admin' AND sh.started_at IS NOT NULL "
+            f" AND sh.finished_at IS NULL) AS on_shift, "
+            f"to_char(sh.started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS shift_started_at "
+            f"FROM {SCHEMA}.staff s "
+            f"LEFT JOIN {SCHEMA}.admin_shifts sh "
+            f"  ON sh.staff_id = s.id "
+            f" AND sh.shift_date = (now() AT TIME ZONE 'Europe/Moscow')::date "
+            f"WHERE s.status = 'active' AND s.password_hash <> '' "
+            f"AND s.role = ANY(%s) ORDER BY s.role, s.full_name",
             (list(INTERACTION_ROLES),),
         )
-        rows = cur.fetchall()
+        rows = [dict(r) for r in cur.fetchall()]
 
-    return resp(200, {"staff": [dict(r) for r in rows]})
+    for r in rows:
+        r["on_shift"] = bool(r.get("on_shift"))
+
+    return resp(200, {"staff": rows})
 
 
 def handle_me(conn, event):

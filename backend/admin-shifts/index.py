@@ -1,6 +1,7 @@
 import os
 import json
 import urllib.request
+import urllib.error
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -216,9 +217,16 @@ def push_shift_to_interaction(cur) -> dict:
     )
     try:
         with urllib.request.urlopen(req, timeout=4) as resp:
+            code = resp.status
             body = json.loads(resp.read().decode() or "{}")
-        return {"sent": True, "on_shift": phones, "response": body}
+        print(f"shift-hook POST -> {code} {json.dumps(body, ensure_ascii=False)} phones={phones}")
+        return {"sent": True, "status": code, "on_shift": phones, "response": body}
+    except urllib.error.HTTPError as e:
+        text = e.read().decode(errors="replace")[:300]
+        print(f"shift-hook POST -> HTTP {e.code} {text} phones={phones}")
+        return {"sent": False, "status": e.code, "on_shift": phones, "error": text}
     except Exception as e:
+        print(f"shift-hook POST failed: {e} phones={phones}")
         return {"sent": False, "on_shift": phones, "error": str(e)}
 
 
