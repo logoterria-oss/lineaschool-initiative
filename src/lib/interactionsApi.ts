@@ -43,6 +43,33 @@ export async function notifyShiftChange(action: 'start' | 'finish'): Promise<voi
   }).catch(() => undefined);
 }
 
+export interface ShiftReportItem {
+  title: string;
+  done: boolean;
+  comment: string;
+  from_head?: boolean;
+}
+
+/**
+ * Отправляем заполненный чек-лист смены в «Окно взаимодействия»,
+ * оттуда он уходит руководителям. Если окно ещё не принимает такой отчёт — молчим.
+ */
+export async function sendShiftReport(payload: {
+  date: string;
+  staff_name: string;
+  started_at: string | null;
+  finished_at: string | null;
+  done: number;
+  total: number;
+  items: ShiftReportItem[];
+}): Promise<void> {
+  await fetch(`${INTERACTION_API_URL}?action=shift-report`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'shift-report', ...payload }),
+  }).catch(() => undefined);
+}
+
 /** Диалоги берём из внешнего окна взаимодействия — там живут все переписки. */
 export async function fetchDialogs(): Promise<DialogItem[]> {
   const r = await fetch(`${INTERACTION_API_URL}?action=dialogs`, { headers: authHeaders() });

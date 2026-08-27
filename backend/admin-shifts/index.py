@@ -46,12 +46,20 @@ def handler(event: dict, context) -> dict:
                 return my_shift_state(event)
             if act == "on-shift":
                 return on_shift_now()
+            if act == "checklist":
+                return get_checklist(event)
+            if act == "head-tasks":
+                return get_head_tasks(event)
             return get_shifts(event)
         if method == "POST":
             body = json.loads(event.get("body") or "{}")
             act = str(body.get("action") or "")
             if act in ("start", "finish"):
                 return mark_shift(event, body, act)
+            if act == "checklist":
+                return save_checklist(event, body)
+            if act == "head-tasks":
+                return save_head_tasks(event, body)
             return save_shift(event)
         if method == "DELETE":
             return delete_shift(event)
@@ -278,6 +286,157 @@ def save_shift(event: dict) -> dict:
             saved = dict(cur.fetchone())
             conn.commit()
         return _json(200, {"ok": True, "shift": saved})
+    finally:
+        conn.close()
+
+
+def get_head_tasks(event: dict) -> dict:
+    """Задачи руководителя на дату: ?action=head-tasks&date=YYYY-MM-DD или &month=YYYY-MM"""
+    params = event.get("queryStringParameters") or {}
+    date = str(params.get("date") or "")[:10]
+    month = str(params.get("month") or "")[:7]
+
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if len(date) == 10:
+                cur.execute(
+                    f"SELECT id, to_char(shift_date, 'YYYY-MM-DD') AS shift_date, "
+                    f"staff_id, title FROM {SCHEMA}.shift_head_tasks "
+                    f"WHERE shift_date = %s ORDER BY id",
+                    (date,),
+                )
+            elif len(month) == 7:
+                first = month + "-01"
+                cur.execute(
+                    f"SELECT id, to_char(shift_date, 'YYYY-MM-DD') AS shift_date, "
+                    f"staff_id, title FROM {SCHEMA}.shift_head_tasks "
+                    f"WHERE shift_date >= %s::date "
+                    f"AND shift_date < (%s::date + INTERVAL '1 month') ORDER BY shift_date, id",
+                    (first, first),
+                )
+            else:
+                return _json(400, {"error": "date or month required"})
+            rows = [dict(r) for r in cur.fetchall()]
+        return _json(200, {"ok": True, "tasks": rows})
+    finally:
+        conn.close()
+
+
+def save_head_tasks(event: dict, body: dict) -> dict:
+    """Полностью переписывает задачи руководителя на дату.
+
+    Body: { action: 'head-tasks', date, tasks: [{ staff_id, title }] }
+    """
+    date = str(body.get("date") or "")[:10]
+    if len(date) != 10:
+        return _json(400, {"error": "date required"})
+    tasks = body.get("tasks") or []
+
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            me = _me(cur, event)
+            if not me:
+                return _json(401, {"error": "Требуется вход"})
+
+            cur.execute(f"DELETE FROM {SCHEMA}.shift_head_tasks WHERE shift_date = %s", (date,))
+            for t in tasks:
+                title = str(t.get("title") or "").strip()[:300]
+                if not title:
+                    continue
+                try:
+                    sid = int(t.get("staff_id"))
+                except (TypeError, ValueError):
+                    continue
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.shift_head_tasks "
+                    f"(shift_date, staff_id, title, created_by) VALUES (%s, %s, %s, %s)",
+                    (date, sid, title, me["id"]),
+                )
+            conn.commit()
+
+            cur.execute(
+                f"SELECT id, to_char(shift_date, 'YYYY-MM-DD') AS shift_date, staff_id, title "
+                f"FROM {SCHEMA}.shift_head_tasks WHERE shift_date = %s ORDER BY id",
+                (date,),
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+        return _json(200, {"ok": True, "tasks": rows})
+    finally:
+        conn.close()
+
+
+def get_checklist(event: dict) -> dict:
+    """Мой чек-лист за день: отметки и задачи руководителя лично мне.
+
+    ?action=checklist&date=YYYY-MM-DD
+    Руководитель может смотреть чужой: &staff_id=N
+    """
+    params = event.get("queryStringParameters") or {}
+    date = str(params.get("date") or "")[:10]
+    if len(date) != 10:
+        return _json(400, {"error": "date required"})
+
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            me = _me(cur, event)
+            if not me:
+                return _json(401, {"error": "Требуется вход"})
+
+            staff_id = me["id"]
+            asked = params.get("staff_id")
+            if asked and me.get("role") == "head":
+                staff_id = int(asked)
+
+            cur.execute(
+                f"SELECT item_key, done, comment FROM {SCHEMA}.shift_checklist "
+                f"WHERE shift_date = %s AND staff_id = %s",
+                (date, staff_id),
+            )
+            marks = [dict(r) for r in cur.fetchall()]
+
+            cur.execute(
+                f"SELECT id, title FROM {SCHEMA}.shift_head_tasks "
+                f"WHERE shift_date = %s AND staff_id = %s ORDER BY id",
+                (date, staff_id),
+            )
+            head_tasks = [dict(r) for r in cur.fetchall()]
+        return _json(200, {"ok": True, "marks": marks, "head_tasks": head_tasks})
+    finally:
+        conn.close()
+
+
+def save_checklist(event: dict, body: dict) -> dict:
+    """Сохранить отметку по пункту чек-листа.
+
+    Body: { action: 'checklist', date, item_key, done, comment }
+    """
+    date = str(body.get("date") or "")[:10]
+    item_key = str(body.get("item_key") or "")[:64]
+    if len(date) != 10 or not item_key:
+        return _json(400, {"error": "date and item_key required"})
+
+    done = bool(body.get("done"))
+    comment = str(body.get("comment") or "")[:1000]
+
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            me = _me(cur, event)
+            if not me:
+                return _json(401, {"error": "Требуется вход"})
+
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.shift_checklist "
+                f"(shift_date, staff_id, item_key, done, comment) VALUES (%s, %s, %s, %s, %s) "
+                f"ON CONFLICT (shift_date, staff_id, item_key) DO UPDATE SET "
+                f"done = EXCLUDED.done, comment = EXCLUDED.comment, updated_at = {MSK_NOW}",
+                (date, me["id"], item_key, done, comment),
+            )
+            conn.commit()
+        return _json(200, {"ok": True})
     finally:
         conn.close()
 

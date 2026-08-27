@@ -60,6 +60,74 @@ export async function fetchMyShift(date: string): Promise<MyShiftState | null> {
   return { started_at: data.started_at, finished_at: data.finished_at, planned: !!data.planned };
 }
 
+/** Задача, поставленная руководителем на конкретный день */
+export interface HeadTask {
+  id: number;
+  shift_date?: string;
+  staff_id: number;
+  title: string;
+}
+
+/** Отметка администратора по пункту чек-листа */
+export interface ChecklistMark {
+  item_key: string;
+  done: boolean;
+  comment: string;
+}
+
+/** Задачи руководителя на дату или на месяц */
+export async function fetchHeadTasks(p: { date?: string; month?: string }): Promise<HeadTask[]> {
+  const q = p.date ? `date=${p.date}` : `month=${p.month}`;
+  const r = await fetch(`${API_URL}?action=head-tasks&${q}`, { headers: authHeaders() });
+  if (!r.ok) return [];
+  const data = await r.json().catch(() => ({}));
+  return data.tasks || [];
+}
+
+/** Переписать задачи руководителя на дату целиком */
+export async function saveHeadTasks(
+  date: string,
+  tasks: { staff_id: number; title: string }[],
+): Promise<HeadTask[]> {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'head-tasks', date, tasks }),
+  });
+  const data = await r.json().catch(() => ({}));
+  return data.tasks || [];
+}
+
+/** Мой чек-лист за день: отметки и задачи руководителя лично мне */
+export async function fetchChecklist(
+  date: string,
+  staffId?: number,
+): Promise<{ marks: ChecklistMark[]; head_tasks: HeadTask[] }> {
+  const extra = staffId ? `&staff_id=${staffId}` : '';
+  const r = await fetch(`${API_URL}?action=checklist&date=${date}${extra}`, {
+    headers: authHeaders(),
+  });
+  if (!r.ok) return { marks: [], head_tasks: [] };
+  const data = await r.json().catch(() => ({}));
+  return { marks: data.marks || [], head_tasks: data.head_tasks || [] };
+}
+
+/** Сохранить галочку и комментарий по пункту чек-листа */
+export async function saveChecklistMark(p: {
+  date: string;
+  item_key: string;
+  done: boolean;
+  comment: string;
+}): Promise<boolean> {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'checklist', ...p }),
+  });
+  const data = await r.json().catch(() => ({}));
+  return !!data.ok;
+}
+
 /** Администратор, который прямо сейчас на смене */
 export interface OnShiftAdmin {
   staff_id: number;

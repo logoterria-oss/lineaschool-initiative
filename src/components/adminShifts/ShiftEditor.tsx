@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { AdminShift, ShiftAdmin, ShiftKind, shiftTime } from '@/lib/adminShiftsApi';
+import {
+  AdminShift,
+  ShiftAdmin,
+  ShiftKind,
+  fetchHeadTasks,
+  saveHeadTasks,
+  shiftTime,
+} from '@/lib/adminShiftsApi';
 import ShiftDayTasks, { PlannedTask } from './ShiftDayTasks';
 
 const fmtDate = (d: string) =>
@@ -24,8 +31,35 @@ interface Props {
 const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props) => {
   const [staffId, setStaffId] = useState<number>(admins[0]?.id || 0);
   const [note, setNote] = useState('');
-  // Задачи пока живут только в окне — сохранение подключим позже
   const [dayTasks, setDayTasks] = useState<PlannedTask[]>([]);
+
+  // Подтягиваем ранее назначенные задачи на этот день
+  useEffect(() => {
+    let alive = true;
+    fetchHeadTasks({ date }).then((list) => {
+      if (!alive) return;
+      setDayTasks(
+        list.map((t) => ({
+          id: String(t.id),
+          title: t.title,
+          staff_id: t.staff_id,
+          done: false,
+        })),
+      );
+    });
+    return () => {
+      alive = false;
+    };
+  }, [date]);
+
+  // Любое изменение списка сразу уходит в базу — админ увидит задачи у себя
+  const updateTasks = (list: PlannedTask[]) => {
+    setDayTasks(list);
+    saveHeadTasks(
+      date,
+      list.map((t) => ({ staff_id: t.staff_id, title: t.title })),
+    );
+  };
 
   const dayShifts = shifts.filter((s) => s.shift_date.slice(0, 10) === date);
 
@@ -103,7 +137,7 @@ const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props)
             </Button>
           </div>
 
-          <ShiftDayTasks admins={admins} tasks={dayTasks} onChange={setDayTasks} />
+          <ShiftDayTasks admins={admins} tasks={dayTasks} onChange={updateTasks} />
         </div>
       </div>
     </div>

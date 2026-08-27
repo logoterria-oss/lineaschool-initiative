@@ -18,6 +18,7 @@ import LeadsListView from '@/components/adminWorkspace/LeadsListView';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
+import TodayTasksView from '@/components/adminShifts/TodayTasksView';
 import { buildInteractionUrl } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
@@ -60,11 +61,13 @@ const AdminWorkspace = () => {
       case 'leads-list': return <LeadsListView />;
       case 'staff-list': return <StaffListView readOnly />;
       case 'work-log': return <WorkTimeView mode="admin" />;
+      case 'today-tasks': return <TodayTasksView />;
       default: return <StubView label={active.label} />;
     }
   }, [active]);
 
   const workLogActive = active?.id === 'work-log';
+  const todayTasksActive = active?.id === 'today-tasks';
 
   const collapsed = false;
   const lbl = collapsed
@@ -122,7 +125,7 @@ const AdminWorkspace = () => {
           <Icon name="UserCog" size={16} className="flex-shrink-0" />
           <span className={collapsed ? lbl : ''}>Мой профиль</span>
         </button>
-        <ShiftToggleButton />
+        <ShiftToggleButton staffName={fullName} />
       </div>
 
       <a
@@ -160,6 +163,15 @@ const AdminWorkspace = () => {
         }`}
       >
         <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Журнал административного учёта</span>
+      </button>
+
+      <button
+        onClick={() => setActive({ id: 'today-tasks', label: 'Задачи на сегодня', kind: 'component', icon: 'ListChecks' })}
+        className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
+          todayTasksActive ? 'bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'
+        }`}
+      >
+        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Задачи на сегодня</span>
       </button>
 
       <OnShiftHint admins={onShift} collapsed={collapsed} />

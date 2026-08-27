@@ -34,6 +34,22 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Чек-лист без входа закрыт",
+      "method": "GET",
+      "path": "/?action=checklist&date=2026-08-27",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Задачи руководителя на дату",
+      "method": "GET",
+      "path": "/?action=head-tasks&date=2026-08-27",
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Месяц обязателен",
       "method": "GET",
       "path": "/",

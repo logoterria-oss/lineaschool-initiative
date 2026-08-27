@@ -34,9 +34,6 @@ const ShiftDayTasks = ({ admins, tasks, onChange }: Props) => {
 
   const remove = (id: string) => onChange(tasks.filter((t) => t.id !== id));
 
-  const toggle = (id: string) =>
-    onChange(tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-
   const nameOf = (id: number) => {
     const a = admins.find((x) => x.id === id);
     return a ? shortName(a.full_name) : '';
@@ -59,18 +56,8 @@ const ShiftDayTasks = ({ admins, tasks, onChange }: Props) => {
               key={t.id}
               className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 text-sm"
             >
-              <button
-                onClick={() => toggle(t.id)}
-                className={t.done ? 'text-green-600' : 'text-gray-300 hover:text-gray-400'}
-                title={t.done ? 'Снять отметку' : 'Отметить выполненной'}
-              >
-                <Icon name={t.done ? 'CircleCheck' : 'Circle'} size={17} />
-              </button>
-              <span
-                className={`flex-1 truncate ${t.done ? 'line-through text-gray-400' : 'text-gray-800'}`}
-              >
-                {t.title}
-              </span>
+              <Icon name="ClipboardList" size={16} className="text-amber-500 shrink-0" />
+              <span className="flex-1 truncate text-gray-800">{t.title}</span>
               <span className="text-[11px] text-gray-400 whitespace-nowrap">
                 {nameOf(t.staff_id)}
               </span>
