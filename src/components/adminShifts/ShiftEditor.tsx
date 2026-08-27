@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { AdminShift, ShiftAdmin, ShiftKind, shiftTime } from '@/lib/adminShiftsApi';
+import ShiftDayTasks, { PlannedTask } from './ShiftDayTasks';
 
 const fmtDate = (d: string) =>
   new Date(`${d}T00:00:00`).toLocaleDateString('ru-RU', {
@@ -23,6 +24,8 @@ interface Props {
 const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props) => {
   const [staffId, setStaffId] = useState<number>(admins[0]?.id || 0);
   const [note, setNote] = useState('');
+  // Задачи пока живут только в окне — сохранение подключим позже
+  const [dayTasks, setDayTasks] = useState<PlannedTask[]>([]);
 
   const dayShifts = shifts.filter((s) => s.shift_date.slice(0, 10) === date);
 
@@ -99,6 +102,8 @@ const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props)
               Сохранить
             </Button>
           </div>
+
+          <ShiftDayTasks admins={admins} tasks={dayTasks} onChange={setDayTasks} />
         </div>
       </div>
     </div>
