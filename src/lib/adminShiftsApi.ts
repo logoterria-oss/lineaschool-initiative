@@ -60,6 +60,23 @@ export async function fetchMyShift(date: string): Promise<MyShiftState | null> {
   return { started_at: data.started_at, finished_at: data.finished_at, planned: !!data.planned };
 }
 
+/** Администратор, который прямо сейчас на смене */
+export interface OnShiftAdmin {
+  staff_id: number;
+  staff_name: string;
+  job_title: string | null;
+  role: string | null;
+  started_at: string | null;
+}
+
+/** Кто из админов сейчас на смене — этот список забирает «Окно взаимодействия» */
+export async function fetchOnShiftNow(): Promise<OnShiftAdmin[]> {
+  const r = await fetch(`${API_URL}?action=on-shift`);
+  if (!r.ok) return [];
+  const data = await r.json().catch(() => ({}));
+  return data.on_shift || [];
+}
+
 /** Отметка «на смене» / «смена закончена» */
 export async function markMyShift(
   date: string,

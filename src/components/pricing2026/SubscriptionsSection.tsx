@@ -97,6 +97,7 @@ export default function SubscriptionsSection({ onPay }: Props) {
                                 <span className="font-semibold">{formatPrice(plan.totalPrice)}</span>
                               </div>
                               <div className="text-sm text-gray-500 mt-1">
+                                {plan.pricePerLesson.toLocaleString('ru-RU')} ₽ ×{' '}
                                 {plan.totalLessons} занятий
                               </div>
                             </div>
@@ -135,7 +136,8 @@ export default function SubscriptionsSection({ onPay }: Props) {
                                       {plan.interimDiagnostics}{' '}
                                       {plan.interimDiagnostics === 1
                                         ? 'промежуточная диагностика'
-                                        : 'промежуточные диагностики'}
+                                        : 'промежуточные диагностики'}{' '}
+                                      <span className="text-orange-600 font-semibold">в подарок</span>
                                     </span>
                                   </div>
                                 )}

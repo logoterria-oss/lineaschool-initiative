@@ -30,6 +30,19 @@ export interface DialogItem {
   sinceAssign?: number;
 }
 
+/**
+ * Сообщаем «Окну взаимодействия», что администратор вышел на смену или закрыл её.
+ * Окно само решает, кому распределять новые обращения.
+ * Если окно ещё не умеет принимать такое сообщение — просто молчим.
+ */
+export async function notifyShiftChange(action: 'start' | 'finish'): Promise<void> {
+  await fetch(`${INTERACTION_API_URL}?action=shift`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'shift', shift: action, at: new Date().toISOString() }),
+  }).catch(() => undefined);
+}
+
 /** Диалоги берём из внешнего окна взаимодействия — там живут все переписки. */
 export async function fetchDialogs(): Promise<DialogItem[]> {
   const r = await fetch(`${INTERACTION_API_URL}?action=dialogs`, { headers: authHeaders() });

@@ -18,12 +18,15 @@ import LeadsListView from '@/components/adminWorkspace/LeadsListView';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
-import { INTERACTION_URL } from '@/lib/interactionUrl';
+import { buildInteractionUrl } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
+import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
+import OnShiftHint from '@/components/interaction/OnShiftHint';
 
 const AdminWorkspace = () => {
   const navigate = useNavigate();
   const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
+  const onShift = useOnShiftAdmins();
   const { me, checking } = useRoleGuard('admin');
   const [active, setActive] = useState<AdminItem | null>(null);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
@@ -123,7 +126,7 @@ const AdminWorkspace = () => {
       </div>
 
       <a
-        href={INTERACTION_URL}
+        href={buildInteractionUrl(onShift.map((a) => a.staff_id))}
         target="_blank"
         rel="noopener noreferrer"
         onClick={markAssignedSeen}
@@ -149,6 +152,8 @@ const AdminWorkspace = () => {
           </span>
         )}
       </a>
+
+      <OnShiftHint admins={onShift} collapsed={collapsed} />
 
       <button
         onClick={() => setActive({ id: 'work-log', label: 'Журнал административного учёта', kind: 'component', icon: 'ClipboardPen' })}

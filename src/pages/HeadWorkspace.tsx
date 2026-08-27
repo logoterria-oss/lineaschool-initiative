@@ -26,7 +26,9 @@ import SupervisionRates from '@/components/supervision/SupervisionRates';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
-import { INTERACTION_URL } from '@/lib/interactionUrl';
+import { buildInteractionUrl } from '@/lib/interactionUrl';
+import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
+import OnShiftHint from '@/components/interaction/OnShiftHint';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import StaffWorkTimeView from '@/components/workLog/StaffWorkTimeView';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
@@ -34,6 +36,7 @@ import { useInteractionBadges } from '@/components/interaction/useInteractionBad
 const HeadWorkspace = () => {
   const navigate = useNavigate();
   const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
+  const onShift = useOnShiftAdmins();
   const { me, checking } = useRoleGuard('head');
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [active, setActive] = useState<SubItem | null>(null);
@@ -151,7 +154,7 @@ const HeadWorkspace = () => {
       </div>
 
       <a
-        href={INTERACTION_URL}
+        href={buildInteractionUrl(onShift.map((a) => a.staff_id))}
         target="_blank"
         rel="noopener noreferrer"
         onClick={markAssignedSeen}
@@ -177,6 +180,8 @@ const HeadWorkspace = () => {
           </span>
         )}
       </a>
+
+      <OnShiftHint admins={onShift} />
 
       <button
         onClick={() => setActive({ id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' })}

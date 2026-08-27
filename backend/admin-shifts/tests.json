@@ -26,6 +26,14 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Кто сейчас на смене",
+      "method": "GET",
+      "path": "/?action=on-shift",
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Месяц обязателен",
       "method": "GET",
       "path": "/",

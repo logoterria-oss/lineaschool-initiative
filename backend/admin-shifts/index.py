@@ -36,8 +36,11 @@ def handler(event: dict, context) -> dict:
     try:
         if method == "GET":
             params = event.get("queryStringParameters") or {}
-            if str(params.get("action") or "") == "my-shift":
+            act = str(params.get("action") or "")
+            if act == "my-shift":
                 return my_shift_state(event)
+            if act == "on-shift":
+                return on_shift_now()
             return get_shifts(event)
         if method == "POST":
             body = json.loads(event.get("body") or "{}")
@@ -152,6 +155,30 @@ def my_shift_state(event: dict) -> dict:
             "finished_at": (row or {}).get("finished_at"),
             "planned": bool(row),
         })
+    finally:
+        conn.close()
+
+
+def on_shift_now() -> dict:
+    """Кто из администраторов сейчас на смене — открытый список для «Окна взаимодействия».
+
+    На смене = сегодня нажал «На смене» и ещё не нажал «Смена закончена».
+    """
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT sh.staff_id, sh.staff_name, s.job_title, s.role, "
+                "to_char(sh.started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at "
+                "FROM admin_shifts sh "
+                "LEFT JOIN staff s ON s.id = sh.staff_id "
+                "WHERE sh.shift_date = CURRENT_DATE "
+                "AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
+                "ORDER BY sh.started_at",
+                (),
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+        return _json(200, {"ok": True, "on_shift": rows, "count": len(rows)})
     finally:
         conn.close()
 

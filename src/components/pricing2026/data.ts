@@ -59,14 +59,13 @@ const buildPlans = (basePrice: number, groupPerWeek: number, individualPerWeek: 
 
     return {
       title,
-      // В общем числе занятий учитываем и промежуточные диагностики:
-      // они входят в абонемент как обычная встреча, а не идут подарком.
-      totalLessons: lessons + interim,
+      // Считаем только учебные занятия — именно за них платит клиент.
+      // Промежуточные диагностики идут бонусом и показываются отдельной строкой,
+      // иначе «цена за урок × занятия» не сходилась с итогом абонемента.
+      totalLessons: lessons,
       groupLessons: group,
       individualLessons: individual,
       pricePerLesson,
-      // Стоимость считается только по учебным занятиям — диагностики
-      // цену абонемента не увеличивают.
       totalPrice: pricePerLesson * lessons,
       discountPercent: discount || undefined,
       interimDiagnostics: interim || undefined,

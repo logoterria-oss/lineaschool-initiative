@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { fetchMyShift, markMyShift, shiftTime, MyShiftState } from '@/lib/adminShiftsApi';
+import { notifyShiftChange } from '@/lib/interactionsApi';
+import { notifyShiftChanged } from '@/components/interaction/useOnShiftAdmins';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -29,18 +31,22 @@ const ShiftToggleButton = () => {
   const press = async () => {
     if (busy || finished) return;
     setBusy(true);
-    const next = await markMyShift(today(), started ? 'finish' : 'start');
+    const act = started ? 'finish' : 'start';
+    const next = await markMyShift(today(), act);
     setBusy(false);
     if (!next) {
       toast({ title: 'Не удалось отметить смену', variant: 'destructive' });
       return;
     }
     setState(next);
+    // Сразу сообщаем окну взаимодействия, кто на смене
+    notifyShiftChange(act);
+    notifyShiftChanged();
     toast({
       title: started ? 'Смена закрыта' : 'Смена открыта',
       description: started
         ? `Отметка ${shiftTime(next.finished_at)} — записана в график`
-        : `Отметка ${shiftTime(next.started_at)} — записана в график`,
+        : `Отметка ${shiftTime(next.started_at)} — окно взаимодействия оповещено`,
     });
   };
 
