@@ -1,7 +1,13 @@
 import os
 import json
+import urllib.request
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
+# Окно взаимодействия — туда сообщаем, кто из админов сейчас на смене
+INTERACTION_HOOK_URL = (
+    "https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1?action=shift-hook"
+)
 
 CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -46,6 +52,8 @@ def handler(event: dict, context) -> dict:
                 return my_shift_state(event)
             if act == "on-shift":
                 return on_shift_now()
+            if act == "sync-interaction":
+                return sync_interaction()
             if act == "checklist":
                 return get_checklist(event)
             if act == "head-tasks":
@@ -135,7 +143,10 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
             )
             marks = dict(cur.fetchone())
             conn.commit()
-        return _json(200, {"ok": True, **marks})
+
+            # Сразу сообщаем окну взаимодействия обновлённый состав смены
+            hook = push_shift_to_interaction(cur)
+        return _json(200, {"ok": True, **marks, "interaction": hook})
     finally:
         conn.close()
 
@@ -165,6 +176,59 @@ def my_shift_state(event: dict) -> dict:
             "finished_at": (row or {}).get("finished_at"),
             "planned": bool(row),
         })
+    finally:
+        conn.close()
+
+
+def _only_digits(phone: str) -> str:
+    d = "".join(c for c in str(phone or "") if c.isdigit())
+    if len(d) == 11 and d.startswith("8"):
+        d = "7" + d[1:]
+    return d
+
+
+def push_shift_to_interaction(cur) -> dict:
+    """Сообщаем окну взаимодействия полный список админов, которые сейчас на смене.
+
+    Шлём телефоны — окно сопоставляет сотрудников по ним.
+    Руководителей не отправляем: на смене стоят только администраторы.
+    """
+    key = os.environ.get("INTERACTION_SERVICE_KEY")
+    if not key:
+        return {"sent": False, "error": "no_service_key"}
+
+    cur.execute(
+        f"SELECT s.phone FROM admin_shifts sh "
+        f"JOIN staff s ON s.id = sh.staff_id "
+        f"WHERE sh.shift_date = {MSK_TODAY} "
+        f"AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
+        f"AND s.role = 'admin' AND s.status = 'active'"
+    )
+    phones = [_only_digits(r["phone"]) for r in cur.fetchall()]
+    phones = [p for p in phones if p]
+
+    payload = json.dumps({"on_shift": phones}).encode()
+    req = urllib.request.Request(
+        INTERACTION_HOOK_URL,
+        data=payload,
+        headers={"Content-Type": "application/json", "X-Service-Key": key},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            body = json.loads(resp.read().decode() or "{}")
+        return {"sent": True, "on_shift": phones, "response": body}
+    except Exception as e:
+        return {"sent": False, "on_shift": phones, "error": str(e)}
+
+
+def sync_interaction() -> dict:
+    """Повторно отправить окну взаимодействия текущий состав смены."""
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            hook = push_shift_to_interaction(cur)
+        return _json(200, {"ok": True, **hook})
     finally:
         conn.close()
 

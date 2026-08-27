@@ -34,6 +34,14 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Синхронизация смены с окном взаимодействия",
+      "method": "GET",
+      "path": "/?action=sync-interaction",
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Чек-лист без входа закрыт",
       "method": "GET",
       "path": "/?action=checklist&date=2026-08-27",
