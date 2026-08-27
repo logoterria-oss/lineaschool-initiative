@@ -13,7 +13,7 @@ const OnShiftHint = ({ admins, collapsed }: { admins: OnShiftAdmin[]; collapsed?
 
   if (admins.length === 0) {
     return (
-      <p className="-mt-1 mb-1 text-[11px] text-gray-400 flex items-center gap-1.5 px-1">
+      <p className="-mt-1 text-[11px] text-gray-400 flex items-center gap-1.5 px-1">
         <span className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
         Сейчас на смене никого нет
       </p>
@@ -21,7 +21,7 @@ const OnShiftHint = ({ admins, collapsed }: { admins: OnShiftAdmin[]; collapsed?
   }
 
   return (
-    <div className="-mt-1 mb-1 px-1">
+    <div className="-mt-1 px-1">
       <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
         На смене {admins.length}:
