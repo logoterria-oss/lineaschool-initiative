@@ -13,6 +13,7 @@ import {
 } from '@/lib/adminShiftsApi';
 import ShiftEditor from './ShiftEditor';
 import ShiftDayDetails from './ShiftDayDetails';
+import HoverPortal from './HoverPortal';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -56,7 +57,8 @@ const AdminShiftsView = () => {
   const [loading, setLoading] = useState(true);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [tasks, setTasks] = useState<ShiftTask[]>([]);
-  const [hoverDate, setHoverDate] = useState<string | null>(null);
+  // Держим и дату, и координаты ячейки — по ним подсказка выбирает, куда раскрыться
+  const [hover, setHover] = useState<{ date: string; rect: DOMRect } | null>(null);
   const [tapDate, setTapDate] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -169,8 +171,10 @@ const AdminShiftsView = () => {
               className={`relative bg-white min-h-[92px] ${
                 isToday ? 'ring-2 ring-inset ring-green-400' : ''
               }`}
-              onMouseEnter={() => marked && setHoverDate(date)}
-              onMouseLeave={() => setHoverDate(null)}
+              onMouseEnter={(e) =>
+                marked && setHover({ date, rect: e.currentTarget.getBoundingClientRect() })
+              }
+              onMouseLeave={() => setHover(null)}
             >
               <button
                 onClick={() => (marked ? setTapDate(date) : setEditDate(date))}
@@ -203,20 +207,20 @@ const AdminShiftsView = () => {
                   )}
                 </div>
               </button>
-
-              {hoverDate === date && (
-                <div className="hidden sm:block absolute z-30 top-full left-0 mt-1">
-                  <ShiftDayDetails
-                    date={date}
-                    shifts={list}
-                    tasks={tasksByDate[date] || []}
-                  />
-                </div>
-              )}
             </div>
           );
         })}
       </div>
+
+      {hover && (
+        <HoverPortal anchor={hover.rect}>
+          <ShiftDayDetails
+            date={hover.date}
+            shifts={byDate[hover.date] || []}
+            tasks={tasksByDate[hover.date] || []}
+          />
+        </HoverPortal>
+      )}
 
       {loading && <div className="text-sm text-gray-400 mt-3">Загружаем график…</div>}
       {!loading && shifts.length === 0 && (
