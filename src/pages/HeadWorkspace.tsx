@@ -12,6 +12,7 @@ import VacationsView from '@/components/headWorkspace/VacationsView';
 import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
 import PaymentsView from '@/components/headWorkspace/PaymentsView';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
+import BookingsView from '@/components/headWorkspace/BookingsView';
 import QuestionnairesView from '@/components/headWorkspace/QuestionnairesView';
 import ReportsView from '@/components/headWorkspace/ReportsView';
 import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
@@ -79,6 +80,7 @@ const HeadWorkspace = () => {
       case 'users': return <UsersView />;
       case 'staff-list': return <StaffListView />;
       case 'schedule': return <ScheduleView />;
+      case 'bookings': return <BookingsView currentUser={fullName} />;
       case 'questionnaires': return <QuestionnairesView />;
       case 'reports': return <ReportsView />;
       case 'homework': return <HomeworkControlSection />;
@@ -91,7 +93,7 @@ const HeadWorkspace = () => {
       case 'violations': return <TeacherViolationsManager withRole />;
       default: return <StubView label={active.label} />;
     }
-  }, [active]);
+  }, [active, fullName]);
 
   const workLogActive = active?.id === 'work-log';
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { S20_URL, TEACHER_SHORT, TEACHER_COLOR, getMonday, addDays, fmtDate, fmtRu, WEEKDAY_SHORT } from './types';
+import { Booking, fetchBookings } from '@/lib/bookingsApi';
 
 interface IndSlot {
   time_from: string;
@@ -22,6 +23,7 @@ interface IndDay {
 const IndividualTab = () => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
   const [days, setDays] = useState<IndDay[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,6 +37,13 @@ const IndividualTab = () => {
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
       setDays(Array.isArray(data.days) ? data.days : []);
+      // Брони показываем поверх окон: администратор сразу видит, что место занято заявкой
+      try {
+        const bk = await fetchBookings('all');
+        setBookings(bk.bookings.filter((b) => b.status !== 'rejected'));
+      } catch {
+        setBookings([]);
+      }
     } catch (e) {
       setError('Не удалось загрузить данные');
     } finally {
@@ -50,10 +59,20 @@ const IndividualTab = () => {
   const weekEnd = addDays(weekStart, 6);
   const weekLabel = `${fmtRu(weekStart)} – ${fmtRu(weekEnd)}`;
 
+  // Забронированные окна не считаем свободными
+  const isBooked = (date: string, time: string, teacherId: number) =>
+    bookings.some((b) => b.date === date && b.timeFrom === time && b.teacherId === teacherId);
+
+  // Брони этого дня, отсортированные по времени
+  const bookingsOfDay = (date: string) =>
+    bookings
+      .filter((b) => b.date === date)
+      .sort((a, b) => a.timeFrom.localeCompare(b.timeFrom));
+
   // Группируем свободные слоты по времени внутри каждого дня
-  const groupByTime = (slots: IndSlot[]) => {
+  const groupByTime = (slots: IndSlot[], date: string) => {
     const map: Record<string, IndSlot[]> = {};
-    for (const s of slots.filter((s) => !s.busy)) {
+    for (const s of slots.filter((s) => !s.busy && !isBooked(date, s.time_from, s.teacher_id))) {
       if (!map[s.time_from]) map[s.time_from] = [];
       map[s.time_from].push(s);
     }
@@ -94,7 +113,12 @@ const IndividualTab = () => {
             {name}
           </span>
         ))}
-
+        <span className="text-xs font-medium px-3 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+          бронь — ждёт обработки
+        </span>
+        <span className="text-xs font-medium px-3 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+          занято — бронь подтверждена
+        </span>
       </div>
 
       {loading && (
@@ -118,9 +142,12 @@ const IndividualTab = () => {
       {!loading && days.length > 0 && (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {days.map((day) => {
-            const timeGroups = groupByTime(day.slots);
-            const freeCount = day.slots.filter((s) => !s.busy).length;
-            if (freeCount === 0) return null;
+            const dayBookings = bookingsOfDay(day.date);
+            const timeGroups = groupByTime(day.slots, day.date);
+            const freeCount = day.slots.filter(
+              (s) => !s.busy && !isBooked(day.date, s.time_from, s.teacher_id),
+            ).length;
+            if (freeCount === 0 && dayBookings.length === 0) return null;
 
             return (
               <div key={day.date} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -137,6 +164,34 @@ const IndividualTab = () => {
 
                 {/* Слоты */}
                 <div className="p-3 space-y-1.5">
+                  {dayBookings.map((b) => (
+                    <div
+                      key={`bk-${b.id}`}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
+                        b.status === 'confirmed'
+                          ? 'border-emerald-200 bg-emerald-50'
+                          : 'border-amber-200 bg-amber-50'
+                      }`}
+                      title={`${b.childName}${b.phone ? ` · ${b.phone}` : ''}`}
+                    >
+                      <span className="font-mono font-semibold text-gray-800 text-sm w-12 flex-shrink-0">
+                        {b.timeFrom}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0 ${
+                          b.status === 'confirmed'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-amber-500 text-white'
+                        }`}
+                      >
+                        {b.status === 'confirmed' ? 'занято' : 'бронь'}
+                      </span>
+                      <span className="text-xs text-gray-700 truncate flex-1">{b.childName}</span>
+                      <span className="text-[11px] text-gray-500 flex-shrink-0">
+                        {TEACHER_SHORT[b.teacherId] || b.teacherName}
+                      </span>
+                    </div>
+                  ))}
                   {timeGroups.map(([time, slots]) => (
                     <div key={time} className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
                       <span className="font-mono font-semibold text-gray-800 text-sm w-12 flex-shrink-0">

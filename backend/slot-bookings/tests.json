@@ -1,0 +1,59 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Unknown action returns 400",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Links list",
+      "method": "GET",
+      "path": "/?action=links",
+      "expectedStatus": 200,
+      "expectedBody": {"links": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Bookings list",
+      "method": "GET",
+      "path": "/?action=bookings",
+      "expectedStatus": 200,
+      "expectedBody": {"newCount": 0},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Slots without token returns 400",
+      "method": "GET",
+      "path": "/?action=slots",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Slots with unknown token returns 404",
+      "method": "GET",
+      "path": "/?action=slots&token=definitely-not-a-real-token",
+      "expectedStatus": 404,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Book without data returns 400",
+      "method": "POST",
+      "path": "/?action=book",
+      "body": {"token": "", "childName": ""},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
