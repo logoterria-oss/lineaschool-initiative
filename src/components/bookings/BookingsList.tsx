@@ -127,9 +127,20 @@ const BookingsList = ({ currentUser }: Props) => {
                     >
                       {b.statusLabel}
                     </span>
+                    <span
+                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                        b.lessonType === 'groups'
+                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          : 'bg-teal-50 text-teal-700 border-teal-200'
+                      }`}
+                    >
+                      {b.lessonType === 'groups' ? 'Группа' : 'Индивидуально'}
+                    </span>
                   </div>
                   <div className="text-sm text-gray-700">
-                    {b.weekdayName}, {b.dateRu} в {b.timeFrom}–{b.timeTo}
+                    {/* Родитель выбирает день недели и время, а не разовую дату */}
+                    {b.weekdayName} в {b.timeFrom}–{b.timeTo}
+                    <span className="text-gray-500"> — начиная с {b.dateRu}</span>
                     {b.teacherName && <span className="text-gray-500"> — {b.teacherName}</span>}
                   </div>
                   <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">

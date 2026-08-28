@@ -32,6 +32,8 @@ export interface Booking {
   parentName: string;
   phone: string;
   comment: string;
+  lessonType: LessonType;
+  startFrom: string | null;
   status: BookingStatus;
   statusLabel: string;
   adminNote: string;
@@ -41,19 +43,49 @@ export interface Booking {
   processedBy: string;
 }
 
-export interface FreeSlot {
-  timeFrom: string;
-  timeTo: string;
+export type LessonType = 'individual' | 'groups';
+
+/** Педагог, свободный в это время */
+export interface SlotTeacher {
   teacherId: number;
   teacherName: string;
   availableFrom?: string | null;
 }
 
+/** Индивидуальное окно: время + список свободных педагогов */
+export interface FreeSlot {
+  timeFrom: string;
+  timeTo: string;
+  teachers: SlotTeacher[];
+}
+
+/** Групповое занятие со свободными местами */
+export interface GroupSlot {
+  timeFrom: string;
+  timeTo: string;
+  teacherId: number;
+  teacherName: string;
+  free: number;
+  maxSize: number;
+  availableFrom?: string | null;
+}
+
 export interface FreeDay {
+  dayOffset: number;
   date: string;
   dateRu: string;
+  weekday: number;
   weekdayName: string;
   slots: FreeSlot[];
+}
+
+export interface GroupDay {
+  dayOffset: number;
+  date: string;
+  dateRu: string;
+  weekday: number;
+  weekdayName: string;
+  groups: GroupSlot[];
 }
 
 const json = async (res: Response) => {
@@ -68,14 +100,25 @@ const json = async (res: Response) => {
 
 export const fetchBookingSlots = async (
   token: string,
-  dateFrom: string,
-  dateTo: string,
-): Promise<{ link?: BookingLink; days: FreeDay[]; limitReached?: boolean; error?: string; message?: string }> => {
+  startFrom: string,
+  lessonType: LessonType,
+): Promise<{
+  link?: BookingLink;
+  startFrom?: string;
+  minDate?: string;
+  individualDays: FreeDay[];
+  groupDays: GroupDay[];
+  limitReached?: boolean;
+  error?: string;
+  message?: string;
+}> => {
+  // Просим только выбранный тип занятий: запрашивать оба сразу долго
   const res = await fetch(
-    `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}&date_from=${dateFrom}&date_to=${dateTo}`,
+    `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}` +
+      `&start_from=${startFrom}&lesson_type=${lessonType}`,
   );
   const data = await json(res);
-  return { days: [], ...data };
+  return { individualDays: [], groupDays: [], ...data };
 };
 
 export const createBooking = async (input: {
@@ -89,6 +132,8 @@ export const createBooking = async (input: {
   timeTo: string;
   teacherId: number;
   teacherName: string;
+  lessonType?: LessonType;
+  startFrom?: string;
 }): Promise<{ ok?: boolean; booking?: Booking; error?: string; message?: string }> => {
   const res = await fetch(`${BOOKINGS_URL}?action=book`, {
     method: 'POST',

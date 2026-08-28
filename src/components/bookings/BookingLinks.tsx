@@ -50,9 +50,35 @@ const BookingLinks = ({ currentUser }: Props) => {
   };
 
   const copy = async (link: BookingLink) => {
-    await navigator.clipboard.writeText(bookingPageUrl(link.token));
-    setCopiedId(link.id);
-    setTimeout(() => setCopiedId(null), 2000);
+    const url = bookingPageUrl(link.token);
+    let ok = false;
+    try {
+      // Работает только на https и по явному клику
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch {
+      // Запасной путь для старых браузеров и незащищённого соединения
+      const area = document.createElement('textarea');
+      area.value = url;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try {
+        ok = document.execCommand('copy');
+      } catch {
+        ok = false;
+      }
+      document.body.removeChild(area);
+    }
+
+    if (ok) {
+      setCopiedId(link.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } else {
+      // Совсем не вышло — показываем ссылку, чтобы скопировать вручную
+      prompt('Скопируйте ссылку:', url);
+    }
   };
 
   const remove = async (link: BookingLink) => {

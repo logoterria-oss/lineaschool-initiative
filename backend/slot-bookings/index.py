@@ -8,13 +8,15 @@ import json
 import os
 import re
 import secrets
-from datetime import date, datetime
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
 
 import psycopg2
 import psycopg2.extras
 import requests
 
+import week_slots
 from name_match import same_child
 
 SCHEDULE_URL = 'https://functions.poehali.dev/6d9e6094-fd18-47ec-b45f-ad3ee4ba7cc2'
@@ -106,6 +108,8 @@ def _row_to_booking(r) -> Dict[str, Any]:
         'parentName': r['parent_name'] or '',
         'phone': r['phone'] or '',
         'comment': r['comment'] or '',
+        'lessonType': r.get('lesson_type') or 'individual',
+        'startFrom': str(r['start_from'])[:10] if r.get('start_from') else None,
         'status': r['status'],
         'statusLabel': STATUS_LABELS.get(r['status'], r['status']),
         'adminNote': r['admin_note'] or '',
@@ -129,6 +133,21 @@ def _fetch_free_slots(date_from: str, date_to: str) -> list:
     except Exception as e:
         print(f'schedule fetch failed: {e}')
         return []
+
+
+def _fetch_group_rows(date_from: str, date_to: str) -> Dict[str, Any]:
+    '''Групповые занятия недели: строки таблицы со свободными местами.'''
+    try:
+        r = requests.get(
+            SCHEDULE_URL,
+            params={'mode': 'groups_week', 'date_from': date_from, 'date_to': date_to},
+            timeout=25,
+        )
+        r.raise_for_status()
+        return r.json() or {}
+    except Exception as e:
+        print(f'groups fetch failed: {e}')
+        return {}
 
 
 def _booked_keys(cur) -> set:
@@ -207,10 +226,11 @@ def _push_to_interactions(cur, booking: Dict[str, Any], phone: str) -> Optional[
             )
             dialog_id = cur.fetchone()['id']
 
+        kind = 'групповое' if booking.get('lessonType') == 'groups' else 'индивидуальное'
         lines = [
-            'Заявка на бронирование занятия',
+            f'Заявка на {kind} занятие',
             f"Ребёнок: {child or '—'}",
-            f"Дата: {booking.get('weekdayName')} {booking.get('dateRu')}",
+            f"День: {booking.get('weekdayName')}, начиная с {booking.get('dateRu')}",
             f"Время: {booking.get('timeFrom')}–{booking.get('timeTo')}",
             f"Педагог: {booking.get('teacherName') or '—'}",
         ]
@@ -318,38 +338,49 @@ def handler(event: dict, context) -> dict:
                     'limitReached': True,
                 })
 
-            date_from = params.get('date_from') or date.today().isoformat()
-            date_to = params.get('date_to') or date_from
-            days = _fetch_free_slots(date_from, date_to)
+            # Родитель говорит, с какого числа готов начать. Раньше завтрашнего
+            # дня не пускаем: сегодня расписание уже сверстано.
+            tomorrow = date.today() + timedelta(days=1)
+            start = week_slots.parse_date(params.get('start_from'))
+            if start < tomorrow:
+                start = tomorrow
+
+            lesson_type = (params.get('lesson_type') or 'both').strip()
             taken = _booked_keys(cur)
 
-            out_days = []
-            for day in days:
-                slots = []
-                for s in day.get('slots', []):
-                    if s.get('busy'):
-                        continue
-                    key = (day['date'], s['time_from'], int(s['teacher_id']))
-                    if key in taken:
-                        continue
-                    slots.append({
-                        'timeFrom': s['time_from'],
-                        'timeTo': s['time_to'],
-                        'teacherId': s['teacher_id'],
-                        'teacherName': s.get('teacher_name') or '',
-                        'availableFrom': s.get('available_from'),
-                    })
-                if slots:
-                    out_days.append({
-                        'date': day['date'],
-                        'dateRu': _fmt_ru(day['date']),
-                        'weekdayName': day.get('weekday_name') or _weekday_name(day['date']),
-                        'slots': slots,
-                    })
+            ind_days: list = []
+            group_days: list = []
+
+            # Смотрим четыре недели вперёд: предлагаем только те окна, которые
+            # свободны регулярно, а не один раз. Расписание индивидуальных и
+            # групповых тянем параллельно — последовательно не укладываемся
+            # в лимит времени функции.
+            df = week_slots.fmt(start)
+            dt = week_slots.fmt(week_slots.date_to(start))
+
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                ind_future = (
+                    pool.submit(_fetch_free_slots, df, dt)
+                    if lesson_type in ('individual', 'both') else None
+                )
+                grp_future = (
+                    pool.submit(_fetch_group_rows, df, dt)
+                    if lesson_type in ('groups', 'both') else None
+                )
+                if ind_future:
+                    ind_days = week_slots.build_individual(ind_future.result(), start, taken)
+                if grp_future:
+                    raw = grp_future.result()
+                    group_days = week_slots.build_groups(
+                        raw.get('rows') or [], start, taken, int(raw.get('max_size') or 6)
+                    )
 
             return _resp(200, {
                 'link': _row_to_link(dict(link, bookings_count=used)),
-                'days': out_days,
+                'startFrom': week_slots.fmt(start),
+                'minDate': week_slots.fmt(tomorrow),
+                'individualDays': ind_days,
+                'groupDays': group_days,
                 'limitReached': False,
             })
 
@@ -385,10 +416,13 @@ def handler(event: dict, context) -> dict:
             if cur.fetchone():
                 return _resp(409, {'error': 'taken', 'message': 'Это окно только что забронировали. Выберите другое'})
 
+            lesson_type = 'groups' if body.get('lessonType') == 'groups' else 'individual'
+            start_from = (body.get('startFrom') or '').strip()[:10] or None
+
             cur.execute(
                 "INSERT INTO slot_bookings (token, slot_date, time_from, time_to, teacher_id, "
-                "teacher_name, child_name, parent_name, phone, comment) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+                "teacher_name, child_name, parent_name, phone, comment, lesson_type, start_from) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
                 (
                     token, slot_date, time_from, time_to or time_from, int(teacher_id),
                     (body.get('teacherName') or '').strip(),
@@ -396,6 +430,8 @@ def handler(event: dict, context) -> dict:
                     (body.get('parentName') or link['parent_name'] or '').strip(),
                     _norm_phone(body.get('phone') or link['phone']),
                     (body.get('comment') or '').strip(),
+                    lesson_type,
+                    start_from,
                 ),
             )
             row = cur.fetchone()

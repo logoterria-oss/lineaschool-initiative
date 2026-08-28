@@ -28,12 +28,24 @@ import {
 
 export interface IndStableDay {
   dayOffset: number;
-  items: { time: string; teachers: { name: string; fromDate: Date | null }[] }[];
+  items: {
+    time: string;
+    timeTo?: string;
+    teachers: { name: string; id: number; fromDate: Date | null }[];
+  }[];
 }
 
 export interface GroupStableDay {
   dayOffset: number;
-  items: { time: string; teacher: string; free: number; ageLabel: string; fromDate: Date | null }[];
+  items: {
+    time: string;
+    timeTo?: string;
+    teacher: string;
+    teacherId?: number;
+    free: number;
+    ageLabel: string;
+    fromDate: Date | null;
+  }[];
 }
 
 // 'regular' — регулярное расписание: окно предлагаем, только если оно стабильно
@@ -282,7 +294,12 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       }
     }
 
-    const byDay: Record<number, Record<string, { name: string; fromDate: Date | null }[]>> = {};
+    const byDay: Record<
+      number,
+      Record<string, { name: string; id: number; fromDate: Date | null }[]>
+    > = {};
+    // Конец окна нужен для брони; в PDF он не показывается
+    const timeToByKey: Record<string, string> = {};
     for (const c of candidates) {
       // Ищем первый период (0..maxStartOffset), с которого окно стабильно
       let startPeriod = -1;
@@ -304,9 +321,10 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
         const availFrom = new Date(`${slot.available_from}T00:00:00`);
         if (!fromDate || availFrom > fromDate) fromDate = availFrom;
       }
+      if (slot?.time_to) timeToByKey[`${c.dayOffset}__${c.time}`] = slot.time_to;
       byDay[c.dayOffset] ||= {};
       byDay[c.dayOffset][c.time] ||= [];
-      byDay[c.dayOffset][c.time].push({ name: c.teacherName, fromDate });
+      byDay[c.dayOffset][c.time].push({ name: c.teacherName, id: c.teacherId, fromDate });
     }
 
     for (let dayOffset = 0; dayOffset <= 6; dayOffset++) {
@@ -314,7 +332,11 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       if (!times) continue;
       const items = Object.keys(times)
         .sort((a, b) => a.localeCompare(b))
-        .map((time) => ({ time, teachers: times[time] }));
+        .map((time) => ({
+          time,
+          timeTo: timeToByKey[`${dayOffset}__${time}`],
+          teachers: times[time],
+        }));
       if (items.length > 0) result.push({ dayOffset, items });
     }
     // Регулярное расписание — сортируем по календарному дню недели ПН→ВС.
@@ -413,7 +435,14 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 
       byDay[c.dayOffset] ||= [];
-      byDay[c.dayOffset].push({ time: c.time, teacher: c.teacherName, free, ageLabel, fromDate });
+      byDay[c.dayOffset].push({
+        time: c.time,
+        teacher: c.teacherName,
+        teacherId: c.teacherId,
+        free,
+        ageLabel,
+        fromDate,
+      });
     }
 
     for (let dayOffset = 0; dayOffset <= 6; dayOffset++) {
@@ -462,6 +491,7 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
 
   return {
     startDate,
+    setStartDate,
     minDate,
     type,
     setType,

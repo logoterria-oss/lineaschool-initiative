@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
+import { Choice, GroupDayCard, IndividualDay } from '@/components/booking/DayCard';
 import {
   BookingLink,
   FreeDay,
-  FreeSlot,
+  GroupDay,
+  LessonType,
   createBooking,
   fetchBookingSlots,
 } from '@/lib/bookingsApi';
@@ -19,57 +21,63 @@ const iso = (d: Date) => {
   return `${y}-${m}-${day}`;
 };
 
-const addDays = (d: Date, n: number) => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-};
-
-const fmtRu = (d: Date) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-
-// Показываем окна на две недели вперёд, начиная с завтрашнего дня
-const RANGE_DAYS = 14;
-
 const BookingPage = () => {
   const { token = '' } = useParams();
 
+  // По умолчанию предлагаем начать с завтрашнего дня
+  const tomorrow = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return iso(d);
+  }, []);
+
+  const [startFrom, setStartFrom] = useState(tomorrow);
+  const [lessonType, setLessonType] = useState<LessonType>('individual');
+
   const [link, setLink] = useState<BookingLink | null>(null);
-  const [days, setDays] = useState<FreeDay[]>([]);
+  const [indDays, setIndDays] = useState<FreeDay[]>([]);
+  const [groupDays, setGroupDays] = useState<GroupDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [limitReached, setLimitReached] = useState(false);
 
-  const [selected, setSelected] = useState<{ day: FreeDay; slot: FreeSlot } | null>(null);
+  const [selected, setSelected] = useState<Choice | null>(null);
   const [childName, setChildName] = useState('');
   const [comment, setComment] = useState('');
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
 
-  const range = useMemo(() => {
-    const from = addDays(new Date(), 1);
-    return { from: iso(from), to: iso(addDays(from, RANGE_DAYS - 1)), fromDate: from };
-  }, []);
-
-  const load = async () => {
+  const load = async (from: string, type: LessonType) => {
     setLoading(true);
     setError('');
-    const data = await fetchBookingSlots(token, range.from, range.to);
+    setSelected(null);
+
+    // Первый запрос будит функцию и иногда не успевает ответить — повторяем
+    let data = await fetchBookingSlots(token, from, type);
+    if (!data.link && !data.error) {
+      data = await fetchBookingSlots(token, from, type);
+    }
+
     if (data.error) {
       setError(data.message || 'Ссылка недействительна');
       setLink(null);
+    } else if (!data.link) {
+      setError('Не удалось загрузить расписание. Обновите страницу');
     } else {
-      setLink(data.link || null);
-      setDays(data.days || []);
+      setLink(data.link);
+      setIndDays(data.individualDays || []);
+      setGroupDays(data.groupDays || []);
       setLimitReached(!!data.limitReached);
-      if (data.link?.childName) setChildName(data.link.childName);
+      if (data.startFrom) setStartFrom(data.startFrom);
+      if (data.link.childName && !childName) setChildName(data.link.childName);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    load();
+    load(startFrom, lessonType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, lessonType]);
 
   const submit = async () => {
     if (!selected || !childName.trim()) return;
@@ -78,25 +86,24 @@ const BookingPage = () => {
       token,
       childName: childName.trim(),
       comment: comment.trim(),
-      date: selected.day.date,
-      timeFrom: selected.slot.timeFrom,
-      timeTo: selected.slot.timeTo,
-      teacherId: selected.slot.teacherId,
-      teacherName: selected.slot.teacherName,
+      date: selected.date,
+      timeFrom: selected.timeFrom,
+      timeTo: selected.timeTo,
+      teacherId: selected.teacherId,
+      teacherName: selected.teacherName,
+      lessonType,
+      startFrom,
     });
     setSending(false);
     if (res.ok) {
       setDone(true);
     } else {
       setError(res.message || 'Не удалось забронировать. Попробуйте ещё раз');
-      if (res.error === 'taken') {
-        setSelected(null);
-        load();
-      }
+      if (res.error === 'taken') load(startFrom, lessonType);
     }
   };
 
-  if (loading) {
+  if (loading && !link) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center text-gray-500">
@@ -114,7 +121,7 @@ const BookingPage = () => {
           <Icon name="LinkOff" fallback="Link2Off" size={40} className="mx-auto mb-4 text-gray-400" />
           <h1 className="text-xl font-semibold text-gray-800 mb-2">Ссылка недействительна</h1>
           <p className="text-gray-500 text-sm">
-            {error || 'Возможно, срок действия истёк. Напишите администратору за новой ссылкой.'}
+            {error || 'Напишите администратору за новой ссылкой.'}
           </p>
         </div>
       </div>
@@ -131,9 +138,10 @@ const BookingPage = () => {
           <h1 className="text-xl font-semibold text-gray-800 mb-2">Время забронировано</h1>
           {selected && (
             <p className="text-gray-700 mb-3">
-              {selected.day.weekdayName}, {selected.day.dateRu} в {selected.slot.timeFrom}
+              {selected.weekdayName}, начиная с {selected.dateRu}
+              <br />в {selected.timeFrom}
               <br />
-              <span className="text-gray-500 text-sm">педагог {selected.slot.teacherName}</span>
+              <span className="text-gray-500 text-sm">педагог {selected.teacherName}</span>
             </p>
           )}
           <p className="text-gray-500 text-sm">
@@ -144,16 +152,23 @@ const BookingPage = () => {
     );
   }
 
+  const days = lessonType === 'groups' ? groupDays : indDays;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">
-            {link.title || 'Запись на индивидуальное занятие'}
+            {link.title || 'Запись на занятие'}
           </h1>
           <p className="text-gray-500 text-sm">
             {link.note || 'Выберите удобное время — администратор подтвердит запись.'}
           </p>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800 text-sm mb-4 flex items-center gap-2">
+          <Icon name="Clock" size={15} />
+          Время указано по Москве (МСК)
         </div>
 
         {error && (
@@ -170,114 +185,144 @@ const BookingPage = () => {
               По этой ссылке запись уже сделана. Если нужно перенести — напишите администратору.
             </p>
           </div>
-        ) : days.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-            <Icon name="CalendarOff" size={36} className="mx-auto mb-3 text-gray-400" />
-            <h2 className="font-semibold text-gray-800 mb-1">Свободного времени пока нет</h2>
-            <p className="text-gray-500 text-sm">
-              Все окна на ближайшие две недели заняты. Напишите администратору — подберём вариант.
-            </p>
-          </div>
         ) : (
           <>
-            <div className="space-y-3 mb-6">
-              {days.map((day) => (
-                <div key={day.date} className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="font-semibold text-gray-800 mb-3">
-                    {day.weekdayName}
-                    <span className="text-gray-400 font-normal ml-2 text-sm">{day.dateRu}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {day.slots.map((slot) => {
-                      const isSelected =
-                        selected?.day.date === day.date &&
-                        selected?.slot.timeFrom === slot.timeFrom &&
-                        selected?.slot.teacherId === slot.teacherId;
-                      return (
-                        <button
-                          key={`${slot.timeFrom}-${slot.teacherId}`}
-                          type="button"
-                          onClick={() => setSelected({ day, slot })}
-                          className={`rounded-lg border px-3 py-2 text-left transition ${
-                            isSelected
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'bg-white border-gray-200 hover:border-emerald-400'
-                          }`}
-                        >
-                          <div className="text-sm font-semibold">
-                            {slot.timeFrom}–{slot.timeTo}
-                          </div>
-                          <div
-                            className={`text-[11px] ${
-                              isSelected ? 'text-emerald-50' : 'text-gray-500'
-                            }`}
-                          >
-                            {slot.teacherName}
-                          </div>
-                          {slot.availableFrom && (
-                            <div
-                              className={`text-[11px] font-medium ${
-                                isSelected ? 'text-amber-100' : 'text-amber-600'
-                              }`}
-                            >
-                              с {fmtRu(new Date(`${slot.availableFrom}T00:00:00`))}
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                С какого числа готовы начать?
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                <Input
+                  type="date"
+                  value={startFrom}
+                  min={tomorrow}
+                  onChange={(e) => setStartFrom(e.target.value)}
+                  className="max-w-[190px]"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => load(startFrom, lessonType)}
+                  disabled={loading}
+                  className="gap-1.5"
+                >
+                  {loading ? (
+                    <Icon name="Loader2" size={15} className="animate-spin" />
+                  ) : (
+                    <Icon name="Search" size={15} />
+                  )}
+                  Показать время
+                </Button>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => setLessonType('individual')}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    lessonType === 'individual'
+                      ? 'bg-emerald-600 border-emerald-600 text-white'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-400'
+                  }`}
+                >
+                  Индивидуальные
+                </button>
+                <button
+                  onClick={() => setLessonType('groups')}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    lessonType === 'groups'
+                      ? 'bg-emerald-600 border-emerald-600 text-white'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-400'
+                  }`}
+                >
+                  Групповые
+                </button>
+              </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-5 sticky bottom-4 shadow-sm">
-              {selected ? (
-                <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
-                  <Icon name="CalendarCheck" size={16} className="text-emerald-600" />
-                  <span>
-                    {selected.day.weekdayName}, {selected.day.dateRu} в {selected.slot.timeFrom} —{' '}
-                    {selected.slot.teacherName}
-                  </span>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-400 mb-3">Выберите время выше</div>
-              )}
+            {loading ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center text-gray-500">
+                <Icon name="Loader2" size={28} className="animate-spin mx-auto mb-2" />
+                Подбираем свободное время…
+              </div>
+            ) : days.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+                <Icon name="CalendarOff" size={36} className="mx-auto mb-3 text-gray-400" />
+                <h2 className="font-semibold text-gray-800 mb-1">Свободного времени нет</h2>
+                <p className="text-gray-500 text-sm">
+                  Попробуйте выбрать другую дату начала или напишите администратору — подберём
+                  вариант.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-6">
+                {lessonType === 'groups'
+                  ? groupDays.map((day) => (
+                      <GroupDayCard
+                        key={day.date}
+                        day={day}
+                        selected={selected}
+                        onSelect={setSelected}
+                      />
+                    ))
+                  : indDays.map((day) => (
+                      <IndividualDay
+                        key={day.date}
+                        day={day}
+                        selected={selected}
+                        onSelect={setSelected}
+                      />
+                    ))}
+              </div>
+            )}
 
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Имя ребёнка <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={childName}
-                onChange={(e) => setChildName(e.target.value)}
-                placeholder="Например, Маша Иванова"
-                className="mb-3"
-              />
-
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Комментарий <span className="text-gray-400 font-normal">— необязательно</span>
-              </label>
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Пожелания или вопросы"
-                rows={2}
-                className="mb-4"
-              />
-
-              <Button
-                onClick={submit}
-                disabled={!selected || !childName.trim() || sending}
-                className="w-full gap-2"
-              >
-                {sending ? (
-                  <Icon name="Loader2" size={16} className="animate-spin" />
+            {days.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5 sticky bottom-4 shadow-sm">
+                {selected ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+                    <Icon name="CalendarCheck" size={16} className="text-emerald-600" />
+                    <span>
+                      {selected.weekdayName} в {selected.timeFrom}, начиная с {selected.dateRu} —{' '}
+                      {selected.teacherName}
+                    </span>
+                  </div>
                 ) : (
-                  <Icon name="Check" size={16} />
+                  <div className="text-sm text-gray-400 mb-3">Выберите время выше</div>
                 )}
-                Забронировать
-              </Button>
-            </div>
+
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Имя ребёнка <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  value={childName}
+                  onChange={(e) => setChildName(e.target.value)}
+                  placeholder="Например, Маша Иванова"
+                  className="mb-3"
+                />
+
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Комментарий <span className="text-gray-400 font-normal">— необязательно</span>
+                </label>
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Пожелания или вопросы"
+                  rows={2}
+                  className="mb-4"
+                />
+
+                <Button
+                  onClick={submit}
+                  disabled={!selected || !childName.trim() || sending}
+                  className="w-full gap-2"
+                >
+                  {sending ? (
+                    <Icon name="Loader2" size={16} className="animate-spin" />
+                  ) : (
+                    <Icon name="Check" size={16} />
+                  )}
+                  Забронировать
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>

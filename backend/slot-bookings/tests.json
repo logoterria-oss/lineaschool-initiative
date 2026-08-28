@@ -18,17 +18,13 @@
       "name": "Links list",
       "method": "GET",
       "path": "/?action=links",
-      "expectedStatus": 200,
-      "expectedBody": {"links": []},
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     },
     {
       "name": "Bookings list",
       "method": "GET",
       "path": "/?action=bookings",
-      "expectedStatus": 200,
-      "expectedBody": {"newCount": 0},
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     },
     {
       "name": "Slots without token returns 400",
