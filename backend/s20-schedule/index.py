@@ -822,6 +822,7 @@ def _hw_all(params, cors_headers):
     try:
         token = get_token()
         lessons = get_lessons_all_statuses(token, month_from, month_to)
+        lessons = filter_lessons_by_groups(lessons, build_group_filter(token))
         customers = get_customers(token)
     except Exception as e:
         return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
@@ -904,6 +905,7 @@ def _hw_table(params, cors_headers):
     try:
         token = get_token()
         lessons = get_lessons_all_statuses(token, month_from, month_to)
+        lessons = filter_lessons_by_groups(lessons, build_group_filter(token))
         customers = get_customers(token)
     except Exception as e:
         return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
