@@ -24,6 +24,9 @@ const FILTERS: { id: BookingStatus | 'all'; label: string }[] = [
   { id: 'all', label: 'Все' },
 ];
 
+/** «2026-09-01» → «01.09.2026» */
+const fmtDate = (iso: string) => iso.split('-').reverse().join('.');
+
 const fmtPhone = (raw: string) => {
   const d = (raw || '').replace(/\D/g, '');
   if (d.length !== 11) return raw || '';
@@ -66,7 +69,9 @@ const BookingsList = ({ currentUser }: Props) => {
   };
 
   const remove = async (b: Booking) => {
-    if (!confirm(`Удалить бронь «${b.childName}» на ${b.dateRu}?`)) return;
+    const n = b.lessons?.length ?? 1;
+    const what = n > 1 ? `заявку «${b.childName}» (${n} занятия)` : `бронь «${b.childName}»`;
+    if (!confirm(`Удалить ${what}?`)) return;
     setBusyId(b.id);
     await deleteBooking(b.id);
     setBusyId(null);
@@ -127,21 +132,34 @@ const BookingsList = ({ currentUser }: Props) => {
                     >
                       {b.statusLabel}
                     </span>
-                    <span
-                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                        b.lessonType === 'groups'
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                          : 'bg-teal-50 text-teal-700 border-teal-200'
-                      }`}
-                    >
-                      {b.lessonType === 'groups' ? 'Группа' : 'Индивидуально'}
-                    </span>
+                    {(b.lessons?.length ?? 1) > 1 && (
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-gray-100 text-gray-600 border-gray-200">
+                        занятий: {b.lessons!.length}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-700">
-                    {/* Родитель выбирает день недели и время, а не разовую дату */}
-                    {b.weekdayName} в {b.timeFrom}–{b.timeTo}
-                    <span className="text-gray-500"> — начиная с {b.dateRu}</span>
-                    {b.teacherName && <span className="text-gray-500"> — {b.teacherName}</span>}
+                  {/* Все занятия одной заявки — родитель выбрал их за раз */}
+                  <div className="text-sm text-gray-700 space-y-0.5">
+                    {(b.lessons || [b]).map((l) => (
+                      <div key={l.id} className="flex items-center gap-1.5">
+                        <Icon
+                          name={l.lessonType === 'groups' ? 'Users' : 'User'}
+                          size={13}
+                          className={
+                            l.lessonType === 'groups' ? 'text-indigo-500' : 'text-teal-600'
+                          }
+                        />
+                        <span>
+                          {l.weekdayName} в {l.timeFrom}–{l.timeTo}
+                          {l.teacherName && (
+                            <span className="text-gray-500"> — {l.teacherName}</span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Начало занятий с {b.startFrom ? fmtDate(b.startFrom) : b.dateRu}
                   </div>
                   <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                     {b.parentName && <span>Родитель: {b.parentName}</span>}

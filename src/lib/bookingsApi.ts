@@ -34,6 +34,10 @@ export interface Booking {
   parentName: string;
   phone: string;
   comment: string;
+  /** Номер заявки: занятия одной отправки объединяются в карточку */
+  batchId: string | null;
+  /** Все занятия этой заявки (в списке администратора) */
+  lessons?: Booking[];
   lessonType: LessonType;
   startFrom: string | null;
   status: BookingStatus;
@@ -151,22 +155,32 @@ export const fetchAllBookingSlots = async (token: string, startFrom: string) => 
   };
 };
 
+/** Одно выбранное окно */
+export interface BookingSlotInput {
+  date: string;
+  timeFrom: string;
+  timeTo: string;
+  teacherId: number;
+  teacherName: string;
+  lessonType: LessonType;
+}
+
 export const createBooking = async (input: {
   token: string;
   childName: string;
   parentName?: string;
   phone?: string;
   comment?: string;
-  date: string;
-  timeFrom: string;
-  timeTo: string;
-  teacherId: number;
-  teacherName: string;
-  lessonType?: LessonType;
   startFrom?: string;
-  /** Последняя заявка по ссылке — закрыть её от повторных записей */
-  finish?: boolean;
-}): Promise<{ ok?: boolean; booking?: Booking; error?: string; message?: string }> => {
+  /** Все выбранные занятия — одной заявкой */
+  slots: BookingSlotInput[];
+}): Promise<{
+  ok?: boolean;
+  booking?: Booking;
+  bookings?: Booking[];
+  error?: string;
+  message?: string;
+}> => {
   const res = await fetch(`${BOOKINGS_URL}?action=book`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

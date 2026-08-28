@@ -82,12 +82,13 @@ def _offset(start: date, iso: str) -> int:
 def build_individual(
     days: List[dict],
     start: date,
-    taken: Set[Tuple[str, str, int]],
+    taken: Set[Tuple[int, str, int]],
 ) -> List[dict]:
     '''Свободные индивидуальные окна, разложенные по дням недели.
 
-    days — ответ расписания за весь период, taken — окна, уже занятые
-    заявками других родителей.
+    days — ответ расписания за весь период. taken — окна, уже занятые
+    заявками: ключ (день недели, время, педагог), потому что ребёнок ходит
+    к педагогу каждую неделю в одно и то же время.
     '''
     # (день от старта, время, педагог) → слот
     index: Dict[Tuple[int, str, int], dict] = {}
@@ -102,8 +103,9 @@ def build_individual(
         s = index.get((off, time, teacher))
         if not s or s.get('busy'):
             return False
-        slot_date = start + timedelta(days=off)
-        return (fmt(slot_date), time, teacher) not in taken
+        # Занятое окно занято во все недели — сравниваем по дню недели
+        weekday = (start + timedelta(days=off)).weekday()
+        return (weekday, time, teacher) not in taken
 
     # Кандидаты — свободные окна первых недель (день недели + время + педагог)
     candidates: Set[Tuple[int, str, int]] = set()
@@ -170,13 +172,14 @@ def build_groups(
     weeks: List[List[dict]],
     start: date,
     max_size: int = 6,
-    booked: Optional[Dict[Tuple[str, str, int], int]] = None,
+    booked: Optional[Dict[Tuple[int, str, int], int]] = None,
 ) -> List[dict]:
     '''Групповые занятия со свободными местами, по дням недели.
 
     weeks — по списку строк на каждую неделю (расписание отдаёт группы только
     понедельно). Строка: время, педагог и ячейки по дням недели.
-    booked — места, занятые нашими заявками: в CRM их ещё нет.
+    booked — места, занятые нашими заявками: в CRM их ещё нет. Ключ —
+    (день недели, время, педагог): ребёнок ходит в группу каждую неделю.
     '''
     booked = booked or {}
 
@@ -194,7 +197,8 @@ def build_groups(
                 if off < 0 or off >= DAYS_TO_LOAD:
                     continue
                 # Из свободных мест вычитаем свои заявки — CRM про них не знает
-                mine = booked.get((iso_date[:10], time, teacher), 0)
+                weekday = (start + timedelta(days=off)).weekday()
+                mine = booked.get((weekday, time, teacher), 0)
                 free_map[(off, time, teacher)] = max(0, int(cell.get('free') or 0) - mine)
 
     # Групповое расписание в CRM заводят не на все недели вперёд, поэтому

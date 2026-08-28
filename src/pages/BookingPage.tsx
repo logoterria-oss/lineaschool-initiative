@@ -141,26 +141,28 @@ const BookingPage = () => {
   const submit = async () => {
     if (!canSubmit) return;
     setSending(true);
-    for (const { pick, type } of chosen) {
-      const res = await createBooking({
-        token,
-        childName: childName.trim(),
+    // Все выбранные занятия уходят одной заявкой — у администратора это
+    // будет одна карточка, а не отдельная запись на каждый урок
+    const res = await createBooking({
+      token,
+      childName: childName.trim(),
+      startFrom,
+      slots: chosen.map(({ pick, type }) => ({
         date: pick.date,
         timeFrom: pick.timeFrom,
         timeTo: pick.timeTo,
         teacherId: pick.teacherId,
         teacherName: pick.teacherName,
         lessonType: type,
-        startFrom,
-      });
-      if (!res.ok) {
-        setSending(false);
-        setError(res.message || 'Не удалось забронировать. Попробуйте ещё раз');
-        if (res.error === 'taken') load(startFrom);
-        return;
-      }
-    }
+      })),
+    });
     setSending(false);
+
+    if (!res.ok) {
+      setError(res.message || 'Не удалось забронировать. Попробуйте ещё раз');
+      if (res.error === 'taken') load(startFrom);
+      return;
+    }
     setDone(true);
   };
 

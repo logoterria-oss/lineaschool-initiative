@@ -109,6 +109,7 @@ def _row_to_booking(r) -> Dict[str, Any]:
         'parentName': r['parent_name'] or '',
         'phone': r['phone'] or '',
         'comment': r['comment'] or '',
+        'batchId': r.get('batch_id'),
         'lessonType': r.get('lesson_type') or 'individual',
         'startFrom': str(r['start_from'])[:10] if r.get('start_from') else None,
         'status': r['status'],
@@ -154,6 +155,9 @@ def _fetch_group_rows(date_from: str, date_to: str) -> Dict[str, Any]:
 def _booked_keys(cur) -> set:
     '''Индивидуальные окна, занятые активными заявками.
 
+    Ключ — ДЕНЬ НЕДЕЛИ, а не дата: ребёнок ходит к педагогу каждую неделю,
+    поэтому «понедельник в 15:00» занят и на следующих неделях тоже.
+
     Групповые заявки окно не закрывают: в группе несколько мест, и записаться
     туда может ещё не одна семья.
     '''
@@ -162,7 +166,7 @@ def _booked_keys(cur) -> set:
         "WHERE status IN ('new', 'confirmed') AND lesson_type = 'individual'"
     )
     return {
-        (str(r['slot_date'])[:10], r['time_from'], int(r['teacher_id']))
+        (r['slot_date'].weekday(), r['time_from'], int(r['teacher_id']))
         for r in cur.fetchall()
     }
 
@@ -173,16 +177,20 @@ def _group_booked(cur) -> Dict[tuple, int]:
     CRM про эти заявки не знает: ребёнка туда заводят только после
     подтверждения. Без учёта родитель видит «свободно 6 из 6», хотя часть
     мест уже разобрана.
+
+    Ключ — день недели: ребёнок ходит в группу каждую неделю, поэтому место
+    занято и на следующих неделях.
     '''
     cur.execute(
         "SELECT slot_date, time_from, teacher_id, COUNT(*) AS n FROM slot_bookings "
         "WHERE status IN ('new', 'confirmed') AND lesson_type = 'groups' "
         "GROUP BY slot_date, time_from, teacher_id"
     )
-    return {
-        (str(r['slot_date'])[:10], r['time_from'], int(r['teacher_id'])): int(r['n'])
-        for r in cur.fetchall()
-    }
+    out: Dict[tuple, int] = {}
+    for r in cur.fetchall():
+        key = (r['slot_date'].weekday(), r['time_from'], int(r['teacher_id']))
+        out[key] = out.get(key, 0) + int(r['n'])
+    return out
 
 
 def _find_dialog_by_child(cur, child: str) -> Optional[int]:
@@ -252,14 +260,20 @@ def _push_to_interactions(cur, booking: Dict[str, Any], phone: str) -> Optional[
             )
             dialog_id = cur.fetchone()['id']
 
-        kind = 'групповое' if booking.get('lessonType') == 'groups' else 'индивидуальное'
+        # Родитель мог выбрать несколько занятий — пишем их одним сообщением
+        items = booking.get('items') or [booking]
         lines = [
-            f'Заявка на {kind} занятие',
+            'Заявка на занятия' if len(items) > 1 else 'Заявка на занятие',
             f"Ребёнок: {child or '—'}",
-            f"День: {booking.get('weekdayName')}, начиная с {booking.get('dateRu')}",
-            f"Время: {booking.get('timeFrom')}–{booking.get('timeTo')}",
-            f"Педагог: {booking.get('teacherName') or '—'}",
+            f"Начало: с {booking.get('dateRu')}",
+            '',
         ]
+        for it in items:
+            kind = 'группа' if it.get('lessonType') == 'groups' else 'индивидуально'
+            lines.append(
+                f"• {it.get('weekdayName')} {it.get('timeFrom')}–{it.get('timeTo')}"
+                f" — {it.get('teacherName') or '—'} ({kind})"
+            )
         if parent:
             lines.append(f'Родитель: {parent}')
         if booking.get('comment'):
@@ -470,16 +484,19 @@ def handler(event: dict, context) -> dict:
                 'limitReached': False,
             })
 
-        # ── Родитель бронирует окно ───────────────────────────────────────────
+        # ── Родитель бронирует окна ───────────────────────────────────────────
         if method == 'POST' and action == 'book':
             token = (body.get('token') or '').strip()
             child = (body.get('childName') or '').strip()
-            slot_date = (body.get('date') or '').strip()[:10]
-            time_from = (body.get('timeFrom') or '').strip()[:5]
-            time_to = (body.get('timeTo') or '').strip()[:5]
-            teacher_id = body.get('teacherId')
 
-            if not token or not child or not slot_date or not time_from or teacher_id is None:
+            # Родитель выбирает сразу несколько занятий — принимаем списком.
+            # Одиночная форма тоже поддерживается: старые ссылки могли остаться
+            # открытыми в браузере.
+            slots = body.get('slots')
+            if not isinstance(slots, list) or not slots:
+                slots = [body]
+
+            if not token or not child:
                 return _resp(400, {'error': 'bad_request', 'message': 'Заполните имя ребёнка и выберите окно'})
 
             cur.execute("SELECT * FROM booking_links WHERE token = %s", (token,))
@@ -489,61 +506,78 @@ def handler(event: dict, context) -> dict:
             if link['expires_at'] and link['expires_at'] < date.today():
                 return _resp(403, {'error': 'link_expired', 'message': 'Срок действия ссылки истёк'})
 
-            lesson_type = 'groups' if body.get('lessonType') == 'groups' else 'individual'
-
-            # Число занятий по ссылке не ограничиваем: ребёнок может ходить
-            # несколько раз в неделю, и каждое окно — отдельная заявка.
-
-            # Индивидуальное окно занимает один ребёнок; в группе мест несколько
-            if lesson_type == 'individual':
-                cur.execute(
-                    "SELECT id FROM slot_bookings WHERE slot_date = %s AND time_from = %s "
-                    "AND teacher_id = %s AND lesson_type = 'individual' "
-                    "AND status IN ('new', 'confirmed')",
-                    (slot_date, time_from, int(teacher_id)),
-                )
-                if cur.fetchone():
-                    return _resp(409, {'error': 'taken', 'message': 'Это окно только что забронировали. Выберите другое'})
-            else:
-                # В группу один и тот же ребёнок дважды не записывается
-                cur.execute(
-                    "SELECT id FROM slot_bookings WHERE slot_date = %s AND time_from = %s "
-                    "AND teacher_id = %s AND lesson_type = 'groups' AND child_name = %s "
-                    "AND status IN ('new', 'confirmed')",
-                    (slot_date, time_from, int(teacher_id), child),
-                )
-                if cur.fetchone():
-                    return _resp(409, {'error': 'taken', 'message': 'Вы уже записаны на это занятие'})
-
             start_from = (body.get('startFrom') or '').strip()[:10] or None
+            parent_name = (body.get('parentName') or link['parent_name'] or '').strip()
+            phone = _norm_phone(body.get('phone') or link['phone'])
+            comment = (body.get('comment') or '').strip()
+            # Общий номер заявки: все выбранные занятия — одна карточка у админа
+            batch_id = secrets.token_urlsafe(8)
 
-            cur.execute(
-                "INSERT INTO slot_bookings (token, slot_date, time_from, time_to, teacher_id, "
-                "teacher_name, child_name, parent_name, phone, comment, lesson_type, start_from) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
-                (
+            prepared = []
+            for s in slots:
+                slot_date = (s.get('date') or '').strip()[:10]
+                time_from = (s.get('timeFrom') or '').strip()[:5]
+                time_to = (s.get('timeTo') or '').strip()[:5]
+                teacher_id = s.get('teacherId')
+                if not slot_date or not time_from or teacher_id is None:
+                    return _resp(400, {'error': 'bad_request', 'message': 'Выберите время занятия'})
+
+                lesson_type = 'groups' if s.get('lessonType') == 'groups' else 'individual'
+
+                # Занятия регулярные, поэтому сверяем ДЕНЬ НЕДЕЛИ: «понедельник
+                # в 15:00» занят на все недели, а не только на конкретную дату
+                if lesson_type == 'individual':
+                    cur.execute(
+                        "SELECT id FROM slot_bookings WHERE EXTRACT(DOW FROM slot_date) = "
+                        "EXTRACT(DOW FROM %s::date) AND time_from = %s "
+                        "AND teacher_id = %s AND lesson_type = 'individual' "
+                        "AND status IN ('new', 'confirmed')",
+                        (slot_date, time_from, int(teacher_id)),
+                    )
+                    if cur.fetchone():
+                        return _resp(409, {'error': 'taken', 'message': 'Это окно только что забронировали. Выберите другое'})
+                else:
+                    # В группу один и тот же ребёнок дважды не записывается
+                    cur.execute(
+                        "SELECT id FROM slot_bookings WHERE EXTRACT(DOW FROM slot_date) = "
+                        "EXTRACT(DOW FROM %s::date) AND time_from = %s "
+                        "AND teacher_id = %s AND lesson_type = 'groups' AND child_name = %s "
+                        "AND status IN ('new', 'confirmed')",
+                        (slot_date, time_from, int(teacher_id), child),
+                    )
+                    if cur.fetchone():
+                        return _resp(409, {'error': 'taken', 'message': 'Вы уже записаны на это занятие'})
+
+                prepared.append((
                     token, slot_date, time_from, time_to or time_from, int(teacher_id),
-                    (body.get('teacherName') or '').strip(),
-                    child,
-                    (body.get('parentName') or link['parent_name'] or '').strip(),
-                    _norm_phone(body.get('phone') or link['phone']),
-                    (body.get('comment') or '').strip(),
-                    lesson_type,
-                    start_from,
-                ),
-            )
-            row = cur.fetchone()
-            conn.commit()
-            booking = _row_to_booking(row)
+                    (s.get('teacherName') or '').strip(),
+                    child, parent_name, phone, comment, lesson_type, start_from, batch_id,
+                ))
 
-            dialog_id = _push_to_interactions(cur, booking, booking['phone'])
+            rows = []
+            for args in prepared:
+                cur.execute(
+                    "INSERT INTO slot_bookings (token, slot_date, time_from, time_to, "
+                    "teacher_id, teacher_name, child_name, parent_name, phone, comment, "
+                    "lesson_type, start_from, batch_id) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+                    args,
+                )
+                rows.append(cur.fetchone())
+            conn.commit()
+
+            bookings = [_row_to_booking(r) for r in rows]
+            main = dict(bookings[0], items=bookings)
+
+            dialog_id = _push_to_interactions(cur, main, phone)
             if dialog_id:
-                cur.execute("UPDATE slot_bookings SET dialog_id = %s WHERE id = %s",
-                            (dialog_id, booking['id']))
-                booking['dialogId'] = dialog_id
+                cur.execute("UPDATE slot_bookings SET dialog_id = %s WHERE batch_id = %s",
+                            (dialog_id, batch_id))
+                for b in bookings:
+                    b['dialogId'] = dialog_id
             conn.commit()
 
-            return _resp(200, {'ok': True, 'booking': booking})
+            return _resp(200, {'ok': True, 'booking': bookings[0], 'bookings': bookings})
 
         # ── Список броней (админ + окно взаимодействия) ───────────────────────
         if method == 'GET' and action in ('bookings', 'feed'):
@@ -553,10 +587,29 @@ def handler(event: dict, context) -> dict:
             if status and status != 'all':
                 sql += " WHERE status = %s"
                 args.append(status)
-            sql += " ORDER BY created_at DESC LIMIT 500"
+            sql += " ORDER BY created_at DESC, time_from LIMIT 500"
             cur.execute(sql, args)
-            items = [_row_to_booking(r) for r in cur.fetchall()]
-            cur.execute("SELECT COUNT(*) AS n FROM slot_bookings WHERE status = 'new'")
+            rows = [_row_to_booking(r) for r in cur.fetchall()]
+
+            # Занятия одной отправки собираем в одну карточку: родитель выбрал
+            # 3 окна — администратор видит одну заявку с тремя занятиями
+            groups: Dict[str, dict] = {}
+            items = []
+            for b in rows:
+                key = b.get('batchId')
+                if not key:
+                    items.append(dict(b, lessons=[b]))
+                    continue
+                if key in groups:
+                    groups[key]['lessons'].append(b)
+                else:
+                    groups[key] = dict(b, lessons=[b])
+                    items.append(groups[key])
+
+            cur.execute(
+                "SELECT COUNT(DISTINCT COALESCE(batch_id, id::text)) AS n "
+                "FROM slot_bookings WHERE status = 'new'"
+            )
             return _resp(200, {'bookings': items, 'newCount': cur.fetchone()['n']})
 
         # ── Админ обрабатывает бронь ──────────────────────────────────────────
@@ -564,24 +617,34 @@ def handler(event: dict, context) -> dict:
             new_status = (body.get('status') or '').strip()
             if new_status not in STATUS_LABELS:
                 return _resp(400, {'error': 'bad_status'})
+            # Заявка обрабатывается целиком: все занятия одной отправки
             cur.execute(
                 "UPDATE slot_bookings SET status = %s, admin_note = COALESCE(%s, admin_note), "
-                "processed_at = now(), processed_by = %s WHERE id = %s RETURNING *",
+                "processed_at = now(), processed_by = %s "
+                "WHERE id = %s OR (batch_id IS NOT NULL AND batch_id = "
+                "(SELECT batch_id FROM slot_bookings WHERE id = %s)) RETURNING *",
                 (
                     new_status,
                     body.get('adminNote'),
                     (body.get('processedBy') or '').strip(),
                     int(body.get('id')),
+                    int(body.get('id')),
                 ),
             )
-            row = cur.fetchone()
+            rows = cur.fetchall()
             conn.commit()
-            if not row:
+            if not rows:
                 return _resp(404, {'error': 'not_found'})
-            return _resp(200, {'ok': True, 'booking': _row_to_booking(row)})
+            return _resp(200, {'ok': True, 'booking': _row_to_booking(rows[0])})
 
         if method == 'DELETE' and action == 'booking':
-            cur.execute("DELETE FROM slot_bookings WHERE id = %s", (int(params.get('id')),))
+            # Удаляем заявку целиком, а не одно занятие из неё
+            bid = int(params.get('id'))
+            cur.execute(
+                "DELETE FROM slot_bookings WHERE id = %s OR (batch_id IS NOT NULL "
+                "AND batch_id = (SELECT batch_id FROM slot_bookings WHERE id = %s))",
+                (bid, bid),
+            )
             conn.commit()
             return _resp(200, {'ok': True})
 
