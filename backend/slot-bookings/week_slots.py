@@ -169,14 +169,17 @@ def build_individual(
 def build_groups(
     weeks: List[List[dict]],
     start: date,
-    taken: Set[Tuple[str, str, int]],
     max_size: int = 6,
+    booked: Optional[Dict[Tuple[str, str, int], int]] = None,
 ) -> List[dict]:
     '''Групповые занятия со свободными местами, по дням недели.
 
     weeks — по списку строк на каждую неделю (расписание отдаёт группы только
     понедельно). Строка: время, педагог и ячейки по дням недели.
+    booked — места, занятые нашими заявками: в CRM их ещё нет.
     '''
+    booked = booked or {}
+
     # (день от старта, время, педагог) → свободных мест
     free_map: Dict[Tuple[int, str, int], int] = {}
     names: Dict[Tuple[str, int], str] = {}
@@ -186,10 +189,13 @@ def build_groups(
             teacher = int(r.get('teacher_id') or 0)
             names[(time, teacher)] = r.get('teacher_name') or ''
             for cell in (r.get('cells') or {}).values():
-                off = _offset(start, cell.get('date') or '')
+                iso_date = cell.get('date') or ''
+                off = _offset(start, iso_date)
                 if off < 0 or off >= DAYS_TO_LOAD:
                     continue
-                free_map[(off, time, teacher)] = int(cell.get('free') or 0)
+                # Из свободных мест вычитаем свои заявки — CRM про них не знает
+                mine = booked.get((iso_date[:10], time, teacher), 0)
+                free_map[(off, time, teacher)] = max(0, int(cell.get('free') or 0) - mine)
 
     # Групповое расписание в CRM заводят не на все недели вперёд, поэтому
     # кандидатов берём со всего периода, а не только с первых недель.
@@ -206,12 +212,9 @@ def build_groups(
         if not weeks:
             continue
 
-        # Занято, если места кончились или окно уже забронировано заявкой
-        busy = {
-            w: free <= 0
-            or (fmt(start + timedelta(days=day_index + w * 7)), time, teacher) in taken
-            for w, free in weeks.items()
-        }
+        # Занято, только если мест не осталось. Наши заявки уже вычтены выше,
+        # а taken — про индивидуальные окна, к группам он не относится.
+        busy = {w: free <= 0 for w, free in weeks.items()}
 
         # Группа идёт регулярно, поэтому неделя без занятия в CRM — это просто
         # незаполненное расписание, а не отсутствие группы. Пропускаем занятие

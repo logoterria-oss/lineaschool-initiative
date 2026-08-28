@@ -167,6 +167,24 @@ def _booked_keys(cur) -> set:
     }
 
 
+def _group_booked(cur) -> Dict[tuple, int]:
+    '''Сколько мест в каждой группе уже занято нашими заявками.
+
+    CRM про эти заявки не знает: ребёнка туда заводят только после
+    подтверждения. Без учёта родитель видит «свободно 6 из 6», хотя часть
+    мест уже разобрана.
+    '''
+    cur.execute(
+        "SELECT slot_date, time_from, teacher_id, COUNT(*) AS n FROM slot_bookings "
+        "WHERE status IN ('new', 'confirmed') AND lesson_type = 'groups' "
+        "GROUP BY slot_date, time_from, teacher_id"
+    )
+    return {
+        (str(r['slot_date'])[:10], r['time_from'], int(r['teacher_id'])): int(r['n'])
+        for r in cur.fetchall()
+    }
+
+
 def _find_dialog_by_child(cur, child: str) -> Optional[int]:
     '''Ищем диалог родителя по имени ребёнка.
 
@@ -435,7 +453,10 @@ def handler(event: dict, context) -> dict:
                     raw_weeks = [f.result() for f in grp_futures]
                     max_size = next((int(r.get('max_size') or 6) for r in raw_weeks if r), 6)
                     group_days = week_slots.build_groups(
-                        [r.get('rows') or [] for r in raw_weeks], start, taken, max_size
+                        [r.get('rows') or [] for r in raw_weeks],
+                        start,
+                        max_size,
+                        _group_booked(cur),
                     )
 
             return _resp(200, {
@@ -483,6 +504,16 @@ def handler(event: dict, context) -> dict:
                 )
                 if cur.fetchone():
                     return _resp(409, {'error': 'taken', 'message': 'Это окно только что забронировали. Выберите другое'})
+            else:
+                # В группу один и тот же ребёнок дважды не записывается
+                cur.execute(
+                    "SELECT id FROM slot_bookings WHERE slot_date = %s AND time_from = %s "
+                    "AND teacher_id = %s AND lesson_type = 'groups' AND child_name = %s "
+                    "AND status IN ('new', 'confirmed')",
+                    (slot_date, time_from, int(teacher_id), child),
+                )
+                if cur.fetchone():
+                    return _resp(409, {'error': 'taken', 'message': 'Вы уже записаны на это занятие'})
 
             start_from = (body.get('startFrom') or '').strip()[:10] or None
 
