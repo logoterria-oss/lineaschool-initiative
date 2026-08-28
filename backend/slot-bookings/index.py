@@ -12,6 +12,9 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
 
+import urllib.error
+import urllib.request
+
 import psycopg2
 import psycopg2.extras
 import requests
@@ -20,6 +23,10 @@ import week_slots
 from name_match import same_child
 
 SCHEDULE_URL = 'https://functions.poehali.dev/6d9e6094-fd18-47ec-b45f-ad3ee4ba7cc2'
+# Окно взаимодействия — туда сразу сообщаем о новой брони
+INTERACTION_HOOK_URL = (
+    'https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1?action=booking-hook'
+)
 INTERACTIONS_URL = 'https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1'
 
 CORS = {
@@ -212,6 +219,67 @@ def _find_dialog_by_child(cur, child: str) -> Optional[int]:
         if same_child(child, r['child_name']):
             return int(r['id'])
     return None
+
+
+def _notify_interaction(bookings: list) -> dict:
+    '''Сообщаем окну взаимодействия о новой брони сразу после её создания.
+
+    Окно живёт в отдельном проекте со своей базой, поэтому пишем ему по HTTP.
+    Дальше окно само находит ученика в CRM, создаёт чат, показывает карточку
+    брони и шлёт уведомление админам в Max/Telegram.
+    '''
+    key = os.environ.get('INTERACTION_SERVICE_KEY')
+    if not key:
+        print('booking-hook: INTERACTION_SERVICE_KEY не задан')
+        return {'sent': False, 'error': 'no_service_key'}
+    if not bookings:
+        return {'sent': False, 'error': 'no_bookings'}
+
+    first = bookings[0]
+    payload = {
+        'event': 'booking_created',
+        'batchId': first.get('batchId'),
+        'child': {
+            'name': first.get('childName') or '',
+            'parentName': first.get('parentName') or '',
+            'phone': first.get('phone') or '',
+        },
+        'startFrom': first.get('startFrom') or first.get('date'),
+        'createdAt': first.get('createdAt'),
+        'lessons': [
+            {
+                'id': b.get('id'),
+                'lessonType': b.get('lessonType'),
+                'weekday': b.get('weekdayName'),
+                'date': b.get('date'),
+                'timeFrom': b.get('timeFrom'),
+                'timeTo': b.get('timeTo'),
+                'teacherId': b.get('teacherId'),
+                'teacherName': b.get('teacherName'),
+            }
+            for b in bookings
+        ],
+    }
+
+    req = urllib.request.Request(
+        INTERACTION_HOOK_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode(),
+        headers={'Content-Type': 'application/json', 'X-Service-Key': key},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            code = resp.status
+            body = json.loads(resp.read().decode() or '{}')
+        print(f'booking-hook -> {code} {json.dumps(body, ensure_ascii=False)}')
+        return {'sent': True, 'status': code, 'response': body}
+    except urllib.error.HTTPError as e:
+        text = e.read().decode(errors='replace')[:300]
+        print(f'booking-hook -> HTTP {e.code} {text}')
+        return {'sent': False, 'status': e.code, 'error': text}
+    except Exception as e:
+        print(f'booking-hook failed: {e}')
+        return {'sent': False, 'error': str(e)}
 
 
 def _push_to_interactions(cur, booking: Dict[str, Any], phone: str) -> Optional[int]:
@@ -577,7 +645,16 @@ def handler(event: dict, context) -> dict:
                     b['dialogId'] = dialog_id
             conn.commit()
 
-            return _resp(200, {'ok': True, 'booking': bookings[0], 'bookings': bookings})
+            # Сразу сообщаем окну взаимодействия — админы увидят бронь и
+            # получат уведомление, не дожидаясь опроса
+            notified = _notify_interaction(bookings)
+
+            return _resp(200, {
+                'ok': True,
+                'booking': bookings[0],
+                'bookings': bookings,
+                'notified': notified.get('sent', False),
+            })
 
         # ── Список броней (админ + окно взаимодействия) ───────────────────────
         if method == 'GET' and action in ('bookings', 'feed'):
