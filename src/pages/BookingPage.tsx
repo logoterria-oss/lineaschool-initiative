@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { Choice, GroupDayCard, IndividualDay } from '@/components/booking/DayCard';
@@ -213,7 +212,7 @@ const BookingPage = () => {
     return (
       <StartDateScreen
         title={link.title || 'Запись на занятие'}
-        askChildName={link.isPublic}
+        askChildName={link.isPublic || !link.childName}
         childName={childName}
         onChildNameChange={setChildName}
         value={startFrom}
@@ -235,8 +234,11 @@ const BookingPage = () => {
           <h1 className="text-2xl font-bold text-gray-800 mb-1">
             {link.title || 'Запись на занятие'}
           </h1>
+          {/* Имя и дату спросили на первом шаге — здесь только напоминаем */}
           <p className="text-gray-500 text-sm">
-            Начало занятий с {startFrom.split('-').reverse().join('.')}
+            {childName && <span className="font-medium text-gray-700">{childName}</span>}
+            {childName && ' · '}
+            начало с {startFrom.split('-').reverse().join('.')}
             <button
               onClick={() => setDateConfirmed(false)}
               className="text-emerald-700 underline ml-2 hover:text-emerald-800"
@@ -349,17 +351,6 @@ const BookingPage = () => {
               ) : (
                 <div className="text-sm text-gray-400 mb-3">Выберите время выше</div>
               )}
-
-              {/* Имя уже спрошено на первом шаге — здесь его можно поправить */}
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Фамилия и имя ребёнка <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={childName}
-                onChange={(e) => setChildName(e.target.value)}
-                placeholder="Например, Иванова Маша"
-                className="mb-3"
-              />
 
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Комментарий <span className="text-gray-400 font-normal">— необязательно</span>
