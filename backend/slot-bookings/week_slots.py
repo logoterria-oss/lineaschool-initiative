@@ -23,6 +23,21 @@ WEEKS_TO_LOAD = MAX_START_OFFSET + STABLE_WEEKS
 # Дней в запросе к расписанию: одним запросом, иначе не укладываемся в таймаут
 DAYS_TO_LOAD = WEEKS_TO_LOAD * 7
 
+# Занятие длится 40 минут. В графике работы окна стоят по часу — это слот
+# педагога вместе с перерывом, а не длительность урока. Родителю показываем
+# реальное время занятия, иначе он ждёт на 20 минут больше.
+LESSON_MINUTES = 40
+
+
+def lesson_end(time_from: str) -> str:
+    '''Конец занятия: начало + 40 минут.'''
+    try:
+        h, m = (time_from or '')[:5].split(':')
+        total = int(h) * 60 + int(m) + LESSON_MINUTES
+        return f'{(total // 60) % 24:02d}:{total % 60:02d}'
+    except Exception:
+        return time_from or ''
+
 
 def parse_date(raw: Optional[str]) -> date:
     try:
@@ -91,15 +106,15 @@ def build_individual(
         return (fmt(slot_date), time, teacher) not in taken
 
     # Кандидаты — свободные окна первых недель (день недели + время + педагог)
-    candidates: Dict[Tuple[int, str, int], str] = {}
+    candidates: Set[Tuple[int, str, int]] = set()
     for (off, time, teacher), s in index.items():
         if off >= (MAX_START_OFFSET + 1) * 7 or s.get('busy'):
             continue
         # Внутри недели день определяется остатком от деления на 7
-        candidates.setdefault((off % 7, time, teacher), s.get('time_to') or time)
+        candidates.add((off % 7, time, teacher))
 
     by_day: Dict[int, Dict[str, dict]] = {}
-    for (day_index, time, teacher), time_to in candidates.items():
+    for day_index, time, teacher in candidates:
         # Ищем первую неделю, с которой окно свободно STABLE_WEEKS подряд
         start_week = -1
         for w in range(MAX_START_OFFSET + 1):
@@ -132,7 +147,7 @@ def build_individual(
 
         entry = by_day.setdefault(day_index, {}).setdefault(time, {
             'timeFrom': time,
-            'timeTo': time_to,
+            'timeTo': lesson_end(time),
             'teachers': [],
         })
         entry['teachers'].append({
@@ -210,7 +225,7 @@ def build_groups(
 
         by_day.setdefault(day_index, {})[f'{time}__{teacher}'] = {
             'timeFrom': time,
-            'timeTo': _plus_hour(time),
+            'timeTo': lesson_end(time),
             'teacherId': teacher,
             'teacherName': names.get((time, teacher), ''),
             'free': weeks[first_free],
@@ -219,15 +234,6 @@ def build_groups(
         }
 
     return _to_days(by_day, start, key='groups')
-
-
-def _plus_hour(time: str) -> str:
-    '''Групповое занятие длится час — конец считаем от начала.'''
-    try:
-        h, m = time[:5].split(':')
-        return f'{(int(h) + 1) % 24:02d}:{m}'
-    except Exception:
-        return time
 
 
 # ── Общее ─────────────────────────────────────────────────────────────────────
