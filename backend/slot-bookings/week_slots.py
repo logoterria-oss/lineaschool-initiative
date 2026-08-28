@@ -145,6 +145,11 @@ def build_individual(
             if not from_date or a > from_date:
                 from_date = a
 
+        # Окно освободится позже выбранной даты — родителю оно не подходит.
+        # Он назвал дату, с которой готов начать, и ждать смысла нет.
+        if from_date:
+            continue
+
         entry = by_day.setdefault(day_index, {}).setdefault(time, {
             'timeFrom': time,
             'timeTo': lesson_end(time),
@@ -153,7 +158,7 @@ def build_individual(
         entry['teachers'].append({
             'teacherId': teacher,
             'teacherName': slot.get('teacher_name') or '',
-            'availableFrom': fmt(from_date) if from_date else None,
+            'availableFrom': None,
         })
 
     return _to_days(by_day, start, key='slots')
@@ -214,14 +219,11 @@ def build_groups(
         if all(busy.values()):
             continue
 
-        # Первая неделя, где есть места. Дату начала показываем, только если
-        # ранние недели реально заняты, — а не потому, что их нет в CRM.
+        # Первая неделя, где есть места. Если до неё места были заняты, группа
+        # откроется позже выбранной даты — такое родителю не предлагаем.
         first_free = min(w for w in weeks if not busy[w])
-        blocked_before = any(w < first_free for w in weeks if busy[w])
-        from_date = (
-            start + timedelta(days=day_index + first_free * 7)
-            if blocked_before and first_free > 0 else None
-        )
+        if any(w < first_free for w in weeks if busy[w]):
+            continue
 
         by_day.setdefault(day_index, {})[f'{time}__{teacher}'] = {
             'timeFrom': time,
@@ -230,7 +232,7 @@ def build_groups(
             'teacherName': names.get((time, teacher), ''),
             'free': weeks[first_free],
             'maxSize': max_size,
-            'availableFrom': fmt(from_date) if from_date else None,
+            'availableFrom': None,
         }
 
     return _to_days(by_day, start, key='groups')
