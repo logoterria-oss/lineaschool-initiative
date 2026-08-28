@@ -219,17 +219,22 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
     return Math.round((dd.getTime() - periodStart.getTime()) / 86400000);
   };
 
-  // Свободно ли индивид. окно (dayOffset, time, teacherId) в периоде period
-  const isIndFree = (period: number, dayOffset: number, time: string, teacherId: number): boolean => {
+  // Слот (dayOffset, time, teacherId) в периоде period, если он есть
+  const indSlotAt = (period: number, dayOffset: number, time: string, teacherId: number) => {
     const week = indWeeks?.[period];
-    if (!week) return false;
+    if (!week) return null;
     for (const day of week) {
       if (indDayOffset(period, day.date) !== dayOffset) continue;
-      if (day.slots.some((s) => s.time_from === time && s.teacher_id === teacherId && !s.busy)) {
-        return true;
-      }
+      const s = day.slots.find((x) => x.time_from === time && x.teacher_id === teacherId);
+      if (s) return s;
     }
-    return false;
+    return null;
+  };
+
+  // Свободно ли индивид. окно (dayOffset, time, teacherId) в периоде period
+  const isIndFree = (period: number, dayOffset: number, time: string, teacherId: number): boolean => {
+    const s = indSlotAt(period, dayOffset, time, teacherId);
+    return !!s && !s.busy;
   };
 
   // Стабильно ли окно STABLE_WEEKS периодов подряд, начиная с периода startPeriod.
@@ -237,6 +242,10 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   const isIndStable = (startPeriod: number, dayOffset: number, time: string, teacherId: number): boolean => {
     if (isOnce) {
       if (isSlotPassed(dayOffset, time)) return false;
+      // Разовый перенос — на конкретную дату. Если педагог в отпуске,
+      // окно в этот день предлагать нельзя.
+      const s = indSlotAt(startPeriod, dayOffset, time, teacherId);
+      if (s?.available_from) return false;
       return isIndFree(startPeriod, dayOffset, time, teacherId);
     }
     for (let k = 0; k < STABLE_WEEKS; k++) {
@@ -286,7 +295,15 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       if (startPeriod === -1) continue; // нестабильно — не предлагаем
 
       // Дату «с …» показываем, только если окна нет на текущей неделе (период 0)
-      const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
+      let fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
+
+      // Педагог в отпуске: окно предлагаем, но с даты выхода. Берём самую
+      // позднюю из двух дат — отпуск не должен «перебиваться» ранней датой.
+      const slot = indSlotAt(startPeriod, c.dayOffset, c.time, c.teacherId);
+      if (slot?.available_from) {
+        const availFrom = new Date(`${slot.available_from}T00:00:00`);
+        if (!fromDate || availFrom > fromDate) fromDate = availFrom;
+      }
       byDay[c.dayOffset] ||= {};
       byDay[c.dayOffset][c.time] ||= [];
       byDay[c.dayOffset][c.time].push({ name: c.teacherName, fromDate });

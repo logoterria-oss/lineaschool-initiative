@@ -63,6 +63,42 @@ def slot_blocked_by_absence(absences_for_teacher, date_str, tf, tt) -> bool:
             return True
     return False
 
+
+def absence_covering_slot(absences_for_teacher, date_str, tf, tt):
+    """Отпуск/выходной, который перекрывает слот. Возвращает саму запись или None.
+
+    Нужен, чтобы окно педагога в отпуске не пропадало из предложений,
+    а показывалось с пометкой «доступно с <дата выхода>».
+    """
+    for ab in absences_for_teacher or []:
+        if not (ab["date_from"] <= date_str <= ab["date_to"]):
+            continue
+        atf = ab.get("time_from")
+        att = ab.get("time_to")
+        if not atf or not att:
+            return ab
+        if atf < tt and att > tf:
+            return ab
+    return None
+
+
+def next_available_date(absences_for_teacher, date_str, tf, tt) -> str:
+    """Первый день, начиная с date_str, когда слот уже не перекрыт отпуском."""
+    try:
+        cur = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception:
+        return ""
+    # Ограничиваем поиск полугодом — защита от бесконечного цикла
+    for _ in range(200):
+        ab = absence_covering_slot(absences_for_teacher, cur.strftime("%Y-%m-%d"), tf, tt)
+        if ab is None:
+            return cur.strftime("%Y-%m-%d")
+        try:
+            cur = datetime.strptime(ab["date_to"], "%Y-%m-%d").date() + timedelta(days=1)
+        except Exception:
+            return ""
+    return ""
+
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
 
@@ -1247,9 +1283,21 @@ def handler(event: dict, context) -> dict:
                             continue
                         tf = slot["time_from"][:5]
                         tt = slot["time_to"][:5]
-                        # Выходной/отпуск педагога — слот недействителен, не показываем
-                        if slot_blocked_by_absence(absences.get(int(teacher_id)), date_str, tf, tt):
-                            continue
+                        # Отпуск/выходной педагога. Окно не выбрасываем: отдаём его
+                        # с датой выхода, чтобы предложить запись «с такого-то числа».
+                        teacher_absences = absences.get(int(teacher_id))
+                        covering = absence_covering_slot(teacher_absences, date_str, tf, tt)
+                        available_from = None
+                        if covering is not None:
+                            if covering.get("kind") == "vacation":
+                                available_from = next_available_date(
+                                    teacher_absences, date_str, tf, tt
+                                )
+                                if not available_from:
+                                    continue
+                            else:
+                                # Обычный выходной — как и раньше, окна нет
+                                continue
                         # Проверяем: занят ли этот слот. Групповое занятие
                         # приоритетнее — при накладке окно точно не свободно.
                         busy = False
@@ -1269,6 +1317,8 @@ def handler(event: dict, context) -> dict:
                         }
                         if booked_lesson_id:
                             entry["lesson_id"] = booked_lesson_id
+                        if available_from:
+                            entry["available_from"] = available_from
                         slots_for_day.append(entry)
 
                 slots_for_day.sort(key=lambda s: (s["time_from"], s["teacher_name"]))

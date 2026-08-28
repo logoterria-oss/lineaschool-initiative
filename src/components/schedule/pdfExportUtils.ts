@@ -10,6 +10,8 @@ export interface IndSlot {
   teacher_id: number;
   teacher_name: string;
   busy: boolean;
+  // Педагог в отпуске: окно доступно начиная с этой даты (ISO)
+  available_from?: string;
 }
 export interface IndDay {
   date: string;
