@@ -12,6 +12,7 @@ import {
   FreeDay,
   GroupDay,
   createBooking,
+  fetchAllBookingSlots,
   fetchBookingSlots,
 } from '@/lib/bookingsApi';
 
@@ -62,8 +63,8 @@ const BookingPage = () => {
     setGroupPick(null);
 
     // Первый запрос будит функцию и иногда не успевает ответить — повторяем
-    let data = await fetchBookingSlots(token, from);
-    if (!data.link && !data.error) data = await fetchBookingSlots(token, from);
+    let data = await fetchAllBookingSlots(token, from);
+    if (!data.link && !data.error) data = await fetchAllBookingSlots(token, from);
 
     if (data.error) {
       setError(data.message || 'Ссылка недействительна');
@@ -88,7 +89,7 @@ const BookingPage = () => {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const data = await fetchBookingSlots(token, tomorrow);
+      const data = await fetchBookingSlots(token, tomorrow, 'individual');
       if (data.error) setError(data.message || 'Ссылка недействительна');
       else if (data.link) {
         setLink(data.link);

@@ -356,7 +356,7 @@ def handler(event: dict, context) -> dict:
             if start < tomorrow:
                 start = tomorrow
 
-            lesson_type = (params.get('lesson_type') or 'both').strip()
+            lesson_type = (params.get('lesson_type') or 'individual').strip()
             # Тип, по которому родитель уже записался, второй раз не показываем
             if done_individual and lesson_type in ('individual', 'both'):
                 lesson_type = 'groups' if lesson_type == 'both' else 'none'
@@ -368,27 +368,38 @@ def handler(event: dict, context) -> dict:
             group_days: list = []
 
             # Смотрим четыре недели вперёд: предлагаем только те окна, которые
-            # свободны регулярно, а не один раз. Расписание индивидуальных и
-            # групповых тянем параллельно — последовательно не укладываемся
-            # в лимит времени функции.
+            # свободны регулярно, а не один раз.
+            #
+            # Индивидуальные расписание отдаёт за любой период сразу, а группы —
+            # ТОЛЬКО понедельно: при длинном диапазоне ячейки разных недель
+            # ложатся в один день и затирают друг друга. Поэтому группы просим
+            # неделя за неделей. Все запросы идут параллельно, иначе функция
+            # не укладывается в лимит времени.
             df = week_slots.fmt(start)
             dt = week_slots.fmt(week_slots.date_to(start))
+            starts = week_slots.week_starts(start)
 
-            with ThreadPoolExecutor(max_workers=2) as pool:
+            with ThreadPoolExecutor(max_workers=5) as pool:
                 ind_future = (
                     pool.submit(_fetch_free_slots, df, dt)
                     if lesson_type in ('individual', 'both') else None
                 )
-                grp_future = (
-                    pool.submit(_fetch_group_rows, df, dt)
-                    if lesson_type in ('groups', 'both') else None
-                )
+                grp_futures = [
+                    pool.submit(
+                        _fetch_group_rows,
+                        week_slots.fmt(ws),
+                        week_slots.fmt(ws + timedelta(days=6)),
+                    )
+                    for ws in starts
+                ] if lesson_type in ('groups', 'both') else []
+
                 if ind_future:
                     ind_days = week_slots.build_individual(ind_future.result(), start, taken)
-                if grp_future:
-                    raw = grp_future.result()
+                if grp_futures:
+                    raw_weeks = [f.result() for f in grp_futures]
+                    max_size = next((int(r.get('max_size') or 6) for r in raw_weeks if r), 6)
                     group_days = week_slots.build_groups(
-                        raw.get('rows') or [], start, taken, int(raw.get('max_size') or 6)
+                        [r.get('rows') or [] for r in raw_weeks], start, taken, max_size
                     )
 
             return _resp(200, {

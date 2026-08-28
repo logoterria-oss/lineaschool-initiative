@@ -44,6 +44,15 @@ def date_to(start: date) -> date:
     return start + timedelta(days=DAYS_TO_LOAD - 1)
 
 
+def week_starts(start: date) -> List[date]:
+    '''Начала недель периода: старт, старт+7, старт+14, старт+21.
+
+    Групповое расписание отдаётся только понедельно, поэтому запрашиваем
+    каждую неделю отдельно.
+    '''
+    return [start + timedelta(days=7 * w) for w in range(WEEKS_TO_LOAD)]
+
+
 def _offset(start: date, iso: str) -> int:
     '''Сколько дней от даты старта. -1, если дата непонятна.'''
     try:
@@ -138,27 +147,29 @@ def build_individual(
 # ── Группы ────────────────────────────────────────────────────────────────────
 
 def build_groups(
-    rows: List[dict],
+    weeks: List[List[dict]],
     start: date,
     taken: Set[Tuple[str, str, int]],
     max_size: int = 6,
 ) -> List[dict]:
     '''Групповые занятия со свободными местами, по дням недели.
 
-    rows — строки таблицы групп: время, педагог и ячейки по дням.
+    weeks — по списку строк на каждую неделю (расписание отдаёт группы только
+    понедельно). Строка: время, педагог и ячейки по дням недели.
     '''
     # (день от старта, время, педагог) → свободных мест
     free_map: Dict[Tuple[int, str, int], int] = {}
     names: Dict[Tuple[str, int], str] = {}
-    for r in rows or []:
-        time = r.get('time') or ''
-        teacher = int(r.get('teacher_id') or 0)
-        names[(time, teacher)] = r.get('teacher_name') or ''
-        for cell in (r.get('cells') or {}).values():
-            off = _offset(start, cell.get('date') or '')
-            if off < 0 or off >= DAYS_TO_LOAD:
-                continue
-            free_map[(off, time, teacher)] = int(cell.get('free') or 0)
+    for rows in weeks or []:
+        for r in rows or []:
+            time = r.get('time') or ''
+            teacher = int(r.get('teacher_id') or 0)
+            names[(time, teacher)] = r.get('teacher_name') or ''
+            for cell in (r.get('cells') or {}).values():
+                off = _offset(start, cell.get('date') or '')
+                if off < 0 or off >= DAYS_TO_LOAD:
+                    continue
+                free_map[(off, time, teacher)] = int(cell.get('free') or 0)
 
     # Групповое расписание в CRM заводят не на все недели вперёд, поэтому
     # кандидатов берём со всего периода, а не только с первых недель.

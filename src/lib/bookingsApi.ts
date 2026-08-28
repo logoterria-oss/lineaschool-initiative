@@ -101,6 +101,7 @@ const json = async (res: Response) => {
 export const fetchBookingSlots = async (
   token: string,
   startFrom: string,
+  lessonType: LessonType,
 ): Promise<{
   link?: BookingLink;
   startFrom?: string;
@@ -113,11 +114,27 @@ export const fetchBookingSlots = async (
   error?: string;
   message?: string;
 }> => {
+  // Один тип за запрос: расписание тяжёлое, вместе не успевает ответить
   const res = await fetch(
-    `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}&start_from=${startFrom}`,
+    `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}` +
+      `&start_from=${startFrom}&lesson_type=${lessonType}`,
   );
   const data = await json(res);
   return { individualDays: [], groupDays: [], ...data };
+};
+
+/** Оба расписания сразу — двумя параллельными запросами */
+export const fetchAllBookingSlots = async (token: string, startFrom: string) => {
+  const [ind, grp] = await Promise.all([
+    fetchBookingSlots(token, startFrom, 'individual'),
+    fetchBookingSlots(token, startFrom, 'groups'),
+  ]);
+  const base = ind.link ? ind : grp;
+  return {
+    ...base,
+    individualDays: ind.individualDays || [],
+    groupDays: grp.groupDays || [],
+  };
 };
 
 export const createBooking = async (input: {
