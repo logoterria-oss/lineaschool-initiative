@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { Choice, GroupDayCard, IndividualDay, choiceKey } from '@/components/booking/DayCard';
 import StartDateScreen from '@/components/booking/StartDateScreen';
@@ -59,7 +58,6 @@ const BookingPage = () => {
   const [ind, setInd] = useState<Section>(EMPTY);
   const [grp, setGrp] = useState<Section>(EMPTY);
   const [childName, setChildName] = useState('');
-  const [comment, setComment] = useState('');
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -147,7 +145,6 @@ const BookingPage = () => {
       const res = await createBooking({
         token,
         childName: childName.trim(),
-        comment: comment.trim(),
         date: pick.date,
         timeFrom: pick.timeFrom,
         timeTo: pick.timeTo,
@@ -408,17 +405,6 @@ const BookingPage = () => {
                   Выберите время выше — можно отметить сразу несколько занятий
                 </div>
               )}
-
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Комментарий <span className="text-gray-400 font-normal">— необязательно</span>
-              </label>
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Пожелания или вопросы"
-                rows={2}
-                className="mb-3"
-              />
 
               {missing > 0 && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
