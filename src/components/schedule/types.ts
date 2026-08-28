@@ -257,6 +257,32 @@ const MANUAL_AGE: Record<string, number> = {
 // для них всегда берём ручное значение вместо вычисленного.
 const FORCE_MANUAL_AGE = new Set(['Сеня Константинов', 'Рита Алексеева', 'Ксюша Моисеева']);
 
+// ── Возрастные группы ─────────────────────────────────────────────────────────
+// Группы с заранее известной возрастной категорией. Ключ — день недели
+// (0=ПН..6=ВС) и время начала. Педагог не важен: категория закреплена
+// за самой группой в расписании.
+export interface AgeGroupRule {
+  weekdays: number[];
+  time: string;
+  from: number;
+  to: number;
+}
+
+export const AGE_GROUP_RULES: AgeGroupRule[] = [
+  // ВТ и ЧТ 19:00 — подростковая группа
+  { weekdays: [1, 3], time: '19:00', from: 14, to: 18 },
+];
+
+export const findAgeGroupRule = (weekday: number, time: string): AgeGroupRule | null => {
+  const t = (time || '').slice(0, 5);
+  for (const r of AGE_GROUP_RULES) {
+    if (r.weekdays.includes(weekday) && r.time === t) return r;
+  }
+  return null;
+};
+
+export const ageRangeLabel = (from: number, to: number) => `${from}–${to} лет`;
+
 export const manualAge = (formattedName: string): number | null =>
   MANUAL_AGE[formattedName] ?? null;
 

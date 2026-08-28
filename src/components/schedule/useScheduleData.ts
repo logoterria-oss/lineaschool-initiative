@@ -13,6 +13,7 @@ import {
   formatStudentName,
   manualAge,
   shouldForceManualAge,
+  findAgeGroupRule,
 } from './types';
 import {
   ScheduleType,
@@ -382,12 +383,16 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       const cell = row?.cells[String(c.dayOffset)];
       const free = cell?.free ?? 0;
       const weekday = weekdayOf(c.dayOffset); // 0=ПН..6=ВС
-      const isMatveyTueThu = /мацвей|матвей/i.test(c.teacherName)
+      // Группы с закреплённой возрастной категорией (см. AGE_GROUP_RULES)
+      const rule = findAgeGroupRule(weekday, c.time);
+      const legacyMatveyTueThu = /мацвей|матвей/i.test(c.teacherName)
         && (weekday === 1 || weekday === 3)
         && c.time.slice(0, 5) === '18:45';
-      const ageLabel = isMatveyTueThu
-        ? 'рекомендуется для детей от 14 до 18 лет'
-        : groupAgeLabel(cell?.student_ids || []);
+      const ageLabel = rule
+        ? `рекомендуется для детей от ${rule.from} до ${rule.to} лет`
+        : legacyMatveyTueThu
+          ? 'рекомендуется для детей от 14 до 18 лет'
+          : groupAgeLabel(cell?.student_ids || []);
       const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 
       byDay[c.dayOffset] ||= [];

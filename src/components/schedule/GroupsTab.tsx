@@ -18,6 +18,8 @@ import {
   formatStudentName,
   manualAge,
   shouldForceManualAge,
+  findAgeGroupRule,
+  ageRangeLabel,
 } from './types';
 
 const GroupsTab = () => {
@@ -193,6 +195,12 @@ const GroupsTab = () => {
               </span>
               проведено
             </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block px-1 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-semibold">
+                14–18 лет
+              </span>
+              возрастная группа
+            </span>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -239,6 +247,7 @@ const GroupsTab = () => {
                       if (!cell) return null;
                       const isFull = cell.free === 0;
                       const isDone = cell.status === 3;
+                      const ageRule = findAgeGroupRule(day, row.time);
                       return (
                         <div
                           key={`${row.time}-${row.teacher_id}`}
@@ -257,6 +266,12 @@ const GroupsTab = () => {
                               </span>
                             )}
                           </div>
+                          {ageRule && (
+                            <div className="flex items-center justify-center gap-1 bg-indigo-50 border-b border-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                              <Icon name="Users" size={10} />
+                              {ageRangeLabel(ageRule.from, ageRule.to)}
+                            </div>
+                          )}
                           <ol className="space-y-0.5 px-2 py-1.5">
                             {Array.from({
                               length: Math.max(MAX_GROUP_SIZE, cell.student_ids.length),
