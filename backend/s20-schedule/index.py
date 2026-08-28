@@ -170,6 +170,102 @@ def get_groups(token: str) -> list:
     return resp.json().get("items", [])
 
 
+SERVICE_GROUP_PATTERNS = (
+    r"^планерка\b",
+    r"^планёрка\b",
+    r"^тестов(ая|ый|ое|ые)\b",
+    r"^тест(\b|[-_\s]|\d)",
+    r"^test(\b|[-_\s]|\d)",
+    r"^служебн",
+)
+
+
+def _is_service_group(name: str) -> bool:
+    """Служебные группы CRM («ПЛАНЕРКА», «Тестовая группа») — ученикам не показываем."""
+    s = (name or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    for pat in SERVICE_GROUP_PATTERNS:
+        if re.match(pat.replace("ё", "е"), s):
+            return True
+    return False
+
+
+def _parse_group_date(value: str):
+    """Даты групп в S20 приходят как «DD.MM.YYYY» (иногда как ISO)."""
+    if not value:
+        return None
+    v = str(value).strip()[:10]
+    for fmt in ("%d.%m.%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(v, fmt).date()
+        except Exception:
+            continue
+    return None
+
+
+def build_group_filter(token: str) -> dict:
+    """Карта group_id -> {b_date, e_date} + множество служебных групп.
+
+    Нужна, чтобы занятие завершившейся группы («Лето …», срок до 31.08)
+    не висело в расписании следующего месяца.
+    """
+    try:
+        groups = get_groups(token)
+    except Exception as e:
+        print(f"groups fetch failed: {e}")
+        return {"periods": {}, "service": set()}
+    periods = {}
+    service = set()
+    for g in groups:
+        gid = g.get("id")
+        if gid is None:
+            continue
+        if _is_service_group(g.get("name") or ""):
+            service.add(gid)
+        periods[gid] = {
+            "b_date": _parse_group_date(g.get("b_date")),
+            "e_date": _parse_group_date(g.get("e_date")),
+        }
+    return {"periods": periods, "service": service}
+
+
+def filter_lessons_by_groups(lessons: list, gfilter: dict) -> list:
+    """Убираем занятия служебных групп и групп, чей период уже закончился."""
+    periods = gfilter.get("periods") or {}
+    service = gfilter.get("service") or set()
+    if not periods and not service:
+        return lessons
+    out = []
+    for ls in lessons:
+        gids = ls.get("group_ids") or []
+        if isinstance(gids, (int, str)):
+            gids = [gids]
+        if not gids:
+            out.append(ls)
+            continue
+        gid = gids[0]
+        try:
+            gid = int(gid)
+        except Exception:
+            out.append(ls)
+            continue
+        if gid in service:
+            continue
+        # Группы нет среди активных в CRM (архивная/удалённая) — занятие не показываем
+        if periods and gid not in periods:
+            continue
+        period = periods.get(gid)
+        lesson_date = _parse_group_date((ls.get("date") or "")[:10])
+        if period and lesson_date:
+            if period["e_date"] and lesson_date > period["e_date"]:
+                continue
+            if period["b_date"] and lesson_date < period["b_date"]:
+                continue
+        out.append(ls)
+    return out
+
+
 def get_teachers(token: str) -> list:
     url = f"{S20_HOST}/v2api/1/teacher/index"
     resp = requests.post(url, json={"page": 0, "pageSize": 100}, headers=get_headers(token))
@@ -905,7 +1001,7 @@ def handler(event: dict, context) -> dict:
         }
 
     if mode == "groups":
-        groups = get_groups(token)
+        groups = [g for g in get_groups(token) if not _is_service_group(g.get("name") or "")]
         return {
             "statusCode": 200,
             "headers": {**cors_headers, "Content-Type": "application/json"},
@@ -919,6 +1015,7 @@ def handler(event: dict, context) -> dict:
             start_dt = today.date()
         monday = start_dt - timedelta(days=start_dt.weekday())
         found = None
+        gfilter = build_group_filter(token)
         for week_offset in range(0, 12):
             wk_from = monday + timedelta(days=week_offset * 7)
             wk_to = wk_from + timedelta(days=5)
@@ -926,6 +1023,7 @@ def handler(event: dict, context) -> dict:
                 lessons = get_lessons(
                     token, wk_from.strftime("%Y-%m-%d"), wk_to.strftime("%Y-%m-%d"), status=1
                 )
+                lessons = filter_lessons_by_groups(lessons, gfilter)
             except Exception:
                 lessons = []
             has = False
@@ -955,6 +1053,7 @@ def handler(event: dict, context) -> dict:
         MAX_GROUP_SIZE = 6
         try:
             lessons = get_lessons_all_statuses(token, date_from, date_to)
+            lessons = filter_lessons_by_groups(lessons, build_group_filter(token))
             teachers = get_teachers(token)
         except Exception as e:
             return {
@@ -1206,6 +1305,7 @@ def handler(event: dict, context) -> dict:
 
     # default: mode=lessons — все статусы за период
     lessons = get_lessons_all_statuses(token, date_from, date_to)
+    lessons = filter_lessons_by_groups(lessons, build_group_filter(token))
     return {
         "statusCode": 200,
         "headers": {**cors_headers, "Content-Type": "application/json"},
