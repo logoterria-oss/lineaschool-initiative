@@ -5,15 +5,22 @@ interface Props {
   title: string;
   skipLabel: string;
   skipped: boolean;
+  /** Сколько окон выбрано в разделе */
+  count?: number;
   onSkip: () => void;
 }
 
 /** Заголовок раздела с кнопкой отказа: «Без индивидуальных» / «Без групповых» */
-const SectionHeader = ({ icon, title, skipLabel, skipped, onSkip }: Props) => (
+const SectionHeader = ({ icon, title, skipLabel, skipped, count = 0, onSkip }: Props) => (
   <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
     <div className="flex items-center gap-2">
       <Icon name={icon} size={18} className="text-emerald-700" />
       <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+      {count > 0 && (
+        <span className="bg-emerald-600 text-white text-xs font-semibold rounded-full px-2 py-0.5">
+          {count}
+        </span>
+      )}
     </div>
     <button
       type="button"

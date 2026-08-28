@@ -372,11 +372,10 @@ def handler(event: dict, context) -> dict:
             )
             by_type = {r['lesson_type']: r['n'] for r in cur.fetchall()}
             used = sum(by_type.values())
-            limit = link['max_bookings']
-            # Общая ссылка одна на всех — по ней записывается сколько угодно семей
-            is_public = bool(link.get('is_public'))
-            done_individual = not is_public and by_type.get('individual', 0) >= limit
-            done_groups = not is_public and by_type.get('groups', 0) >= limit
+            # Дети ходят по 3–4 раза в неделю, поэтому число занятий не
+            # ограничиваем: родитель отмечает столько окон, сколько нужно
+            done_individual = False
+            done_groups = False
 
             if done_individual and done_groups:
                 return _resp(200, {
@@ -471,17 +470,8 @@ def handler(event: dict, context) -> dict:
 
             lesson_type = 'groups' if body.get('lessonType') == 'groups' else 'individual'
 
-            # Родитель может записаться и на индивидуальное, и на групповое —
-            # это две разные заявки, поэтому лимит считаем внутри каждого типа.
-            # Общая ссылка без лимита: по ней записываются разные семьи.
-            if not link.get('is_public'):
-                cur.execute(
-                    "SELECT COUNT(*) AS n FROM slot_bookings WHERE token = %s "
-                    "AND lesson_type = %s AND status IN ('new', 'confirmed')",
-                    (token, lesson_type),
-                )
-                if cur.fetchone()['n'] >= link['max_bookings']:
-                    return _resp(409, {'error': 'limit', 'message': 'По этой ссылке уже забронировано занятие'})
+            # Число занятий по ссылке не ограничиваем: ребёнок может ходить
+            # несколько раз в неделю, и каждое окно — отдельная заявка.
 
             # Индивидуальное окно занимает один ребёнок; в группе мест несколько
             if lesson_type == 'individual':

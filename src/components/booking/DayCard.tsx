@@ -19,8 +19,11 @@ const fmtRu = (iso: string) => {
   return `${d}.${m}.${y}`;
 };
 
-const sameChoice = (a: Choice | null, b: Choice) =>
-  !!a && a.date === b.date && a.timeFrom === b.timeFrom && a.teacherId === b.teacherId;
+/** Ключ окна: день + время + педагог */
+export const choiceKey = (c: Choice) => `${c.date}__${c.timeFrom}__${c.teacherId}`;
+
+const isPicked = (list: Choice[], c: Choice) =>
+  list.some((x) => choiceKey(x) === choiceKey(c));
 
 const FromDate = ({ iso, light }: { iso?: string | null; light?: boolean }) =>
   iso ? (
@@ -31,12 +34,13 @@ const FromDate = ({ iso, light }: { iso?: string | null; light?: boolean }) =>
 
 interface IndividualDayProps {
   day: FreeDay;
-  selected: Choice | null;
-  onSelect: (choice: Choice) => void;
+  /** Выбранные окна: ребёнок может ходить несколько раз в неделю */
+  selected: Choice[];
+  onToggle: (choice: Choice) => void;
 }
 
 /** День недели с индивидуальными окнами: время → свободные педагоги */
-export const IndividualDay = ({ day, selected, onSelect }: IndividualDayProps) => (
+export const IndividualDay = ({ day, selected, onToggle }: IndividualDayProps) => (
   <div className="bg-white rounded-xl border border-gray-200 p-4">
     {/* Дату не показываем: занятия регулярные, важен день недели */}
     <div className="font-semibold text-gray-800 mb-3">{day.weekdayName}</div>
@@ -58,20 +62,23 @@ export const IndividualDay = ({ day, selected, onSelect }: IndividualDayProps) =
                 teacherName: t.teacherName,
                 availableFrom: t.availableFrom,
               };
-              const active = sameChoice(selected, choice);
+              const active = isPicked(selected, choice);
               return (
                 <button
                   key={t.teacherId}
                   type="button"
-                  onClick={() => onSelect(choice)}
-                  className={`rounded-lg border px-3 py-2 text-left transition ${
+                  onClick={() => onToggle(choice)}
+                  className={`rounded-lg border px-3 py-2 text-left transition flex items-center gap-2 ${
                     active
                       ? 'bg-emerald-600 border-emerald-600 text-white'
                       : 'bg-white border-gray-200 hover:border-emerald-400'
                   }`}
                 >
-                  <div className="text-sm">{t.teacherName}</div>
-                  <FromDate iso={t.availableFrom} light={active} />
+                  {active && <Icon name="Check" size={14} className="shrink-0" />}
+                  <span>
+                    <span className="text-sm block">{t.teacherName}</span>
+                    <FromDate iso={t.availableFrom} light={active} />
+                  </span>
                 </button>
               );
             })}
@@ -84,12 +91,12 @@ export const IndividualDay = ({ day, selected, onSelect }: IndividualDayProps) =
 
 interface GroupDayProps {
   day: GroupDay;
-  selected: Choice | null;
-  onSelect: (choice: Choice) => void;
+  selected: Choice[];
+  onToggle: (choice: Choice) => void;
 }
 
 /** День недели с групповыми занятиями: время, педагог и свободные места */
-export const GroupDayCard = ({ day, selected, onSelect }: GroupDayProps) => (
+export const GroupDayCard = ({ day, selected, onToggle }: GroupDayProps) => (
   <div className="bg-white rounded-xl border border-gray-200 p-4">
     <div className="font-semibold text-gray-800 mb-3">{day.weekdayName}</div>
     <div className="flex flex-wrap gap-2">
@@ -106,19 +113,20 @@ export const GroupDayCard = ({ day, selected, onSelect }: GroupDayProps) => (
           free: g.free,
           maxSize: g.maxSize,
         };
-        const active = sameChoice(selected, choice);
+        const active = isPicked(selected, choice);
         return (
           <button
             key={`${g.timeFrom}-${g.teacherId}`}
             type="button"
-            onClick={() => onSelect(choice)}
+            onClick={() => onToggle(choice)}
             className={`rounded-lg border px-3 py-2 text-left transition ${
               active
                 ? 'bg-emerald-600 border-emerald-600 text-white'
                 : 'bg-white border-gray-200 hover:border-emerald-400'
             }`}
           >
-            <div className="text-sm font-semibold">
+            <div className="text-sm font-semibold flex items-center gap-1.5">
+              {active && <Icon name="Check" size={13} />}
               {g.timeFrom}–{g.timeTo}
             </div>
             <div className={`text-[11px] ${active ? 'text-emerald-50' : 'text-gray-500'}`}>

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
-import { Choice, GroupDayCard, IndividualDay } from '@/components/booking/DayCard';
+import { Choice, GroupDayCard, IndividualDay, choiceKey } from '@/components/booking/DayCard';
 import StartDateScreen from '@/components/booking/StartDateScreen';
 import SectionHeader from '@/components/booking/SectionHeader';
 import EmptySection from '@/components/booking/EmptySection';
@@ -23,9 +23,13 @@ const iso = (d: Date) => {
   return `${y}-${m}-${day}`;
 };
 
-/** «Не нужны занятия этого типа» — осознанный отказ, а не пустой выбор */
-const SKIP = 'skip' as const;
-type Pick = Choice | typeof SKIP | null;
+/** Выбор в разделе: список окон + признак осознанного отказа */
+interface Section {
+  picks: Choice[];
+  skipped: boolean;
+}
+
+const EMPTY: Section = { picks: [], skipped: false };
 
 const BookingPage = () => {
   const { token = '' } = useParams();
@@ -52,8 +56,8 @@ const BookingPage = () => {
   const [error, setError] = useState('');
   const [limitReached, setLimitReached] = useState(false);
 
-  const [indPick, setIndPick] = useState<Pick>(null);
-  const [groupPick, setGroupPick] = useState<Pick>(null);
+  const [ind, setInd] = useState<Section>(EMPTY);
+  const [grp, setGrp] = useState<Section>(EMPTY);
   const [childName, setChildName] = useState('');
   const [comment, setComment] = useState('');
   const [sending, setSending] = useState(false);
@@ -62,8 +66,8 @@ const BookingPage = () => {
   const load = async (from: string) => {
     setLoading(true);
     setError('');
-    setIndPick(null);
-    setGroupPick(null);
+    setInd(EMPTY);
+    setGrp(EMPTY);
 
     const data = await fetchAllBookingSlots(token, from);
     setIndFailed(!!data.individualFailed);
@@ -104,22 +108,42 @@ const BookingPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Разделы, где выбор ещё не сделан. Пока такие есть — бронь не сохраняем.
-  // Раздел без свободных окон выбора не требует.
-  const indNeeded = !doneInd && indDays.length > 0;
-  const groupNeeded = !doneGroups && groupDays.length > 0;
   // Показываем раздел, даже если окон нет: иначе непонятно, есть ли группы вообще
   const showInd = !doneInd;
   const showGroups = !doneGroups;
+
+  // В разделе со свободными окнами нужно либо выбрать время, либо отказаться
+  const pending = (days: unknown[], s: Section, done: boolean) =>
+    !done && days.length > 0 && s.picks.length === 0 && !s.skipped;
   const missing =
-    (indNeeded && indPick === null ? 1 : 0) + (groupNeeded && groupPick === null ? 1 : 0);
-  const chosen = [indPick, groupPick].filter((p): p is Choice => !!p && p !== SKIP);
+    (pending(indDays, ind, doneInd) ? 1 : 0) + (pending(groupDays, grp, doneGroups) ? 1 : 0);
+
+  // Ребёнок может ходить несколько раз в неделю — заявок столько же
+  const chosen = [
+    ...ind.picks.map((p) => ({ pick: p, type: 'individual' as const })),
+    ...grp.picks.map((p) => ({ pick: p, type: 'groups' as const })),
+  ];
   const canSubmit = !!childName.trim() && missing === 0 && chosen.length > 0 && !sending;
+
+  /** Клик по окну: добавляем в выбор или снимаем */
+  const toggle = (set: typeof setInd) => (choice: Choice) =>
+    set((s) => {
+      const key = choiceKey(choice);
+      const has = s.picks.some((p) => choiceKey(p) === key);
+      return {
+        skipped: false,
+        picks: has ? s.picks.filter((p) => choiceKey(p) !== key) : [...s.picks, choice],
+      };
+    });
+
+  /** «Без индивидуальных» / «Без групповых» — сбрасывает выбранное время */
+  const skip = (set: typeof setInd) => () =>
+    set((s) => (s.skipped ? EMPTY : { picks: [], skipped: true }));
 
   const submit = async () => {
     if (!canSubmit) return;
     setSending(true);
-    for (const pick of chosen) {
+    for (const { pick, type } of chosen) {
       const res = await createBooking({
         token,
         childName: childName.trim(),
@@ -129,7 +153,7 @@ const BookingPage = () => {
         timeTo: pick.timeTo,
         teacherId: pick.teacherId,
         teacherName: pick.teacherName,
-        lessonType: pick === groupPick ? 'groups' : 'individual',
+        lessonType: type,
         startFrom,
       });
       if (!res.ok) {
@@ -175,13 +199,17 @@ const BookingPage = () => {
           <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
             <Icon name="Check" size={28} className="text-emerald-600" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-800 mb-3">Время забронировано</h1>
+          <h1 className="text-xl font-semibold text-gray-800 mb-3">
+            {chosen.length > 1 ? 'Занятия забронированы' : 'Время забронировано'}
+          </h1>
           <div className="space-y-2 mb-3">
-            {chosen.map((p) => (
-              <p key={`${p.date}-${p.timeFrom}`} className="text-gray-700">
+            {chosen.map(({ pick: p, type }) => (
+              <p key={choiceKey(p)} className="text-gray-700">
                 {p.weekdayName} в {p.timeFrom}–{p.timeTo}
                 <br />
-                <span className="text-gray-500 text-sm">педагог {p.teacherName}</span>
+                <span className="text-gray-500 text-sm">
+                  {type === 'groups' ? 'группа' : 'индивидуально'}, педагог {p.teacherName}
+                </span>
               </p>
             ))}
           </div>
@@ -276,10 +304,16 @@ const BookingPage = () => {
                   icon="User"
                   title="Индивидуальные занятия"
                   skipLabel="Без индивидуальных"
-                  skipped={indPick === SKIP}
-                  onSkip={() => setIndPick(indPick === SKIP ? null : SKIP)}
+                  skipped={ind.skipped}
+                  count={ind.picks.length}
+                  onSkip={skip(setInd)}
                 />
-                {indPick !== SKIP && (
+                {!ind.skipped && indDays.length > 0 && (
+                  <p className="text-xs text-gray-500 -mt-1 mb-3">
+                    Отметьте все занятия, на которые хотите ходить — хоть 3–4 раза в неделю
+                  </p>
+                )}
+                {!ind.skipped && (
                   <div className="space-y-3">
                     {indDays.length === 0 ? (
                       <EmptySection failed={indFailed} onRetry={() => load(startFrom)} />
@@ -288,8 +322,8 @@ const BookingPage = () => {
                         <IndividualDay
                           key={day.date}
                           day={day}
-                          selected={indPick}
-                          onSelect={setIndPick}
+                          selected={ind.picks}
+                          onToggle={toggle(setInd)}
                         />
                       ))
                     )}
@@ -304,10 +338,11 @@ const BookingPage = () => {
                   icon="Users"
                   title="Групповые занятия"
                   skipLabel="Без групповых"
-                  skipped={groupPick === SKIP}
-                  onSkip={() => setGroupPick(groupPick === SKIP ? null : SKIP)}
+                  skipped={grp.skipped}
+                  count={grp.picks.length}
+                  onSkip={skip(setGrp)}
                 />
-                {groupPick !== SKIP && (
+                {!grp.skipped && (
                   <div className="space-y-3">
                     {groupDays.length === 0 ? (
                       <EmptySection failed={groupsFailed} onRetry={() => load(startFrom)} />
@@ -316,8 +351,8 @@ const BookingPage = () => {
                         <GroupDayCard
                           key={day.date}
                           day={day}
-                          selected={groupPick}
-                          onSelect={setGroupPick}
+                          selected={grp.picks}
+                          onToggle={toggle(setGrp)}
                         />
                       ))
                     )}
@@ -339,21 +374,39 @@ const BookingPage = () => {
 
             <div className="bg-white rounded-xl border border-gray-200 p-5 sticky bottom-4 shadow-sm">
               {chosen.length > 0 ? (
-                <div className="space-y-1 mb-3">
-                  {chosen.map((p) => (
-                    <div
-                      key={`${p.date}-${p.timeFrom}`}
-                      className="flex items-center gap-2 text-sm text-gray-700"
-                    >
-                      <Icon name="CalendarCheck" size={15} className="text-emerald-600 shrink-0" />
-                      <span>
-                        {p.weekdayName} в {p.timeFrom}–{p.timeTo} — {p.teacherName}
-                      </span>
-                    </div>
-                  ))}
+                <div className="mb-3">
+                  <div className="text-sm font-medium text-gray-800 mb-1.5">
+                    Выбрано занятий: {chosen.length}
+                  </div>
+                  <div className="space-y-1">
+                    {chosen.map(({ pick: p, type }) => (
+                      <div
+                        key={choiceKey(p)}
+                        className="flex items-center gap-2 text-sm text-gray-700"
+                      >
+                        <Icon
+                          name={type === 'groups' ? 'Users' : 'User'}
+                          size={14}
+                          className="text-emerald-600 shrink-0"
+                        />
+                        <span className="flex-1">
+                          {p.weekdayName} в {p.timeFrom}–{p.timeTo} — {p.teacherName}
+                        </span>
+                        <button
+                          onClick={() => (type === 'groups' ? toggle(setGrp) : toggle(setInd))(p)}
+                          className="text-gray-300 hover:text-red-500 shrink-0"
+                          title="Убрать"
+                        >
+                          <Icon name="X" size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-400 mb-3">Выберите время выше</div>
+                <div className="text-sm text-gray-400 mb-3">
+                  Выберите время выше — можно отметить сразу несколько занятий
+                </div>
               )}
 
               <label className="block text-sm font-medium text-gray-700 mb-1">
