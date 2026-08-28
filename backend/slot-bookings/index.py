@@ -15,6 +15,8 @@ import psycopg2
 import psycopg2.extras
 import requests
 
+from name_match import same_child
+
 SCHEDULE_URL = 'https://functions.poehali.dev/6d9e6094-fd18-47ec-b45f-ad3ee4ba7cc2'
 INTERACTIONS_URL = 'https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1'
 
@@ -138,39 +140,24 @@ def _booked_keys(cur) -> set:
     return {(str(r[0])[:10], r[1], int(r[2])) for r in cur.fetchall()}
 
 
-def _norm_name(raw: Optional[str]) -> str:
-    '''Имя для сравнения: без регистра, лишних пробелов и «ё».'''
-    s = (raw or '').strip().lower().replace('ё', 'е')
-    return re.sub(r'\s+', ' ', s)
-
-
 def _find_dialog_by_child(cur, child: str) -> Optional[int]:
     '''Ищем диалог родителя по имени ребёнка.
 
-    Родитель на форме указывает только имя ребёнка, поэтому связываем заявку
-    с уже существующей перепиской по нему: сначала точное совпадение,
-    затем — совпадение по всем словам имени в любом порядке
-    («Маша Иванова» и «Иванова Маша» — один и тот же ребёнок).
+    Родитель на форме указывает только имя ребёнка, причём как ему удобно:
+    «Маша Иванова», «Иванова Мария Сергеевна», иногда с опечаткой. Разбор
+    имени и сравнение живут в name_match — там же покрыты уменьшительные
+    формы и порядок слов.
     '''
-    target = _norm_name(child)
-    if not target:
+    if not (child or '').strip():
         return None
 
     cur.execute(
-        "SELECT id, child_name, client_name, crm_name FROM interaction_dialogs "
+        "SELECT id, child_name FROM interaction_dialogs "
         "WHERE child_name IS NOT NULL AND child_name <> '' ORDER BY id"
     )
-    rows = cur.fetchall()
-
-    for r in rows:
-        if _norm_name(r['child_name']) == target:
+    for r in cur.fetchall():
+        if same_child(child, r['child_name']):
             return int(r['id'])
-
-    target_words = set(target.split())
-    if len(target_words) > 1:
-        for r in rows:
-            if set(_norm_name(r['child_name']).split()) == target_words:
-                return int(r['id'])
     return None
 
 
