@@ -10,6 +10,8 @@ import {
   fetchBookingLinks,
   toggleBookingLink,
 } from '@/lib/bookingsApi';
+import { useCopy } from '@/lib/useCopy';
+import PublicLinkCard from '@/components/bookings/PublicLinkCard';
 
 interface Props {
   currentUser?: string;
@@ -19,13 +21,14 @@ const BookingLinks = ({ currentUser }: Props) => {
   const [links, setLinks] = useState<BookingLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const { copiedId, copy } = useCopy();
 
   const [childName, setChildName] = useState('');
 
   const load = async () => {
     setLoading(true);
-    setLinks(await fetchBookingLinks());
+    // Общая ссылка показана отдельной карточкой — в списке её не дублируем
+    setLinks((await fetchBookingLinks()).filter((l) => !l.isPublic));
     setLoading(false);
   };
 
@@ -49,38 +52,6 @@ const BookingLinks = ({ currentUser }: Props) => {
     load();
   };
 
-  const copy = async (link: BookingLink) => {
-    const url = bookingPageUrl(link.token);
-    let ok = false;
-    try {
-      // Работает только на https и по явному клику
-      await navigator.clipboard.writeText(url);
-      ok = true;
-    } catch {
-      // Запасной путь для старых браузеров и незащищённого соединения
-      const area = document.createElement('textarea');
-      area.value = url;
-      area.style.position = 'fixed';
-      area.style.opacity = '0';
-      document.body.appendChild(area);
-      area.select();
-      try {
-        ok = document.execCommand('copy');
-      } catch {
-        ok = false;
-      }
-      document.body.removeChild(area);
-    }
-
-    if (ok) {
-      setCopiedId(link.id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } else {
-      // Совсем не вышло — показываем ссылку, чтобы скопировать вручную
-      prompt('Скопируйте ссылку:', url);
-    }
-  };
-
   const remove = async (link: BookingLink) => {
     if (!confirm('Удалить ссылку? Родитель больше не сможет по ней записаться.')) return;
     await deleteBookingLink(link.id);
@@ -89,8 +60,13 @@ const BookingLinks = ({ currentUser }: Props) => {
 
   return (
     <div>
+      <PublicLinkCard currentUser={currentUser} />
+
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-5">
-        <div className="font-semibold text-gray-800 mb-3">Новая ссылка для родителя</div>
+        <div className="font-semibold text-gray-800 mb-1">Персональная ссылка</div>
+        <p className="text-xs text-gray-500 mb-3">
+          Для конкретного ребёнка: имя подставится само, записаться можно один раз.
+        </p>
         <div className="flex gap-2 items-end flex-wrap">
           <div className="flex-1 min-w-[240px]">
             <label className="block text-xs font-medium text-gray-600 mb-1">Имя ребёнка</label>
@@ -166,7 +142,7 @@ const BookingLinks = ({ currentUser }: Props) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Button size="sm" variant="outline" onClick={() => copy(l)} className="gap-1.5">
+                  <Button size="sm" variant="outline" onClick={() => copy(url, l.id)} className="gap-1.5">
                     <Icon name={copiedId === l.id ? 'Check' : 'Copy'} size={14} />
                     {copiedId === l.id ? 'Скопировано' : 'Копировать'}
                   </Button>

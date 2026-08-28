@@ -11,6 +11,8 @@ export interface BookingLink {
   childName: string;
   phone: string;
   active: boolean;
+  /** Общая ссылка: одна на всех, имя ребёнка вводит родитель */
+  isPublic: boolean;
   expiresAt: string | null;
   maxBookings: number;
   createdBy: string;
@@ -211,6 +213,17 @@ export const createBookingLink = async (input: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+  });
+  const data = await json(res);
+  return data.link || null;
+};
+
+/** Общая ссылка школы: создаётся один раз, дальше отдаётся та же */
+export const fetchPublicLink = async (createdBy?: string): Promise<BookingLink | null> => {
+  const res = await fetch(`${BOOKINGS_URL}?action=public-link`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ createdBy }),
   });
   const data = await json(res);
   return data.link || null;

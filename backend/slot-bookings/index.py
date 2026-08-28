@@ -85,6 +85,7 @@ def _row_to_link(r) -> Dict[str, Any]:
         'childName': r['child_name'] or '',
         'phone': r['phone'] or '',
         'active': bool(r['active']),
+        'isPublic': bool(r.get('is_public')),
         'expiresAt': str(r['expires_at'])[:10] if r['expires_at'] else None,
         'maxBookings': r['max_bookings'],
         'createdBy': r['created_by'] or '',
@@ -151,12 +152,19 @@ def _fetch_group_rows(date_from: str, date_to: str) -> Dict[str, Any]:
 
 
 def _booked_keys(cur) -> set:
-    '''Занятые бронями окна: активные (новые и подтверждённые).'''
+    '''Индивидуальные окна, занятые активными заявками.
+
+    Групповые заявки окно не закрывают: в группе несколько мест, и записаться
+    туда может ещё не одна семья.
+    '''
     cur.execute(
         "SELECT slot_date, time_from, teacher_id FROM slot_bookings "
-        "WHERE status IN ('new', 'confirmed')"
+        "WHERE status IN ('new', 'confirmed') AND lesson_type = 'individual'"
     )
-    return {(str(r[0])[:10], r[1], int(r[2])) for r in cur.fetchall()}
+    return {
+        (str(r['slot_date'])[:10], r['time_from'], int(r['teacher_id']))
+        for r in cur.fetchall()
+    }
 
 
 def _find_dialog_by_child(cur, child: str) -> Optional[int]:
@@ -278,12 +286,38 @@ def handler(event: dict, context) -> dict:
             )
             return _resp(200, {'links': [_row_to_link(r) for r in cur.fetchall()]})
 
+        if method == 'POST' and action == 'public-link':
+            # Общая ссылка одна на школу: если уже есть — отдаём её же,
+            # чтобы у администраторов не расплодились разные адреса
+            cur.execute(
+                "SELECT l.*, (SELECT COUNT(*) FROM slot_bookings b WHERE b.token = l.token) "
+                "AS bookings_count FROM booking_links l WHERE l.is_public "
+                "ORDER BY l.id LIMIT 1"
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.execute(
+                    "INSERT INTO booking_links (token, title, note, max_bookings, "
+                    "created_by, is_public) VALUES (%s, %s, %s, %s, %s, true) RETURNING *",
+                    (
+                        secrets.token_urlsafe(9),
+                        'Запись на занятие',
+                        '',
+                        1,
+                        (body.get('createdBy') or '').strip(),
+                    ),
+                )
+                row = dict(cur.fetchone(), bookings_count=0)
+                conn.commit()
+            return _resp(200, {'ok': True, 'link': _row_to_link(row)})
+
         if method == 'POST' and action == 'create-link':
             token = secrets.token_urlsafe(9)
+            is_public = bool(body.get('isPublic'))
             cur.execute(
                 "INSERT INTO booking_links (token, title, note, parent_name, child_name, "
-                "phone, expires_at, max_bookings, created_by) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+                "phone, expires_at, max_bookings, created_by, is_public) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
                 (
                     token,
                     (body.get('title') or '').strip(),
@@ -294,6 +328,7 @@ def handler(event: dict, context) -> dict:
                     body.get('expiresAt') or None,
                     int(body.get('maxBookings') or 1),
                     (body.get('createdBy') or '').strip(),
+                    is_public,
                 ),
             )
             row = cur.fetchone()
@@ -338,8 +373,10 @@ def handler(event: dict, context) -> dict:
             by_type = {r['lesson_type']: r['n'] for r in cur.fetchall()}
             used = sum(by_type.values())
             limit = link['max_bookings']
-            done_individual = by_type.get('individual', 0) >= limit
-            done_groups = by_type.get('groups', 0) >= limit
+            # Общая ссылка одна на всех — по ней записывается сколько угодно семей
+            is_public = bool(link.get('is_public'))
+            done_individual = not is_public and by_type.get('individual', 0) >= limit
+            done_groups = not is_public and by_type.get('groups', 0) >= limit
 
             if done_individual and done_groups:
                 return _resp(200, {
@@ -435,22 +472,27 @@ def handler(event: dict, context) -> dict:
             lesson_type = 'groups' if body.get('lessonType') == 'groups' else 'individual'
 
             # Родитель может записаться и на индивидуальное, и на групповое —
-            # это две разные заявки, поэтому лимит считаем внутри каждого типа
-            cur.execute(
-                "SELECT COUNT(*) AS n FROM slot_bookings WHERE token = %s "
-                "AND lesson_type = %s AND status IN ('new', 'confirmed')",
-                (token, lesson_type),
-            )
-            if cur.fetchone()['n'] >= link['max_bookings']:
-                return _resp(409, {'error': 'limit', 'message': 'По этой ссылке уже забронировано занятие'})
+            # это две разные заявки, поэтому лимит считаем внутри каждого типа.
+            # Общая ссылка без лимита: по ней записываются разные семьи.
+            if not link.get('is_public'):
+                cur.execute(
+                    "SELECT COUNT(*) AS n FROM slot_bookings WHERE token = %s "
+                    "AND lesson_type = %s AND status IN ('new', 'confirmed')",
+                    (token, lesson_type),
+                )
+                if cur.fetchone()['n'] >= link['max_bookings']:
+                    return _resp(409, {'error': 'limit', 'message': 'По этой ссылке уже забронировано занятие'})
 
-            cur.execute(
-                "SELECT id FROM slot_bookings WHERE slot_date = %s AND time_from = %s "
-                "AND teacher_id = %s AND status IN ('new', 'confirmed')",
-                (slot_date, time_from, int(teacher_id)),
-            )
-            if cur.fetchone():
-                return _resp(409, {'error': 'taken', 'message': 'Это окно только что забронировали. Выберите другое'})
+            # Индивидуальное окно занимает один ребёнок; в группе мест несколько
+            if lesson_type == 'individual':
+                cur.execute(
+                    "SELECT id FROM slot_bookings WHERE slot_date = %s AND time_from = %s "
+                    "AND teacher_id = %s AND lesson_type = 'individual' "
+                    "AND status IN ('new', 'confirmed')",
+                    (slot_date, time_from, int(teacher_id)),
+                )
+                if cur.fetchone():
+                    return _resp(409, {'error': 'taken', 'message': 'Это окно только что забронировали. Выберите другое'})
 
             start_from = (body.get('startFrom') or '').strip()[:10] or None
 

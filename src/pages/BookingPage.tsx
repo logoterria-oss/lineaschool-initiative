@@ -205,7 +205,9 @@ const BookingPage = () => {
     return (
       <StartDateScreen
         title={link.title || 'Запись на занятие'}
-        childName={link.childName}
+        askChildName={link.isPublic}
+        childName={childName}
+        onChildNameChange={setChildName}
         value={startFrom}
         min={tomorrow}
         loading={loading}
@@ -332,13 +334,14 @@ const BookingPage = () => {
                 <div className="text-sm text-gray-400 mb-3">Выберите время выше</div>
               )}
 
+              {/* Имя уже спрошено на первом шаге — здесь его можно поправить */}
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Имя ребёнка <span className="text-red-500">*</span>
+                Фамилия и имя ребёнка <span className="text-red-500">*</span>
               </label>
               <Input
                 value={childName}
                 onChange={(e) => setChildName(e.target.value)}
-                placeholder="Например, Маша Иванова"
+                placeholder="Например, Иванова Маша"
                 className="mb-3"
               />
 
