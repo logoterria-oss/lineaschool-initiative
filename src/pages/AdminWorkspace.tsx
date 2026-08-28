@@ -51,7 +51,7 @@ const AdminWorkspace = () => {
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'admin-shifts': return <AdminShiftsView />;
-      case 'schedule': return <ScheduleView />;
+      case 'schedule': return <ScheduleView currentUser={fullName} />;
       case 'payments-status': return <PaymentsStatusView />;
       case 'interactions': return <InteractionsView />;
       case 'vacations': return <VacationsView />;
@@ -64,7 +64,7 @@ const AdminWorkspace = () => {
       case 'today-tasks': return <TodayTasksView />;
       default: return <StubView label={active.label} />;
     }
-  }, [active]);
+  }, [active, fullName]);
 
   const workLogActive = active?.id === 'work-log';
   const todayTasksActive = active?.id === 'today-tasks';

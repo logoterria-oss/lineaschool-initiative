@@ -25,7 +25,6 @@ export const HEAD_MENU: MenuGroup[] = [
       { id: 'questionnaires', label: 'Анкеты родителей', kind: 'component', icon: 'ClipboardList' },
       { id: 'reports', label: 'Логопедические заключения', kind: 'component', icon: 'FileText' },
       { id: 'schedule', label: 'Расписание групп и свободные слоты', kind: 'component', icon: 'CalendarDays' },
-      { id: 'bookings', label: 'Брони на занятия', kind: 'component', icon: 'CalendarPlus' },
       { id: 'homework', label: 'Контроль ДЗ', kind: 'component', icon: 'ClipboardCheck' },
       { id: 'students-list', label: 'Список учеников', kind: 'component', icon: 'GraduationCap' },
       { id: 'leads', label: 'Список лидов', kind: 'component', icon: 'UserPlus' },

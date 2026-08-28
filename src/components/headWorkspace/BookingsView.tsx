@@ -17,23 +17,31 @@ const BookingsView = ({ currentUser }: Props) => {
   return (
     <div>
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={tab === 'list' ? 'default' : 'outline'}
+        {/* Второй уровень вкладок — оформлен переключателем, чтобы не спорить
+            с основными кнопками раздела «Расписание» */}
+        <div className="inline-flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <button
             onClick={() => setTab('list')}
-            className="gap-2"
+            className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${
+              tab === 'list'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
           >
-            <Icon name="CalendarCheck" size={16} />
+            <Icon name="CalendarCheck" size={15} />
             Заявки
-          </Button>
-          <Button
-            variant={tab === 'links' ? 'default' : 'outline'}
+          </button>
+          <button
             onClick={() => setTab('links')}
-            className="gap-2"
+            className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${
+              tab === 'links'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
           >
-            <Icon name="Link" size={16} />
+            <Icon name="Link" size={15} />
             Ссылки для родителей
-          </Button>
+          </button>
         </div>
         <Button variant="ghost" size="sm" onClick={() => setShowFeed((v) => !v)} className="gap-1.5">
           <Icon name="Code" size={14} />
