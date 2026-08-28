@@ -38,10 +38,8 @@ interface IndividualDayProps {
 /** День недели с индивидуальными окнами: время → свободные педагоги */
 export const IndividualDay = ({ day, selected, onSelect }: IndividualDayProps) => (
   <div className="bg-white rounded-xl border border-gray-200 p-4">
-    <div className="font-semibold text-gray-800 mb-3">
-      {day.weekdayName}
-      <span className="text-gray-400 font-normal ml-2 text-sm">c {day.dateRu}</span>
-    </div>
+    {/* Дату не показываем: занятия регулярные, важен день недели */}
+    <div className="font-semibold text-gray-800 mb-3">{day.weekdayName}</div>
     <div className="space-y-2">
       {day.slots.map((slot) => (
         <div key={slot.timeFrom} className="flex items-start gap-2 flex-wrap">
@@ -93,10 +91,7 @@ interface GroupDayProps {
 /** День недели с групповыми занятиями: время, педагог и свободные места */
 export const GroupDayCard = ({ day, selected, onSelect }: GroupDayProps) => (
   <div className="bg-white rounded-xl border border-gray-200 p-4">
-    <div className="font-semibold text-gray-800 mb-3">
-      {day.weekdayName}
-      <span className="text-gray-400 font-normal ml-2 text-sm">c {day.dateRu}</span>
-    </div>
+    <div className="font-semibold text-gray-800 mb-3">{day.weekdayName}</div>
     <div className="flex flex-wrap gap-2">
       {day.groups.map((g: GroupSlot) => {
         const choice: Choice = {

@@ -179,12 +179,16 @@ const BookingPage = () => {
           <div className="space-y-2 mb-3">
             {chosen.map((p) => (
               <p key={`${p.date}-${p.timeFrom}`} className="text-gray-700">
-                {p.weekdayName} в {p.timeFrom}, начиная с {p.dateRu}
+                {p.weekdayName} в {p.timeFrom}–{p.timeTo}
                 <br />
                 <span className="text-gray-500 text-sm">педагог {p.teacherName}</span>
               </p>
             ))}
           </div>
+          {/* Дата начала одна на все выбранные занятия */}
+          <p className="text-gray-600 text-sm mb-3">
+            Начало занятий с {startFrom.split('-').reverse().join('.')}
+          </p>
           <p className="text-gray-500 text-sm">
             Администратор свяжется с вами, чтобы подтвердить занятие.
           </p>
@@ -343,7 +347,7 @@ const BookingPage = () => {
                     >
                       <Icon name="CalendarCheck" size={15} className="text-emerald-600 shrink-0" />
                       <span>
-                        {p.weekdayName} в {p.timeFrom}, начиная с {p.dateRu} — {p.teacherName}
+                        {p.weekdayName} в {p.timeFrom}–{p.timeTo} — {p.teacherName}
                       </span>
                     </div>
                   ))}
