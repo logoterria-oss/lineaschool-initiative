@@ -305,11 +305,6 @@ const BookingPage = () => {
                   count={ind.picks.length}
                   onSkip={skip(setInd)}
                 />
-                {!ind.skipped && indDays.length > 0 && (
-                  <p className="text-xs text-gray-500 -mt-1 mb-3">
-                    Отметьте все занятия, на которые хотите ходить — хоть 3–4 раза в неделю
-                  </p>
-                )}
                 {!ind.skipped && (
                   <div className="space-y-3">
                     {indDays.length === 0 ? (
@@ -401,9 +396,7 @@ const BookingPage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-400 mb-3">
-                  Выберите время выше — можно отметить сразу несколько занятий
-                </div>
+                <div className="text-sm text-gray-400 mb-3">Выберите время выше</div>
               )}
 
               {missing > 0 && (
