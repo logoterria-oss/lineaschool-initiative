@@ -138,33 +138,75 @@ def _booked_keys(cur) -> set:
     return {(str(r[0])[:10], r[1], int(r[2])) for r in cur.fetchall()}
 
 
+def _norm_name(raw: Optional[str]) -> str:
+    '''Имя для сравнения: без регистра, лишних пробелов и «ё».'''
+    s = (raw or '').strip().lower().replace('ё', 'е')
+    return re.sub(r'\s+', ' ', s)
+
+
+def _find_dialog_by_child(cur, child: str) -> Optional[int]:
+    '''Ищем диалог родителя по имени ребёнка.
+
+    Родитель на форме указывает только имя ребёнка, поэтому связываем заявку
+    с уже существующей перепиской по нему: сначала точное совпадение,
+    затем — совпадение по всем словам имени в любом порядке
+    («Маша Иванова» и «Иванова Маша» — один и тот же ребёнок).
+    '''
+    target = _norm_name(child)
+    if not target:
+        return None
+
+    cur.execute(
+        "SELECT id, child_name, client_name, crm_name FROM interaction_dialogs "
+        "WHERE child_name IS NOT NULL AND child_name <> '' ORDER BY id"
+    )
+    rows = cur.fetchall()
+
+    for r in rows:
+        if _norm_name(r['child_name']) == target:
+            return int(r['id'])
+
+    target_words = set(target.split())
+    if len(target_words) > 1:
+        for r in rows:
+            if set(_norm_name(r['child_name']).split()) == target_words:
+                return int(r['id'])
+    return None
+
+
 def _push_to_interactions(cur, booking: Dict[str, Any], phone: str) -> Optional[int]:
     '''Заводим диалог в окне взаимодействия и кладём туда текст заявки.
 
     Пишем напрямую в таблицы окна взаимодействия: у функции взаимодействий
     свои сессии сотрудников, а бронь приходит от неавторизованного родителя.
+    Телефон необязателен — если его нет, ищем родителя по имени ребёнка.
     '''
     digits = _norm_phone(phone)
     if len(digits) != 11:
-        return None
+        digits = ''
 
     parent = (booking.get('parentName') or '').strip() or None
     child = (booking.get('childName') or '').strip() or None
-    display = parent or child or digits
+    display = parent or child or digits or 'Заявка на занятие'
 
     try:
-        # Клиент мог уже писать в Max/Telegram — не плодим дубли
-        cur.execute(
-            "SELECT id FROM interaction_dialogs "
-            "WHERE chat_id = %s OR phone = %s ORDER BY id LIMIT 1",
-            (digits, digits),
-        )
-        row = cur.fetchone()
-        if row:
-            dialog_id = row['id']
+        row = None
+        if digits:
+            # Клиент мог уже писать в Max/Telegram — не плодим дубли
+            cur.execute(
+                "SELECT id FROM interaction_dialogs "
+                "WHERE chat_id = %s OR phone = %s ORDER BY id LIMIT 1",
+                (digits, digits),
+            )
+            row = cur.fetchone()
+
+        dialog_id = int(row['id']) if row else _find_dialog_by_child(cur, child)
+
+        if dialog_id:
             cur.execute(
                 "UPDATE interaction_dialogs SET crm_name = COALESCE(crm_name, %s), "
-                "child_name = COALESCE(child_name, %s), phone = %s, hidden = false "
+                "child_name = COALESCE(child_name, %s), "
+                "phone = COALESCE(NULLIF(%s, ''), phone), hidden = false "
                 "WHERE id = %s",
                 (parent, child, digits, dialog_id),
             )
@@ -174,7 +216,7 @@ def _push_to_interactions(cur, booking: Dict[str, Any], phone: str) -> Optional[
                 "(channel, chat_id, client_name, phone, crm_name, child_name, "
                 "crm_status, crm_label, last_time) "
                 "VALUES ('max', %s, %s, %s, %s, %s, 'lead', 'Лид', now()) RETURNING id",
-                (digits, display, digits, parent, child),
+                (digits or f"booking-{booking.get('id')}", display, digits, parent, child),
             )
             dialog_id = cur.fetchone()['id']
 
