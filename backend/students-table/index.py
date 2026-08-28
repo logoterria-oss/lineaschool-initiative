@@ -75,18 +75,100 @@ def get_study_statuses(token):
     return resp.json().get("items", [])
 
 
-# Исполнители комментариев (администраторы CRM). Каждому — свой цвет для наглядности.
-# При необходимости список пополняется здесь.
-ADMINS = [
-    {"id": 1, "name": "Абраменко Виктория", "color": "#7c3aed"},
-    {"id": 2, "name": "Федорова Анастасия", "color": "#0d9488"},
-    {"id": 3, "name": "Зинченко Ирина", "color": "#db2777"},
+# Цвета исполнителей. Раздаются по кругу — новый сотрудник сразу получает свой,
+# отдельно заводить его в коде не нужно.
+EXECUTOR_COLORS = [
+    "#7c3aed", "#0d9488", "#db2777", "#ea580c", "#2563eb",
+    "#65a30d", "#c026d3", "#0891b2", "#dc2626", "#9333ea",
 ]
+
+# Исторические номера исполнителей: в старых комментариях сохранены id 1..3,
+# которые не совпадают с номерами в таблице сотрудников. Сопоставляем по ФИО,
+# чтобы уже проставленные исполнители не потерялись.
+LEGACY_EXECUTOR_IDS = {
+    "абраменко": 1,
+    "федорова": 2,
+    "зинченко": 3,
+}
+
+
+def _short_staff_name(full_name):
+    """«Хорунжева Анна Андреевна» → «Хорунжева Анна»: отчество в списке лишнее."""
+    parts = [p for p in re.split(r"\s+", (full_name or "").strip()) if p]
+    if len(parts) >= 3:
+        return f"{parts[0]} {parts[1]}"
+    return " ".join(parts)
+
+
+def _legacy_id(full_name):
+    low = (full_name or "").strip().lower()
+    for surname, legacy in LEGACY_EXECUTOR_IDS.items():
+        if low.startswith(surname):
+            return legacy
+    return None
 
 
 def get_crm_admins(token=None):
-    """Список исполнителей (администраторов) для выбора в комментариях."""
-    return ADMINS
+    """Список исполнителей для выбора в комментариях.
+
+    Берём действующих администраторов и руководителей из таблицы сотрудников,
+    поэтому новый админ появляется в списке сразу после добавления в админку.
+    """
+    rows = []
+    try:
+        conn = db()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT id, full_name FROM {SCHEMA}.staff "
+                f"WHERE status = 'active' AND role IN ('admin', 'head') "
+                f"ORDER BY full_name"
+            )
+            rows = cur.fetchall()
+        conn.close()
+    except Exception as e:
+        print(f"staff fetch error: {e}")
+
+    admins = []
+    used_legacy = set()
+    for r in rows:
+        name = (r["full_name"] or "").strip()
+        # Технические карточки («Тестовый Администратор») в список не берём
+        if not name or re.match(r"^(тест|test)", name.lower().replace("ё", "е")):
+            continue
+        legacy = _legacy_id(name)
+        if legacy is not None and legacy not in used_legacy:
+            admin_id = legacy
+            used_legacy.add(legacy)
+        else:
+            # Смещаем номера новых сотрудников, чтобы не пересечься со старыми
+            admin_id = 1000 + int(r["id"])
+        admins.append({
+            "id": admin_id,
+            "name": _short_staff_name(name),
+            "staff_id": int(r["id"]),
+        })
+
+    # Цвета раздаём по номеру сотрудника, но следим, чтобы они не повторялись:
+    # два одинаковых бейджа в списке невозможно различить.
+    taken = set()
+    for a in sorted(admins, key=lambda x: x["staff_id"]):
+        start = a["staff_id"] % len(EXECUTOR_COLORS)
+        for step in range(len(EXECUTOR_COLORS)):
+            color = EXECUTOR_COLORS[(start + step) % len(EXECUTOR_COLORS)]
+            if color not in taken:
+                break
+        taken.add(color)
+        a["color"] = color
+        a.pop("staff_id", None)
+
+    if not admins:
+        # Запасной вариант, если таблица сотрудников недоступна
+        admins = [
+            {"id": 1, "name": "Абраменко Виктория", "color": EXECUTOR_COLORS[0]},
+            {"id": 2, "name": "Федорова Анастасия", "color": EXECUTOR_COLORS[1]},
+            {"id": 3, "name": "Зинченко Ирина", "color": EXECUTOR_COLORS[2]},
+        ]
+    return admins
 
 
 def load_comments():
