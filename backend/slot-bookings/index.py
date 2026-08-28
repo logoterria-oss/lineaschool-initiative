@@ -328,13 +328,24 @@ def handler(event: dict, context) -> dict:
             if link['expires_at'] and link['expires_at'] < date.today():
                 return _resp(403, {'error': 'link_expired', 'message': 'Срок действия ссылки истёк'})
 
-            cur.execute("SELECT COUNT(*) AS n FROM slot_bookings WHERE token = %s "
-                        "AND status IN ('new', 'confirmed')", (token,))
-            used = cur.fetchone()['n']
-            if used >= link['max_bookings']:
+            # Считаем заявки по каждому типу отдельно: индивидуальное и
+            # групповое занятие родитель выбирает независимо
+            cur.execute(
+                "SELECT lesson_type, COUNT(*) AS n FROM slot_bookings WHERE token = %s "
+                "AND status IN ('new', 'confirmed') GROUP BY lesson_type",
+                (token,),
+            )
+            by_type = {r['lesson_type']: r['n'] for r in cur.fetchall()}
+            used = sum(by_type.values())
+            limit = link['max_bookings']
+            done_individual = by_type.get('individual', 0) >= limit
+            done_groups = by_type.get('groups', 0) >= limit
+
+            if done_individual and done_groups:
                 return _resp(200, {
                     'link': _row_to_link(dict(link, bookings_count=used)),
-                    'days': [],
+                    'individualDays': [],
+                    'groupDays': [],
                     'limitReached': True,
                 })
 
@@ -346,6 +357,11 @@ def handler(event: dict, context) -> dict:
                 start = tomorrow
 
             lesson_type = (params.get('lesson_type') or 'both').strip()
+            # Тип, по которому родитель уже записался, второй раз не показываем
+            if done_individual and lesson_type in ('individual', 'both'):
+                lesson_type = 'groups' if lesson_type == 'both' else 'none'
+            if done_groups and lesson_type in ('groups', 'both'):
+                lesson_type = 'individual' if lesson_type == 'both' else 'none'
             taken = _booked_keys(cur)
 
             ind_days: list = []
@@ -381,6 +397,8 @@ def handler(event: dict, context) -> dict:
                 'minDate': week_slots.fmt(tomorrow),
                 'individualDays': ind_days,
                 'groupDays': group_days,
+                'doneIndividual': done_individual,
+                'doneGroups': done_groups,
                 'limitReached': False,
             })
 
@@ -403,8 +421,15 @@ def handler(event: dict, context) -> dict:
             if link['expires_at'] and link['expires_at'] < date.today():
                 return _resp(403, {'error': 'link_expired', 'message': 'Срок действия ссылки истёк'})
 
-            cur.execute("SELECT COUNT(*) AS n FROM slot_bookings WHERE token = %s "
-                        "AND status IN ('new', 'confirmed')", (token,))
+            lesson_type = 'groups' if body.get('lessonType') == 'groups' else 'individual'
+
+            # Родитель может записаться и на индивидуальное, и на групповое —
+            # это две разные заявки, поэтому лимит считаем внутри каждого типа
+            cur.execute(
+                "SELECT COUNT(*) AS n FROM slot_bookings WHERE token = %s "
+                "AND lesson_type = %s AND status IN ('new', 'confirmed')",
+                (token, lesson_type),
+            )
             if cur.fetchone()['n'] >= link['max_bookings']:
                 return _resp(409, {'error': 'limit', 'message': 'По этой ссылке уже забронировано занятие'})
 
@@ -416,7 +441,6 @@ def handler(event: dict, context) -> dict:
             if cur.fetchone():
                 return _resp(409, {'error': 'taken', 'message': 'Это окно только что забронировали. Выберите другое'})
 
-            lesson_type = 'groups' if body.get('lessonType') == 'groups' else 'individual'
             start_from = (body.get('startFrom') or '').strip()[:10] or None
 
             cur.execute(

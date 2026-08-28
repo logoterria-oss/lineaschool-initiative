@@ -101,21 +101,20 @@ const json = async (res: Response) => {
 export const fetchBookingSlots = async (
   token: string,
   startFrom: string,
-  lessonType: LessonType,
 ): Promise<{
   link?: BookingLink;
   startFrom?: string;
   minDate?: string;
   individualDays: FreeDay[];
   groupDays: GroupDay[];
+  doneIndividual?: boolean;
+  doneGroups?: boolean;
   limitReached?: boolean;
   error?: string;
   message?: string;
 }> => {
-  // Просим только выбранный тип занятий: запрашивать оба сразу долго
   const res = await fetch(
-    `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}` +
-      `&start_from=${startFrom}&lesson_type=${lessonType}`,
+    `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}&start_from=${startFrom}`,
   );
   const data = await json(res);
   return { individualDays: [], groupDays: [], ...data };
@@ -134,6 +133,8 @@ export const createBooking = async (input: {
   teacherName: string;
   lessonType?: LessonType;
   startFrom?: string;
+  /** Последняя заявка по ссылке — закрыть её от повторных записей */
+  finish?: boolean;
 }): Promise<{ ok?: boolean; booking?: Booking; error?: string; message?: string }> => {
   const res = await fetch(`${BOOKINGS_URL}?action=book`, {
     method: 'POST',

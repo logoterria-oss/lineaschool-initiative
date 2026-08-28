@@ -104,14 +104,22 @@ def build_individual(
         off = day_index + start_week * 7
         slot = index.get((off, time, teacher)) or {}
         from_date = start + timedelta(days=off) if start_week > 0 else None
-        avail = slot.get('available_from')
-        if avail:
+
+        # Педагог в отпуске: занятия начнутся с даты выхода. Отпуск перекрывает
+        # ВСЕ дни недели, поэтому смотрим дату выхода по всем проверяемым
+        # неделям и берём самую позднюю — иначе пометка появлялась только на
+        # том дне, который попал в отпуск на первой неделе.
+        for k in range(STABLE_WEEKS):
+            s = index.get((off + k * 7, time, teacher)) or {}
+            avail = s.get('available_from')
+            if not avail:
+                continue
             try:
                 a = datetime.strptime(avail[:10], '%Y-%m-%d').date()
-                if not from_date or a > from_date:
-                    from_date = a
             except Exception:
-                pass
+                continue
+            if not from_date or a > from_date:
+                from_date = a
 
         entry = by_day.setdefault(day_index, {}).setdefault(time, {
             'timeFrom': time,
@@ -152,48 +160,49 @@ def build_groups(
                 continue
             free_map[(off, time, teacher)] = int(cell.get('free') or 0)
 
-    def stable(day_index: int, week: int, time: str, teacher: int) -> bool:
-        base = day_index + week * 7
-        first = free_map.get((base, time, teacher))
-        if first is None or first <= 0:
-            return False
-        slot_date = start + timedelta(days=base)
-        if (fmt(slot_date), time, teacher) in taken:
-            return False
-        # Недели, на которые расписание ещё не заведено, стабильность не рушат
-        for k in range(1, STABLE_WEEKS):
-            later = free_map.get((base + k * 7, time, teacher))
-            if later is not None and later <= 0:
-                return False
-        return True
-
-    # Групповое расписание в CRM заводят заранее и не на каждую неделю, поэтому
+    # Групповое расписание в CRM заводят не на все недели вперёд, поэтому
     # кандидатов берём со всего периода, а не только с первых недель.
     candidates = {(off % 7, time, teacher) for (off, time, teacher) in free_map}
 
     by_day: Dict[int, Dict[str, dict]] = {}
     for day_index, time, teacher in candidates:
-        start_week = -1
-        for w in range(WEEKS_TO_LOAD):
-            if stable(day_index, w, time, teacher):
-                start_week = w
-                break
-        if start_week == -1:
+        # Все известные недели этого занятия: неделя → свободных мест
+        weeks = {
+            w: free_map[(day_index + w * 7, time, teacher)]
+            for w in range(WEEKS_TO_LOAD)
+            if (day_index + w * 7, time, teacher) in free_map
+        }
+        if not weeks:
             continue
 
-        off = day_index + start_week * 7
-        free = free_map.get((off, time, teacher)) or 0
-        # Если группа стартует не на первой неделе — пишем родителю дату начала
-        from_date = start + timedelta(days=off) if start_week > 0 else None
-        if off >= DAYS_TO_LOAD:
+        # Занято, если места кончились или окно уже забронировано заявкой
+        busy = {
+            w: free <= 0
+            or (fmt(start + timedelta(days=day_index + w * 7)), time, teacher) in taken
+            for w, free in weeks.items()
+        }
+
+        # Группа идёт регулярно, поэтому неделя без занятия в CRM — это просто
+        # незаполненное расписание, а не отсутствие группы. Пропускаем занятие
+        # только если места кончились во ВСЕ известные недели.
+        if all(busy.values()):
             continue
+
+        # Первая неделя, где есть места. Дату начала показываем, только если
+        # ранние недели реально заняты, — а не потому, что их нет в CRM.
+        first_free = min(w for w in weeks if not busy[w])
+        blocked_before = any(w < first_free for w in weeks if busy[w])
+        from_date = (
+            start + timedelta(days=day_index + first_free * 7)
+            if blocked_before and first_free > 0 else None
+        )
 
         by_day.setdefault(day_index, {})[f'{time}__{teacher}'] = {
             'timeFrom': time,
             'timeTo': _plus_hour(time),
             'teacherId': teacher,
             'teacherName': names.get((time, teacher), ''),
-            'free': free,
+            'free': weeks[first_free],
             'maxSize': max_size,
             'availableFrom': fmt(from_date) if from_date else None,
         }
