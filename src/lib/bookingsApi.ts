@@ -125,15 +125,27 @@ export const fetchBookingSlots = async (
   return { individualDays: [], groupDays: [], ...data };
 };
 
-/** Оба расписания сразу — двумя параллельными запросами */
+/** Оба расписания сразу — двумя параллельными запросами.
+ *
+ * Расписание тяжёлое, и запрос иногда не успевает ответить. Молча показать
+ * половину разделов нельзя: родитель решит, что групп нет вовсе. Поэтому
+ * каждый тип пробуем дважды.
+ */
 export const fetchAllBookingSlots = async (token: string, startFrom: string) => {
-  const [ind, grp] = await Promise.all([
-    fetchBookingSlots(token, startFrom, 'individual'),
-    fetchBookingSlots(token, startFrom, 'groups'),
-  ]);
+  const load = async (type: LessonType) => {
+    const first = await fetchBookingSlots(token, startFrom, type);
+    if (first.link || first.error) return first;
+    return fetchBookingSlots(token, startFrom, type);
+  };
+
+  const [ind, grp] = await Promise.all([load('individual'), load('groups')]);
   const base = ind.link ? ind : grp;
   return {
     ...base,
+    // Если тип не ответил даже со второй попытки — честно говорим об этом,
+    // а не притворяемся, что свободного времени нет
+    individualFailed: !ind.link && !ind.error,
+    groupsFailed: !grp.link && !grp.error,
     individualDays: ind.individualDays || [],
     groupDays: grp.groupDays || [],
   };

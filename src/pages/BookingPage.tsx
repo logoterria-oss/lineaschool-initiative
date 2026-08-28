@@ -7,6 +7,7 @@ import Icon from '@/components/ui/icon';
 import { Choice, GroupDayCard, IndividualDay } from '@/components/booking/DayCard';
 import StartDateScreen from '@/components/booking/StartDateScreen';
 import SectionHeader from '@/components/booking/SectionHeader';
+import EmptySection from '@/components/booking/EmptySection';
 import {
   BookingLink,
   FreeDay,
@@ -45,6 +46,9 @@ const BookingPage = () => {
   const [groupDays, setGroupDays] = useState<GroupDay[]>([]);
   const [doneInd, setDoneInd] = useState(false);
   const [doneGroups, setDoneGroups] = useState(false);
+  // Раздел не загрузился — покажем это, а не пустоту
+  const [indFailed, setIndFailed] = useState(false);
+  const [groupsFailed, setGroupsFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [limitReached, setLimitReached] = useState(false);
@@ -62,9 +66,9 @@ const BookingPage = () => {
     setIndPick(null);
     setGroupPick(null);
 
-    // Первый запрос будит функцию и иногда не успевает ответить — повторяем
-    let data = await fetchAllBookingSlots(token, from);
-    if (!data.link && !data.error) data = await fetchAllBookingSlots(token, from);
+    const data = await fetchAllBookingSlots(token, from);
+    setIndFailed(!!data.individualFailed);
+    setGroupsFailed(!!data.groupsFailed);
 
     if (data.error) {
       setError(data.message || 'Ссылка недействительна');
@@ -101,9 +105,13 @@ const BookingPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Разделы, где выбор ещё не сделан. Пока такие есть — бронь не сохраняем
+  // Разделы, где выбор ещё не сделан. Пока такие есть — бронь не сохраняем.
+  // Раздел без свободных окон выбора не требует.
   const indNeeded = !doneInd && indDays.length > 0;
   const groupNeeded = !doneGroups && groupDays.length > 0;
+  // Показываем раздел, даже если окон нет: иначе непонятно, есть ли группы вообще
+  const showInd = !doneInd;
+  const showGroups = !doneGroups;
   const missing =
     (indNeeded && indPick === null ? 1 : 0) + (groupNeeded && groupPick === null ? 1 : 0);
   const chosen = [indPick, groupPick].filter((p): p is Choice => !!p && p !== SKIP);
@@ -254,20 +262,9 @@ const BookingPage = () => {
             <Icon name="Loader2" size={28} className="animate-spin mx-auto mb-2" />
             Подбираем свободное время…
           </div>
-        ) : nothingFree ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-            <Icon name="CalendarOff" size={36} className="mx-auto mb-3 text-gray-400" />
-            <h2 className="font-semibold text-gray-800 mb-1">Свободного времени нет</h2>
-            <p className="text-gray-500 text-sm mb-4">
-              Попробуйте выбрать другую дату начала или напишите администратору.
-            </p>
-            <Button variant="outline" onClick={() => setDateConfirmed(false)}>
-              Выбрать другую дату
-            </Button>
-          </div>
         ) : (
           <>
-            {indNeeded && (
+            {showInd && (
               <div className="mb-6">
                 <SectionHeader
                   icon="User"
@@ -278,20 +275,24 @@ const BookingPage = () => {
                 />
                 {indPick !== SKIP && (
                   <div className="space-y-3">
-                    {indDays.map((day) => (
-                      <IndividualDay
-                        key={day.date}
-                        day={day}
-                        selected={indPick}
-                        onSelect={setIndPick}
-                      />
-                    ))}
+                    {indDays.length === 0 ? (
+                      <EmptySection failed={indFailed} onRetry={() => load(startFrom)} />
+                    ) : (
+                      indDays.map((day) => (
+                        <IndividualDay
+                          key={day.date}
+                          day={day}
+                          selected={indPick}
+                          onSelect={setIndPick}
+                        />
+                      ))
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {groupNeeded && (
+            {showGroups && (
               <div className="mb-6">
                 <SectionHeader
                   icon="Users"
@@ -302,16 +303,31 @@ const BookingPage = () => {
                 />
                 {groupPick !== SKIP && (
                   <div className="space-y-3">
-                    {groupDays.map((day) => (
-                      <GroupDayCard
-                        key={day.date}
-                        day={day}
-                        selected={groupPick}
-                        onSelect={setGroupPick}
-                      />
-                    ))}
+                    {groupDays.length === 0 ? (
+                      <EmptySection failed={groupsFailed} onRetry={() => load(startFrom)} />
+                    ) : (
+                      groupDays.map((day) => (
+                        <GroupDayCard
+                          key={day.date}
+                          day={day}
+                          selected={groupPick}
+                          onSelect={setGroupPick}
+                        />
+                      ))
+                    )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {nothingFree && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5 text-center mb-6">
+                <p className="text-gray-600 text-sm mb-3">
+                  С этой даты свободных занятий нет. Попробуйте более позднюю дату.
+                </p>
+                <Button variant="outline" onClick={() => setDateConfirmed(false)}>
+                  Выбрать другую дату
+                </Button>
               </div>
             )}
 
