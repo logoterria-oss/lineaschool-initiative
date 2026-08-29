@@ -9,6 +9,8 @@
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from name_match import same_child
+
 WEEKDAY_NAMES = [
     'Понедельник', 'Вторник', 'Среда', 'Четверг',
     'Пятница', 'Суббота', 'Воскресенье',
@@ -197,8 +199,9 @@ def build_groups(
     weeks: List[List[dict]],
     start: date,
     max_size: int = 6,
-    booked: Optional[Dict[Tuple[int, str, int], int]] = None,
+    booked: Optional[Dict[Tuple[int, str, int], list]] = None,
     ages: Optional[Dict[int, int]] = None,
+    crm_names: Optional[Dict[int, str]] = None,
 ) -> List[dict]:
     '''Групповые занятия со свободными местами, по дням недели.
 
@@ -209,6 +212,7 @@ def build_groups(
     '''
     booked = booked or {}
     ages = ages or {}
+    crm_names = crm_names or {}
 
     # (день от старта, время, педагог) → свободных мест
     free_map: Dict[Tuple[int, str, int], int] = {}
@@ -224,11 +228,19 @@ def build_groups(
                 off = _offset(start, iso_date)
                 if off < 0 or off >= DAYS_TO_LOAD:
                     continue
-                # Из свободных мест вычитаем свои заявки — CRM про них не знает
+                # Из свободных мест вычитаем свои заявки — CRM про них не знает.
+                # Но только те, чей ребёнок ещё не заведён в эту группу в CRM:
+                # иначе одно место списывается дважды.
                 weekday = (start + timedelta(days=off)).weekday()
-                mine = booked.get((weekday, time, teacher), 0)
+                sids = cell.get('student_ids') or []
+                in_crm = [crm_names.get(int(s), '') for s in sids]
+                mine = sum(
+                    1
+                    for child in booked.get((weekday, time, teacher), [])
+                    if not any(same_child(child, nm) for nm in in_crm)
+                )
                 free_map[(off, time, teacher)] = max(0, int(cell.get('free') or 0) - mine)
-                students_map[(off, time, teacher)] = cell.get('student_ids') or []
+                students_map[(off, time, teacher)] = sids
 
     # Групповое расписание в CRM заводят не на все недели вперёд, поэтому
     # кандидатов берём со всего периода, а не только с первых недель.

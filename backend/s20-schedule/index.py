@@ -1188,12 +1188,18 @@ def handler(event: dict, context) -> dict:
         for (time_from, teacher_id), data in sorted(rows.items(), key=lambda kv: (kv[0][0], kv[1]["teacher_name"])):
             out_rows.append(data)
 
-        # Возраст учеников — чтобы бронирование могло показать родителю,
-        # для какого возраста подходит группа
+        # Возраст и имена учеников: возраст — чтобы показать родителю, для
+        # какого возраста группа; имена — чтобы бронирование не посчитало
+        # место дважды, если ребёнок из заявки уже заведён в CRM.
         ages = {}
+        student_names = {}
         try:
             today_d = date.today()
             for c in get_customers(token):
+                cid = c.get("id")
+                name = (c.get("name") or "").strip()
+                if name:
+                    student_names[cid] = name
                 born = _parse_group_date(c.get("dob") or c.get("b_date") or "")
                 if not born:
                     continue
@@ -1201,7 +1207,7 @@ def handler(event: dict, context) -> dict:
                     (today_d.month, today_d.day) < (born.month, born.day)
                 )
                 if 0 < years < 100:
-                    ages[c.get("id")] = years
+                    ages[cid] = years
         except Exception as e:
             print(f"groups_week ages failed: {e}")
 
@@ -1214,6 +1220,7 @@ def handler(event: dict, context) -> dict:
                 "date_to": date_to,
                 "rows": out_rows,
                 "student_ages": ages,
+                "student_names": student_names,
             }, ensure_ascii=False),
         }
 

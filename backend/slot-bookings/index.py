@@ -178,25 +178,27 @@ def _booked_keys(cur) -> set:
     }
 
 
-def _group_booked(cur) -> Dict[tuple, int]:
-    '''Сколько мест в каждой группе уже занято нашими заявками.
+def _group_booked(cur) -> Dict[tuple, list]:
+    '''Дети, занявшие места в группах по нашим заявкам.
 
     CRM про эти заявки не знает: ребёнка туда заводят только после
     подтверждения. Без учёта родитель видит «свободно 6 из 6», хотя часть
     мест уже разобрана.
 
+    Возвращаем именно имена, а не количество: если ребёнка уже завели в CRM,
+    его нельзя посчитать второй раз — иначе одно место съедается дважды.
+
     Ключ — день недели: ребёнок ходит в группу каждую неделю, поэтому место
     занято и на следующих неделях.
     '''
     cur.execute(
-        "SELECT slot_date, time_from, teacher_id, COUNT(*) AS n FROM slot_bookings "
-        "WHERE status IN ('new', 'confirmed') AND lesson_type = 'groups' "
-        "GROUP BY slot_date, time_from, teacher_id"
+        "SELECT DISTINCT slot_date, time_from, teacher_id, child_name FROM slot_bookings "
+        "WHERE status IN ('new', 'confirmed') AND lesson_type = 'groups'"
     )
-    out: Dict[tuple, int] = {}
+    out: Dict[tuple, list] = {}
     for r in cur.fetchall():
         key = (r['slot_date'].weekday(), r['time_from'], int(r['teacher_id']))
-        out[key] = out.get(key, 0) + int(r['n'])
+        out.setdefault(key, []).append(r['child_name'] or '')
     return out
 
 
@@ -535,15 +537,19 @@ def handler(event: dict, context) -> dict:
                     raw_weeks = [f.result() for f in grp_futures]
                     max_size = next((int(r.get('max_size') or 6) for r in raw_weeks if r), 6)
                     ages: Dict[int, int] = {}
+                    crm_names: Dict[int, str] = {}
                     for r in raw_weeks:
                         for sid, years in (r.get('student_ages') or {}).items():
                             ages[int(sid)] = int(years)
+                        for sid, nm in (r.get('student_names') or {}).items():
+                            crm_names[int(sid)] = nm
                     group_days = week_slots.build_groups(
                         [r.get('rows') or [] for r in raw_weeks],
                         start,
                         max_size,
                         _group_booked(cur),
                         ages,
+                        crm_names,
                     )
 
             return _resp(200, {
