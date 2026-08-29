@@ -140,6 +140,11 @@ export const GroupDayCard = ({ day, selected, onToggle }: GroupDayProps) => (
               <Icon name="Users" size={11} />
               свободно {g.free} из {g.maxSize}
             </div>
+            {g.ageLabel && (
+              <div className={`text-[11px] mt-0.5 ${active ? 'text-emerald-50' : 'text-gray-500'}`}>
+                {g.ageLabel}
+              </div>
+            )}
             <FromDate iso={g.availableFrom} light={active} />
           </button>
         );

@@ -534,11 +534,16 @@ def handler(event: dict, context) -> dict:
                 if grp_futures:
                     raw_weeks = [f.result() for f in grp_futures]
                     max_size = next((int(r.get('max_size') or 6) for r in raw_weeks if r), 6)
+                    ages: Dict[int, int] = {}
+                    for r in raw_weeks:
+                        for sid, years in (r.get('student_ages') or {}).items():
+                            ages[int(sid)] = int(years)
                     group_days = week_slots.build_groups(
                         [r.get('rows') or [] for r in raw_weeks],
                         start,
                         max_size,
                         _group_booked(cur),
+                        ages,
                     )
 
             return _resp(200, {

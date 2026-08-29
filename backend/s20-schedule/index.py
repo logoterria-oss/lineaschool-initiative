@@ -1181,11 +1181,29 @@ def handler(event: dict, context) -> dict:
                     "enrolled": enrolled,
                     "free": max(0, MAX_GROUP_SIZE - enrolled),
                     "lesson_id": lesson.get("id"),
+                    "student_ids": sorted(students),
                 }
 
         out_rows = []
         for (time_from, teacher_id), data in sorted(rows.items(), key=lambda kv: (kv[0][0], kv[1]["teacher_name"])):
             out_rows.append(data)
+
+        # Возраст учеников — чтобы бронирование могло показать родителю,
+        # для какого возраста подходит группа
+        ages = {}
+        try:
+            today_d = date.today()
+            for c in get_customers(token):
+                born = _parse_group_date(c.get("dob") or c.get("b_date") or "")
+                if not born:
+                    continue
+                years = today_d.year - born.year - (
+                    (today_d.month, today_d.day) < (born.month, born.day)
+                )
+                if 0 < years < 100:
+                    ages[c.get("id")] = years
+        except Exception as e:
+            print(f"groups_week ages failed: {e}")
 
         return {
             "statusCode": 200,
@@ -1195,6 +1213,7 @@ def handler(event: dict, context) -> dict:
                 "date_from": date_from,
                 "date_to": date_to,
                 "rows": out_rows,
+                "student_ages": ages,
             }, ensure_ascii=False),
         }
 

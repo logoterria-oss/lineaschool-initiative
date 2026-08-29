@@ -74,6 +74,7 @@ export interface GroupSlot {
   free: number;
   maxSize: number;
   availableFrom?: string | null;
+  ageLabel?: string;
 }
 
 export interface FreeDay {
