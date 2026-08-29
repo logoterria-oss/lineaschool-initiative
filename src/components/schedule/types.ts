@@ -181,7 +181,9 @@ export const buildGroupRowsFromLessons = (
         ? lesson.group_ids[0]
         : null;
 
-    const key = `${timeFrom}__${teacherId}`;
+    // Группа входит в ключ: у педагога в одно время могут идти две разные
+    // группы — без неё вторая пропадала бы из расписания
+    const key = `${timeFrom}__${teacherId}__${groupId}`;
     if (!rows[key]) {
       rows[key] = {
         time: timeFrom,

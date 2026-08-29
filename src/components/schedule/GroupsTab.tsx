@@ -260,6 +260,10 @@ const GroupsTab = () => {
                   .map((row) => ({ row, cell: row.cells[String(day)] }))
                   .filter((x) => !!x.cell)
                   .sort((a, b) => a.row.time.localeCompare(b.row.time));
+
+                // Бронь показываем один раз: если у педагога в это время две
+                // группы, она уходит в первую из них
+                const usedBookings = new Set<number>();
                 return (
                   <div
                     key={day}
@@ -274,18 +278,21 @@ const GroupsTab = () => {
                       if (!cell) return null;
                       // Брони этой группы: ребёнка в CRM ещё нет, но место занято.
                       // Список уже очищен от тех, кого завели в CRM.
-                      const booked = groupBookings.filter(
-                        (b) =>
+                      const booked = groupBookings.filter((b) => {
+                        if (usedBookings.has(b.id)) return false;
+                        const mine =
                           b.timeFrom.slice(0, 5) === row.time &&
                           Number(b.teacherId) === row.teacher_id &&
-                          new Date(`${b.date}T00:00:00`).getDay() === (day + 1) % 7,
-                      );
+                          new Date(`${b.date}T00:00:00`).getDay() === (day + 1) % 7;
+                        if (mine) usedBookings.add(b.id);
+                        return mine;
+                      });
                       const isFull = cell.free - booked.length <= 0;
                       const isDone = cell.status === 3;
                       const ageRule = findAgeGroupRule(day, row.time);
                       return (
                         <div
-                          key={`${row.time}-${row.teacher_id}`}
+                          key={`${row.time}-${row.teacher_id}-${row.group_id}`}
                           className={`rounded border text-[12px] overflow-hidden ${
                             isFull ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
                           }`}

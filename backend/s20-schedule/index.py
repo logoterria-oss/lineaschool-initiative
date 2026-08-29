@@ -1112,6 +1112,14 @@ def handler(event: dict, context) -> dict:
             else:
                 teacher_short[tid] = f"{parts[0]} {parts[1][0]}."
 
+        # Названия групп: у педагога в одно время может идти две группы
+        group_names = {}
+        try:
+            for g in get_groups(token):
+                group_names[g.get("id")] = (g.get("name") or "").strip()
+        except Exception as e:
+            print(f"groups_week names failed: {e}")
+
         rows: dict = {}
         for lesson in lessons:
             # Те же правила, что в админке «Расписание → Группы»: только
@@ -1166,7 +1174,11 @@ def handler(event: dict, context) -> dict:
             if isinstance(group_id, list):
                 group_id = group_id[0] if group_id else None
 
-            row_key = (time_from, teacher_id)
+            # В группировку входит и сама группа: у педагога в одно время
+            # могут идти две разные группы (например, «ВТ 14:00» и «ВТ 16:00»,
+            # если время занятий в CRM совпало). Без group_id они склеивались
+            # в одну строку, и вторая группа пропадала из расписания.
+            row_key = (time_from, teacher_id, group_id)
             if row_key not in rows:
                 rows[row_key] = {
                     "time": time_from,
@@ -1174,6 +1186,7 @@ def handler(event: dict, context) -> dict:
                     "teacher_name": teacher_short.get(teacher_id, f"#{teacher_id}"),
                     "cells": {},
                     "group_id": group_id,
+                    "group_name": group_names.get(group_id, ""),
                 }
             cell = rows[row_key]["cells"].get(weekday)
             if cell is None or enrolled > cell["enrolled"]:
@@ -1185,9 +1198,13 @@ def handler(event: dict, context) -> dict:
                     "student_ids": sorted(students),
                 }
 
-        out_rows = []
-        for (time_from, teacher_id), data in sorted(rows.items(), key=lambda kv: (kv[0][0], kv[1]["teacher_name"])):
-            out_rows.append(data)
+        out_rows = [
+            data
+            for _, data in sorted(
+                rows.items(),
+                key=lambda kv: (kv[0][0], kv[1]["teacher_name"], str(kv[1].get("group_name") or "")),
+            )
+        ]
 
         # Возраст и имена учеников: возраст — чтобы показать родителю, для
         # какого возраста группа; имена — чтобы бронирование не посчитало

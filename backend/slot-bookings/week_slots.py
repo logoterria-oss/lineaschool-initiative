@@ -214,15 +214,28 @@ def build_groups(
     ages = ages or {}
     crm_names = crm_names or {}
 
-    # (день от старта, время, педагог) → свободных мест
-    free_map: Dict[Tuple[int, str, int], int] = {}
-    students_map: Dict[Tuple[int, str, int], list] = {}
-    names: Dict[Tuple[str, int], str] = {}
+    # (день от старта, время, педагог, группа) → свободных мест.
+    # Группа в ключе обязательна: у педагога в одно время могут идти две
+    # разные группы, и без неё вторая пропадала бы из расписания.
+    free_map: Dict[Tuple[int, str, int, Any], int] = {}
+    students_map: Dict[Tuple[int, str, int, Any], list] = {}
+    names: Dict[Tuple[str, int, Any], str] = {}
+    # Если у педагога в одно время идут две группы, заявку списываем только с
+    # первой из них — иначе одно место вычлось бы у обеих
+    booking_group: Dict[Tuple[str, int], Any] = {}
+    for rows in weeks or []:
+        for r in rows or []:
+            k = (r.get('time') or '', int(r.get('teacher_id') or 0))
+            gid = r.get('group_id')
+            if k not in booking_group or str(gid) < str(booking_group[k]):
+                booking_group[k] = gid
+
     for rows in weeks or []:
         for r in rows or []:
             time = r.get('time') or ''
             teacher = int(r.get('teacher_id') or 0)
-            names[(time, teacher)] = r.get('teacher_name') or ''
+            group = r.get('group_id')
+            names[(time, teacher, group)] = r.get('teacher_name') or ''
             for cell in (r.get('cells') or {}).values():
                 iso_date = cell.get('date') or ''
                 off = _offset(start, iso_date)
@@ -234,25 +247,27 @@ def build_groups(
                 weekday = (start + timedelta(days=off)).weekday()
                 sids = cell.get('student_ids') or []
                 in_crm = [crm_names.get(int(s), '') for s in sids]
-                mine = sum(
-                    1
-                    for child in booked.get((weekday, time, teacher), [])
-                    if not any(same_child(child, nm) for nm in in_crm)
-                )
-                free_map[(off, time, teacher)] = max(0, int(cell.get('free') or 0) - mine)
-                students_map[(off, time, teacher)] = sids
+                mine = 0
+                if booking_group.get((time, teacher)) == group:
+                    mine = sum(
+                        1
+                        for child in booked.get((weekday, time, teacher), [])
+                        if not any(same_child(child, nm) for nm in in_crm)
+                    )
+                free_map[(off, time, teacher, group)] = max(0, int(cell.get('free') or 0) - mine)
+                students_map[(off, time, teacher, group)] = sids
 
     # Групповое расписание в CRM заводят не на все недели вперёд, поэтому
     # кандидатов берём со всего периода, а не только с первых недель.
-    candidates = {(off % 7, time, teacher) for (off, time, teacher) in free_map}
+    candidates = {(off % 7, time, teacher, grp) for (off, time, teacher, grp) in free_map}
 
     by_day: Dict[int, Dict[str, dict]] = {}
-    for day_index, time, teacher in candidates:
+    for day_index, time, teacher, group in candidates:
         # Все известные недели этого занятия: неделя → свободных мест
         weeks = {
-            w: free_map[(day_index + w * 7, time, teacher)]
+            w: free_map[(day_index + w * 7, time, teacher, group)]
             for w in range(WEEKS_TO_LOAD)
-            if (day_index + w * 7, time, teacher) in free_map
+            if (day_index + w * 7, time, teacher, group) in free_map
         }
         if not weeks:
             continue
@@ -274,17 +289,18 @@ def build_groups(
             continue
 
         weekday = (start + timedelta(days=day_index)).weekday()
-        by_day.setdefault(day_index, {})[f'{time}__{teacher}'] = {
+        by_day.setdefault(day_index, {})[f'{time}__{teacher}__{group}'] = {
             'timeFrom': time,
             'timeTo': lesson_end(time),
             'teacherId': teacher,
-            'teacherName': names.get((time, teacher), ''),
+            'teacherName': names.get((time, teacher, group), ''),
+            'groupId': group,
             'free': weeks[first_free],
             'maxSize': max_size,
             'availableFrom': None,
             'ageLabel': age_label(
                 weekday, time,
-                students_map.get((day_index + first_free * 7, time, teacher), []),
+                students_map.get((day_index + first_free * 7, time, teacher, group), []),
                 ages,
             ),
         }
