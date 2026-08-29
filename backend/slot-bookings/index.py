@@ -577,11 +577,8 @@ def handler(event: dict, context) -> dict:
                 if grp_futures:
                     raw_weeks = [f.result() for f in grp_futures]
                     max_size = next((int(r.get('max_size') or 6) for r in raw_weeks if r), 6)
-                    ages: Dict[int, int] = {}
                     crm_names: Dict[int, str] = {}
                     for r in raw_weeks:
-                        for sid, years in (r.get('student_ages') or {}).items():
-                            ages[int(sid)] = int(years)
                         for sid, nm in (r.get('student_names') or {}).items():
                             crm_names[int(sid)] = nm
                     group_days = week_slots.build_groups(
@@ -589,7 +586,6 @@ def handler(event: dict, context) -> dict:
                         start,
                         max_size,
                         _group_booked(cur),
-                        ages,
                         crm_names,
                     )
 

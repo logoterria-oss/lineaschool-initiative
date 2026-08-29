@@ -170,29 +170,20 @@ def build_individual(
 
 # ── Группы ────────────────────────────────────────────────────────────────────
 
-# Группы с закреплённой возрастной категорией
+# Группы с закреплённой возрастной категорией. Возраст задаём здесь вручную:
+# автоматически по составу группы он больше не считается.
 AGE_GROUP_RULES = [
     {'weekdays': (1, 3), 'time': '19:00', 'from': 14, 'to': 18},  # ВТ и ЧТ — подростки
-    {'weekdays': (4,), 'time': '18:00', 'from': 11, 'to': 15},    # ПТ вечер
 ]
 
 
-def age_label(weekday: int, time: str, student_ids, ages) -> str:
-    '''Подпись о возрасте группы — как в расписании групп.
-
-    У подростковых групп категория закреплена, у остальных считаем средний
-    возраст записанных ребят и берём вилку ±2 года.
-    '''
+def age_label(weekday: int, time: str) -> str:
+    '''Подпись о возрасте группы. Показываем только там, где возраст задан.'''
     t = (time or '')[:5]
     for r in AGE_GROUP_RULES:
         if weekday in r['weekdays'] and r['time'] == t:
             return f"рекомендуется для детей от {r['from']} до {r['to']} лет"
-
-    known = [ages[int(s)] for s in (student_ids or []) if int(s) in (ages or {})]
-    if not known:
-        return ''
-    avg = round(sum(known) / len(known))
-    return f'рекомендуется для детей от {max(7, avg - 2)} до {avg + 2} лет'
+    return ''
 
 
 def build_groups(
@@ -200,7 +191,6 @@ def build_groups(
     start: date,
     max_size: int = 6,
     booked: Optional[Dict[Tuple[int, str, int], list]] = None,
-    ages: Optional[Dict[int, int]] = None,
     crm_names: Optional[Dict[int, str]] = None,
 ) -> List[dict]:
     '''Групповые занятия со свободными местами, по дням недели.
@@ -211,14 +201,12 @@ def build_groups(
     (день недели, время, педагог): ребёнок ходит в группу каждую неделю.
     '''
     booked = booked or {}
-    ages = ages or {}
     crm_names = crm_names or {}
 
     # (день от старта, время, педагог, группа) → свободных мест.
     # Группа в ключе обязательна: у педагога в одно время могут идти две
     # разные группы, и без неё вторая пропадала бы из расписания.
     free_map: Dict[Tuple[int, str, int, Any], int] = {}
-    students_map: Dict[Tuple[int, str, int, Any], list] = {}
     names: Dict[Tuple[str, int, Any], str] = {}
     # Если у педагога в одно время идут две группы, заявку списываем только с
     # первой из них — иначе одно место вычлось бы у обеих
@@ -255,7 +243,6 @@ def build_groups(
                         if not any(same_child(child, nm) for nm in in_crm)
                     )
                 free_map[(off, time, teacher, group)] = max(0, int(cell.get('free') or 0) - mine)
-                students_map[(off, time, teacher, group)] = sids
 
     # Групповое расписание в CRM заводят не на все недели вперёд, поэтому
     # кандидатов берём со всего периода, а не только с первых недель.
@@ -298,11 +285,7 @@ def build_groups(
             'free': weeks[first_free],
             'maxSize': max_size,
             'availableFrom': None,
-            'ageLabel': age_label(
-                weekday, time,
-                students_map.get((day_index + first_free * 7, time, teacher, group), []),
-                ages,
-            ),
+            'ageLabel': age_label(weekday, time),
         }
 
     return _to_days(by_day, start, key='groups')
