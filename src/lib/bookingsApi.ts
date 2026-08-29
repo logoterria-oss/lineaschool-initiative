@@ -47,6 +47,8 @@ export interface Booking {
   createdAt: string | null;
   processedAt: string | null;
   processedBy: string;
+  /** Ребёнок уже заведён в эту группу в CRM — в расписании бронь не дублируем */
+  inCrm?: boolean;
 }
 
 export type LessonType = 'individual' | 'groups';
@@ -194,8 +196,11 @@ export const createBooking = async (input: {
 
 export const fetchBookings = async (
   status: BookingStatus | 'all' = 'all',
+  matchCrm = false,
 ): Promise<{ bookings: Booking[]; newCount: number }> => {
-  const res = await fetch(`${BOOKINGS_URL}?action=bookings&status=${status}`);
+  const res = await fetch(
+    `${BOOKINGS_URL}?action=bookings&status=${status}${matchCrm ? '&match_crm=1' : ''}`,
+  );
   const data = await json(res);
   return { bookings: data.bookings || [], newCount: data.newCount || 0 };
 };

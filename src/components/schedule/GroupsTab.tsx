@@ -21,6 +21,7 @@ import {
   findAgeGroupRule,
   ageRangeLabel,
 } from './types';
+import { Booking, fetchBookings } from '@/lib/bookingsApi';
 
 const GroupsTab = () => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
@@ -29,6 +30,7 @@ const GroupsTab = () => {
   const [groupsError, setGroupsError] = useState('');
   const [groupsAutoJumped, setGroupsAutoJumped] = useState(false);
   const [customers, setCustomers] = useState<Record<number, Customer>>({});
+  const [groupBookings, setGroupBookings] = useState<Booking[]>([]);
 
   const loadGroups = async (autoJump = false) => {
     setGroupsLoading(true);
@@ -114,8 +116,29 @@ const GroupsTab = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
 
+  // Брони: детей ещё нет в CRM, но места они уже занимают
+  const loadGroupBookings = async () => {
+    try {
+      const { bookings } = await fetchBookings('all', true);
+      const flat: Booking[] = [];
+      for (const b of bookings) {
+        for (const l of b.lessons?.length ? b.lessons : [b]) {
+          const active = b.status === 'new' || b.status === 'confirmed';
+          // inCrm — ребёнка уже завели в группу, он и так есть в списке
+          if (l.lessonType === 'groups' && active && !l.inCrm) {
+            flat.push({ ...l, childName: l.childName || b.childName });
+          }
+        }
+      }
+      setGroupBookings(flat);
+    } catch {
+      // не критично — покажем только состав из CRM
+    }
+  };
+
   useEffect(() => {
     loadCustomers();
+    loadGroupBookings();
   }, []);
 
   return (
@@ -189,6 +212,10 @@ const GroupsTab = () => {
               <span className="inline-block w-3 h-3 rounded bg-red-50 border border-red-300" />
               заполнено
             </span>
+            <span className="inline-flex items-center gap-1 text-amber-700">
+              <span className="font-semibold">(б)</span>
+              бронь — ученика ещё нет в CRM
+            </span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500 text-white">
                 <Icon name="Check" size={9} />
@@ -245,7 +272,15 @@ const GroupsTab = () => {
                     )}
                     {items.map(({ row, cell }) => {
                       if (!cell) return null;
-                      const isFull = cell.free === 0;
+                      // Брони этой группы: ребёнка в CRM ещё нет, но место занято.
+                      // Список уже очищен от тех, кого завели в CRM.
+                      const booked = groupBookings.filter(
+                        (b) =>
+                          b.timeFrom.slice(0, 5) === row.time &&
+                          Number(b.teacherId) === row.teacher_id &&
+                          new Date(`${b.date}T00:00:00`).getDay() === (day + 1) % 7,
+                      );
+                      const isFull = cell.free - booked.length <= 0;
                       const isDone = cell.status === 3;
                       const ageRule = findAgeGroupRule(day, row.time);
                       return (
@@ -274,7 +309,10 @@ const GroupsTab = () => {
                           )}
                           <ol className="space-y-0.5 px-2 py-1.5">
                             {Array.from({
-                              length: Math.max(MAX_GROUP_SIZE, cell.student_ids.length),
+                              length: Math.max(
+                                MAX_GROUP_SIZE,
+                                cell.student_ids.length + booked.length,
+                              ),
                             }).map((_, i) => {
                               const sid = cell.student_ids[i];
                               const overflow = i >= MAX_GROUP_SIZE;
@@ -289,6 +327,23 @@ const GroupsTab = () => {
                                 <>{i + 1}. </>
                               );
                               if (sid == null) {
+                                // Свободные строки занимаем бронями — они идут
+                                // сразу после учеников из CRM
+                                const bk = booked[i - cell.student_ids.length];
+                                if (bk) {
+                                  return (
+                                    <li key={i} className="text-amber-700">
+                                      {numNode}
+                                      {formatStudentName(bk.childName) || bk.childName}
+                                      <span
+                                        className="ml-1 text-amber-600 font-semibold"
+                                        title="Бронь: ученика ещё нет в CRM"
+                                      >
+                                        (б)
+                                      </span>
+                                    </li>
+                                  );
+                                }
                                 return (
                                   <li key={i} className="text-gray-400">
                                     {numNode}

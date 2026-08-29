@@ -1114,11 +1114,12 @@ def handler(event: dict, context) -> dict:
 
         rows: dict = {}
         for lesson in lessons:
-            ltype = lesson.get("lesson_type_id")
-            if ltype == 1:
+            # Те же правила, что в админке «Расписание → Группы»: только
+            # групповые занятия, запланированные (1) и проведённые (3)
+            if lesson.get("lesson_type_id") != 2:
                 continue
-            if lesson.get("status") != 1:
-                continue  # только запланированные
+            if lesson.get("status") not in (1, 3):
+                continue
 
             lesson_date = (lesson.get("date") or "")[:10]
             if not lesson_date:

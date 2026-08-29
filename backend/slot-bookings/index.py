@@ -178,6 +178,47 @@ def _booked_keys(cur) -> set:
     }
 
 
+def _mark_in_crm(rows: list) -> None:
+    '''Проставляем броням признак inCrm — ребёнок уже в этой группе в CRM.
+
+    Нужно расписанию администратора: пока ученика не завели, бронь показываем
+    пометкой «(б)», а после заведения он появляется обычной строкой — и
+    дублировать его броней нельзя.
+    '''
+    groups = [b for b in rows if b.get('lessonType') == 'groups']
+    if not groups:
+        return
+    dates = [b['date'] for b in groups if b.get('date')]
+    if not dates:
+        return
+    week = _fetch_group_rows(min(dates), max(dates))
+    names = {int(k): v for k, v in (week.get('student_names') or {}).items()}
+
+    # (день недели, время, педагог) → имена учеников группы в CRM
+    crm: Dict[tuple, list] = {}
+    for r in week.get('rows') or []:
+        time = r.get('time') or ''
+        teacher = int(r.get('teacher_id') or 0)
+        for cell in (r.get('cells') or {}).values():
+            iso = (cell.get('date') or '')[:10]
+            if not iso:
+                continue
+            wd = datetime.strptime(iso, '%Y-%m-%d').date().weekday()
+            crm.setdefault((wd, time, teacher), []).extend(
+                names.get(int(s), '') for s in (cell.get('student_ids') or [])
+            )
+
+    for b in groups:
+        try:
+            wd = datetime.strptime(b['date'], '%Y-%m-%d').date().weekday()
+        except Exception:
+            continue
+        key = (wd, (b.get('timeFrom') or '')[:5], int(b.get('teacherId') or 0))
+        b['inCrm'] = any(
+            same_child(b.get('childName'), nm) for nm in crm.get(key, [])
+        )
+
+
 def _group_booked(cur) -> Dict[tuple, list]:
     '''Дети, занявшие места в группах по нашим заявкам.
 
@@ -698,7 +739,14 @@ def handler(event: dict, context) -> dict:
                 "SELECT COUNT(DISTINCT COALESCE(batch_id, id::text)) AS n "
                 "FROM slot_bookings WHERE status = 'new'"
             )
-            return _resp(200, {'bookings': items, 'newCount': cur.fetchone()['n']})
+            new_count = cur.fetchone()['n']
+
+            # Отмечаем брони, чей ребёнок уже заведён в эту группу в CRM:
+            # в расписании такую бронь второй раз показывать не нужно
+            if params.get('match_crm') == '1':
+                _mark_in_crm(rows)
+
+            return _resp(200, {'bookings': items, 'newCount': new_count})
 
         # ── Админ обрабатывает бронь ──────────────────────────────────────────
         if method == 'POST' and action == 'set-status':
