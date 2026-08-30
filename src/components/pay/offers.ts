@@ -23,8 +23,10 @@ export type PayOption = {
 
 export type PayOffer = {
   slug: string;
-  /** Заголовок страницы и назначение платежа в чеке. */
+  /** Заголовок страницы. */
   title: string;
+  /** Назначение платежа в чеке, если оно должно отличаться от заголовка. */
+  paymentTitle?: string;
   subtitle?: string;
   description: string;
   /** Кому подходит — короткий список показаний. */
@@ -89,7 +91,8 @@ const archiveSteps = [
 
 const archiveOffer: PayOffer = {
   slug: 'abonement-archive-2',
-  title: '2 урока в неделю (архивный тариф)',
+  title: '2 урока в неделю',
+  paymentTitle: '2 урока в неделю (архивный тариф)',
   subtitle: '1 групповой + 1 индивидуальный',
   description:
     'Архивный формат занятий для тех, кто занимался у нас раньше: один групповой и один индивидуальный урок в неделю',

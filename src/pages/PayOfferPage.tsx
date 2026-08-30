@@ -129,7 +129,9 @@ export default function PayOfferPage() {
               className="w-full bg-green-500 hover:bg-green-600 text-white text-base py-6"
               onClick={() =>
                 payment.open({
-                  title: isChoice ? `${offer.title} — ${option.title}` : offer.title,
+                  title: isChoice
+                    ? `${offer.paymentTitle ?? offer.title} — ${option.title}`
+                    : offer.paymentTitle ?? offer.title,
                   price: option.totalPrice,
                 })
               }
