@@ -6,7 +6,7 @@ import DiscountRibbon from './DiscountRibbon';
 import { formatPrice, pricingSections } from './data';
 
 export default function SubscriptionsSection() {
-  const [openSections, setOpenSections] = useState<number[]>([]);
+  const [openSections, setOpenSections] = useState<number[]>([0]);
 
   const toggleSection = (index: number) =>
     setOpenSections((prev) =>

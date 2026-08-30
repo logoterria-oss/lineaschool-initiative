@@ -1,49 +1,53 @@
 /**
- * Лента со скидкой, обвивающая правый верхний угол карточки.
+ * Лента со скидкой на правом верхнем углу карточки.
  *
- * Полотно ленты лежит на самом углу, а по её концам видны короткие тёмные
- * загибы — лента как будто заворачивается за карточку. Рисуем в координатах
- * 100×100, где грани карточки проходят по y=12 и x=88: загибы уходят за них
- * наружу, вдоль краёв карточки.
+ * Координаты 130×130: угол карточки — точка (110, 20), верхняя грань идёт
+ * влево по y=20, правая — вниз по x=110. Полотно ленты накрывает угол, а по
+ * её концам выступают короткие загибы: лента уходит за карточку.
  */
 export default function DiscountRibbon({ percent }: { percent: number }) {
   const id = `ribbon-${percent}`;
+  const gloss = `${id}-gloss`;
 
   return (
     <svg
-      viewBox="0 0 100 100"
-      className="pointer-events-none absolute -top-[12px] -right-[12px] w-[100px] h-[100px]"
+      viewBox="0 0 130 130"
+      className="pointer-events-none absolute -top-[20px] -right-[20px] w-[130px] h-[130px] drop-shadow-md"
       aria-hidden
     >
       <defs>
-        {/* Свет падает от угла: у внешней кромки лента светлее */}
+        {/* Поперёк ленты: блик у внешней кромки, тень у внутренней */}
         <linearGradient id={id} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="#b00505" />
-          <stop offset="50%" stopColor="#e01010" />
-          <stop offset="100%" stopColor="#ff3b3b" />
+          <stop offset="0%" stopColor="#c40000" />
+          <stop offset="45%" stopColor="#ee0000" />
+          <stop offset="85%" stopColor="#ff1a1a" />
+          <stop offset="100%" stopColor="#ff8a8a" />
+        </linearGradient>
+        <linearGradient id={gloss} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
       </defs>
 
-      {/* Загибы уходят за карточку вдоль её краёв — они в тени */}
-      <polygon points="30,12 30,4 20,12" fill="#7a0000" />
-      <polygon points="88,70 96,70 88,80" fill="#7a0000" />
+      {/* Загибы за карточку — уходят в тень */}
+      <polygon points="40,20 40,8 28,20" fill="#8c0000" />
+      <polygon points="110,90 122,102 110,102" fill="#8c0000" />
 
       {/* Полотно ленты через угол */}
-      <polygon points="30,12 88,12 88,70" fill={`url(#${id})`} />
+      <polygon points="40,20 110,20 110,90" fill={`url(#${id})`} />
 
-      {/* Блик по внешним кромкам */}
-      <polygon points="30,12 88,12 88,17 35,17" fill="#ffffff" opacity="0.25" />
-      <polygon points="88,12 88,70 83,70 83,17" fill="#ffffff" opacity="0.25" />
+      {/* Глянец вдоль верхней грани */}
+      <polygon points="40,20 110,20 110,32 52,32" fill={`url(#${gloss})`} />
 
       <text
-        x="63"
-        y="37"
-        transform="rotate(45 63 37)"
+        x="83"
+        y="43"
+        transform="rotate(45 83 43)"
         textAnchor="middle"
         dominantBaseline="middle"
         fill="#ffffff"
-        fontSize="17"
-        fontWeight="700"
+        fontSize="18"
+        fontWeight="800"
       >
         −{percent}%
       </text>
