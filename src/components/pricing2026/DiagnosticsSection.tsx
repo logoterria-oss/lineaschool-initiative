@@ -27,9 +27,7 @@ export default function DiagnosticsSection() {
 
           <div className="text-center mb-4 mt-2">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Первичная диагностика</h3>
-            <p className="text-gray-600 text-sm mb-2">
-              Полное обследование чтения и письма, консультация и индивидуальный план коррекции
-            </p>
+            <p className="text-gray-600 text-sm mb-2">Полное обследование чтения и письма, механизмов нарушения, консультация и индивидуальный план коррекции</p>
             <div className="flex items-center justify-center gap-1.5 text-sm text-gray-500 mb-4">
               <Icon name="Clock" size={14} className="text-gray-400 flex-shrink-0" />
               <span>90–120 минут</span>
