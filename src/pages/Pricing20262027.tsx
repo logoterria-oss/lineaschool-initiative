@@ -7,12 +7,9 @@ import Icon from '@/components/ui/icon';
 import DiagnosticsSection from '@/components/pricing2026/DiagnosticsSection';
 import SubscriptionsSection from '@/components/pricing2026/SubscriptionsSection';
 import IndividualSection from '@/components/pricing2026/IndividualSection';
-import PaymentModal from '@/components/pricing2026/PaymentModal';
-import { usePayment } from '@/components/pricing2026/usePayment';
 
 export default function Pricing20262027() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const payment = usePayment();
 
   useEffect(() => {
     document.title = 'Стоимость занятий 2026–2027 - ЛинэяСкул';
@@ -58,9 +55,9 @@ export default function Pricing20262027() {
             </p>
           </div>
 
-          <DiagnosticsSection onPay={payment.open} />
-          <SubscriptionsSection onPay={payment.open} />
-          <IndividualSection onPay={payment.open} />
+          <DiagnosticsSection />
+          <SubscriptionsSection />
+          <IndividualSection />
 
           <div className="text-center mt-12">
             <p className="text-gray-600 mb-4">
@@ -81,18 +78,6 @@ export default function Pricing20262027() {
       <Footer />
 
       <BookingModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
-
-      <PaymentModal
-        target={payment.target}
-        lastName={payment.lastName}
-        firstName={payment.firstName}
-        isNameValid={payment.isNameValid}
-        isSubmitting={payment.isSubmitting}
-        onLastNameChange={payment.setLastName}
-        onFirstNameChange={payment.setFirstName}
-        onClose={payment.close}
-        onSubmit={payment.submit}
-      />
     </div>
   );
 }

@@ -1,14 +1,10 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Icon from '@/components/ui/icon';
 import { formatPrice, pricingSections } from './data';
-import type { PaymentTarget } from './usePayment';
 
-type Props = { onPay: (target: PaymentTarget) => void };
-
-export default function SubscriptionsSection({ onPay }: Props) {
+export default function SubscriptionsSection() {
   const [openSections, setOpenSections] = useState<number[]>([0]);
 
   const toggleSection = (index: number) =>
@@ -147,24 +143,6 @@ export default function SubscriptionsSection({ onPay }: Props) {
                             <div className="flex-grow" />
                           </div>
                         </Card>
-
-                        <Button
-                          type="button"
-                          size="sm"
-                          className={`w-full mt-4 ${
-                            plan.popular
-                              ? 'bg-green-500 hover:bg-green-600 text-white'
-                              : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'
-                          }`}
-                          onClick={() =>
-                            onPay({
-                              title: `${section.title} — ${plan.title}`,
-                              price: plan.totalPrice,
-                            })
-                          }
-                        >
-                          Выбрать тариф
-                        </Button>
                       </div>
                     ))}
                   </div>

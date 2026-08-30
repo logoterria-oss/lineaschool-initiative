@@ -1,17 +1,12 @@
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import Icon from '@/components/ui/icon';
 import {
   DIAGNOSTIC_INTERIM,
   DIAGNOSTIC_PRIMARY,
   formatPrice,
   getPromoDeadline,
 } from './data';
-import type { PaymentTarget } from './usePayment';
 
-type Props = { onPay: (target: PaymentTarget) => void };
-
-export default function DiagnosticsSection({ onPay }: Props) {
+export default function DiagnosticsSection() {
   const promoDeadline = getPromoDeadline();
 
   return (
@@ -48,16 +43,6 @@ export default function DiagnosticsSection({ onPay }: Props) {
           </div>
 
           <div className="flex-grow" />
-
-          <Button
-            className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white"
-            onClick={() =>
-              onPay({ title: 'Первичная диагностика', price: DIAGNOSTIC_PRIMARY.price })
-            }
-          >
-            <Icon name="CreditCard" className="mr-2" size={20} />
-            Оплатить диагностику
-          </Button>
         </Card>
 
         {/* Промежуточная — контроль динамики */}
@@ -75,16 +60,6 @@ export default function DiagnosticsSection({ onPay }: Props) {
           </div>
 
           <div className="flex-grow" />
-
-          <Button
-            className="w-full bg-white border-2 border-green-500 text-green-600 hover:bg-green-50"
-            onClick={() =>
-              onPay({ title: 'Промежуточная диагностика', price: DIAGNOSTIC_INTERIM.price })
-            }
-          >
-            <Icon name="CreditCard" className="mr-2" size={20} />
-            Оплатить диагностику
-          </Button>
         </Card>
       </div>
     </section>

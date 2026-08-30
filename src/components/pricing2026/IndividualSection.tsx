@@ -1,10 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import { formatPrice, individualPlans } from './data';
-import type { PaymentTarget } from './usePayment';
-
-type Props = { onPay: (target: PaymentTarget) => void };
 
 const lessonsWord = (count: number) => {
   if (count % 10 === 1 && count % 100 !== 11) return 'урок';
@@ -12,7 +8,7 @@ const lessonsWord = (count: number) => {
   return 'уроков';
 };
 
-export default function IndividualSection({ onPay }: Props) {
+export default function IndividualSection() {
   return (
     <section className="mb-16">
       <div className="text-center mb-8">
@@ -65,24 +61,6 @@ export default function IndividualSection({ onPay }: Props) {
                 <div className="flex-grow" />
               </div>
             </Card>
-
-            <Button
-              type="button"
-              size="sm"
-              className={`w-full mt-4 ${
-                plan.popular
-                  ? 'bg-green-500 hover:bg-green-600 text-white'
-                  : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'
-              }`}
-              onClick={() =>
-                onPay({
-                  title: `Индивидуальные занятия — ${plan.lessons} ${lessonsWord(plan.lessons)}`,
-                  price: plan.totalPrice,
-                })
-              }
-            >
-              Выбрать пакет
-            </Button>
           </div>
         ))}
       </div>

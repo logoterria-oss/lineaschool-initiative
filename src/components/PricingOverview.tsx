@@ -97,7 +97,7 @@ export default function PricingOverview() {
         </div>
 
         <div className="text-center space-y-4">
-          <Link to="/price">
+          <Link to="/price_2026-2027">
             <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 text-base px-8 py-5">
               Подробнее о тарифах
               <Icon name="ArrowRight" size={18} className="ml-2" />
