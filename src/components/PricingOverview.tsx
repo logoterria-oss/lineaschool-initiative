@@ -77,12 +77,15 @@ export default function PricingOverview() {
                     <Icon name="Users" size={16} className="text-blue-500 flex-shrink-0" />
                     <span>{plan.groupLessons} групповых</span>
                   </div>
-                  {plan.individualLessons > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Icon name="User" size={16} className="text-blue-500 flex-shrink-0" />
-                      <span>{plan.individualLessons} индивидуальных</span>
-                    </div>
-                  )}
+                  <div
+                    className={`flex items-center gap-2 text-sm text-gray-700 ${
+                      plan.individualLessons > 0 ? "" : "invisible"
+                    }`}
+                    aria-hidden={plan.individualLessons === 0}
+                  >
+                    <Icon name="User" size={16} className="text-blue-500 flex-shrink-0" />
+                    <span>{plan.individualLessons} индивидуальных</span>
+                  </div>
                 </div>
               </div>
 
