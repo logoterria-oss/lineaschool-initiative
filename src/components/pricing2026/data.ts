@@ -53,20 +53,37 @@ const buildPlans = (
   groupPerWeek: number,
   individualPerWeek: number,
   discounts: { quarter: number; half: number },
+  // Ручная цена занятия для отдельных сроков: иногда её назначают «от руки»,
+  // и тогда она важнее расчётной.
+  manualPrice: { quarter?: number; half?: number } = {},
 ): Plan[] => {
   const steps = [
-    { title: '1 месяц', weeks: 4, discount: 0, interim: 0 },
-    { title: '3 месяца', weeks: 12, discount: discounts.quarter, interim: 1, popular: true },
-    { title: '6 месяцев', weeks: 24, discount: discounts.half, interim: 2 },
+    { title: '1 месяц', weeks: 4, discount: 0, interim: 0, manual: undefined },
+    {
+      title: '3 месяца',
+      weeks: 12,
+      discount: discounts.quarter,
+      interim: 1,
+      popular: true,
+      manual: manualPrice.quarter,
+    },
+    {
+      title: '6 месяцев',
+      weeks: 24,
+      discount: discounts.half,
+      interim: 2,
+      manual: manualPrice.half,
+    },
   ];
 
-  return steps.map(({ title, weeks, discount, interim, popular }) => {
+  return steps.map(({ title, weeks, discount, interim, popular, manual }) => {
     const group = groupPerWeek * weeks;
     const individual = individualPerWeek * weeks;
     const lessons = group + individual + interim;
 
     const fullPrice = basePrice * (group + individual) + DIAGNOSTIC_INTERIM.price * interim;
-    const pricePerLesson = Math.round((fullPrice * (1 - discount / 100)) / lessons / 10) * 10;
+    const pricePerLesson =
+      manual ?? Math.round((fullPrice * (1 - discount / 100)) / lessons / 10) * 10;
     const totalPrice = pricePerLesson * lessons;
 
     // Процент на бейдже считаем от итоговой цены, а не берём заданный:
@@ -92,7 +109,7 @@ export const pricingSections: PricingSection[] = [
     title: '2 урока в неделю',
     subtitle: '2 групповых',
     description: ['Регуляторная дисграфия/дислексия'],
-    plans: buildPlans(1370, 2, 0, { quarter: 5, half: 10 }),
+    plans: buildPlans(1370, 2, 0, { quarter: 5, half: 10 }, { half: 1270 }),
   },
   {
     title: '3 урока в неделю',

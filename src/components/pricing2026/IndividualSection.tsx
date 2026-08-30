@@ -89,7 +89,6 @@ export default function IndividualSection() {
                             <span className="text-sm font-normal text-gray-600">/урок</span>
                           </div>
                           <div className="text-gray-600">
-                            Всего:{' '}
                             <span className="font-semibold">{formatPrice(plan.totalPrice)}</span>
                           </div>
                         </div>
