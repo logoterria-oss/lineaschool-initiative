@@ -2,7 +2,7 @@ const schoolLinks = [
   { label: "Методика нейрологопедической коррекции", href: "#methodology" },
   { label: "Диагностика процессов чтения и письма", href: "#diagnostic" },
   { label: "Отзывы о школе", href: "#testimonials" },
-  { label: "Стоимость обучения", href: "#pricing" },
+  { label: "Стоимость обучения", href: "/price_2026-2027" },
   { label: "Часто задаваемые вопросы", href: "#faq" },
   { label: "Сведения об образовательной организации", href: "/sveden" },
 ];
