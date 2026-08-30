@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import PaymentModal from '@/components/pricing2026/PaymentModal';
 import { usePayment } from '@/components/pricing2026/usePayment';
-import { formatPrice, getPromoDeadline } from '@/components/pricing2026/data';
+import { getPromoDeadline } from '@/components/pricing2026/data';
 import PayOptionCard from '@/components/pay/PayOptionCard';
 import { getPayOffer } from '@/components/pay/offers';
 
@@ -113,13 +113,6 @@ export default function PayOfferPage() {
           </div>
 
           <div className="mt-10 max-w-md mx-auto text-center">
-            <div className="mb-4 text-gray-600">
-              К оплате:{' '}
-              <span className="text-2xl font-bold text-gray-900">
-                {formatPrice(option.totalPrice)}
-              </span>
-            </div>
-
             <Button
               size="lg"
               className="w-full bg-green-500 hover:bg-green-600 text-white text-base py-6"
