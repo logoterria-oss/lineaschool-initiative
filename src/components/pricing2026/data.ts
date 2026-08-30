@@ -86,9 +86,9 @@ const buildPlans = (
       manual ?? Math.round((fullPrice * (1 - discount / 100)) / lessons / 10) * 10;
     const totalPrice = pricePerLesson * lessons;
 
-    // Процент на бейдже считаем от итоговой цены, а не берём заданный:
-    // после округления цены занятия реальная выгода может отличаться.
-    const realDiscount = Math.round((1 - totalPrice / fullPrice) * 100);
+    // На бейдже показываем заявленную скидку тарифа. После округления цены
+    // занятия фактическая выгода получается чуть меньше (например 9,86%),
+    // но родителю мы обещаем ровную цифру — 10%.
 
     return {
       title,
@@ -97,7 +97,7 @@ const buildPlans = (
       individualLessons: individual,
       pricePerLesson,
       totalPrice,
-      discountPercent: realDiscount > 0 ? realDiscount : undefined,
+      discountPercent: discount || undefined,
       interimDiagnostics: interim || undefined,
       popular,
     };
