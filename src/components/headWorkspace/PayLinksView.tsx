@@ -26,7 +26,32 @@ const PayLinksView = () => {
   const [copied, setCopied] = useState<string | null>(null);
 
   const copy = async (url: string) => {
-    await navigator.clipboard.writeText(url);
+    let ok = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, url.length);
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    if (!ok) {
+      window.prompt('Скопируйте ссылку:', url);
+      return;
+    }
     setCopied(url);
     setTimeout(() => setCopied((prev) => (prev === url ? null : prev)), 1500);
   };
