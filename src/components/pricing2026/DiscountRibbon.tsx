@@ -5,6 +5,7 @@
  * загибы по краям выходят чуть за него.
  */
 const RIBBONS: Record<number, string> = {
+  5: '/ribbon-5.png',
   10: '/ribbon-10.png',
 };
 
