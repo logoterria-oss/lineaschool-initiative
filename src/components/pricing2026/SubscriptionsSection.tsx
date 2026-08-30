@@ -92,10 +92,6 @@ export default function SubscriptionsSection() {
                                 Всего:{' '}
                                 <span className="font-semibold">{formatPrice(plan.totalPrice)}</span>
                               </div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                {plan.pricePerLesson.toLocaleString('ru-RU')} ₽ ×{' '}
-                                {plan.totalLessons} занятий
-                              </div>
                             </div>
 
                             <div className="bg-green-50 rounded-lg p-4 mb-4 text-left">
