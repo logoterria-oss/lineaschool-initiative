@@ -15,9 +15,23 @@ export default function IndividualSection() {
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
           Индивидуальные занятия
         </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Занятия один на один с педагогом — вся программа подстраивается под ребёнка
+        <p className="text-gray-600 max-w-3xl mx-auto">
+          Рекомендуется детям с тяжёлой речевой, оптико-моторной и мнестической симптоматикой,
+          когда занятия в группах невозможны:
         </p>
+        <ul className="text-gray-600 text-sm sm:text-base max-w-3xl mx-auto mt-3 space-y-1 text-left inline-block">
+          {[
+            'Заметные трудности в припоминании букв при письме и чтении',
+            'Побуквенное чтение после 9 лет',
+            'Стойкое зеркальное написание букв',
+            'Грубое нарушение языкового анализа на уровне звуков, слов и предложений',
+          ].map((line) => (
+            <li key={line} className="flex gap-2">
+              <span className="text-gray-400 flex-shrink-0">—</span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
