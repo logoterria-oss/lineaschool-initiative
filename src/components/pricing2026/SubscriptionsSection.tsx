@@ -13,7 +13,7 @@ export default function SubscriptionsSection() {
     );
 
   return (
-    <section className="mb-16">
+    <section className="mb-24">
       <div className="text-center mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
           Рекомендованные абонементы

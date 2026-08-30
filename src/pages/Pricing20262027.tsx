@@ -41,9 +41,9 @@ export default function Pricing20262027() {
     <div className="min-h-screen bg-white">
       <Navigation />
 
-      <main className="pt-20">
+      <main className="pt-6">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
-          <div className="text-center mb-12">
+          <div className="text-center mb-20">
             <span className="inline-block bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-sm font-semibold mb-4">
               Учебный год 2026–2027
             </span>
@@ -51,7 +51,7 @@ export default function Pricing20262027() {
               Стоимость занятий
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Онлайн-коррекция дислексии и дисграфии для детей 8–18 лет
+              Онлайн-коррекция дислексии и дисграфии у детей 8–18 лет
             </p>
           </div>
 
