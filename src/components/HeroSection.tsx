@@ -47,8 +47,12 @@ export default function HeroSection() {
                   <span className="text-center leading-tight relative z-10 flex flex-col items-center gap-0.5 w-full pl-12 xs:pl-14 sm:pl-16">
                     <span className="font-bold">ЗАПИШИСЬ НА ОБСЛЕДОВАНИЕ</span>
                     <span className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90">комплексное исследование + консультация</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-normal opacity-90">
+                      <Icon name="Clock" size={13} className="flex-shrink-0" />
+                      90–120 минут
+                    </span>
                     <span className="text-[12px] xs:text-[14px] sm:text-base md:text-lg font-bold">
-                      ВСЕГО 1290₽ <span className="line-through ml-1 font-normal opacity-75">4500₽</span>
+                      ВСЕГО 1490₽ <span className="line-through ml-1 font-normal opacity-75">4500₽</span>
                     </span>
                   </span>
                 </Button>
