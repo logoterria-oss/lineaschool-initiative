@@ -132,8 +132,7 @@ export default function SubscriptionsSection() {
                                       {plan.interimDiagnostics}{' '}
                                       {plan.interimDiagnostics === 1
                                         ? 'промежуточная диагностика'
-                                        : 'промежуточные диагностики'}{' '}
-                                      <span className="text-orange-600 font-semibold">в подарок</span>
+                                        : 'промежуточные диагностики'}
                                     </span>
                                   </div>
                                 )}

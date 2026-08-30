@@ -37,37 +37,49 @@ export const getPromoDeadline = () => {
 };
 
 /**
- * Абонементы строятся из трёх чисел: цена урока в минимальном пакете,
- * состав недели (сколько групповых и индивидуальных) и длительность.
- * Скидка за 3 и 6 месяцев одинаковая во всех тарифах — 5% и 10%,
- * цена урока округляется до десятков рублей.
+ * Абонемент — это пакет занятий: групповые, индивидуальные и промежуточные
+ * диагностики. Диагностика входит в абонемент как обычное занятие, а не идёт
+ * бонусом: в счёте занятий она учитывается наравне с уроками.
+ *
+ * Считаем так: полная стоимость = уроки по базовой цене + диагностики по своей
+ * цене. От неё берём скидку за длительность и делим на общее число занятий —
+ * получается единая цена занятия, округлённая до десятков рублей. Итог
+ * абонемента = цена занятия × количество занятий, поэтому в карточке всё
+ * сходится: 1 300 ₽ × 25 = 32 500 ₽.
  */
-const buildPlans = (basePrice: number, groupPerWeek: number, individualPerWeek: number): Plan[] => {
+const buildPlans = (
+  basePrice: number,
+  groupPerWeek: number,
+  individualPerWeek: number,
+  discounts: { quarter: number; half: number },
+): Plan[] => {
   const steps = [
     { title: '1 месяц', weeks: 4, discount: 0, interim: 0 },
-    { title: '3 месяца', weeks: 12, discount: 5, interim: 1, popular: true },
-    { title: '6 месяцев', weeks: 24, discount: 10, interim: 2 },
+    { title: '3 месяца', weeks: 12, discount: discounts.quarter, interim: 1, popular: true },
+    { title: '6 месяцев', weeks: 24, discount: discounts.half, interim: 2 },
   ];
 
   return steps.map(({ title, weeks, discount, interim, popular }) => {
     const group = groupPerWeek * weeks;
     const individual = individualPerWeek * weeks;
-    const lessons = group + individual;
-    const pricePerLesson = discount
-      ? Math.round((basePrice * (1 - discount / 100)) / 10) * 10
-      : basePrice;
+    const lessons = group + individual + interim;
+
+    const fullPrice = basePrice * (group + individual) + DIAGNOSTIC_INTERIM.price * interim;
+    const pricePerLesson = Math.round((fullPrice * (1 - discount / 100)) / lessons / 10) * 10;
+    const totalPrice = pricePerLesson * lessons;
+
+    // Процент на бейдже считаем от итоговой цены, а не берём заданный:
+    // после округления цены занятия реальная выгода может отличаться.
+    const realDiscount = Math.round((1 - totalPrice / fullPrice) * 100);
 
     return {
       title,
-      // Считаем только учебные занятия — именно за них платит клиент.
-      // Промежуточные диагностики идут бонусом и показываются отдельной строкой,
-      // иначе «цена за урок × занятия» не сходилась с итогом абонемента.
       totalLessons: lessons,
       groupLessons: group,
       individualLessons: individual,
       pricePerLesson,
-      totalPrice: pricePerLesson * lessons,
-      discountPercent: discount || undefined,
+      totalPrice,
+      discountPercent: realDiscount > 0 ? realDiscount : undefined,
       interimDiagnostics: interim || undefined,
       popular,
     };
@@ -79,19 +91,19 @@ export const pricingSections: PricingSection[] = [
     title: '2 урока в неделю',
     subtitle: '2 групповых',
     description: 'Лёгкая степень выраженности дислексии/дисграфии',
-    plans: buildPlans(1370, 2, 0),
+    plans: buildPlans(1370, 2, 0, { quarter: 7, half: 10 }),
   },
   {
     title: '3 урока в неделю',
     subtitle: '2 групповых + 1 индивидуальный',
     description: 'Средняя степень выраженности дислексии/дисграфии',
-    plans: buildPlans(1470, 2, 1),
+    plans: buildPlans(1470, 2, 1, { quarter: 5, half: 10 }),
   },
   {
     title: '4 урока в неделю',
     subtitle: '2 групповых + 2 индивидуальных',
     description: 'Тяжёлая степень выраженности дислексии/дисграфии',
-    plans: buildPlans(1510, 2, 2),
+    plans: buildPlans(1510, 2, 2, { quarter: 5, half: 10 }),
   },
 ];
 
