@@ -64,13 +64,6 @@ export default function PayOfferPage() {
               Оплата занятий
             </span>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">{offer.title}</h1>
-            {offer.subtitle && (
-              <p className="text-base font-semibold text-blue-600 mb-3">{offer.subtitle}</p>
-            )}
-            {offer.description && (
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">{offer.description}</p>
-            )}
-
             {isPromo && (
               <p className="mt-4 inline-flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-1.5 rounded-full text-sm font-semibold">
                 🔥 Акция до {getPromoDeadline()}
