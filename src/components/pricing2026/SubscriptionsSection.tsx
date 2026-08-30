@@ -54,11 +54,19 @@ export default function SubscriptionsSection() {
                         <p className="text-gray-600 text-sm sm:text-base">{section.description}</p>
                       )}
                     </div>
-                    <Icon
-                      name={isOpen ? 'ChevronUp' : 'ChevronDown'}
-                      size={24}
-                      className="text-gray-500 flex-shrink-0"
-                    />
+                    <span
+                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                        isOpen
+                          ? 'bg-green-500 text-white'
+                          : 'bg-green-100 text-green-600'
+                      }`}
+                    >
+                      <Icon
+                        name={isOpen ? 'ChevronUp' : 'ChevronDown'}
+                        size={26}
+                        strokeWidth={3}
+                      />
+                    </span>
                   </div>
                 </CollapsibleTrigger>
 
