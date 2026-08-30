@@ -123,7 +123,19 @@ export type IndividualPlan = {
 };
 
 export const individualPlans: IndividualPlan[] = [
-  { lessons: 4, pricePerLesson: 2200, totalPrice: 8800 },
-  { lessons: 8, pricePerLesson: 2100, totalPrice: 16800, popular: true },
-  { lessons: 12, pricePerLesson: 2000, totalPrice: 24000 },
+  { lessons: 8, pricePerLesson: 2200, totalPrice: 8 * 2200 },
+  { lessons: 12, pricePerLesson: 2100, totalPrice: 12 * 2100, popular: true },
+  { lessons: 16, pricePerLesson: 2000, totalPrice: 16 * 2000 },
 ];
+
+/** Показания к индивидуальному формату — когда группа ребёнку не подходит. */
+export const individualIndications = {
+  intro:
+    'Рекомендуется детям с тяжёлой речевой, оптико-моторной и мнестической симптоматикой, когда занятия в группах невозможны',
+  signs: [
+    'Заметные трудности в припоминании букв при письме и чтении',
+    'Побуквенное чтение после 9 лет',
+    'Стойкое зеркальное написание букв',
+    'Грубое нарушение языкового анализа на уровне звуков, слов и предложений',
+  ],
+};
