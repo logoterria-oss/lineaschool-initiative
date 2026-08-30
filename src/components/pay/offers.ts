@@ -165,7 +165,7 @@ const diagnosticInterim: PayOffer = {
       totalPrice: DIAGNOSTIC_INTERIM.price,
       details: [
         { icon: 'Clock', color: 'text-gray-400', text: '40–50 минут' },
-        { icon: 'Video', color: 'text-blue-500', text: 'Онлайн, с педагогом ребёнка' },
+        { icon: 'Video', color: 'text-blue-500', text: 'Онлайн, с логопедом-нейропсихологом' },
         { icon: 'TrendingUp', color: 'text-green-500', text: 'Отчёт о динамике' },
       ],
     },
