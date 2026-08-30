@@ -101,8 +101,11 @@ export default function SubscriptionsSection() {
                                 {plan.pricePerLesson.toLocaleString('ru-RU')}&nbsp;₽
                                 <span className="text-sm font-normal text-gray-600">/урок</span>
                               </div>
-                              <div className="text-gray-600">
-                                <span className="font-semibold">{formatPrice(plan.totalPrice)}</span>
+                              <div className="inline-flex items-baseline gap-2 rounded-lg bg-gray-100 px-3 py-1.5">
+                                <span className="text-xs text-gray-500">Абонемент</span>
+                                <span className="text-lg font-bold text-gray-900">
+                                  {formatPrice(plan.totalPrice)}
+                                </span>
                               </div>
                             </div>
 
