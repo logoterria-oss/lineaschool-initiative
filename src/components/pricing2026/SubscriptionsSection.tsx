@@ -103,7 +103,7 @@ export default function SubscriptionsSection() {
                               </div>
                               <div className="inline-flex items-baseline gap-2 rounded-lg bg-gray-100 px-3 py-1.5">
                                 <span className="text-xs text-gray-500">Абонемент</span>
-                                <span className="text-lg font-bold text-gray-900">
+                                <span className="text-sm font-semibold text-gray-800">
                                   {formatPrice(plan.totalPrice)}
                                 </span>
                               </div>
