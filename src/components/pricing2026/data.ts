@@ -90,7 +90,7 @@ export const pricingSections: PricingSection[] = [
   {
     title: '2 урока в неделю',
     subtitle: '2 групповых',
-    description: 'Лёгкая степень выраженности дислексии/дисграфии',
+    description: 'Регуляторная дисграфия/дислексия',
     plans: buildPlans(1370, 2, 0, { quarter: 5, half: 10 }),
   },
   {
