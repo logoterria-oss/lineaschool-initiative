@@ -41,7 +41,18 @@ export default function SubscriptionsSection() {
                           {section.subtitle}
                         </span>
                       </div>
-                      <p className="text-gray-600 text-sm sm:text-base">{section.description}</p>
+                      {Array.isArray(section.description) ? (
+                        <ul className="text-gray-600 text-sm sm:text-base space-y-0.5">
+                          {section.description.map((line) => (
+                            <li key={line} className="flex gap-2">
+                              <span className="text-gray-400 flex-shrink-0">—</span>
+                              <span>{line}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-600 text-sm sm:text-base">{section.description}</p>
+                      )}
                     </div>
                     <Icon
                       name={isOpen ? 'ChevronUp' : 'ChevronDown'}

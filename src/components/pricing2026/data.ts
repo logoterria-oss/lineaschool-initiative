@@ -13,7 +13,8 @@ export type Plan = {
 export type PricingSection = {
   title: string;
   subtitle: string;
-  description: string;
+  /** Кому подходит абонемент: одна формулировка или список случаев. */
+  description: string | string[];
   plans: Plan[];
 };
 
@@ -96,13 +97,17 @@ export const pricingSections: PricingSection[] = [
   {
     title: '3 урока в неделю',
     subtitle: '2 групповых + 1 индивидуальный',
-    description: 'Регуляторная дислексия/дисграфия + дизорфография',
+    description: [
+      'Регуляторная дислексия/дисграфия + дизорфография',
+      'Смешанная форма дислексии/дисграфии с речевой симптоматикой',
+      'Смешанная форма дислексии/дисграфии с оптико-моторной симптоматикой',
+    ],
     plans: buildPlans(1470, 2, 1, { quarter: 5, half: 10 }),
   },
   {
     title: '4 урока в неделю',
     subtitle: '2 групповых + 2 индивидуальных',
-    description: 'Смешанная форма дислексии/дисграфии с речевой симптоматикой',
+    description: 'Тяжёлая степень выраженности дислексии/дисграфии',
     plans: buildPlans(1510, 2, 2, { quarter: 5, half: 10 }),
   },
 ];
