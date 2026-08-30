@@ -14,6 +14,7 @@ import StaffListView from '@/components/headWorkspace/StaffListView';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
+import PayLinksView from '@/components/headWorkspace/PayLinksView';
 import LeadsListView from '@/components/adminWorkspace/LeadsListView';
 import WorkTimeView from '@/components/workLog/WorkTimeView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
@@ -53,6 +54,7 @@ const AdminWorkspace = () => {
       case 'admin-shifts': return <AdminShiftsView />;
       case 'schedule': return <ScheduleView currentUser={fullName} />;
       case 'payments-status': return <PaymentsStatusView />;
+      case 'pay-links': return <PayLinksView />;
       case 'interactions': return <InteractionsView />;
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;

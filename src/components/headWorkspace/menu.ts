@@ -63,6 +63,7 @@ export const HEAD_MENU: MenuGroup[] = [
       { id: 'payments', label: 'Оплаты', kind: 'component', icon: 'CreditCard' },
       { id: 'reports-fin', label: 'Отчёты', kind: 'component', icon: 'BarChart2' },
       { id: 'calendar', label: 'Календарь регулярных платежей', kind: 'component', icon: 'CalendarClock' },
+      { id: 'pay-links', label: 'Ссылки на оплату', kind: 'component', icon: 'Link' },
     ],
   },
   {
