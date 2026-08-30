@@ -96,12 +96,6 @@ export default function PayOfferPage() {
             </div>
           )}
 
-          {isChoice && (
-            <p className="text-center text-sm font-semibold text-gray-500 mb-4">
-              {offer.chooseLabel ?? 'Выберите вариант'}
-            </p>
-          )}
-
           <div
             className={`grid gap-6 ${
               isChoice ? 'md:grid-cols-3' : 'max-w-md mx-auto'
