@@ -18,9 +18,6 @@ export default function SubscriptionsSection() {
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
           Рекомендованные абонементы
         </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Чем дольше курс, тем ниже цена урока — и тем заметнее результат
-        </p>
       </div>
 
       <div className="space-y-6">
