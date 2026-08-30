@@ -43,11 +43,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     amount = body_data.get('amount')
     order_id = body_data.get('order_id')
 
-    # Приводим имя ребёнка к виду, как записано в AlfaCRM (для корректной аналитики)
-    if name:
-        name = match_name(name)
+    # Подбираем карточку в AlfaCRM (для аналитики), но введённое родителем имя не теряем
+    crm_name = match_name(name) if name else name
 
-    print(f'Saving payment lead: {name}, {plan}, {amount}, {order_id}')
+    print(f'Saving payment lead: {name} (CRM: {crm_name}), {plan}, {amount}, {order_id}')
     
     # Get database connection string
     dsn = os.environ.get('DATABASE_URL')
@@ -66,7 +65,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Insert lead data (email and phone as empty strings for NOT NULL constraint)
         cur.execute(
             "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
-            (name, '', '', plan, amount, order_id)
+            (crm_name, '', '', plan, amount, order_id)
         )
         
         conn.commit()
@@ -85,7 +84,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # до таймаута, уведомление теряется. Раньше сбой первого получателя
             # ещё и обрывал отправку второму, так как цикл был в общем try.
             try:
-                message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
+                crm_line = f"\n🗂 В CRM: {crm_name}" if crm_name and crm_name != name else ''
+                message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}{crm_line}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
                 results = notify_all(bot_token, [chat_id, '976372702'], message)
                 print(f'Telegram delivery for order {order_id}: {results}')
             except Exception as tg_error:
