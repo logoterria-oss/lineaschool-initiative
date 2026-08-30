@@ -14,7 +14,6 @@ const overviewPlans = pricingSections.map((section, index) => {
 
   return {
     title: section.title,
-    composition: section.subtitle,
     cases: Array.isArray(section.description) ? section.description : [section.description],
     priceFrom: minPricePerLesson,
     lessonsPerMonth: monthPlan.groupLessons + monthPlan.individualLessons,
@@ -56,10 +55,7 @@ export default function PricingOverview() {
               )}
 
               <div className="text-center pt-2">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.title}</h3>
-                <span className="inline-block bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold mb-4">
-                  {plan.composition}
-                </span>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{plan.title}</h3>
 
                 <div className="mb-4">
                   <span className="text-3xl font-bold text-green-600">
