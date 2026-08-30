@@ -28,7 +28,7 @@ export type PayOffer = {
   /** Назначение платежа в чеке, если оно должно отличаться от заголовка. */
   paymentTitle?: string;
   subtitle?: string;
-  description: string;
+  description?: string;
   /** Кому подходит — короткий список показаний. */
   indications?: string[];
   /** Подсказка над вариантами: что именно выбирает родитель. */
@@ -94,8 +94,6 @@ const archiveOffer: PayOffer = {
   title: '2 урока в неделю',
   paymentTitle: '2 урока в неделю (архивный тариф)',
   subtitle: '1 групповой + 1 индивидуальный',
-  description:
-    'Архивный формат занятий для тех, кто занимался у нас раньше: один групповой и один индивидуальный урок в неделю',
   chooseLabel: 'Срок абонемента',
   options: archiveSteps.map(({ title, weeks, discount, popular }) => {
     const group = weeks;

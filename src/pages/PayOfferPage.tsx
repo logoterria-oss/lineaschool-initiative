@@ -67,7 +67,9 @@ export default function PayOfferPage() {
             {offer.subtitle && (
               <p className="text-base font-semibold text-blue-600 mb-3">{offer.subtitle}</p>
             )}
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">{offer.description}</p>
+            {offer.description && (
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">{offer.description}</p>
+            )}
 
             {isPromo && (
               <p className="mt-4 inline-flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-1.5 rounded-full text-sm font-semibold">
