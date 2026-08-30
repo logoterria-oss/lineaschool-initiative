@@ -84,9 +84,9 @@ const subscriptionOffers: PayOffer[] = pricingSections.map((section, index) => (
 const ARCHIVE_BASE_PRICE = Math.round((1370 * 1.25) / 10) * 10;
 
 const archiveSteps = [
-  { title: '1 месяц', weeks: 4, discount: 0, popular: false },
-  { title: '3 месяца', weeks: 12, discount: 5, popular: true },
-  { title: '6 месяцев', weeks: 24, discount: 10, popular: false },
+  { title: '1 месяц', weeks: 4, discount: 0, interim: 0, popular: false },
+  { title: '3 месяца', weeks: 12, discount: 5, interim: 1, popular: true },
+  { title: '6 месяцев', weeks: 24, discount: 10, interim: 2, popular: false },
 ];
 
 const archiveOffer: PayOffer = {
@@ -95,11 +95,18 @@ const archiveOffer: PayOffer = {
   paymentTitle: '2 урока в неделю (архивный тариф)',
   subtitle: '1 групповой + 1 индивидуальный',
   chooseLabel: 'Срок абонемента',
-  options: archiveSteps.map(({ title, weeks, discount, popular }) => {
+  options: archiveSteps.map(({ title, weeks, discount, interim, popular }) => {
     const group = weeks;
     const individual = weeks;
-    const lessons = group + individual;
-    const pricePerLesson = Math.round((ARCHIVE_BASE_PRICE * (1 - discount / 100)) / 10) * 10;
+    const lessons = group + individual + interim;
+
+    // Считаем так же, как в действующих абонементах: полная стоимость — это
+    // уроки по базовой цене плюс диагностики по своей. От неё берём скидку и
+    // делим на общее число занятий, включая диагностики. Округляем цену занятия
+    // вниз, чтобы фактическая выгода была не меньше обещанной на ленте.
+    const fullPrice =
+      ARCHIVE_BASE_PRICE * (group + individual) + DIAGNOSTIC_INTERIM.price * interim;
+    const pricePerLesson = Math.floor((fullPrice * (1 - discount / 100)) / lessons / 10) * 10;
 
     return {
       title,
@@ -107,7 +114,7 @@ const archiveOffer: PayOffer = {
       totalPrice: pricePerLesson * lessons,
       discountPercent: discount || undefined,
       popular,
-      details: composition(group, individual),
+      details: composition(group, individual, interim),
     };
   }),
 };
