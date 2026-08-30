@@ -13,9 +13,6 @@ export default function DiagnosticsSection() {
     <section className="mb-16">
       <div className="text-center mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Диагностика</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          С неё начинается работа: определяем причину трудностей и составляем план коррекции
-        </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
