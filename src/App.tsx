@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 const LineaStudies = lazyWithRetry(() => import("./pages/LineaStudies"));
 const Pricing = lazyWithRetry(() => import("./pages/Pricing"));
 const Pricing20262027 = lazyWithRetry(() => import("./pages/Pricing20262027"));
+const PayOfferPage = lazyWithRetry(() => import("./pages/PayOfferPage"));
 const OfferPage = lazyWithRetry(() => import("./pages/OfferPage"));
 const Privacy = lazyWithRetry(() => import("./pages/Privacy"));
 const EducationInfo = lazyWithRetry(() => import("./pages/EducationInfo"));
@@ -75,6 +76,8 @@ const App = () => (
             <Route path="/price" element={<Pricing />} />
             {/* Новые цены 2026–2027: пока без перехода с главной */}
             <Route path="/price_2026-2027" element={<Pricing20262027 />} />
+            {/* Прямые ссылки на оплату конкретной услуги */}
+            <Route path="/pay/:slug" element={<PayOfferPage />} />
             <Route path="/oferta_2025" element={<OfferPage />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/sveden" element={<EducationInfo />} />
