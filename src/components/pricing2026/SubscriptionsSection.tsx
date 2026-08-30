@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Icon from '@/components/ui/icon';
-import DiscountRibbon from './DiscountRibbon';
 import { formatPrice, pricingSections } from './data';
 
 export default function SubscriptionsSection() {
@@ -86,9 +85,6 @@ export default function SubscriptionsSection() {
                                 Популярный
                               </span>
                             </div>
-                          )}
-                          {plan.discountPercent && (
-                            <DiscountRibbon percent={plan.discountPercent} />
                           )}
 
                           <div className="text-center flex flex-col h-full">
