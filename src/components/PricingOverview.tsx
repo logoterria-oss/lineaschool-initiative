@@ -8,12 +8,16 @@ import { pricingSections } from "@/components/pricing2026/data";
  * Краткий блок цен на главной. Цифры не дублируются руками, а считаются из
  * общих данных тарифов — чтобы главная и страница цен не расходились.
  */
+/** Степень выраженности нарушения — растёт вместе с числом уроков в неделю. */
+const severityBadges = ["Лёгкая степень", "Средняя степень", "Тяжёлая степень"];
+
 const overviewPlans = pricingSections.map((section, index) => {
   const monthPlan = section.plans[0];
   const minPricePerLesson = Math.min(...section.plans.map((p) => p.pricePerLesson));
 
   return {
     title: section.title,
+    severity: severityBadges[index],
     cases: Array.isArray(section.description) ? section.description : [section.description],
     priceFrom: minPricePerLesson,
     lessonsPerMonth: monthPlan.groupLessons + monthPlan.individualLessons,
@@ -46,13 +50,11 @@ export default function PricingOverview() {
                   : "border border-gray-200 shadow-sm"
               }`}
             >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold px-4 py-1 rounded-full shadow-md whitespace-nowrap">
-                    Популярный
-                  </span>
-                </div>
-              )}
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold px-4 py-1 rounded-full shadow-md whitespace-nowrap">
+                  {plan.severity}
+                </span>
+              </div>
 
               <div className="text-center pt-2">
                 <h3 className="text-xl font-bold text-gray-900 mb-3">{plan.title}</h3>
