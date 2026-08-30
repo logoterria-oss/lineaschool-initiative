@@ -42,12 +42,29 @@ const lessonsWord = (count: number) => {
   return 'уроков';
 };
 
+/** «8 индивидуальных занятий», «1 групповое занятие» — с правильными окончаниями. */
+const lessons = (count: number, kind: 'групповое' | 'индивидуальное') => {
+  const many = kind === 'групповое' ? 'групповых' : 'индивидуальных';
+  const tail = count % 100;
+  const last = count % 10;
+  if (tail < 11 || tail > 14) {
+    if (last === 1) return `${count} ${kind} занятие`;
+    if (last >= 2 && last <= 4) return `${count} ${many} занятия`;
+  }
+  return `${count} ${many} занятий`;
+};
+
 /** Собирает состав занятий одинаково для всех абонементов. */
 const composition = (group: number, individual: number, interim?: number) => {
   const rows: PayOption['details'] = [];
-  if (group) rows.push({ icon: 'Users', color: 'text-blue-500', text: `${group} групповых` });
+  if (group)
+    rows.push({ icon: 'Users', color: 'text-blue-500', text: lessons(group, 'групповое') });
   if (individual)
-    rows.push({ icon: 'User', color: 'text-green-500', text: `${individual} индивидуальных` });
+    rows.push({
+      icon: 'User',
+      color: 'text-green-500',
+      text: lessons(individual, 'индивидуальное'),
+    });
   if (interim)
     rows.push({
       icon: 'ClipboardCheck',
