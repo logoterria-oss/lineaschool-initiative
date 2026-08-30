@@ -1,45 +1,49 @@
 /**
- * Уголок со скидкой — красная лента, перекинутая через правый верхний угол
- * карточки. Рисуем на SVG: сама лента идёт по диагонали, а по краям видны
- * тёмные «загибы», как будто она заворачивается за карточку.
+ * Уголок со скидкой — широкая красная лента, перекинутая через правый верхний
+ * угол карточки, с загнутыми «хвостами» по краям.
+ *
+ * Рисуем на SVG в системе координат 120×120, где угол карточки находится в
+ * точке (106, 14). Сам блок смещён на 14px вверх и вправо, поэтому хвосты
+ * выходят за карточку и лента выглядит наброшенной сверху.
  */
 export default function DiscountRibbon({ percent }: { percent: number }) {
   const id = `ribbon-${percent}`;
 
   return (
     <svg
-      viewBox="0 0 112 112"
-      className="pointer-events-none absolute -top-[13px] -right-[13px] w-28 h-28"
+      viewBox="0 0 120 120"
+      className="pointer-events-none absolute -top-[16px] -right-[16px] w-[136px] h-[136px]"
       aria-hidden
     >
       <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#ff4d4d" />
-          <stop offset="55%" stopColor="#e11d1d" />
-          <stop offset="100%" stopColor="#a80000" />
+        {/* Свет падает со стороны угла: у верхней кромки лента светлее */}
+        <linearGradient id={id} x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stopColor="#a00000" />
+          <stop offset="45%" stopColor="#e00000" />
+          <stop offset="85%" stopColor="#ff2020" />
+          <stop offset="100%" stopColor="#ff7070" />
         </linearGradient>
       </defs>
 
-      {/* Загибы ленты за карточку — тёмные, лежат под основной полосой */}
-      <polygon points="16,0 3,0 16,13" fill="#7f0000" />
-      <polygon points="112,96 112,109 99,96" fill="#7f0000" />
+      {/* Хвосты — уходят за карточку, поэтому тёмные */}
+      <polygon points="18,14 18,0 32,14" fill="#8f0000" />
+      <polygon points="106,102 120,102 106,116" fill="#8f0000" />
 
-      {/* Основная полоса через угол */}
-      <polygon points="16,0 52,0 112,60 112,96" fill={`url(#${id})`} />
+      {/* Полотно ленты через угол */}
+      <polygon points="18,14 70,14 106,50 106,102" fill={`url(#${id})`} />
 
-      {/* Блик вдоль верхнего края полосы */}
-      <polygon points="16,0 22,0 112,90 112,96" fill="#ffffff" opacity="0.18" />
+      {/* Блик вдоль верхней кромки */}
+      <polygon points="70,14 106,50 106,42 78,14" fill="#ffffff" opacity="0.35" />
 
       <text
-        x="70"
-        y="42"
-        transform="rotate(45 70 42)"
+        x="72"
+        y="48"
+        transform="rotate(45 72 48)"
         textAnchor="middle"
         dominantBaseline="middle"
         fill="#ffffff"
-        fontSize="17"
+        fontSize="20"
         fontWeight="700"
-        letterSpacing="0.5"
       >
         −{percent}%
       </text>
