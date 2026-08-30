@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import Icon from '@/components/ui/icon';
 import {
   DIAGNOSTIC_INTERIM,
   DIAGNOSTIC_PRIMARY,
@@ -26,9 +27,13 @@ export default function DiagnosticsSection() {
 
           <div className="text-center mb-4 mt-2">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Первичная диагностика</h3>
-            <p className="text-gray-600 text-sm mb-4">
+            <p className="text-gray-600 text-sm mb-2">
               Полное обследование чтения и письма, консультация и индивидуальный план коррекции
             </p>
+            <div className="flex items-center justify-center gap-1.5 text-sm text-gray-500 mb-4">
+              <Icon name="Clock" size={14} className="text-gray-400 flex-shrink-0" />
+              <span>90–120 минут</span>
+            </div>
             <div className="flex items-center justify-center gap-3">
               <span className="text-3xl font-bold text-green-600">
                 {formatPrice(DIAGNOSTIC_PRIMARY.price)}
@@ -46,9 +51,13 @@ export default function DiagnosticsSection() {
         <Card className="p-6 border-2 border-gray-200 flex flex-col">
           <div className="text-center mb-4 mt-2">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Промежуточная диагностика</h3>
-            <p className="text-gray-600 text-sm mb-4">
+            <p className="text-gray-600 text-sm mb-2">
               Контроль динамики в процессе обучения: что уже изменилось и куда двигаться дальше
             </p>
+            <div className="flex items-center justify-center gap-1.5 text-sm text-gray-500 mb-4">
+              <Icon name="Clock" size={14} className="text-gray-400 flex-shrink-0" />
+              <span>40–50 минут</span>
+            </div>
             <div className="flex items-center justify-center">
               <span className="text-3xl font-bold text-gray-900">
                 {formatPrice(DIAGNOSTIC_INTERIM.price)}
