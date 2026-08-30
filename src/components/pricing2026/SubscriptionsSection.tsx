@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Icon from '@/components/ui/icon';
+import DiscountRibbon from './DiscountRibbon';
 import { formatPrice, pricingSections } from './data';
 
 export default function SubscriptionsSection() {
@@ -80,18 +81,14 @@ export default function SubscriptionsSection() {
                           }`}
                         >
                           {plan.popular && (
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <div className="absolute -top-3 left-6">
                               <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
                                 Популярный
                               </span>
                             </div>
                           )}
                           {plan.discountPercent && (
-                            <div className="absolute top-4 right-4">
-                              <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-semibold">
-                                −{plan.discountPercent}%
-                              </span>
-                            </div>
+                            <DiscountRibbon percent={plan.discountPercent} />
                           )}
 
                           <div className="text-center flex flex-col h-full">
