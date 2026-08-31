@@ -1218,7 +1218,7 @@ def handler(event: dict, context) -> dict:
                 name = (c.get("name") or "").strip()
                 if name:
                     student_names[cid] = name
-                born = _parse_group_date(c.get("dob") or c.get("b_date") or "")
+                born = _parse_group_date(c.get("dob") or "")
                 if not born:
                     continue
                 years = today_d.year - born.year - (

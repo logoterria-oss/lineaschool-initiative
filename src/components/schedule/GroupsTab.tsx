@@ -359,7 +359,7 @@ const GroupsTab = () => {
                               }
                               const c = customers[sid];
                               const name = formatStudentName(c?.name) || `id ${sid}`;
-                              const rawAge = calcAge(c?.dob || c?.b_date);
+                              const rawAge = calcAge(c?.dob);
                               const age = shouldForceManualAge(name)
                                 ? manualAge(name)
                                 : rawAge ?? manualAge(name);
