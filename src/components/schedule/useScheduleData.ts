@@ -312,15 +312,16 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       if (startPeriod === -1) continue; // нестабильно — не предлагаем
 
       // Дату «с …» показываем, только если окна нет на текущей неделе (период 0)
-      let fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
+      const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 
-      // Педагог в отпуске: окно предлагаем, но с даты выхода. Берём самую
-      // позднюю из двух дат — отпуск не должен «перебиваться» ранней датой.
+      // Педагог в отпуске: окно откроется только после выхода. Родителю,
+      // который готов начать раньше, такое окно не подходит — не показываем.
+      // Проверяем все недели периода: отпуск может начаться не с первой.
+      const onVacation = Array.from({ length: STABLE_WEEKS }).some(
+        (_, k) => !!indSlotAt(startPeriod + k, c.dayOffset, c.time, c.teacherId)?.available_from,
+      );
+      if (onVacation) continue;
       const slot = indSlotAt(startPeriod, c.dayOffset, c.time, c.teacherId);
-      if (slot?.available_from) {
-        const availFrom = new Date(`${slot.available_from}T00:00:00`);
-        if (!fromDate || availFrom > fromDate) fromDate = availFrom;
-      }
       if (slot?.time_to) timeToByKey[`${c.dayOffset}__${c.time}`] = slot.time_to;
       byDay[c.dayOffset] ||= {};
       byDay[c.dayOffset][c.time] ||= [];
