@@ -4,6 +4,7 @@ import json
 import requests
 import psycopg2
 from datetime import datetime, timedelta, date
+from concurrent.futures import ThreadPoolExecutor
 
 HW_START_DATE = "2026-06-01"
 
@@ -184,11 +185,16 @@ def get_lessons_all_statuses(token: str, date_from: str, date_to: str) -> list:
     Чтобы получить запланированные — делаем отдельные запросы по каждому статусу и склеиваем."""
     seen = set()
     out = []
-    for status_arg in (None, 1, 2):
+
+    def _one(status_arg):
         try:
-            chunk = get_lessons(token, date_from, date_to, status=status_arg)
+            return get_lessons(token, date_from, date_to, status=status_arg)
         except Exception:
-            chunk = []
+            return []
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        chunks = list(pool.map(_one, (None, 1, 2)))
+    for chunk in chunks:
         for ls in chunk:
             lid = ls.get("id")
             if lid in seen:
@@ -341,16 +347,26 @@ def get_customers(token: str) -> list:
     merged = []
     # 4 прохода: активные ученики, активные лиды, ушедшие ученики, ушедшие лиды.
     # S20 по умолчанию отдаёт только активных, поэтому removed=1 обязательно.
-    for is_study_flag, removed_flag in ((1, 0), (0, 0), (1, 1), (0, 1)):
+    # Проходы идут параллельно — последовательно это самая долгая часть запроса.
+    combos = ((1, 0), (0, 0), (1, 1), (0, 1))
+
+    def _one_combo(combo):
+        is_study_flag, removed_flag = combo
         try:
-            for it in _fetch_customers_raw(token, is_study=is_study_flag, removed=removed_flag):
-                cid = it.get("id")
-                if cid in seen:
-                    continue
-                seen.add(cid)
-                merged.append(it)
+            return _fetch_customers_raw(token, is_study=is_study_flag, removed=removed_flag)
         except Exception as e:
             print(f"customers fetch is_study={is_study_flag} removed={removed_flag} failed: {e}")
+            return []
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        chunks = list(pool.map(_one_combo, combos))
+    for chunk in chunks:
+        for it in chunk:
+            cid = it.get("id")
+            if cid in seen:
+                continue
+            seen.add(cid)
+            merged.append(it)
     light = []
     for it in merged:
         dob = it.get("dob") or it.get("birthday") or it.get("birth_date")
@@ -1089,16 +1105,39 @@ def handler(event: dict, context) -> dict:
 
     if mode == "groups_week":
         MAX_GROUP_SIZE = 6
+        # Все справочники S20 тянем параллельно: последовательно функция
+        # не укладывается в лимит времени и страница брони получает ошибку.
         try:
-            lessons = get_lessons_all_statuses(token, date_from, date_to)
-            lessons = filter_lessons_by_groups(lessons, build_group_filter(token))
-            teachers = get_teachers(token)
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                f_lessons = pool.submit(get_lessons_all_statuses, token, date_from, date_to)
+                f_groups = pool.submit(get_groups, token)
+                f_teachers = pool.submit(get_teachers, token)
+                f_customers = pool.submit(get_customers, token)
+                lessons = f_lessons.result()
+                teachers = f_teachers.result()
+                raw_groups = f_groups.result()
         except Exception as e:
             return {
                 "statusCode": 502,
                 "headers": {**cors_headers, "Content-Type": "application/json"},
                 "body": json.dumps({"error": f"S20 fetch failed: {str(e)}"}, ensure_ascii=False),
             }
+
+        periods = {}
+        service = set()
+        group_names = {}
+        for g in raw_groups:
+            gid = g.get("id")
+            if gid is None:
+                continue
+            group_names[gid] = (g.get("name") or "").strip()
+            if _is_service_group(g.get("name") or ""):
+                service.add(gid)
+            periods[gid] = {
+                "b_date": _parse_group_date(g.get("b_date")),
+                "e_date": _parse_group_date(g.get("e_date")),
+            }
+        lessons = filter_lessons_by_groups(lessons, {"periods": periods, "service": service})
 
         teacher_short = {}
         for t in teachers:
@@ -1111,14 +1150,6 @@ def handler(event: dict, context) -> dict:
                 teacher_short[tid] = parts[0]
             else:
                 teacher_short[tid] = f"{parts[0]} {parts[1][0]}."
-
-        # Названия групп: у педагога в одно время может идти две группы
-        group_names = {}
-        try:
-            for g in get_groups(token):
-                group_names[g.get("id")] = (g.get("name") or "").strip()
-        except Exception as e:
-            print(f"groups_week names failed: {e}")
 
         rows: dict = {}
         for lesson in lessons:
@@ -1213,7 +1244,7 @@ def handler(event: dict, context) -> dict:
         student_names = {}
         try:
             today_d = date.today()
-            for c in get_customers(token):
+            for c in f_customers.result():
                 cid = c.get("id")
                 name = (c.get("name") or "").strip()
                 if name:
