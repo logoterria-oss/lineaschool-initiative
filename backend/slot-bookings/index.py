@@ -563,19 +563,34 @@ def handler(event: dict, context) -> dict:
                     pool.submit(_fetch_free_slots, df, dt)
                     if lesson_type in ('individual', 'both') else None
                 )
-                grp_futures = [
+                # Раньше группы просили понедельно — четыре тяжёлых запроса,
+                # и функция не укладывалась в лимит. Теперь расписание само
+                # отдаёт разбивку по неделям одним ответом.
+                grp_future = (
                     pool.submit(
                         _fetch_group_rows,
-                        week_slots.fmt(ws),
-                        week_slots.fmt(ws + timedelta(days=6)),
+                        df,
+                        week_slots.fmt(starts[-1] + timedelta(days=6)),
                     )
-                    for ws in starts
-                ] if lesson_type in ('groups', 'both') else []
+                    if lesson_type in ('groups', 'both') else None
+                )
 
                 if ind_future:
                     ind_days = week_slots.build_individual(ind_future.result(), start, taken)
-                if grp_futures:
-                    raw_weeks = [f.result() for f in grp_futures]
+                if grp_future:
+                    payload = grp_future.result() or {}
+                    weeks_data = payload.get('weeks')
+                    if weeks_data:
+                        raw_weeks = [
+                            {
+                                'rows': wk,
+                                'max_size': payload.get('max_size'),
+                                'student_names': payload.get('student_names'),
+                            }
+                            for wk in weeks_data
+                        ]
+                    else:
+                        raw_weeks = [payload] if payload else []
                     max_size = next((int(r.get('max_size') or 6) for r in raw_weeks if r), 6)
                     crm_names: Dict[int, str] = {}
                     for r in raw_weeks:

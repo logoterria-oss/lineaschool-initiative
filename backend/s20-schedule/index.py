@@ -1152,6 +1152,19 @@ def handler(event: dict, context) -> dict:
                 teacher_short[tid] = f"{parts[0]} {parts[1][0]}."
 
         rows: dict = {}
+        # Страница брони смотрит несколько недель подряд, но ячейки строк
+        # ключуются днём недели: без разбивки недели затирают друг друга.
+        # Поэтому параллельно собираем те же строки отдельно по неделям —
+        # так родителю хватает ОДНОГО запроса вместо четырёх.
+        week_rows: dict = {}
+
+        def _week_key(d_obj):
+            try:
+                base = datetime.strptime(date_from, "%Y-%m-%d").date()
+            except Exception:
+                return 0
+            return max(0, (d_obj - base).days // 7)
+
         for lesson in lessons:
             # Те же правила, что в админке «Расписание → Группы»: только
             # групповые занятия, запланированные (1) и проведённые (3)
@@ -1168,6 +1181,7 @@ def handler(event: dict, context) -> dict:
             except Exception:
                 continue
             weekday = d.weekday()
+            wk = _week_key(d)
 
             time_from = lesson.get("time_from") or ""
             if " " in time_from:
@@ -1219,15 +1233,30 @@ def handler(event: dict, context) -> dict:
                     "group_id": group_id,
                     "group_name": group_names.get(group_id, ""),
                 }
+            cell_data = {
+                "date": lesson_date,
+                "enrolled": enrolled,
+                "free": max(0, MAX_GROUP_SIZE - enrolled),
+                "lesson_id": lesson.get("id"),
+                "student_ids": sorted(students),
+            }
             cell = rows[row_key]["cells"].get(weekday)
             if cell is None or enrolled > cell["enrolled"]:
-                rows[row_key]["cells"][weekday] = {
-                    "date": lesson_date,
-                    "enrolled": enrolled,
-                    "free": max(0, MAX_GROUP_SIZE - enrolled),
-                    "lesson_id": lesson.get("id"),
-                    "student_ids": sorted(students),
+                rows[row_key]["cells"][weekday] = cell_data
+
+            wk_rows = week_rows.setdefault(wk, {})
+            if row_key not in wk_rows:
+                wk_rows[row_key] = {
+                    "time": time_from,
+                    "teacher_id": teacher_id,
+                    "teacher_name": teacher_short.get(teacher_id, f"#{teacher_id}"),
+                    "cells": {},
+                    "group_id": group_id,
+                    "group_name": group_names.get(group_id, ""),
                 }
+            w_cell = wk_rows[row_key]["cells"].get(weekday)
+            if w_cell is None or enrolled > w_cell["enrolled"]:
+                wk_rows[row_key]["cells"][weekday] = dict(cell_data)
 
         out_rows = [
             data
@@ -1268,6 +1297,20 @@ def handler(event: dict, context) -> dict:
                 "date_from": date_from,
                 "date_to": date_to,
                 "rows": out_rows,
+                "weeks": [
+                    [
+                        data
+                        for _, data in sorted(
+                            (week_rows.get(w) or {}).items(),
+                            key=lambda kv: (
+                                kv[0][0],
+                                kv[1]["teacher_name"],
+                                str(kv[1].get("group_name") or ""),
+                            ),
+                        )
+                    ]
+                    for w in range(max(week_rows) + 1 if week_rows else 0)
+                ],
                 "student_ages": ages,
                 "student_names": student_names,
             }, ensure_ascii=False),
