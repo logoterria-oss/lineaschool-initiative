@@ -58,6 +58,10 @@ export interface SlotTeacher {
   teacherId: number;
   teacherName: string;
   availableFrom?: string | null;
+  /** Педагог в отпуске — занятия ведёт этот коллега */
+  substituteName?: string | null;
+  /** Последний день замены (ISO) */
+  substituteUntil?: string | null;
 }
 
 /** Индивидуальное окно: время + список свободных педагогов */

@@ -92,6 +92,16 @@ const ExportPdfPreview = ({
                           {t.fromDate && (
                             <span style={{ color: '#b45309', fontWeight: 600 }}> ({fmtFrom(t.fromDate)})</span>
                           )}
+                          {t.substituteName && (
+                            <span style={{ color: '#b45309', fontWeight: 600 }}>
+                              {' '}
+                              — до{' '}
+                              {t.substituteUntil
+                                ? fmtRu(new Date(`${t.substituteUntil}T00:00:00`))
+                                : ''}{' '}
+                              заменяет {t.substituteName}
+                            </span>
+                          )}
                         </span>
                       ))}
                     </div>

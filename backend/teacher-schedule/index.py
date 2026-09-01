@@ -148,13 +148,13 @@ def get_absences(event: dict) -> dict:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             if teacher_id:
                 cur.execute(
-                    "SELECT id, teacher_id, kind, date_from, date_to, time_from, time_to, note "
+                    "SELECT id, teacher_id, kind, date_from, date_to, time_from, time_to, note, substitute_name "
                     "FROM teacher_absences WHERE teacher_id = %s ORDER BY date_from",
                     (int(teacher_id),),
                 )
             else:
                 cur.execute(
-                    "SELECT id, teacher_id, kind, date_from, date_to, time_from, time_to, note "
+                    "SELECT id, teacher_id, kind, date_from, date_to, time_from, time_to, note, substitute_name "
                     "FROM teacher_absences ORDER BY teacher_id, date_from"
                 )
             rows = cur.fetchall()
@@ -194,16 +194,18 @@ def add_absence(event: dict) -> dict:
         time_to = None
 
     note = str(body.get("note") or "")
+    # Кто подменяет педагога на время отпуска. Пусто — замены нет.
+    substitute = str(body.get("substitute_name") or "").strip()
 
     conn = db_conn()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 "INSERT INTO teacher_absences "
-                "(teacher_id, teacher_name, kind, date_from, date_to, time_from, time_to, note) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
-                "RETURNING id, teacher_id, kind, date_from, date_to, time_from, time_to, note",
-                (teacher_id, TEACHERS[teacher_id], kind, date_from, date_to, time_from, time_to, note),
+                "(teacher_id, teacher_name, kind, date_from, date_to, time_from, time_to, note, substitute_name) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "RETURNING id, teacher_id, kind, date_from, date_to, time_from, time_to, note, substitute_name",
+                (teacher_id, TEACHERS[teacher_id], kind, date_from, date_to, time_from, time_to, note, substitute),
             )
             row = cur.fetchone()
             conn.commit()

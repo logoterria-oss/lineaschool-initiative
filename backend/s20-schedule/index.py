@@ -42,6 +42,7 @@ def get_teacher_absences_from_db() -> dict:
                 "date_to": str(row.get("date_to"))[:10],
                 "time_from": (str(row["time_from"])[:5] if row.get("time_from") else None),
                 "time_to": (str(row["time_to"])[:5] if row.get("time_to") else None),
+                "substitute_name": (row.get("substitute_name") or "").strip(),
             })
     except Exception as e:
         print(f"Absences DB error: {e}")
@@ -1406,13 +1407,18 @@ def handler(event: dict, context) -> dict:
                         teacher_absences = absences.get(int(teacher_id))
                         covering = absence_covering_slot(teacher_absences, date_str, tf, tt)
                         available_from = None
+                        substitute = ""
                         if covering is not None:
                             if covering.get("kind") == "vacation":
-                                available_from = next_available_date(
-                                    teacher_absences, date_str, tf, tt
-                                )
-                                if not available_from:
-                                    continue
+                                # На отпуск назначили замену — окно обычное,
+                                # просто занятие проведёт другой педагог
+                                substitute = (covering.get("substitute_name") or "").strip()
+                                if not substitute:
+                                    available_from = next_available_date(
+                                        teacher_absences, date_str, tf, tt
+                                    )
+                                    if not available_from:
+                                        continue
                             else:
                                 # Обычный выходной — как и раньше, окна нет
                                 continue
@@ -1437,6 +1443,9 @@ def handler(event: dict, context) -> dict:
                             entry["lesson_id"] = booked_lesson_id
                         if available_from:
                             entry["available_from"] = available_from
+                        if substitute:
+                            entry["substitute_name"] = substitute
+                            entry["substitute_until"] = covering.get("date_to")
                         slots_for_day.append(entry)
 
                 slots_for_day.sort(key=lambda s: (s["time_from"], s["teacher_name"]))

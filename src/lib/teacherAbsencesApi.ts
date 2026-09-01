@@ -11,6 +11,8 @@ export interface Absence {
   time_from: string | null;
   time_to: string | null;
   note?: string;
+  /** Кто заменяет педагога на время отпуска */
+  substitute_name?: string;
 }
 
 export const fetchAbsences = async (teacherId: number): Promise<Absence[]> => {
@@ -27,6 +29,7 @@ export const addAbsence = async (input: {
   date_to?: string;
   time_from?: string | null;
   time_to?: string | null;
+  substitute_name?: string;
 }): Promise<Absence | null> => {
   const res = await fetch(`${TEACHER_SCHEDULE_URL}?resource=absences`, {
     method: 'POST',

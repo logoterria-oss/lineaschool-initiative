@@ -32,6 +32,22 @@ const FromDate = ({ iso, light }: { iso?: string | null; light?: boolean }) =>
     </div>
   ) : null;
 
+/** Педагог в отпуске — до указанной даты занятия ведёт замена */
+const Substitute = ({
+  name,
+  until,
+  light,
+}: {
+  name?: string | null;
+  until?: string | null;
+  light?: boolean;
+}) =>
+  name ? (
+    <div className={`text-[11px] font-medium ${light ? 'text-amber-100' : 'text-amber-600'}`}>
+      {until ? `до ${fmtRu(until)} заменяет ${name}` : `заменяет ${name}`}
+    </div>
+  ) : null;
+
 interface IndividualDayProps {
   day: FreeDay;
   /** Выбранные окна: ребёнок может ходить несколько раз в неделю */
@@ -78,6 +94,11 @@ export const IndividualDay = ({ day, selected, onToggle }: IndividualDayProps) =
                   <span>
                     <span className="text-sm block">{t.teacherName}</span>
                     <FromDate iso={t.availableFrom} light={active} />
+                    <Substitute
+                      name={t.substituteName}
+                      until={t.substituteUntil}
+                      light={active}
+                    />
                   </span>
                 </button>
               );

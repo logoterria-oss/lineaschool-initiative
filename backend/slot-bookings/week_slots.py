@@ -159,10 +159,23 @@ def build_individual(
             'timeTo': lesson_end(time),
             'teachers': [],
         })
+        # Педагог в отпуске, но его подменяет коллега: занятия идут как обычно,
+        # родителю честно пишем, кто их проведёт и до какого числа.
+        substitute = ''
+        substitute_until = None
+        for k in range(STABLE_WEEKS):
+            s = index.get((off + k * 7, time, teacher)) or {}
+            if s.get('substitute_name'):
+                substitute = s['substitute_name']
+                substitute_until = s.get('substitute_until')
+                break
+
         entry['teachers'].append({
             'teacherId': teacher,
             'teacherName': slot.get('teacher_name') or '',
             'availableFrom': None,
+            'substituteName': substitute or None,
+            'substituteUntil': substitute_until,
         })
 
     return _to_days(by_day, start, key='slots')

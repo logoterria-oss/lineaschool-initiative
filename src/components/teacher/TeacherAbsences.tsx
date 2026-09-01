@@ -24,6 +24,7 @@ interface FormState {
   wholeDay: boolean;
   timeFrom: string;
   timeTo: string;
+  substitute: string;
 }
 
 const emptyForm = (kind: AbsenceKind): FormState => ({
@@ -33,6 +34,7 @@ const emptyForm = (kind: AbsenceKind): FormState => ({
   wholeDay: true,
   timeFrom: '09:00',
   timeTo: '10:00',
+  substitute: '',
 });
 
 const TeacherAbsences = ({ teacherId }: { teacherId: number }) => {
@@ -67,6 +69,7 @@ const TeacherAbsences = ({ teacherId }: { teacherId: number }) => {
         date_to: form.kind === 'vacation' ? form.dateTo : form.dateFrom,
         time_from: form.kind === 'dayoff' && !form.wholeDay ? form.timeFrom : null,
         time_to: form.kind === 'dayoff' && !form.wholeDay ? form.timeTo : null,
+        substitute_name: form.kind === 'vacation' ? form.substitute.trim() : '',
       });
       setForm(null);
       await load();
@@ -188,6 +191,21 @@ const TeacherAbsences = ({ teacherId }: { teacherId: number }) => {
                   className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
+              <div className="w-full">
+                <label className="text-xs text-gray-500 block mb-1">
+                  Кто заменяет (необязательно)
+                </label>
+                <input
+                  type="text"
+                  value={form.substitute}
+                  onChange={(e) => setForm({ ...form, substitute: e.target.value })}
+                  placeholder="Например: Ирина Зинченко"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Если указать замену, окна педагога останутся доступны для записи
+                </p>
+              </div>
             </div>
           )}
 
@@ -245,6 +263,9 @@ const TeacherAbsences = ({ teacherId }: { teacherId: number }) => {
                   <Icon name="Palmtree" size={16} className="text-amber-600 flex-shrink-0" />
                   <span className="text-sm text-gray-800">
                     Отпуск {fmtDate(a.date_from)} — {fmtDate(a.date_to)}
+                    {a.substitute_name && (
+                      <span className="text-amber-700"> · заменяет {a.substitute_name}</span>
+                    )}
                   </span>
                   <button
                     onClick={() => remove(a.id)}

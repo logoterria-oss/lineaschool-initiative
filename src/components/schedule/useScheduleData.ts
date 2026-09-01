@@ -31,7 +31,13 @@ export interface IndStableDay {
   items: {
     time: string;
     timeTo?: string;
-    teachers: { name: string; id: number; fromDate: Date | null }[];
+    teachers: {
+      name: string;
+      id: number;
+      fromDate: Date | null;
+      substituteName?: string | null;
+      substituteUntil?: string | null;
+    }[];
   }[];
 }
 
@@ -296,7 +302,16 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
 
     const byDay: Record<
       number,
-      Record<string, { name: string; id: number; fromDate: Date | null }[]>
+      Record<
+        string,
+        {
+          name: string;
+          id: number;
+          fromDate: Date | null;
+          substituteName?: string | null;
+          substituteUntil?: string | null;
+        }[]
+      >
     > = {};
     // Конец окна нужен для брони; в PDF он не показывается
     const timeToByKey: Record<string, string> = {};
@@ -314,9 +329,9 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       // Дату «с …» показываем, только если окна нет на текущей неделе (период 0)
       const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 
-      // Педагог в отпуске: окно откроется только после выхода. Родителю,
-      // который готов начать раньше, такое окно не подходит — не показываем.
-      // Проверяем все недели периода: отпуск может начаться не с первой.
+      // Педагог в отпуске без замены: окно откроется только после выхода.
+      // Родителю, который готов начать раньше, оно не подходит. Если замена
+      // назначена, бэкенд available_from не присылает — окно обычное.
       const onVacation = Array.from({ length: STABLE_WEEKS }).some(
         (_, k) => !!indSlotAt(startPeriod + k, c.dayOffset, c.time, c.teacherId)?.available_from,
       );
@@ -325,7 +340,13 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       if (slot?.time_to) timeToByKey[`${c.dayOffset}__${c.time}`] = slot.time_to;
       byDay[c.dayOffset] ||= {};
       byDay[c.dayOffset][c.time] ||= [];
-      byDay[c.dayOffset][c.time].push({ name: c.teacherName, id: c.teacherId, fromDate });
+      byDay[c.dayOffset][c.time].push({
+        name: c.teacherName,
+        id: c.teacherId,
+        fromDate,
+        substituteName: slot?.substitute_name,
+        substituteUntil: slot?.substitute_until,
+      });
     }
 
     for (let dayOffset = 0; dayOffset <= 6; dayOffset++) {
