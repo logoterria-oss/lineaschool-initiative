@@ -208,15 +208,26 @@ def build_groups(
     # разные группы, и без неё вторая пропадала бы из расписания.
     free_map: Dict[Tuple[int, str, int, Any], int] = {}
     names: Dict[Tuple[str, int, Any], str] = {}
-    # Если у педагога в одно время идут две группы, заявку списываем только с
-    # первой из них — иначе одно место вычлось бы у обеих
-    booking_group: Dict[Tuple[str, int], Any] = {}
+    # Если у педагога в один день и час идут две группы, заявку списываем
+    # только с первой из них — иначе одно место вычлось бы у обеих.
+    # День недели в ключе обязателен: у педагога группа во вторник и группа в
+    # четверг в одно время — это РАЗНЫЕ группы, и заявка четверга должна
+    # уменьшать места именно в четверговой.
+    booking_group: Dict[Tuple[int, str, int], Any] = {}
     for rows in weeks or []:
         for r in rows or []:
-            k = (r.get('time') or '', int(r.get('teacher_id') or 0))
             gid = r.get('group_id')
-            if k not in booking_group or str(gid) < str(booking_group[k]):
-                booking_group[k] = gid
+            for cell in (r.get('cells') or {}).values():
+                off = _offset(start, cell.get('date') or '')
+                if off < 0 or off >= DAYS_TO_LOAD:
+                    continue
+                k = (
+                    (start + timedelta(days=off)).weekday(),
+                    r.get('time') or '',
+                    int(r.get('teacher_id') or 0),
+                )
+                if k not in booking_group or str(gid) < str(booking_group[k]):
+                    booking_group[k] = gid
 
     for rows in weeks or []:
         for r in rows or []:
@@ -236,7 +247,7 @@ def build_groups(
                 sids = cell.get('student_ids') or []
                 in_crm = [crm_names.get(int(s), '') for s in sids]
                 mine = 0
-                if booking_group.get((time, teacher)) == group:
+                if booking_group.get((weekday, time, teacher)) == group:
                     mine = sum(
                         1
                         for child in booked.get((weekday, time, teacher), [])
