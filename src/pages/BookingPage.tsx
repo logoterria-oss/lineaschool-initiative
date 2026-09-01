@@ -258,6 +258,19 @@ const BookingPage = () => {
 
   const nothingFree = indDays.length === 0 && groupDays.length === 0;
 
+  // Группы делим на две половины недели: ребёнок обычно берёт по занятию
+  // из каждой, чтобы между уроками был перерыв. weekday: 0=ПН..6=ВС
+  const GROUP_HALVES = [
+    {
+      label: '1 половина недели (ПН–СР)',
+      days: groupDays.filter((d) => d.weekday <= 2),
+    },
+    {
+      label: '2 половина недели (ЧТ–ВС)',
+      days: groupDays.filter((d) => d.weekday >= 3),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -341,14 +354,35 @@ const BookingPage = () => {
                     {groupDays.length === 0 ? (
                       <EmptySection failed={groupsFailed} onRetry={() => load(startFrom)} />
                     ) : (
-                      groupDays.map((day) => (
-                        <GroupDayCard
-                          key={day.date}
-                          day={day}
-                          selected={grp.picks}
-                          onToggle={toggle(setGrp)}
-                        />
-                      ))
+                      <>
+                        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                          <Icon
+                            name="Info"
+                            size={16}
+                            className="text-amber-600 shrink-0 mt-0.5"
+                          />
+                          <p className="text-sm text-amber-900">
+                            Выберите по 1 занятию из 1 и 2 половины недели
+                          </p>
+                        </div>
+                        {GROUP_HALVES.map(({ label, days }) =>
+                          days.length === 0 ? null : (
+                            <div key={label} className="space-y-3">
+                              <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide pt-1">
+                                {label}
+                              </div>
+                              {days.map((day) => (
+                                <GroupDayCard
+                                  key={day.date}
+                                  day={day}
+                                  selected={grp.picks}
+                                  onToggle={toggle(setGrp)}
+                                />
+                              ))}
+                            </div>
+                          ),
+                        )}
+                      </>
                     )}
                   </div>
                 )}
