@@ -15,6 +15,7 @@ import {
   shouldForceManualAge,
   findAgeGroupRule,
 } from './types';
+import { Booking, fetchBookings } from '@/lib/bookingsApi';
 import {
   ScheduleType,
   IndDay,
@@ -93,6 +94,8 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   const [groupWeeks, setGroupWeeks] = useState<ReturnType<typeof buildGroupRowsFromLessons>[] | null>(null);
   const [customers, setCustomers] = useState<Record<number, Customer>>({});
   const [logoData, setLogoData] = useState<string>('');
+  // Заявки родителей: в CRM их ещё нет, но места и окна они уже занимают
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [ready, setReady] = useState(false);
 
   const onDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,6 +120,22 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
         } catch {
           /* не критично — PDF без логотипа */
         }
+      }
+
+      // Заявки с формы записи: ребёнка ещё не завели в CRM, но окно/место
+      // уже занято. Без них PDF предлагал бы то, что уже разобрали.
+      try {
+        const { bookings: bk } = await fetchBookings('all', true);
+        const flat: Booking[] = [];
+        for (const b of bk) {
+          if (b.status !== 'new' && b.status !== 'confirmed') continue;
+          for (const l of b.lessons?.length ? b.lessons : [b]) {
+            flat.push({ ...l, childName: l.childName || b.childName, status: b.status });
+          }
+        }
+        setBookings(flat);
+      } catch {
+        /* не критично — покажем только данные CRM */
       }
 
       // «Неделя» здесь — скользящее окно из 7 дней от даты старта:
@@ -249,10 +268,27 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
     return null;
   };
 
+  // Индивидуальные окна, занятые заявками с формы записи. Ключ — ДЕНЬ НЕДЕЛИ:
+  // ребёнок ходит к педагогу каждую неделю, поэтому окно занято и дальше.
+  const indBooked = (() => {
+    const set = new Set<string>();
+    for (const b of bookings) {
+      if (b.lessonType !== 'individual') continue;
+      const d = new Date(`${b.date}T00:00:00`);
+      if (Number.isNaN(d.getTime())) continue;
+      const wd = d.getDay() === 0 ? 6 : d.getDay() - 1;
+      set.add(`${wd}__${(b.timeFrom || '').slice(0, 5)}__${b.teacherId}`);
+    }
+    return set;
+  })();
+
   // Свободно ли индивид. окно (dayOffset, time, teacherId) в периоде period
   const isIndFree = (period: number, dayOffset: number, time: string, teacherId: number): boolean => {
     const s = indSlotAt(period, dayOffset, time, teacherId);
-    return !!s && !s.busy;
+    if (!s || s.busy) return false;
+    // Заявку родителя CRM ещё не видит, но окно уже занято
+    const wd = weekdayOf(dayOffset);
+    return !indBooked.has(`${wd}__${time.slice(0, 5)}__${teacherId}`);
   };
 
   // Стабильно ли окно STABLE_WEEKS периодов подряд, начиная с периода startPeriod.
@@ -375,6 +411,23 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   // В groupWeeks[period] ключ cell = dayOffset (0..6) от начала периода.
   // Возвращает null, если занятия в этом периоде НЕТ в CRM (расписание ещё не
   // заведено на будущее) — это не то же самое, что «занятие есть, но мест нет».
+  // Заявки в группы: ребёнка в CRM ещё нет (inCrm=false), но место занято.
+  // Ключ — день недели: в группу ходят каждую неделю.
+  const groupBookedCount = (dayOffset: number, time: string, teacherId: number): number => {
+    const wd = weekdayOf(dayOffset);
+    return bookings.filter((b) => {
+      if (b.lessonType !== 'groups' || b.inCrm) return false;
+      const d = new Date(`${b.date}T00:00:00`);
+      if (Number.isNaN(d.getTime())) return false;
+      const bwd = d.getDay() === 0 ? 6 : d.getDay() - 1;
+      return (
+        bwd === wd &&
+        (b.timeFrom || '').slice(0, 5) === time.slice(0, 5) &&
+        Number(b.teacherId) === teacherId
+      );
+    }).length;
+  };
+
   const groupFreeAt = (period: number, dayOffset: number, time: string, teacherId: number): number | null => {
     const week = groupWeeks?.[period];
     if (!week) return null;
@@ -382,7 +435,7 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
     if (!row) return null;
     const cell = row.cells[String(dayOffset)];
     if (!cell) return null;
-    return cell.free;
+    return Math.max(0, cell.free - groupBookedCount(dayOffset, time, teacherId));
   };
 
   // Окно считаем стабильным, если:
@@ -442,7 +495,8 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       const week = groupWeeks[startPeriod];
       const row = week.find((r) => r.time === c.time && r.teacher_id === c.teacherId);
       const cell = row?.cells[String(c.dayOffset)];
-      const free = cell?.free ?? 0;
+      // Из свободных мест вычитаем заявки, которых ещё нет в CRM
+      const free = groupFreeAt(startPeriod, c.dayOffset, c.time, c.teacherId) ?? 0;
       const weekday = weekdayOf(c.dayOffset); // 0=ПН..6=ВС
       // Группы с закреплённой возрастной категорией (см. AGE_GROUP_RULES)
       const rule = findAgeGroupRule(weekday, c.time);

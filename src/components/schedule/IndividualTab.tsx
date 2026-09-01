@@ -40,7 +40,17 @@ const IndividualTab = () => {
       // Брони показываем поверх окон: администратор сразу видит, что место занято заявкой
       try {
         const bk = await fetchBookings('all');
-        setBookings(bk.bookings.filter((b) => b.status !== 'rejected'));
+        // Заявка может содержать несколько занятий — разворачиваем,
+        // иначе видно только первое окно из отправки
+        const flat: Booking[] = [];
+        for (const b of bk.bookings) {
+          if (b.status === 'rejected') continue;
+          for (const l of b.lessons?.length ? b.lessons : [b]) {
+            if (l.lessonType && l.lessonType !== 'individual') continue;
+            flat.push({ ...l, childName: l.childName || b.childName, status: b.status });
+          }
+        }
+        setBookings(flat);
       } catch {
         setBookings([]);
       }
@@ -59,14 +69,21 @@ const IndividualTab = () => {
   const weekEnd = addDays(weekStart, 6);
   const weekLabel = `${fmtRu(weekStart)} – ${fmtRu(weekEnd)}`;
 
-  // Забронированные окна не считаем свободными
+  // Забронированные окна не считаем свободными. Сравниваем по ДНЮ НЕДЕЛИ:
+  // ребёнок ходит к педагогу каждую неделю, значит окно занято и дальше.
+  const weekdayOfIso = (iso: string) => new Date(`${iso}T00:00:00`).getDay();
   const isBooked = (date: string, time: string, teacherId: number) =>
-    bookings.some((b) => b.date === date && b.timeFrom === time && b.teacherId === teacherId);
+    bookings.some(
+      (b) =>
+        weekdayOfIso(b.date) === weekdayOfIso(date) &&
+        (b.timeFrom || '').slice(0, 5) === time.slice(0, 5) &&
+        Number(b.teacherId) === teacherId,
+    );
 
-  // Брони этого дня, отсортированные по времени
+  // Брони этого дня недели, отсортированные по времени
   const bookingsOfDay = (date: string) =>
     bookings
-      .filter((b) => b.date === date)
+      .filter((b) => weekdayOfIso(b.date) === weekdayOfIso(date))
       .sort((a, b) => a.timeFrom.localeCompare(b.timeFrom));
 
   // Группируем свободные слоты по времени внутри каждого дня
