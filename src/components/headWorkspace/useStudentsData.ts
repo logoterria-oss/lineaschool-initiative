@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   StudentRow,
   StatusFilter,
-  matchesFilter,
+  matchesAnyFilter,
   fetchStudents,
   saveStudentOverride,
 } from '@/lib/studentsApi';
@@ -11,7 +11,7 @@ export const useStudentsData = () => {
   const [items, setItems] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState<StatusFilter>('all_active');
+  const [filter, setFilter] = useState<StatusFilter[]>([]);
   const [tariffFilter, setTariffFilter] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
@@ -92,7 +92,7 @@ export const useStudentsData = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((i) => {
-      if (!matchesFilter(i.status_id, filter, i.vacation)) return false;
+      if (!matchesAnyFilter(i.status_id, filter, i.vacation)) return false;
       if (tariffFilter.length && !(i.tariff && tariffFilter.includes(i.tariff.name)))
         return false;
       if (q && !(i.name || '').toLowerCase().includes(q)) return false;

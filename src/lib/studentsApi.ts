@@ -158,6 +158,17 @@ export const vacationReturnDue = (v: StudentVacation | null): boolean => {
   );
 };
 
+// Несколько статусов сразу: строка подходит, если совпал ЛЮБОЙ из выбранных.
+// Пустой список = ничего не выбрано, показываем всех действующих.
+export const matchesAnyFilter = (
+  statusId: number | null,
+  filters: StatusFilter[],
+  vacation: StudentVacation | null = null,
+): boolean => {
+  if (!filters.length) return matchesFilter(statusId, 'all_active', vacation);
+  return filters.some((f) => matchesFilter(statusId, f, vacation));
+};
+
 export const matchesFilter = (
   statusId: number | null,
   filter: StatusFilter,

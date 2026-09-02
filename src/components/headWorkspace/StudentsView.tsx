@@ -3,7 +3,7 @@ import Icon from '@/components/ui/icon';
 import {
   StudentRow,
   StatusFilter,
-  matchesFilter,
+  matchesAnyFilter,
   fetchStudents,
 } from '@/lib/studentsApi';
 import { Tab, TABS, HintBox } from '@/components/students/studentsTableHelpers';
@@ -20,7 +20,7 @@ const StudentsView = () => {
   const [items, setItems] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState<StatusFilter>('all_active');
+  const [filter, setFilter] = useState<StatusFilter[]>([]);
   const [tariffFilter, setTariffFilter] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
@@ -49,7 +49,7 @@ const StudentsView = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((i) => {
-      if (!matchesFilter(i.status_id, filter, i.vacation)) return false;
+      if (!matchesAnyFilter(i.status_id, filter, i.vacation)) return false;
       if (tariffFilter.length && !(i.tariff && tariffFilter.includes(i.tariff.name)))
         return false;
       if (q && !(i.name || '').toLowerCase().includes(q)) return false;

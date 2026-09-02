@@ -19,8 +19,8 @@ const StudentsFilters = ({
   setSearch,
   compact = false,
 }: {
-  filter: StatusFilter;
-  setFilter: (f: StatusFilter) => void;
+  filter: StatusFilter[];
+  setFilter: (f: StatusFilter[]) => void;
   tariffFilter: string[];
   setTariffFilter: (v: string[]) => void;
   toggleTariff: (name: string) => void;
@@ -30,19 +30,54 @@ const StudentsFilters = ({
   compact?: boolean;
 }) => (
   <div className="flex flex-wrap items-center gap-2">
-    {/* Статус */}
+    {/* Статус (мультиселект): можно смотреть, например, активных
+        и «каникуляров — пора связаться» одновременно. */}
     {!compact && (
-      <select
-        value={filter}
-        onChange={(e) => setFilter(e.target.value as StatusFilter)}
-        className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
-      >
-        {STATUS_FILTERS.map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.label}
-          </option>
-        ))}
-      </select>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-700 inline-flex items-center gap-1.5 hover:border-purple-300">
+            <Icon name="Users" size={15} className="text-gray-400" />
+            {filter.length === 1
+              ? (STATUS_FILTERS.find((f) => f.id === filter[0])?.label ?? 'Статус')
+              : 'Статус'}
+            {filter.length > 1 && (
+              <span className="ml-0.5 text-xs bg-purple-600 text-white rounded-full px-1.5">
+                {filter.length}
+              </span>
+            )}
+            <Icon name="ChevronDown" size={14} className="text-gray-400" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-64 p-2">
+          {filter.length > 0 && (
+            <button
+              onClick={() => setFilter([])}
+              className="w-full text-left text-xs text-purple-600 hover:underline px-2 py-1 mb-1"
+            >
+              Сбросить выбор
+            </button>
+          )}
+          {STATUS_FILTERS.map((f) => (
+            <label
+              key={f.id}
+              className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer"
+            >
+              <Checkbox
+                checked={filter.includes(f.id)}
+                onCheckedChange={() =>
+                  setFilter(
+                    filter.includes(f.id)
+                      ? filter.filter((x) => x !== f.id)
+                      : [...filter, f.id],
+                  )
+                }
+                className="mt-0.5"
+              />
+              <span className="text-sm text-gray-700 leading-snug">{f.label}</span>
+            </label>
+          ))}
+        </PopoverContent>
+      </Popover>
     )}
 
     {/* Абонемент (мультиселект) */}
