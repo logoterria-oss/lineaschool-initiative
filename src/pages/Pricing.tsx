@@ -5,7 +5,7 @@ import PricingSection from "@/components/PricingSection";
 
 export default function Pricing() {
   useEffect(() => {
-    document.title = 'Стоимость занятий - ЛинэяСкул';
+    document.title = 'Архив цен - ЛинэяСкул';
 
     const setMeta = (attr: string, value: string, content: string) => {
       let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
@@ -17,10 +17,13 @@ export default function Pricing() {
       el.content = content;
     };
 
-    setMeta('name', 'description', 'Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии.');
-    setMeta('property', 'og:title', 'Стоимость занятий - ЛинэяСкул');
-    setMeta('property', 'og:description', 'Профессиональная помощь детям 8-18 лет с трудностями чтения и письма. Индивидуальные онлайн-занятия по коррекции дислексии и дисграфии.');
-    setMeta('property', 'og:url', 'https://lineaschool.ru/price');
+    // Архивный прайс: из поиска убираем, чтобы родители не попадали
+    // на неактуальные цены из выдачи
+    setMeta('name', 'robots', 'noindex, nofollow');
+    setMeta('name', 'description', 'Архив цен прошлого сезона. Актуальную стоимость занятий уточняйте у администратора.');
+    setMeta('property', 'og:title', 'Архив цен - ЛинэяСкул');
+    setMeta('property', 'og:description', 'Архив цен прошлого сезона.');
+    setMeta('property', 'og:url', 'https://lineaschool.ru/archiv_price');
 
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonical) {
@@ -28,7 +31,7 @@ export default function Pricing() {
       canonical.rel = 'canonical';
       document.head.appendChild(canonical);
     }
-    canonical.href = 'https://lineaschool.ru/price';
+    canonical.href = 'https://lineaschool.ru/archiv_price';
   }, []);
 
   return (

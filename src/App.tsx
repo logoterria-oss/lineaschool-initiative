@@ -75,7 +75,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/lineastudies" element={<LineaStudies />} />
-            <Route path="/price" element={<Pricing />} />
+            {/* Цены прошлого сезона. Адрес /price выключен, чтобы по старым
+                ссылкам нельзя было оплатить занятия по неактуальному прайсу */}
+            <Route path="/archiv_price" element={<Pricing />} />
             {/* Новые цены 2026–2027: пока без перехода с главной */}
             <Route path="/price_2026-2027" element={<Pricing20262027 />} />
             {/* Прямые ссылки на оплату конкретной услуги */}
