@@ -271,6 +271,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }, ensure_ascii=False),
             }
 
+        # Точечная проверка одного бота: кому и как доставилось
+        if params.get('action') == 'test-bot':
+            token_env = TG_BOTS.get(params.get('bot') or 'questionnaire')
+            token = os.environ.get(token_env or '')
+            if not token:
+                return {'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json',
+                                    'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'no token'})}
+            info = bot_info(token)
+            me = info.get('me') or {}
+            hook = info.get('webhook') or {}
+            targets = [params['chat']] if params.get('chat') else recipients()
+            sends = notify_all(token, targets, 'Проверка связи.', timeout=3.0)
+            return {'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({
+                        'bot_username': me.get('username'),
+                        'webhook_url': hook.get('url') or '',
+                        'sends': sends,
+                    }, ensure_ascii=False)}
+
         # Быстрая проверка ботов: шлём тестовое сообщение тем же надёжным
         # способом, что и боевые уведомления, чтобы результат совпадал
         # с реальной доставкой. Таймауты короткие — лимит функции 5 секунд.
