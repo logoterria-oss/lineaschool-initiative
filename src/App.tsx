@@ -75,12 +75,13 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/lineastudies" element={<LineaStudies />} />
-            {/* Цены прошлого сезона доступны только по прямой ссылке.
-                Старый адрес /price ведёт на актуальный прайс, чтобы по нему
-                нельзя было оплатить занятия по неактуальным ценам */}
-            <Route path="/archiv_price" element={<Pricing />} />
+            {/* Все старые адреса прайса ведут на актуальные цены: родители
+                приходили по ссылкам из переписок и платили по ценам прошлого
+                сезона. Архив с историческими цифрами (без оплаты) остаётся
+                по адресу /archiv_price/history для внутренних сверок */}
+            <Route path="/archiv_price" element={<Navigate to="/price_2026-2027" replace />} />
             <Route path="/price" element={<Navigate to="/price_2026-2027" replace />} />
-            {/* Новые цены 2026–2027: пока без перехода с главной */}
+            <Route path="/archiv_price/history" element={<Pricing />} />
             <Route path="/price_2026-2027" element={<Pricing20262027 />} />
             {/* Прямые ссылки на оплату конкретной услуги */}
             <Route path="/pay/:slug" element={<PayOfferPage />} />

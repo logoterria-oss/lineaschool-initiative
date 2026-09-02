@@ -125,13 +125,6 @@ const pricingData = [
 export default function PricingSection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [openSections, setOpenSections] = useState<number[]>([]);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [selectedSectionTitle, setSelectedSectionTitle] = useState<string>('');
-  const [childLastName, setChildLastName] = useState('');
-  const [childFirstName, setChildFirstName] = useState('');
-  const clientName = `${childLastName.trim()} ${childFirstName.trim()}`.trim();
-  const isNameValid = childLastName.trim().length >= 2 && childFirstName.trim().length >= 2;
 
   const toggleSection = (index: number) => {
     setOpenSections(prev => 
@@ -139,79 +132,6 @@ export default function PricingSection() {
         ? prev.filter(i => i !== index)
         : [...prev, index]
     );
-  };
-
-  const openPaymentModal = (plan: any, sectionTitle: string) => {
-    setSelectedPlan(plan);
-    setSelectedSectionTitle(sectionTitle);
-    setIsPaymentModalOpen(true);
-  };
-
-  const handlePayment = async () => {
-    if (!isNameValid || !selectedPlan) return;
-    
-    const amount = parseInt(selectedPlan.totalPrice.replace(/\s/g, '').replace('₽', '')) * 100;
-    const description = `${selectedSectionTitle} - ${selectedPlan.title}`;
-    const orderId = `ORDER_${Date.now()}`;
-    
-    console.log('Initiating payment:', { amount, description, orderId, name: clientName });
-    
-    try {
-      // Сохраняем данные клиента в БД
-      await fetch('https://functions.poehali.dev/99e752b7-e754-4be4-8fe8-1b666731a12c', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: clientName,
-          plan: `${selectedSectionTitle} - ${selectedPlan.title}`,
-          amount: amount / 100,
-          order_id: orderId
-        })
-      });
-
-      const response = await fetch('https://functions.poehali.dev/9f468e7d-1f22-4bde-8030-cd12879879e5', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          amount,
-          order: orderId,
-          description,
-          receipt: {
-            Email: 'info@lineaschool.ru',
-            Taxation: 'usn_income',
-            FfdVersion: '1.2',
-            Items: [
-              {
-                Name: description,
-                Price: amount,
-                Quantity: 1,
-                Amount: amount,
-                Tax: 'none',
-                PaymentMethod: 'full_prepayment',
-                PaymentObject: 'service',
-                MeasurementUnit: 'pc'
-              }
-            ]
-          }
-        })
-      });
-      
-      const result = await response.json();
-      console.log('Payment init result:', result);
-      
-      if (result.PaymentURL) {
-        window.location.href = result.PaymentURL;
-      } else {
-        alert(`Ошибка: ${result.error || 'Не удалось создать платёж'}`);
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      alert('Ошибка при создании платежа. Попробуйте позже.');
-    }
   };
 
   return (
@@ -229,16 +149,9 @@ export default function PricingSection() {
                 <span className="text-xl text-gray-400 line-through">4 500 ₽</span>
               </div>
             </div>
-            <Button 
-              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white"
-              onClick={() => openPaymentModal({ 
-                title: 'Диагностика + консультация', 
-                totalPrice: '1 290 ₽' 
-              }, 'Диагностика')}
-            >
-              <Icon name="CreditCard" className="mr-2" size={20} />
-              Оплатить диагностику
-            </Button>
+            <p className="text-center text-sm text-gray-500">
+              Цена прошлого сезона. Актуальную стоимость смотрите в разделе «Стоимость занятий».
+            </p>
           </Card>
         </div>
 
@@ -320,59 +233,10 @@ export default function PricingSection() {
                             </div>
                           </div>
                           
-                          {plan.paymentOptions && (
-                            <div className="mb-4 space-y-1">
-                              {plan.paymentOptions.map((option, optIndex) => (
-                                <div key={optIndex} className="flex items-center text-left">
-                                  {option.icon ? (
-                                    <div className="w-4 h-4 mr-2 flex-shrink-0 overflow-hidden rounded-sm">
-                                      <img 
-                                        src={option.icon} 
-                                        alt={option.text}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex mr-2 flex-shrink-0 gap-1">
-                                      <div className="w-4 h-4 overflow-hidden rounded-sm">
-                                        <img 
-                                          src="https://cdn.poehali.dev/files/c70fd8e5-616d-43e1-ae1f-94f4c0208549.jpg" 
-                                          alt="ТБанк"
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                      <div className="w-4 h-4 overflow-hidden rounded-sm">
-                                        <img 
-                                          src="https://cdn.poehali.dev/files/4f1976b5-f535-425b-a9b0-78c4b35b9e62.png" 
-                                          alt="МТС Банк"
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                  <span className="text-xs text-gray-600">{option.text}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
                           <div className="flex-grow"></div>
                         </div>
                       </Card>
                       
-                      <Button 
-                        type="button"
-                        className={`w-full mt-4 ${plan.popular ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}
-                        size="sm"
-                        onClick={(e) => {
-                          console.log('Button clicked - payment');
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openPaymentModal(plan, section.title);
-                        }}
-                      >
-                        Выбрать тариф
-                      </Button>
                       </div>
                     ))}
                   </div>
@@ -405,62 +269,6 @@ export default function PricingSection() {
       onClose={() => setIsBookingModalOpen(false)} 
     />
 
-    {isPaymentModalOpen && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <h3 className="text-xl font-bold mb-4">Подтверждение оплаты</h3>
-          <p className="text-gray-600 mb-4">
-            Пока мы загружаем платёжную форму, пожалуйста, представьтесь
-          </p>
-          <div className="mb-4 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Фамилия ребёнка <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Например: Иванов"
-                value={childLastName}
-                onChange={(e) => setChildLastName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Имя ребёнка <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Например: Пётр"
-                value={childFirstName}
-                onChange={(e) => setChildFirstName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsPaymentModalOpen(false);
-                setChildLastName('');
-                setChildFirstName('');
-              }}
-              className="flex-1"
-            >
-              Отмена
-            </Button>
-            <Button
-              onClick={handlePayment}
-              disabled={!isNameValid}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Оплатить
-            </Button>
-          </div>
-        </div>
-      </div>
-    )}
     </>
   );
 }

@@ -14,27 +14,34 @@ export default function Pricing20262027() {
   useEffect(() => {
     document.title = 'Стоимость занятий 2026–2027 - ЛинэяСкул';
 
-    // Страница готовится к запуску и не должна попадать в поиск,
-    // пока её не откроют для перехода с сайта.
-    let robots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
-    const hadRobots = Boolean(robots);
-    const previousRobots = robots?.content;
-
-    if (!robots) {
-      robots = document.createElement('meta');
-      robots.name = 'robots';
-      document.head.appendChild(robots);
-    }
-    robots.content = 'noindex, nofollow';
-
-    return () => {
-      if (!robots) return;
-      if (hadRobots && previousRobots !== undefined) {
-        robots.content = previousRobots;
-      } else {
-        robots.remove();
+    const setMeta = (attr: string, value: string, content: string) => {
+      let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, value);
+        document.head.appendChild(el);
       }
+      el.content = content;
     };
+
+    // Основная страница цен: открыта для поиска, чтобы родители попадали
+    // именно на актуальные тарифы, а не на архив прошлого сезона.
+    setMeta('name', 'robots', 'index, follow');
+    setMeta(
+      'name',
+      'description',
+      'Стоимость онлайн-занятий по коррекции дислексии и дисграфии у детей 8–18 лет в 2026–2027 учебном году.',
+    );
+    setMeta('property', 'og:title', 'Стоимость занятий 2026–2027 - ЛинэяСкул');
+    setMeta('property', 'og:url', 'https://lineaschool.ru/price_2026-2027');
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = 'https://lineaschool.ru/price_2026-2027';
   }, []);
 
   return (
