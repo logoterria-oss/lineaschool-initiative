@@ -16,6 +16,7 @@ from telegram_send import notify_all
 # как человек написал боту хотя бы одно сообщение.
 EXTRA_ADMIN_CHAT_IDS = [
     '976372702',
+    '1010916517',  # Анна Хорунжева (@amarrela)
 ]
 
 
