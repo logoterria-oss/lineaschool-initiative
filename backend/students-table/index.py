@@ -538,7 +538,7 @@ def _is_archived_tariff(name):
     return bool(re.search(r"архивн", n, re.I))
 
 
-def check_match(tariff_name, per_week, planned):
+def check_match(tariff_name, per_week, planned, is_paid=True):
     """Сверяем оплаченный абонемент с расписанием: (статус, пояснение).
 
     Статус: ok — всё верно, warn — работает, но требует внимания,
@@ -550,6 +550,9 @@ def check_match(tariff_name, per_week, planned):
       3 ур/нед — 2 групповых + 1 индивидуальный;
       4 ур/нед — 2 групповых + 2 индивидуальных;
       индивидуальные — любое количество индивидуальных.
+
+    is_paid=False — оплаченных занятий не осталось. Тогда не пишем «оплачено
+    N в неделю»: это противоречило бы строке «нет оплаченных» в абонементе.
     """
     name = str(tariff_name or "")
     g = (planned or {}).get("group", 0)
@@ -577,6 +580,8 @@ def check_match(tariff_name, per_week, planned):
         return "warn", "Нестандартный абонемент — проверьте вручную"
 
     if not total:
+        if not is_paid:
+            return "bad", "Расписания нет"
         return "bad", f"Оплачено {per_week} в неделю, расписания нет"
 
     if per_week == 2:
@@ -586,7 +591,7 @@ def check_match(tariff_name, per_week, planned):
             if _is_archived_tariff(name):
                 return "warn", "1 гр + 1 инд — перевести на 2 гр. /2гр+1инд"
             return "warn", "1 гр + 1 инд — для этого абонемента ожидается 2 групповых"
-        return "bad", f"Оплачено 2 в неделю, поставлено {g} гр + {ind} инд"
+        return "bad", f"Ожидается 2 групповых, поставлено {g} гр + {ind} инд"
 
     if per_week == 3:
         if g == 2 and ind == 1:
@@ -600,7 +605,7 @@ def check_match(tariff_name, per_week, planned):
 
     if total == per_week:
         return "ok", f"{per_week} уроков в неделю — верно"
-    return "bad", f"Оплачено {per_week} в неделю, поставлено {total}"
+    return "bad", f"Ожидается {per_week} в неделю, поставлено {total}"
 
 
 def pick_actual_tariff(tariffs, tariff_dict, balance):
@@ -1661,6 +1666,7 @@ def handle_list(token, name_filter=None):
                 (row_tariff or {}).get("name"),
                 (row_tariff or {}).get("per_week"),
                 planned,
+                bool((row_tariff or {}).get("is_active")),
             )
 
             items.append({
