@@ -11,6 +11,19 @@ from typing import Dict, Any
 from crm_match import match_name
 from telegram_send import notify_all
 
+# Администраторы, которым дублируем уведомления помимо основного чата.
+# Chat ID узнаём через lead-processor?action=recent-chats после того,
+# как человек написал боту хотя бы одно сообщение.
+EXTRA_ADMIN_CHAT_IDS = [
+    '976372702',
+]
+
+
+def recipients() -> list:
+    """Кому шлём уведомления: основной чат + дополнительные администраторы."""
+    main = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
+    return [rid for rid in [main, *EXTRA_ADMIN_CHAT_IDS] if rid]
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'POST')
     
@@ -63,8 +76,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur = conn.cursor()
         
         # Insert lead data (email and phone as empty strings for NOT NULL constraint)
+        # Родитель мог обновить страницу оплаты — номер заказа тот же.
+        # Повтор не считаем ошибкой: просто обновляем данные заявки.
         cur.execute(
-            "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+            "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, created_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s, NOW()) "
+            "ON CONFLICT (order_id) DO UPDATE SET "
+            "name = EXCLUDED.name, plan = EXCLUDED.plan, amount = EXCLUDED.amount",
             (crm_name, '', '', plan, amount, order_id)
         )
         
@@ -86,7 +104,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             try:
                 crm_line = f"\n🗂 В CRM: {crm_name}" if crm_name and crm_name != name else ''
                 message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}{crm_line}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
-                results = notify_all(bot_token, [chat_id, '976372702'], message)
+                results = notify_all(bot_token, recipients(), message)
                 print(f'Telegram delivery for order {order_id}: {results}')
             except Exception as tg_error:
                 print(f'Telegram notification failed: {str(tg_error)}')

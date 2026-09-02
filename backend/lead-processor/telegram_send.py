@@ -32,7 +32,8 @@ TELEGRAM_IPS = (
 API_HOST = 'api.telegram.org'
 
 
-def _post_via_ip(ip: str, token: str, method: str, payload: dict, timeout: float):
+def _post_via_ip(ip: str, token: str, method: str, payload: dict, timeout: float,
+                 limit: int = 300):
     """POST к Telegram напрямую по IP, с подстановкой правильного имени хоста.
 
     Проверку сертификата отключаем осознанно: имя в сертификате не совпадает
@@ -50,7 +51,7 @@ def _post_via_ip(ip: str, token: str, method: str, payload: dict, timeout: float
         headers={'Content-Type': 'application/json', 'Host': API_HOST},
     )
     with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-        return resp.status, resp.read().decode('utf-8')[:300]
+        return resp.status, resp.read().decode('utf-8')[:limit]
 
 
 def send_telegram(token: str, chat_id, text: str, timeout: float = 2.0) -> bool:
@@ -88,6 +89,73 @@ def send_telegram(token: str, chat_id, text: str, timeout: float = 2.0) -> bool:
 
     print(f'TG: НЕ доставлено на {chat_id} — все адреса недоступны')
     return False
+
+
+def get_recent_chats(token: str, timeout: float = 3.0) -> list:
+    """Кто недавно писал боту: список {chat_id, name, username}.
+
+    Нужен, чтобы узнать chat_id нового администратора: Telegram не позволяет
+    боту написать человеку первым, пока тот сам не напишет боту.
+    """
+    if not token:
+        return []
+    out = []
+    seen = set()
+    for ip in TELEGRAM_IPS:
+        try:
+            status, body = _post_via_ip(
+                ip, token, 'getUpdates', {'limit': 100}, timeout, limit=200000
+            )
+        except Exception:
+            continue
+        if status != 200:
+            continue
+        try:
+            data = json.loads(body)
+        except Exception:
+            continue
+        for upd in data.get('result') or []:
+            msg = upd.get('message') or upd.get('edited_message') or {}
+            chat = msg.get('chat') or {}
+            cid = chat.get('id')
+            if not cid or cid in seen:
+                continue
+            seen.add(cid)
+            name = ' '.join(
+                x for x in (chat.get('first_name'), chat.get('last_name')) if x
+            )
+            out.append({
+                'chat_id': str(cid),
+                'name': name or chat.get('title') or '',
+                'username': chat.get('username') or '',
+            })
+        return out
+    return out
+
+
+def bot_info(token: str, timeout: float = 3.0) -> dict:
+    """Имя бота (@username) и есть ли вебхук.
+
+    Вебхук важен: пока он включён, Telegram не отдаёт историю сообщений
+    через getUpdates, и узнать chat_id нового админа этим способом нельзя.
+    """
+    out = {}
+    if not token:
+        return out
+    for method, key in (('getMe', 'me'), ('getWebhookInfo', 'webhook')):
+        for ip in TELEGRAM_IPS:
+            try:
+                status, body = _post_via_ip(ip, token, method, {}, timeout, limit=4000)
+            except Exception:
+                continue
+            if status != 200:
+                continue
+            try:
+                out[key] = json.loads(body).get('result')
+            except Exception:
+                pass
+            break
+    return out
 
 
 def notify_all(token: str, chat_ids, text: str, timeout: float = 2.0) -> dict:

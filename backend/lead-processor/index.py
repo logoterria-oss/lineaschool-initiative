@@ -7,7 +7,28 @@ import json
 import os
 from typing import Dict, Any, Optional
 import requests
-from telegram_send import notify_all
+from telegram_send import notify_all, get_recent_chats, bot_info
+
+# Боты проекта: короткое имя -> переменная с токеном
+TG_BOTS = {
+    'leads': 'TELEGRAM_LEADS_BOT_TOKEN',
+    'payment': 'TELEGRAM_PAYMENT_BOT_TOKEN',
+    'questionnaire': 'TELEGRAM_QUESTIONNAIRE_BOT_TOKEN',
+}
+
+# Администраторы, которым дублируем уведомления помимо основного чата.
+# Chat ID берётся из ?action=recent-chats после того, как человек
+# написал боту хотя бы одно сообщение.
+EXTRA_ADMIN_CHAT_IDS = [
+    '976372702',
+]
+
+
+def recipients() -> list:
+    """Кому шлём уведомления: основной чат + дополнительные администраторы."""
+    main = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
+    return [rid for rid in [main, *EXTRA_ADMIN_CHAT_IDS] if rid]
+
 
 def save_lead_to_db(parent_name: str, student_name: str, contact: str,
                     messengers: list = None, telegram: str = ''):
@@ -198,7 +219,7 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
     
     message = ''.join(message_parts)
     
-    recipient_ids = [chat_id, '976372702']
+    recipient_ids = recipients()
     # Отправляем через перебор адресов Telegram: DNS отдаёт несколько IP,
     # и часть из них с площадки функций недоступна (соединение виснет).
     # Раньше из-за этого терялось примерно 9 уведомлений из 10.
@@ -228,11 +249,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     if method == 'GET':
+        params = event.get('queryStringParameters') or {}
+        # Кто недавно писал боту — чтобы узнать chat_id нового администратора
+        if params.get('action') == 'recent-chats':
+            token_env = TG_BOTS.get(params.get('bot') or 'payment')
+            token = os.environ.get(token_env or '')
+            chats = get_recent_chats(token) if token else []
+            info = bot_info(token) if token else {}
+            me = (info.get('me') or {})
+            hook = (info.get('webhook') or {})
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'chats': chats,
+                    'bot_username': me.get('username'),
+                    'webhook_url': hook.get('url') or '',
+                    'current_recipients': recipients(),
+                }, ensure_ascii=False),
+            }
+
         # Быстрая проверка ботов: шлём тестовое сообщение тем же надёжным
         # способом, что и боевые уведомления, чтобы результат совпадал
         # с реальной доставкой. Таймауты короткие — лимит функции 5 секунд.
-        admin_chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
-        recipient_ids = [rid for rid in [admin_chat_id, '976372702'] if rid]
+        recipient_ids = recipients()
 
         results = {'bots': {}}
         for bot_name, token_env in (
