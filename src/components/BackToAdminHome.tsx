@@ -12,6 +12,9 @@ import Icon from '@/components/ui/icon';
  */
 const HIDDEN_PATHS = ['/admin', '/admin/role-select'];
 
+/** Рабочие страницы сотрудников за пределами раздела /admin */
+const STAFF_PATHS = ['/diag_form', '/interim_diag_form', '/telegram-setup'];
+
 /** Рабочий кабинет со всеми разделами — свой для каждой роли */
 const ROLE_WORKSPACE: Record<string, string> = {
   admin: '/admin/admin-workspace',
@@ -20,8 +23,9 @@ const ROLE_WORKSPACE: Record<string, string> = {
   diag: '/admin/diag',
 };
 
-const isDiagPage = (path: string) =>
-  path.startsWith('/diag') || path.startsWith('/interim_diag');
+/** Готовое заключение — открывают по прямой ссылке, там своя навигация */
+const isConclusionPage = (path: string) =>
+  /^\/diag\//.test(path) || /^\/interim_diag\//.test(path);
 
 const BackToAdminHome = () => {
   const { pathname } = useLocation();
@@ -30,9 +34,10 @@ const BackToAdminHome = () => {
   const role = sessionStorage.getItem('staff_role') || '';
   const target = ROLE_WORKSPACE[role] || '/admin/admin-workspace';
 
-  if (!pathname.startsWith('/admin')) return null;
+  const isStaffPage = pathname.startsWith('/admin') || STAFF_PATHS.includes(pathname);
+  if (!isStaffPage) return null;
   if (HIDDEN_PATHS.includes(pathname)) return null;
-  if (isDiagPage(pathname)) return null;
+  if (isConclusionPage(pathname)) return null;
   // На самом кабинете кнопка не нужна
   if (pathname === target) return null;
 
