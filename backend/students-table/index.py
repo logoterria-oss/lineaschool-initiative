@@ -584,7 +584,7 @@ def check_match(tariff_name, per_week, planned):
             return "ok", "2 групповых — верно"
         if g == 1 and ind == 1:
             if _is_archived_tariff(name):
-                return "warn", "1 гр + 1 инд — перевести на 2 групповых"
+                return "warn", "1 гр + 1 инд — перевести на 2 гр. /2гр+1инд"
             return "warn", "1 гр + 1 инд — для этого абонемента ожидается 2 групповых"
         return "bad", f"Оплачено 2 в неделю, поставлено {g} гр + {ind} инд"
 
