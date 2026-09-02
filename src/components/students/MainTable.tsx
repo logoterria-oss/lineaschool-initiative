@@ -44,30 +44,39 @@ const PlannedCell = ({ s }: { s: StudentRow }) => {
   );
 };
 
-// Совпадает ли оплаченное количество уроков в неделю с расписанием в CRM.
-const MatchCell = ({ s }: { s: StudentRow }) => {
-  const paid = s.tariff?.per_week ?? null;
-  const planned = s.planned_lessons?.total ?? 0;
+// Совпадает ли расписание с оплаченным абонементом. Правила считает бэкенд:
+// «2 ур/нед» — 2 групповых (1 гр + 1 инд допустимо, но с предупреждением),
+// «3 ур/нед» — 2 гр + 1 инд, «4 ур/нед» — 2 гр + 2 инд,
+// индивидуальный — любое количество индивидуальных.
+const MATCH_STYLES: Record<string, { cls: string; label: string }> = {
+  ok: { cls: 'bg-green-100 text-green-700', label: 'да' },
+  warn: { cls: 'bg-amber-100 text-amber-700', label: 'проверить' },
+  bad: { cls: 'bg-red-100 text-red-700', label: 'нет' },
+};
 
-  if (paid == null) {
+const MatchCell = ({ s }: { s: StudentRow }) => {
+  const status = s.match_status;
+  const style = status ? MATCH_STYLES[status] : undefined;
+
+  if (!style) {
     return (
-      <td className="px-3 py-3 align-top text-gray-300" title="Не смогли разобрать абонемент">
+      <td className="px-3 py-3 align-top text-gray-300" title={s.match_note || ''}>
         —
       </td>
     );
   }
 
-  const ok = paid === planned;
   return (
-    <td className="px-3 py-3 align-top whitespace-nowrap">
+    <td className="px-3 py-3 align-top">
       <span
-        className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-          ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-        }`}
-        title={`Оплачено ${paid} в неделю, поставлено ${planned}`}
+        className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${style.cls}`}
+        title={s.match_note || ''}
       >
-        {ok ? 'да' : `нет (${planned} из ${paid})`}
+        {style.label}
       </span>
+      {s.match_note && status !== 'ok' && (
+        <div className="text-[11px] text-gray-500 mt-1 max-w-[220px]">{s.match_note}</div>
+      )}
     </td>
   );
 };

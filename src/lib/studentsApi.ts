@@ -98,6 +98,9 @@ export interface StudentRow {
   tariff: StudentTariff | null;
   // Фактически поставленные регулярные уроки из CRM
   planned_lessons: { group: number; individual: number; total: number } | null;
+  // Сверка расписания с абонементом: ok / warn / bad / none
+  match_status?: 'ok' | 'warn' | 'bad' | 'none';
+  match_note?: string;
   diagnostics: DiagnosticBubble[];
   vacation: StudentVacation | null;
   comments: StudentComment[];

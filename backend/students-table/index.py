@@ -508,7 +508,7 @@ def _short_tariff(name):
     """«Абонемент "4 урока в неделю" (3 месяца)» → «4 ур/нед (3 мес.)»."""
     if not name:
         return ""
-    n = str(name)
+    n = re.sub(r"архивн\w*\s*", "", str(name), flags=re.I)
     per = re.search(r"(\d+)\s*урок\w*\s+в\s+недел", n, re.I)
     months = re.search(r"(\d+)\s*месяц", n, re.I)
     parts = []
@@ -526,6 +526,81 @@ def _lessons_per_week(name):
     """Сколько уроков в неделю по названию абонемента (None — не разобрали)."""
     m = re.search(r"(\d+)\s*урок\w*\s+в\s+недел", str(name or ""), re.I)
     return int(m.group(1)) if m else None
+
+
+def _is_archived_tariff(name):
+    """«Архивный» — это часть НАЗВАНИЯ тарифа в CRM, а не истёкшая дата.
+
+    Старая линейка называется «АРХИВНЫЙ Абонемент "2 урока в неделю"»,
+    и по ней учится большинство действующих учеников.
+    """
+    n = str(name or "")
+    return bool(re.search(r"архивн", n, re.I))
+
+
+def check_match(tariff_name, per_week, planned):
+    """Сверяем оплаченный абонемент с расписанием: (статус, пояснение).
+
+    Статус: ok — всё верно, warn — работает, но требует внимания,
+    bad — расписание не совпадает с оплатой, none — не проверяем.
+
+    Правила по каждому абонементу:
+      2 ур/нед — 2 групповых; вариант 1 гр + 1 инд допустим,
+                 но его показываем предупреждением «перевести на 2 гр»;
+      3 ур/нед — 2 групповых + 1 индивидуальный;
+      4 ур/нед — 2 групповых + 2 индивидуальных;
+      индивидуальные — любое количество индивидуальных.
+    """
+    name = str(tariff_name or "")
+    g = (planned or {}).get("group", 0)
+    ind = (planned or {}).get("individual", 0)
+    total = g + ind
+
+    # Бесплатные занятия — проверять нечего.
+    if re.search(r"\bэля\b", name, re.I):
+        return "none", "Бесплатные занятия"
+
+    if not name:
+        return "bad", "Абонемента нет"
+
+    # Чисто индивидуальный абонемент: групповых быть не должно,
+    # количество индивидуальных — любое.
+    if re.search(r"индивидуальн", name, re.I):
+        if g:
+            return "bad", f"Индивидуальный абонемент, а в расписании {g} групповых"
+        if not ind:
+            return "bad", "Индивидуальных уроков в расписании нет"
+        return "ok", f"Индивидуальный абонемент: {ind} инд в неделю"
+
+    if per_week is None:
+        # Абонемент вне линейки («По дружбе», именной) — правил для него нет.
+        return "warn", "Нестандартный абонемент — проверьте вручную"
+
+    if not total:
+        return "bad", f"Оплачено {per_week} в неделю, расписания нет"
+
+    if per_week == 2:
+        if g == 2 and ind == 0:
+            return "ok", "2 групповых — верно"
+        if g == 1 and ind == 1:
+            if _is_archived_tariff(name):
+                return "warn", "1 гр + 1 инд — перевести на 2 групповых"
+            return "warn", "1 гр + 1 инд — для этого абонемента ожидается 2 групповых"
+        return "bad", f"Оплачено 2 в неделю, поставлено {g} гр + {ind} инд"
+
+    if per_week == 3:
+        if g == 2 and ind == 1:
+            return "ok", "2 гр + 1 инд — верно"
+        return "bad", f"Ожидается 2 гр + 1 инд, поставлено {g} гр + {ind} инд"
+
+    if per_week == 4:
+        if g == 2 and ind == 2:
+            return "ok", "2 гр + 2 инд — верно"
+        return "bad", f"Ожидается 2 гр + 2 инд, поставлено {g} гр + {ind} инд"
+
+    if total == per_week:
+        return "ok", f"{per_week} уроков в неделю — верно"
+    return "bad", f"Оплачено {per_week} в неделю, поставлено {total}"
 
 
 def pick_actual_tariff(tariffs, tariff_dict, balance):
@@ -575,8 +650,9 @@ def pick_actual_tariff(tariffs, tariff_dict, balance):
         "name": full,
         "short_name": short,
         "e_date": str(e) if e else None,
-        # Абонемент закончился по дате — в CRM он помечен «АРХИВНЫЙ».
-        "is_archived": bool(e and e < date.today()),
+        # «Архивный» — это часть названия тарифа в CRM (старая линейка),
+        # а не истёкшая дата: по такому абонементу учатся прямо сейчас.
+        "is_archived": _is_archived_tariff(full),
         "is_active": paid_left > 0,
         "paid_lessons_left": paid_left,
         # Сколько уроков в неделю оплачено — для сверки с расписанием.
@@ -1563,10 +1639,19 @@ def handle_list(token, name_filter=None):
                 "total": reg.get("group", 0) + reg.get("individual", 0),
             }
 
+            match_status, match_note = check_match(
+                (row_tariff or {}).get("name"),
+                (row_tariff or {}).get("per_week"),
+                planned,
+            )
+
             items.append({
                 "id": row_id,
                 "name": display_name,
                 "planned_lessons": planned,
+                # Совпадает ли расписание с оплаченным абонементом.
+                "match_status": match_status,
+                "match_note": match_note,
                 "city": row_city,
                 "city_timezone": row_city_tz,
                 "city_region": row_city_region,
