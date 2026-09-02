@@ -92,7 +92,7 @@ export const useStudentsData = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((i) => {
-      if (!matchesFilter(i.status_id, filter)) return false;
+      if (!matchesFilter(i.status_id, filter, i.vacation)) return false;
       if (tariffFilter.length && !(i.tariff && tariffFilter.includes(i.tariff.name)))
         return false;
       if (q && !(i.name || '').toLowerCase().includes(q)) return false;

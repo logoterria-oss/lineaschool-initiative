@@ -112,6 +112,7 @@ export type StatusFilter =
   | 'all_active'
   | 'active'
   | 'vacation'
+  | 'vacation_due'
   | 'frozen'
   | 'dropped';
 
@@ -121,11 +122,45 @@ export const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'all_active', label: 'Все действующие' },
   { id: 'active', label: 'Активен' },
   { id: 'vacation', label: 'Каникулы' },
+  { id: 'vacation_due', label: 'Каникуляры — пора связаться' },
   { id: 'frozen', label: 'Абонемент заморожен' },
   { id: 'dropped', label: 'Бросил' },
 ];
 
-export const matchesFilter = (statusId: number | null, filter: StatusFilter): boolean => {
+// Дата возврата с каникул уже наступила (или прошла).
+// Даты в CRM хранятся неточно: вместо числа может стоять «начало / середина /
+// конец месяца». Поэтому сравниваем не по дню, а по декаде: «середина сентября»
+// наступает только с 11-го числа — 2 сентября такого ребёнка ещё не дёргаем.
+export const vacationReturnDue = (v: StudentVacation | null): boolean => {
+  if (!v || !v.date_to) return false;
+
+  const d = new Date(v.date_to);
+  if (Number.isNaN(d.getTime())) return false;
+
+  const partOf = (day: number) => (day <= 10 ? 0 : day <= 20 ? 1 : 2);
+  const part =
+    v.vacation_end_type === 'start_month'
+      ? 0
+      : v.vacation_end_type === 'mid_month'
+        ? 1
+        : v.vacation_end_type === 'end_month'
+          ? 2
+          : partOf(d.getDate());
+
+  const idx = (y: number, m: number, p: number) => (y * 12 + m) * 3 + p;
+  const now = new Date();
+
+  return (
+    idx(d.getFullYear(), d.getMonth(), part) <=
+    idx(now.getFullYear(), now.getMonth(), partOf(now.getDate()))
+  );
+};
+
+export const matchesFilter = (
+  statusId: number | null,
+  filter: StatusFilter,
+  vacation: StudentVacation | null = null,
+): boolean => {
   switch (filter) {
     case 'all_active':
       return statusId !== 3;
@@ -133,6 +168,9 @@ export const matchesFilter = (statusId: number | null, filter: StatusFilter): bo
       return statusId === 1;
     case 'vacation':
       return statusId === 4 || statusId === 5;
+    // Каникуляры, которых пора возвращать: срок отдыха уже наступил.
+    case 'vacation_due':
+      return (statusId === 4 || statusId === 5) && vacationReturnDue(vacation);
     case 'frozen':
       return statusId === 4;
     case 'dropped':
