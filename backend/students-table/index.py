@@ -1467,8 +1467,9 @@ def handle_list(token, name_filter=None):
             token, [c.get("id") for c in customers]
         )
         all_lessons = f_lessons.result()
+        future_lessons = f_future.result()
         regular_by_customer = build_planned(
-            f_regular.result(), all_lessons + f_future.result()
+            f_regular.result(), all_lessons + future_lessons
         )
         tariff_names = f_tariff_names.result()
         overrides = f_overrides.result()
@@ -1520,6 +1521,23 @@ def handle_list(token, name_filter=None):
                         "note": (ls.get("note") or "").strip(),
                         "report_id": report_id,
                     }
+
+    # Диагностика, уже назначенная в расписании CRM: {cid: дата}.
+    # Нужна колонке ПДУ — если срок подошёл, но занятие уже стоит в расписании,
+    # администратору напоминать не о чем.
+    planned_diag_by_student = {}
+    for ls in future_lessons:
+        if "диагност" not in (ls.get("lesson_type_name") or "").lower():
+            continue
+        if ls.get("status") == 4:  # отменённые не считаем
+            continue
+        ld = parse_crm_date(ls.get("date"))
+        if not ld or ld < today:
+            continue
+        for cid in lesson_customer_ids(ls):
+            prev = planned_diag_by_student.get(cid)
+            if prev is None or ld < prev:
+                planned_diag_by_student[cid] = ld
 
     # Заключения из БД для всех найденных report_id (по всем диагностикам).
     report_ids = set()
@@ -1667,6 +1685,11 @@ def handle_list(token, name_filter=None):
                 "conclusion_manual": conclusion_manual,
                 "recommendations": recommendations,
                 "last_diagnostic": str(last_date) if last_date else None,
+                # Диагностика уже стоит в расписании CRM — колонка ПДУ.
+                "scheduled_diagnostic": (
+                    str(planned_diag_by_student[cid])
+                    if cid in planned_diag_by_student else None
+                ),
                 "next_diagnostic": str(next_date) if next_date else None,
                 "report_link": report_link,
                 "tariff": row_tariff,

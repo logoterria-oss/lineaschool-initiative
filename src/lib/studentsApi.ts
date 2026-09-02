@@ -93,6 +93,8 @@ export interface StudentRow {
   conclusion_manual: boolean;
   recommendations: string | null;
   last_diagnostic: string | null;
+  // Диагностика уже стоит в расписании CRM (ближайшая дата)
+  scheduled_diagnostic?: string | null;
   next_diagnostic: string | null;
   report_link: string | null;
   tariff: StudentTariff | null;

@@ -82,26 +82,33 @@ const MatchCell = ({ s }: { s: StudentRow }) => {
 };
 
 // ПДУ — промежуточная диагностика. Пора, если прошло 3 месяца и больше.
+// Но если диагностика уже стоит в расписании CRM — показываем «заплан.»:
+// напоминать администратору не о чем, работа сделана.
+const fmt = (d: string) => d.split('-').reverse().join('.');
+
 const DiagCell = ({ s }: { s: StudentRow }) => {
   const last = s.last_diagnostic;
-  if (!last) {
+  const scheduled = s.scheduled_diagnostic;
+
+  let due = true;
+  if (last) {
+    const limit = new Date();
+    limit.setMonth(limit.getMonth() - 3);
+    due = new Date(last) <= limit;
+  }
+
+  if (due && scheduled) {
     return (
-      <td className="px-3 py-3 align-top">
+      <td className="px-3 py-3 align-top whitespace-nowrap">
         <span
-          className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700"
-          title="Диагностик ещё не было"
+          className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-sky-100 text-sky-700"
+          title={`Диагностика назначена на ${fmt(scheduled)}`}
         >
-          пора
+          заплан.
         </span>
       </td>
     );
   }
-
-  const lastDate = new Date(last);
-  const limit = new Date();
-  limit.setMonth(limit.getMonth() - 3);
-  const due = lastDate <= limit;
-  const human = last.split('-').reverse().join('.');
 
   return (
     <td className="px-3 py-3 align-top whitespace-nowrap">
@@ -109,7 +116,7 @@ const DiagCell = ({ s }: { s: StudentRow }) => {
         className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
           due ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'
         }`}
-        title={`Последняя диагностика: ${human}`}
+        title={last ? `Последняя диагностика: ${fmt(last)}` : 'Диагностик ещё не было'}
       >
         {due ? 'пора' : 'не пора'}
       </span>
