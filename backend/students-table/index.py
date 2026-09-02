@@ -340,6 +340,129 @@ def get_all_customer_tariffs(token, customer_ids):
     return out
 
 
+def get_regular_lessons(token):
+    """Регулярное расписание из CRM: сколько занятий в неделю у ученика.
+
+    Нужно, чтобы сверить оплаченный абонемент с фактически поставленными
+    уроками — в карточке ученика это блок «Регулярные уроки».
+
+    В CRM регулярный урок привязан по-разному:
+      - индивидуальный (related_class = "Customer") — сразу к ученику;
+      - групповой (related_class = "Group") — к группе, а не к детям.
+    Поэтому состав групп доводим отдельно, по спискам учеников в занятиях.
+    Просроченные строки (e_date в прошлом) не считаем — это архив.
+    """
+    url = f"{S20_HOST}/v2api/1/regular-lesson/index"
+    items = []
+    page = 0
+    while True:
+        try:
+            resp = requests.post(url, json={"page": page, "pageSize": 200},
+                                 headers=get_headers(token), timeout=25)
+            if resp.status_code != 200:
+                break
+            data = resp.json()
+            chunk = data.get("items", [])
+            items.extend(chunk)
+            if not chunk or len(items) >= data.get("total", 0):
+                break
+            page += 1
+        except Exception as e:
+            print(f"regular-lesson fetch failed: {e}")
+            break
+    return items
+
+
+def load_future_lessons(token, date_from, date_to):
+    """Занятия вперёд — нужны, чтобы увидеть актуальный состав групп.
+
+    CRM по умолчанию отдаёт только проведённые занятия (status=3), а будущие
+    ещё только запланированы (status=1). Поэтому спрашиваем статусы отдельно
+    и склеиваем — иначе список получается пустым.
+    """
+    out = []
+    seen = set()
+    for st in (1, 2, None):
+        try:
+            for ls in get_lessons(token, date_from, date_to, status=st):
+                lid = ls.get("id")
+                if lid in seen:
+                    continue
+                seen.add(lid)
+                out.append(ls)
+        except Exception as e:
+            print(f"future lessons fetch failed (status={st}): {e}")
+    return out
+
+
+def build_planned(regular_items, lessons, today=None):
+    """{customer_id: {group, individual}} — уроков в неделю по расписанию CRM."""
+    today = today or date.today()
+    out = {}
+
+    def bump(cid, key):
+        try:
+            cid = int(cid)
+        except Exception:
+            return
+        slot = out.setdefault(cid, {"group": 0, "individual": 0})
+        slot[key] += 1
+
+    # Состав групп: в самом регулярном уроке детей нет, поэтому берём их из
+    # занятий этой группы. Список занятий заканчивается сегодняшним днём,
+    # так что смотрим последние недели — это и есть актуальный состав.
+    since = today - timedelta(days=45)
+    group_members = {}
+    for ls in lessons or []:
+        d = parse_crm_date(ls.get("date") or ls.get("lesson_date"))
+        if not d or d < since:
+            continue
+        gids = ls.get("group_ids")
+        if isinstance(gids, (str, int)):
+            gids = [gids]
+        if not gids:
+            continue
+        members = set()
+        for key in ("customer_ids", "client_ids", "student_ids"):
+            v = ls.get(key)
+            if isinstance(v, list):
+                members.update(v)
+        # В части занятий состав лежит только в details (по одной записи
+        # на ребёнка) — без него группы выглядели бы пустыми.
+        det = ls.get("details")
+        if isinstance(det, list):
+            for it in det:
+                if isinstance(it, dict):
+                    m = it.get("customer_id") or it.get("client_id")
+                    if m is not None:
+                        members.add(m)
+        for g in gids:
+            try:
+                g = int(g)
+            except Exception:
+                continue
+            group_members.setdefault(g, set()).update(
+                int(m) for m in members if str(m).isdigit()
+            )
+
+    for rl in regular_items or []:
+        e = parse_crm_date(rl.get("e_date"))
+        if e and e < today:
+            continue
+        related = (rl.get("related_class") or "").lower()
+        rid = rl.get("related_id")
+        if related == "customer":
+            bump(rid, "individual")
+        elif related == "group":
+            try:
+                rid = int(rid)
+            except Exception:
+                continue
+            for cid in group_members.get(rid, ()):
+                bump(cid, "group")
+    return out
+
+
 def parse_crm_date(s):
     """CRM-даты бывают 'DD.MM.YYYY' или 'YYYY-MM-DD [HH:MM:SS]'."""
     if not s:
@@ -381,6 +504,30 @@ def _to_float(v):
         return 0.0
 
 
+def _short_tariff(name):
+    """«Абонемент "4 урока в неделю" (3 месяца)» → «4 ур/нед (3 мес.)»."""
+    if not name:
+        return ""
+    n = str(name)
+    per = re.search(r"(\d+)\s*урок\w*\s+в\s+недел", n, re.I)
+    months = re.search(r"(\d+)\s*месяц", n, re.I)
+    parts = []
+    if per:
+        parts.append(f"{per.group(1)} ур/нед")
+    if months:
+        parts.append(f"({months.group(1)} мес.)")
+    if parts:
+        return " ".join(parts)
+    # Незнакомый формат — отдаём как есть, без слова «Абонемент» и кавычек.
+    return re.sub(r"^Абонемент\s*", "", n).strip(' "«»')
+
+
+def _lessons_per_week(name):
+    """Сколько уроков в неделю по названию абонемента (None — не разобрали)."""
+    m = re.search(r"(\d+)\s*урок\w*\s+в\s+недел", str(name or ""), re.I)
+    return int(m.group(1)) if m else None
+
+
 def pick_actual_tariff(tariffs, tariff_dict, balance):
     """Актуальный абонемент. Название и e_date — по последнему абонементу.
 
@@ -419,11 +566,21 @@ def pick_actual_tariff(tariffs, tariff_dict, balance):
     money = _to_float(balance)
     paid_left = int(money // lesson_price) if lesson_price > 0 else 0
 
+    # Краткая запись для таблицы: «Абонемент "4 урока в неделю" (3 месяца)»
+    # → «4 ур/нед (3 мес.)». Длинное название в узком столбце нечитаемо.
+    full = label(tid)
+    short = _short_tariff(full)
+
     return {
-        "name": label(tid),
+        "name": full,
+        "short_name": short,
         "e_date": str(e) if e else None,
+        # Абонемент закончился по дате — в CRM он помечен «АРХИВНЫЙ».
+        "is_archived": bool(e and e < date.today()),
         "is_active": paid_left > 0,
         "paid_lessons_left": paid_left,
+        # Сколько уроков в неделю оплачено — для сверки с расписанием.
+        "per_week": _lessons_per_week(full),
     }
 
 
@@ -1220,12 +1377,23 @@ def handle_list(token, name_filter=None):
         f_comments = ex.submit(load_comments)
         f_interactions = ex.submit(load_interactions)
         f_cities = ex.submit(load_cities)
+        f_regular = ex.submit(get_regular_lessons, token)
+        # Занятия вперёд: состав групп виднее всего по будущим урокам.
+        # Основной список уроков заканчивается сегодняшним днём.
+        f_future = ex.submit(
+            load_future_lessons, token,
+            today.strftime("%Y-%m-%d"),
+            (today + timedelta(days=30)).strftime("%Y-%m-%d"),
+        )
 
         customers = f_customers.result()
         tariffs_by_customer = get_all_customer_tariffs(
             token, [c.get("id") for c in customers]
         )
         all_lessons = f_lessons.result()
+        regular_by_customer = build_planned(
+            f_regular.result(), all_lessons + f_future.result()
+        )
         tariff_names = f_tariff_names.result()
         overrides = f_overrides.result()
         vacations = f_vacations.result()
@@ -1387,9 +1555,18 @@ def handle_list(token, name_filter=None):
                 row_city_region = (ov.get("city_region") or "").strip()
                 city_manual = True
 
+            # Фактически поставленные регулярные уроки из CRM.
+            reg = regular_by_customer.get(cid) or {"group": 0, "individual": 0}
+            planned = {
+                "group": reg.get("group", 0),
+                "individual": reg.get("individual", 0),
+                "total": reg.get("group", 0) + reg.get("individual", 0),
+            }
+
             items.append({
                 "id": row_id,
                 "name": display_name,
+                "planned_lessons": planned,
                 "city": row_city,
                 "city_timezone": row_city_tz,
                 "city_region": row_city_region,

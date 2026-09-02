@@ -5,7 +5,6 @@ import {
   StatusFilter,
   matchesFilter,
   fetchStudents,
-  saveStudentOverride,
 } from '@/lib/studentsApi';
 import { Tab, TABS, HintBox } from '@/components/students/studentsTableHelpers';
 import MainTable from '@/components/students/MainTable';
@@ -46,45 +45,6 @@ const StudentsView = () => {
     setTariffFilter((prev) =>
       prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
     );
-
-  const handleSaveConclusion = async (id: number, value: string) => {
-    await saveStudentOverride(id, { conclusion: value });
-    setItems((prev) =>
-      prev.map((it) =>
-        it.id === id ? { ...it, conclusion: value.trim(), conclusion_manual: true } : it,
-      ),
-    );
-  };
-
-  // Город правится вручную, когда анкеты нет: часовой пояс подтягивается
-  // из справочника адресов и уходит в примечание карточки CRM.
-  const handleSaveCity = async (
-    student: StudentRow,
-    city: string,
-    region: string,
-    timezone: string,
-  ) => {
-    await saveStudentOverride(student.id, {
-      city,
-      city_region: region,
-      city_timezone: timezone,
-      crm_customer_id: student.crm_customer_id,
-    });
-    setItems((prev) =>
-      prev.map((it) =>
-        it.id === student.id
-          ? { ...it, city, city_region: region, city_timezone: timezone, city_manual: city !== '' }
-          : it,
-      ),
-    );
-  };
-
-  const handleSaveAge = async (id: number, age: number | null) => {
-    await saveStudentOverride(id, { age });
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, age, age_manual: age != null } : it)),
-    );
-  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -241,12 +201,7 @@ const StudentsView = () => {
             <>
               <p className="text-sm font-semibold text-gray-600 mb-3">Всего: {filtered.length}</p>
               {tab === 'main' && (
-                <MainTable
-                  rows={filtered}
-                  onSaveConclusion={handleSaveConclusion}
-                  onSaveAge={handleSaveAge}
-                  onSaveCity={handleSaveCity}
-                />
+                <MainTable rows={filtered} />
               )}
               {tab === 'progress' && <ProgressTable rows={filtered} />}
               {tab === 'interactions' && <InteractionsTable rows={filtered} />}

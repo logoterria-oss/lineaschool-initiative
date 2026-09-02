@@ -4,6 +4,12 @@ const API_URL = 'https://functions.poehali.dev/c0e33e31-3223-49c3-96e6-b90391728
 
 export interface StudentTariff {
   name: string;
+  // Короткая запись для таблицы: «4 ур/нед (3 мес.)»
+  short_name?: string;
+  // Абонемент закончился по дате — в CRM помечен «АРХИВНЫЙ»
+  is_archived?: boolean;
+  // Сколько уроков в неделю оплачено (null — не разобрали название)
+  per_week?: number | null;
   e_date: string | null;
   is_active: boolean;
   paid_lessons_left: number;
@@ -90,6 +96,8 @@ export interface StudentRow {
   next_diagnostic: string | null;
   report_link: string | null;
   tariff: StudentTariff | null;
+  // Фактически поставленные регулярные уроки из CRM
+  planned_lessons: { group: number; individual: number; total: number } | null;
   diagnostics: DiagnosticBubble[];
   vacation: StudentVacation | null;
   comments: StudentComment[];
