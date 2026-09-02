@@ -179,11 +179,17 @@ def _booked_keys(cur) -> set:
 
 
 def _mark_in_crm(rows: list) -> None:
-    '''Проставляем броням признак inCrm — ребёнок уже в этой группе в CRM.
+    '''Проставляем броням признак inCrm — ребёнка уже завели в CRM.
 
     Нужно расписанию администратора: пока ученика не завели, бронь показываем
-    пометкой «(б)», а после заведения он появляется обычной строкой — и
+    пометкой «бронь», а после заведения он появляется обычной строкой — и
     дублировать его броней нельзя.
+
+    Расписание в CRM — источник правды. Администратор, заводя ребёнка,
+    нередко ставит его в соседнее время или к другому педагогу, чем было
+    в заявке. Поэтому мало сверять бронь с тем же слотом: если ребёнок
+    появился в расписании ГДЕ УГОДНО на этой неделе, заявка уже отработана
+    и показывать её броней нельзя.
     '''
     groups = [b for b in rows if b.get('lessonType') == 'groups']
     if not groups:
@@ -208,15 +214,14 @@ def _mark_in_crm(rows: list) -> None:
                 names.get(int(s), '') for s in (cell.get('student_ids') or [])
             )
 
+    # Все имена из расписания CRM за неделю — независимо от слота.
+    crm_all = [nm for slot_names in crm.values() for nm in slot_names if nm]
+
     for b in groups:
-        try:
-            wd = datetime.strptime(b['date'], '%Y-%m-%d').date().weekday()
-        except Exception:
-            continue
-        key = (wd, (b.get('timeFrom') or '')[:5], int(b.get('teacherId') or 0))
-        b['inCrm'] = any(
-            same_child(b.get('childName'), nm) for nm in crm.get(key, [])
-        )
+        child = b.get('childName')
+        # Ребёнок есть в расписании CRM — неважно, в этом слоте или в другом:
+        # значит, заявку уже провели руками, и бронь дублирует живую строку.
+        b['inCrm'] = any(same_child(child, nm) for nm in crm_all)
 
 
 def _group_booked(cur) -> Dict[tuple, list]:

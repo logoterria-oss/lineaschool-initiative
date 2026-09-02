@@ -216,6 +216,18 @@ def build_groups(
     booked = booked or {}
     crm_names = crm_names or {}
 
+    # Все имена из расписания CRM за период. Если ребёнка уже завели —
+    # неважно, в этот слот или в соседний, — место за ним считает сама CRM,
+    # и вычитать его ещё раз по заявке нельзя.
+    crm_everywhere = [
+        crm_names.get(int(s), '')
+        for rows in (weeks or [])
+        for r in (rows or [])
+        for cell in ((r.get('cells') or {}).values())
+        for s in (cell.get('student_ids') or [])
+    ]
+    crm_everywhere = [nm for nm in crm_everywhere if nm]
+
     # (день от старта, время, педагог, группа) → свободных мест.
     # Группа в ключе обязательна: у педагога в одно время могут идти две
     # разные группы, и без неё вторая пропадала бы из расписания.
@@ -257,14 +269,12 @@ def build_groups(
                 # Но только те, чей ребёнок ещё не заведён в эту группу в CRM:
                 # иначе одно место списывается дважды.
                 weekday = (start + timedelta(days=off)).weekday()
-                sids = cell.get('student_ids') or []
-                in_crm = [crm_names.get(int(s), '') for s in sids]
                 mine = 0
                 if booking_group.get((weekday, time, teacher)) == group:
                     mine = sum(
                         1
                         for child in booked.get((weekday, time, teacher), [])
-                        if not any(same_child(child, nm) for nm in in_crm)
+                        if not any(same_child(child, nm) for nm in crm_everywhere)
                     )
                 free_map[(off, time, teacher, group)] = max(0, int(cell.get('free') or 0) - mine)
 
