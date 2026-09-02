@@ -140,6 +140,17 @@ export const vacationReturnDue = (v: StudentVacation | null): boolean => {
   if (Number.isNaN(d.getTime())) return false;
 
   const partOf = (day: number) => (day <= 10 ? 0 : day <= 20 ? 1 : 2);
+
+  // Указана КОНКРЕТНАЯ дата возврата — сравниваем именно по дате, а не по
+  // декаде месяца. Напоминаем за день: ученик с датой 09.09 попадёт в
+  // «пора связаться» 08.09, а не с начала месяца.
+  if (v.vacation_end_type === 'exact') {
+    const tomorrow = new Date();
+    tomorrow.setHours(0, 0, 0, 0);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return d <= tomorrow;
+  }
+
   const part =
     v.vacation_end_type === 'start_month'
       ? 0
