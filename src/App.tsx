@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Публичные страницы — грузятся сразу, их видят клиенты.
 import Index from "./pages/Index";
@@ -75,9 +75,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/lineastudies" element={<LineaStudies />} />
-            {/* Цены прошлого сезона. Адрес /price выключен, чтобы по старым
-                ссылкам нельзя было оплатить занятия по неактуальному прайсу */}
+            {/* Цены прошлого сезона доступны только по прямой ссылке.
+                Старый адрес /price ведёт на актуальный прайс, чтобы по нему
+                нельзя было оплатить занятия по неактуальным ценам */}
             <Route path="/archiv_price" element={<Pricing />} />
+            <Route path="/price" element={<Navigate to="/price_2026-2027" replace />} />
             {/* Новые цены 2026–2027: пока без перехода с главной */}
             <Route path="/price_2026-2027" element={<Pricing20262027 />} />
             {/* Прямые ссылки на оплату конкретной услуги */}
