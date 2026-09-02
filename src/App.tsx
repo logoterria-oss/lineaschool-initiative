@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // Публичные страницы — грузятся сразу, их видят клиенты.
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import BackToAdminHome from "@/components/BackToAdminHome";
 
 // Остальное подгружается только при переходе на страницу,
 // чтобы посетитель главной не скачивал всю админку.
@@ -69,6 +70,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <BackToAdminHome />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Index />} />
