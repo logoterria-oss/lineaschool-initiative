@@ -213,8 +213,10 @@ const GroupsTab = () => {
               заполнено
             </span>
             <span className="inline-flex items-center gap-1 text-amber-700">
-              <span className="font-semibold">(б)</span>
-              бронь — ученика ещё нет в CRM
+              <span className="inline-block rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                бронь
+              </span>
+              ученика ещё нет в CRM
             </span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500 text-white">
@@ -343,10 +345,10 @@ const GroupsTab = () => {
                                       {numNode}
                                       {formatStudentName(bk.childName) || bk.childName}
                                       <span
-                                        className="ml-1 text-amber-600 font-semibold"
+                                        className="ml-1 inline-block rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-amber-700 align-middle"
                                         title="Бронь: ученика ещё нет в CRM"
                                       >
-                                        (б)
+                                        бронь
                                       </span>
                                     </li>
                                   );
