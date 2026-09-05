@@ -172,6 +172,164 @@ def _norm(name):
     return " ".join(sorted(w for w in s.split() if len(w) > 1))
 
 
+# Уменьшительные имена: в оплате родитель пишет «Паша», в CRM записан «Павел».
+# Ключ — полное имя, значения — как его ещё пишут.
+_SHORT_NAMES = {
+    "александр": ["саша", "сашка", "шура"],
+    "александра": ["саша", "сашенька"],
+    "алексей": ["леша", "алеша", "леха"],
+    "анастасия": ["настя", "ася"],
+    "андрей": ["андрюша"],
+    "анна": ["аня", "анюта"],
+    "антон": ["тоша"],
+    "арина": ["ариша"],
+    "артем": ["тема", "артемий"],
+    "богдан": ["богдаша"],
+    "борис": ["боря"],
+    "вадим": ["вадик"],
+    "валерия": ["лера"],
+    "варвара": ["варя"],
+    "василий": ["вася"],
+    "василиса": ["вася", "васелиса"],
+    "вениамин": ["веня"],
+    "вера": ["верочка"],
+    "вероника": ["ника"],
+    "виктор": ["витя"],
+    "виктория": ["вика"],
+    "владимир": ["вова", "володя"],
+    "владислав": ["влад", "владик"],
+    "вячеслав": ["слава"],
+    "георгий": ["гоша", "жора"],
+    "григорий": ["гриша"],
+    "даниил": ["даня", "данил", "данила"],
+    "дарья": ["даша"],
+    "денис": ["дениска"],
+    "дмитрий": ["дима", "митя"],
+    "евгений": ["женя"],
+    "евгения": ["женя"],
+    "егор": ["егорка"],
+    "екатерина": ["катя", "катерина"],
+    "елена": ["лена", "аленa", "алена"],
+    "елизавета": ["лиза"],
+    "иван": ["ваня"],
+    "игорь": ["игорек"],
+    "илья": ["ильюша"],
+    "ирина": ["ира"],
+    "кирилл": ["киря"],
+    "константин": ["костя"],
+    "ксения": ["ксюша"],
+    "лев": ["лева"],
+    "леонид": ["леня"],
+    "макар": ["макарка"],
+    "маргарита": ["рита"],
+    "марина": ["мариша"],
+    "мария": ["маша", "маруся"],
+    "матвей": ["мотя"],
+    "михаил": ["миша"],
+    "надежда": ["надя"],
+    "наталия": ["наташа", "наталья"],
+    "никита": ["ника"],
+    "николай": ["коля"],
+    "олег": ["олежа"],
+    "ольга": ["оля"],
+    "павел": ["паша"],
+    "петр": ["петя"],
+    "полина": ["поля"],
+    "роман": ["рома"],
+    "ростислав": ["ростик"],
+    "светлана": ["света"],
+    "семен": ["сема", "сеня", "семён"],
+    "сергей": ["сережа", "серега"],
+    "софия": ["соня", "софья"],
+    "станислав": ["стас"],
+    "степан": ["степа"],
+    "тимофей": ["тима"],
+    "федор": ["федя"],
+    "юлия": ["юля"],
+    "яна": ["яночка"],
+    "ярослав": ["ярик"],
+    "ярослава": ["яся"],
+}
+
+# Обратный словарь: форма имени → все полные имена, которыми она может быть.
+# «Саша» — и Александр, и Александра, «Вася» — и Василий, и Василиса,
+# поэтому у формы бывает несколько вариантов, и совпадением считаем
+# пересечение вариантов.
+_NAME_FORMS = {}
+for full, shorts in _SHORT_NAMES.items():
+    _NAME_FORMS.setdefault(full, set()).add(full)
+    for sh in shorts:
+        _NAME_FORMS.setdefault(sh, set()).add(full)
+
+
+def _canon_word(w):
+    """Слово к сравнимому виду: у фамилии отбрасываем изменяемое окончание.
+
+    Фамилии в CRM и в оплате различаются родом и падежом («Карцев» /
+    «Карцевы»), поэтому у длинных слов отбрасываем хвост.
+    """
+    # Известное имя не трогаем: «Василий» должен остаться собой, иначе
+    # он перестанет узнаваться как форма «Вася».
+    if w in _NAME_FORMS:
+        return w
+    if len(w) > 5:
+        for tail in ("ыми", "ими", "ова", "ева", "ина", "ой", "ая", "ые", "ый",
+                     "ий", "ы", "а", "я", "и"):
+            if w.endswith(tail) and len(w) - len(tail) >= 4:
+                return w[: -len(tail)]
+    return w
+
+
+def _tokens(name):
+    """Набор сравнимых слов имени (без отчества — оно есть не везде)."""
+    s = _clean(name).lower().replace("ё", "е")
+    s = re.sub(r"[^а-яa-z ]", " ", s)
+    out = set()
+    for w in s.split():
+        if len(w) < 2:
+            continue
+        # Отчество для сверки бесполезно: в карточке ребёнка его обычно нет.
+        if w.endswith(("ович", "евич", "овна", "евна", "ична", "инична")):
+            continue
+        out.add(_canon_word(w))
+    return out
+
+
+def _similar(a, b):
+    """Похожи ли слова: «Кегерманов» и «Кагерманов» — одна фамилия с опечаткой."""
+    if a == b:
+        return True
+    # Имя в полной и уменьшительной форме: «Вася» и «Василий».
+    fa, fb = _NAME_FORMS.get(a), _NAME_FORMS.get(b)
+    if fa and fb and (fa & fb):
+        return True
+    if abs(len(a) - len(b)) > 1 or min(len(a), len(b)) < 4:
+        return False
+    # Расстояние Левенштейна ≤ 1 — одна опечатка.
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b)) <= 1
+    short, long = (a, b) if len(a) < len(b) else (b, a)
+    for i in range(len(long)):
+        if long[:i] + long[i + 1:] == short:
+            return True
+    return False
+
+
+def _match_score(pay_tokens, crm_tokens):
+    """Сколько слов имени совпало (с поправкой на опечатки)."""
+    used = set()
+    score = 0
+    for w in pay_tokens:
+        for c in crm_tokens:
+            if c in used:
+                continue
+            if _similar(w, c):
+                used.add(c)
+                score += 1
+                break
+    return score
+
+
 # ---------- диагностики из оплат ----------
 
 def _diag_payments(months):
@@ -198,7 +356,7 @@ def _diag_payments(months):
             for name, amount, mon in cur.fetchall():
                 if mon not in out:
                     continue
-                key = _norm(name)
+                key = (name or "").strip()
                 out[mon][key] = out[mon].get(key, 0) + round(float(amount or 0))
         conn.close()
     except Exception as e:
@@ -206,25 +364,42 @@ def _diag_payments(months):
     return out
 
 
-def _match_customer(pay_key, index):
-    """Ищем ученика по ФИО из оплаты.
+def _match_customer(pay_name, candidates):
+    """Ищем ученика CRM по ФИО из оплаты.
 
-    В оплате родитель нередко пишет своё ФИО с отчеством, а в CRM записано
-    имя ребёнка. Поэтому засчитываем совпадение фамилии и имени.
+    Совпадение бывает неточным сразу по трём причинам:
+      - в оплате уменьшительное имя («Паша»), в CRM полное («Павел»);
+      - в CRM попадаются опечатки в фамилии («Кагерманов» / «Кегерманов»);
+      - платит родитель и пишет своё ФИО с отчеством.
+    Поэтому сравниваем наборы слов с поправкой на форму имени и опечатки.
+    Из нескольких кандидатов берём того, у кого совпало больше слов; при
+    равенстве предпочитаем действующего ученика, а не карточку лида.
     """
-    if pay_key in index:
-        return index[pay_key]
-    words = set(pay_key.split())
-    if len(words) < 2:
+    pay_tokens = _tokens(pay_name)
+    if not pay_tokens:
         return None
+
     best = None
-    for key, cid in index.items():
-        kw = set(key.split())
-        if len(words & kw) >= 2:
-            if best is not None and best != cid:
-                return None  # неоднозначно — лучше показать отдельной строкой
-            best = cid
-    return best
+    best_score = 0
+    ties = 0
+    for cid, tokens, is_study in candidates:
+        score = _match_score(pay_tokens, tokens)
+        if score < 2:
+            continue
+        # Карточка ученика приоритетнее карточки лида при равном совпадении.
+        rank = (score, 1 if is_study else 0)
+        if best is None or rank > best:
+            best = rank
+            best_score = score
+            best_cid = cid
+            ties = 1
+        elif rank == best:
+            ties += 1
+
+    if best is None:
+        return None
+    # Несколько одинаково подходящих карточек — угадывать нельзя.
+    return best_cid if ties == 1 or best_score >= 2 else None
 
 
 # ---------- сборка ----------
@@ -404,21 +579,51 @@ def _build_year(token, months, refresh=False):
     # Один ребёнок нередко заведён дважды: сначала лидом (is_study=0),
     # потом учеником. Диагностику вешаем на карточку ученика — иначе
     # в таблице появятся две строки на одного человека.
-    name_index = {}
-    for cid, info in sorted(customers.items(),
-                            key=lambda kv: (not kv[1].get("is_study"), kv[0])):
-        key = _norm(info.get("name"))
-        if key and key not in name_index:
-            name_index[key] = cid
+    candidates = [
+        (cid, _tokens(info.get("name")), bool(info.get("is_study")))
+        for cid, info in customers.items()
+        if info.get("name")
+    ]
     diag_by_cid = {}
     orphan = []
     for m in months:
+        # Кому в этом месяце CRM провела диагностику и кто ещё не сопоставлен —
+        # по ним подбираем оставшиеся оплаты даже при опечатке в фамилии.
+        month_diag = {cid for cid, item in (monthly.get(m) or {}).items()
+                      if item.get("diag")}
+        taken = set()
+        pending = []
         for pay_key, amount in (diag_pay.get(m) or {}).items():
-            cid = _match_customer(pay_key, name_index)
+            cid = _match_customer(pay_key, candidates)
             if cid is None:
+                pending.append((pay_key, amount))
+                continue
+            taken.add(cid)
+            slot = diag_by_cid.setdefault(cid, {})
+            slot[m] = slot.get(m, 0) + amount
+
+        # Осталась одна неопознанная оплата и ровно один ребёнок с
+        # диагностикой без оплаты — это одна и та же диагностика.
+        free = [cid for cid in month_diag
+                if cid not in taken and m not in diag_by_cid.get(cid, {})]
+        for pay_key, amount in pending:
+            match = None
+            if len(free) == 1 and len(pending) == 1:
+                match = free[0]
+            else:
+                # Иначе ищем среди тех, у кого в этом месяце была диагностика:
+                # хватает совпадения одного слова (имени или фамилии).
+                pay_tokens = _tokens(pay_key)
+                hits = [cid for cid in free
+                        if _match_score(pay_tokens, _tokens(
+                            (customers.get(cid) or {}).get("name"))) >= 1]
+                if len(hits) == 1:
+                    match = hits[0]
+            if match is None:
                 orphan.append({"month": m, "name": pay_key, "amount": amount})
                 continue
-            slot = diag_by_cid.setdefault(cid, {})
+            free.remove(match)
+            slot = diag_by_cid.setdefault(match, {})
             slot[m] = slot.get(m, 0) + amount
 
     # Список учеников: все, у кого в году был урок или оплаченная диагностика.
@@ -494,6 +699,13 @@ def handler(event: dict, context) -> dict:
 
     params = event.get("queryStringParameters") or {}
     token = _token()
+
+    if params.get("names"):
+        cust = _fetch_customers(token)
+        q = (params.get("names") or "").lower()
+        out = [{"id": cid, **info} for cid, info in cust.items()
+               if q == "1" or q in (info.get("name") or "").lower()]
+        return _json(200, {"count": len(out), "customers": out})
 
     if params.get("debug"):
         month = (params.get("month") or datetime.now().strftime("%Y-%m")).strip()
