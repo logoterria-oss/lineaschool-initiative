@@ -15,6 +15,15 @@ const REPORTS = [
     iconColor: 'text-green-600',
   },
   {
+    id: 'fact-income',
+    label: 'Фактические доходы',
+    description: 'Заработано по проведённым занятиям — по каждому ученику за год',
+    icon: 'Table' as const,
+    color: 'border-emerald-200 hover:border-emerald-400',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
+  },
+  {
     id: 'retention',
     label: 'Коэффициент удержания',
     description: 'Первичное и долгосрочное удержание клиентов',
@@ -47,7 +56,9 @@ const ReportsFinView = () => {
             onClick={() =>
               report.id === 'student-dynamics'
                 ? navigate('/admin/report/student-dynamics')
-                : setOpenReport(report.id)
+                : report.id === 'fact-income'
+                  ? navigate('/admin/report/fact-income')
+                  : setOpenReport(report.id)
             }
             className={`w-full flex items-center gap-4 bg-white rounded-xl border-2 ${report.color} p-5 text-left shadow-sm hover:shadow-md transition-all duration-200`}
           >

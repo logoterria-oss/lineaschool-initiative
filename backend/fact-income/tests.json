@@ -1,0 +1,6 @@
+{
+  "tests": [
+    {"name": "CORS preflight", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
+    {"name": "Факт за месяц", "method": "GET", "path": "/?month=2026-08", "expectedStatus": 200}
+  ]
+}

@@ -39,6 +39,7 @@ const HeadSupervisionsPage = lazyWithRetry(() => import("./pages/HeadSupervision
 const HeadViolationsPage = lazyWithRetry(() => import("./pages/HeadViolationsPage"));
 const AdminRegulationsPage = lazyWithRetry(() => import("./pages/AdminRegulationsPage"));
 const HeadStaffViolationsPage = lazyWithRetry(() => import("./pages/HeadStaffViolationsPage"));
+const FactIncomeReport = lazyWithRetry(() => import("./pages/FactIncomeReport"));
 const AdvanceIncomeReport = lazyWithRetry(() => import("./pages/AdvanceIncomeReport"));
 const RetentionReport = lazyWithRetry(() => import("./pages/RetentionReport"));
 const RetentionDynamics = lazyWithRetry(() => import("./pages/RetentionDynamics"));
@@ -110,6 +111,7 @@ const App = () => (
             <Route path="/admin/head-violations" element={<HeadViolationsPage />} />
             <Route path="/admin/regulations" element={<AdminRegulationsPage />} />
             <Route path="/admin/head-staff-violations" element={<HeadStaffViolationsPage />} />
+            <Route path="/admin/report/fact-income" element={<FactIncomeReport />} />
             <Route path="/admin/report/advance-income" element={<AdvanceIncomeReport />} />
             <Route path="/admin/report/retention" element={<RetentionReport />} />
             <Route path="/admin/report/retention-dynamics" element={<RetentionDynamics />} />
