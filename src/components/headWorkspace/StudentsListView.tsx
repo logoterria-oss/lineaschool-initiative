@@ -18,7 +18,9 @@ const StudentsListView = () => {
     setSearch,
     filtered,
     refresh,
-  } = useStudentsData();
+    // По умолчанию показываем тех, с кем работа идёт прямо сейчас:
+    // активных и каникуляров, которым пора звонить.
+  } = useStudentsData(['active', 'vacation_due']);
 
   return (
     <div>

@@ -7,11 +7,11 @@ import {
   saveStudentOverride,
 } from '@/lib/studentsApi';
 
-export const useStudentsData = () => {
+export const useStudentsData = (defaultFilter: StatusFilter[] = []) => {
   const [items, setItems] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState<StatusFilter[]>([]);
+  const [filter, setFilter] = useState<StatusFilter[]>(defaultFilter);
   const [tariffFilter, setTariffFilter] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
