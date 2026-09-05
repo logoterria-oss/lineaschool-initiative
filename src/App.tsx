@@ -56,6 +56,8 @@ const StaffHomePage = lazyWithRetry(() => import("./pages/StaffHomePage"));
 const HeadWorkspace = lazyWithRetry(() => import("./pages/HeadWorkspace"));
 const AdminWorkspace = lazyWithRetry(() => import("./pages/AdminWorkspace"));
 
+import PageTitle from "./components/PageTitle";
+
 const queryClient = new QueryClient();
 
 const PageLoader = () => (
@@ -70,6 +72,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <PageTitle />
         <BackToAdminHome />
         <Suspense fallback={<PageLoader />}>
           <Routes>
