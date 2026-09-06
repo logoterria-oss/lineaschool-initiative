@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import BookingModal from "@/components/BookingModal";
+import ContactChoiceDialog from "@/components/ContactChoiceDialog";
 
 const mobileMenu = [
   {
@@ -24,6 +25,7 @@ const mobileMenu = [
 export default function Navigation() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   return (
     <>
@@ -49,7 +51,7 @@ export default function Navigation() {
               size="lg" 
               variant="outline" 
               className="border-2 border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white text-sm lg:text-lg px-4 lg:px-8 py-2 lg:py-4 transition-all duration-300"
-              onClick={() => window.open('https://t.me/logoterria?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
+              onClick={() => setIsContactOpen(true)}
             >
               Задать вопрос
             </Button>
@@ -102,6 +104,8 @@ export default function Navigation() {
         isOpen={isBookingModalOpen} 
         onClose={() => setIsBookingModalOpen(false)} 
       />
+
+      <ContactChoiceDialog open={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </nav>
     </>
   );

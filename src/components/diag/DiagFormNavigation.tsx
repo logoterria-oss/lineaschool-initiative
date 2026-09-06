@@ -1,6 +1,10 @@
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import ContactChoiceDialog from "@/components/ContactChoiceDialog";
 
 export default function DiagFormNavigation() {
+  const [isContactOpen, setIsContactOpen] = useState(false);
+
   return (
     <nav className="bg-white shadow-sm border-b border-green-100 sticky top-0 z-50">
       <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
@@ -14,13 +18,15 @@ export default function DiagFormNavigation() {
           <div className="hidden md:flex items-center space-x-6">
             <button 
               className="border border-green-500 text-green-600 hover:bg-green-50 text-lg px-8 py-4 rounded-md"
-              onClick={() => window.open('https://t.me/logoterria?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
+              onClick={() => setIsContactOpen(true)}
             >
               Задать вопрос
             </button>
           </div>
         </div>
       </div>
+
+      <ContactChoiceDialog open={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </nav>
   );
 }

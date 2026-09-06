@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import BookingModal from "@/components/BookingModal";
+import ContactChoiceDialog from "@/components/ContactChoiceDialog";
 
 export default function CTASection() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   return (
     <section className="py-20 bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 relative overflow-hidden">
@@ -24,7 +26,7 @@ export default function CTASection() {
             size="lg" 
             variant="outline" 
             className="border-white bg-transparent text-white hover:bg-white hover:text-green-600 text-lg px-8"
-            onClick={() => window.open('https://t.me/logoterria?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank')}
+            onClick={() => setIsContactOpen(true)}
           >
             <Icon name="Mail" className="mr-2" size={20} />
             Написать нам
@@ -37,6 +39,8 @@ export default function CTASection() {
         isOpen={isBookingModalOpen} 
         onClose={() => setIsBookingModalOpen(false)} 
       />
+
+      <ContactChoiceDialog open={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </section>
   );
 }
