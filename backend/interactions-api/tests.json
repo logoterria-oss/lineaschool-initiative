@@ -11,7 +11,9 @@
       "method": "GET",
       "path": "/?action=dialogs",
       "expectedStatus": 401,
-      "expectedBody": {"error": "no_session"},
+      "expectedBody": {
+        "error": "no_session"
+      },
       "bodyMatcher": "partial"
     },
     {
@@ -19,7 +21,9 @@
       "method": "GET",
       "path": "/?action=dialogs&token=definitely-not-a-valid-token",
       "expectedStatus": 401,
-      "expectedBody": {"error": "no_session"},
+      "expectedBody": {
+        "error": "no_session"
+      },
       "bodyMatcher": "partial"
     },
     {
@@ -32,47 +36,90 @@
       "name": "Send requires auth",
       "method": "POST",
       "path": "/?action=send",
-      "body": {"dialog_id": 3, "text": "test", "author": "Тест"},
+      "body": {
+        "dialog_id": 3,
+        "text": "test",
+        "author": "Тест"
+      },
       "expectedStatus": 401
     },
     {
       "name": "Set contacts requires auth",
       "method": "POST",
       "path": "/?action=set-contacts",
-      "body": {"dialog_id": 3, "phone": "89991234567", "tgUsername": "@ivan"},
+      "body": {
+        "dialog_id": 3,
+        "phone": "89991234567",
+        "tgUsername": "@ivan"
+      },
       "expectedStatus": 401
     },
     {
       "name": "Set channel requires auth",
       "method": "POST",
       "path": "/?action=set-channel",
-      "body": {"dialog_id": 3, "channel": "telegram"},
+      "body": {
+        "dialog_id": 3,
+        "channel": "telegram"
+      },
       "expectedStatus": 401
     },
     {
       "name": "TG webhook skips own message",
       "method": "POST",
       "path": "/?action=tg-webhook",
-      "body": {"message": {"chat_id": "123456", "from_me": true, "body": "hi"}},
+      "body": {
+        "message": {
+          "chat_id": "123456",
+          "from_me": true,
+          "body": "hi"
+        }
+      },
       "expectedStatus": 200,
-      "expectedBody": {"ok": true},
+      "expectedBody": {
+        "ok": true
+      },
       "bodyMatcher": "partial"
     },
     {
       "name": "TG webhook incoming message",
       "method": "POST",
       "path": "/?action=tg-webhook",
-      "body": {"message": {"chat_id": "999000111", "senderName": "Тест ТГ", "username": "testuser", "body": "Здравствуйте"}},
+      "body": {
+        "message": {
+          "chat_id": "999000111",
+          "senderName": "Тест ТГ",
+          "username": "testuser",
+          "body": "Здравствуйте"
+        }
+      },
       "expectedStatus": 200,
-      "expectedBody": {"ok": true},
+      "expectedBody": {
+        "ok": true
+      },
       "bodyMatcher": "partial"
     },
     {
       "name": "Max webhook still open",
       "method": "POST",
       "path": "/?action=webhook",
-      "body": {"messages": []},
+      "body": {
+        "messages": []
+      },
       "expectedStatus": 200
+    },
+    {
+      "name": "Site question click accepted",
+      "method": "POST",
+      "path": "/?action=site-question",
+      "body": {
+        "channel": "telegram"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "ok": true
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

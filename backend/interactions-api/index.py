@@ -437,7 +437,7 @@ def _list_dialogs(cur) -> list:
         "d.last_time, d.crm_status, d.crm_name, d.crm_label, d.child_name, "
         "(SELECT text FROM interaction_messages m WHERE m.dialog_id = d.id "
         "ORDER BY m.created_at DESC LIMIT 1), "
-        "d.channel, d.tg_username "
+        "d.channel, d.tg_username, d.source "
         "FROM interaction_dialogs d WHERE d.hidden = false "
         "ORDER BY d.last_time DESC NULLS LAST"
     )
@@ -457,6 +457,8 @@ def _list_dialogs(cur) -> list:
             'crmStatus': crm_status,
             'crmLabel': r[10] or STATUS_LABELS.get(crm_status or '', None),
             'childName': r[11],
+            'source': r[15],
+            'sourceLabel': 'Вопрос с сайта' if r[15] == 'site_question' else None,
         })
     return out
 
@@ -592,6 +594,36 @@ def _notify_staff(cur, full_name: Optional[str], text: str) -> None:
         print(f"NOTIFY FAILED staff={full_name} err={e}")
 
 
+def _mark_site_question(cur, dialog_id: int, channel: str) -> bool:
+    '''Помечает диалог как «Вопрос с сайта».
+
+    Родитель нажал кнопку «Задать вопрос» и ушёл в мессенджер. Кто именно
+    нажал — неизвестно: он ещё ничего не написал. Поэтому клик просто
+    записываем, а первое входящее из этого мессенджера в ближайшие 30 минут
+    считаем ответом на этот клик и помечаем диалог источником.
+    '''
+    cur.execute(
+        "SELECT id FROM site_question_clicks WHERE channel = %s AND used_dialog_id IS NULL "
+        "AND created_at > now() - interval '30 minutes' ORDER BY created_at DESC LIMIT 1",
+        (channel,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return False
+    cur.execute("UPDATE site_question_clicks SET used_dialog_id = %s WHERE id = %s",
+                (dialog_id, row[0]))
+    cur.execute(
+        "UPDATE interaction_dialogs SET source = COALESCE(source, 'site_question') WHERE id = %s",
+        (dialog_id,),
+    )
+    cur.execute(
+        "INSERT INTO interaction_messages (dialog_id, direction, channel, text, author) "
+        "VALUES (%s, 'in', %s, %s, %s)",
+        (dialog_id, channel, 'Вопрос с сайта: клиент нажал кнопку «Задать вопрос»', 'Сайт'),
+    )
+    return True
+
+
 def _notify_new_message(cur, dialog_id: int, channel_label: str) -> None:
     '''Уведомляет ответственного о новом входящем сообщении от клиента.'''
     cur.execute(
@@ -693,7 +725,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             peek = json.loads(raw_body)
         except Exception:
             peek = {}
-        is_channel_hook = action in ('webhook', 'tg-webhook') or (
+        is_channel_hook = action in ('webhook', 'tg-webhook', 'site-question') or (
             method == 'POST' and not action and (
                 'messages' in peek or 'message' in peek or peek.get('event')
             )
@@ -705,6 +737,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return _resp(401, {'error': 'no_session'})
             if staff['role'] not in ('head', 'admin'):
                 return _resp(403, {'error': 'no_access'})
+
+        # Клик по кнопке «Задать вопрос» на сайте — запоминаем, чтобы пометить
+        # диалог, когда клиент напишет в выбранный мессенджер
+        if method == 'POST' and action == 'site-question':
+            channel = 'telegram' if peek.get('channel') == 'telegram' else 'max'
+            cur.execute(
+                "INSERT INTO site_question_clicks (channel) VALUES (%s) RETURNING id",
+                (channel,),
+            )
+            click_id = cur.fetchone()[0]
+            conn.commit()
+            return _resp(200, {'ok': True, 'id': click_id})
 
         if method == 'GET' and action == 'dialogs':
             data = _list_dialogs(cur)
@@ -847,6 +891,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "phone = COALESCE(NULLIF(%s, ''), phone) WHERE id = %s",
                 (name, (username or None), phone, dialog_id),
             )
+            _mark_site_question(cur, dialog_id, 'telegram')
             conn.commit()
             _notify_new_message(cur, dialog_id, 'Telegram')
             conn.commit()
@@ -899,6 +944,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "max_user_id = COALESCE(%s, max_user_id) WHERE id = %s",
                 (name, max_chat_id or None, max_user_id or None, dialog_id),
             )
+            _mark_site_question(cur, dialog_id, 'max')
             conn.commit()
             _notify_new_message(cur, dialog_id, 'Max')
             conn.commit()
