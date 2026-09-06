@@ -50,13 +50,9 @@ export default function WhyNotTeacherSection() {
     <section className="py-20 bg-white">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">
+          <h2 className="text-4xl font-bold text-gray-900">
             Почему учитель русского языка здесь не поможет?
           </h2>
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            Дислексия и дисграфия — это не незнание правил орфографии, а особенности работы мозга, 
-            которые требуют специального подхода и понимания нейропсихологических процессов
-          </p>
         </div>
 
         {/* Desktop Table */}
