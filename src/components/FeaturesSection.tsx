@@ -1,140 +1,104 @@
-import { Card } from "@/components/ui/card";
 import Icon from "@/components/ui/icon";
+
+const FEATURES = [
+  {
+    icon: "Target",
+    title: "Индивидуальный подход",
+    text: "Персональная программа коррекции, учитывающая особенности каждого ребёнка",
+    color: "from-green-400 to-emerald-600",
+  },
+  {
+    icon: "Users",
+    title: "Опытные специалисты",
+    text: "Команда сертифицированных логопедов и нейропсихологов",
+    color: "from-blue-400 to-cyan-600",
+  },
+  {
+    icon: "Monitor",
+    title: "Онлайн-формат",
+    text: "Удобные занятия из дома с интерактивными материалами",
+    color: "from-purple-400 to-indigo-600",
+  },
+  {
+    icon: "BarChart",
+    title: "Отслеживание прогресса",
+    text: "Регулярные отчёты о достижениях вашего ребёнка",
+    color: "from-orange-400 to-amber-600",
+  },
+  {
+    icon: "Heart",
+    title: "Поддержка семьи",
+    text: "Консультации и рекомендации для родителей",
+    color: "from-pink-400 to-rose-600",
+  },
+  {
+    icon: "Award",
+    title: "Гарантия результата",
+    text: "Возврат средств, если не увидите улучшений",
+    color: "from-teal-400 to-green-600",
+  },
+];
 
 export default function FeaturesSection() {
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-green-50/30">
+    <section className="py-20 bg-gradient-to-b from-white to-green-50/30 overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        <div className="text-center mb-14">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Почему выбирают нас?</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Мы используем передовые методики и индивидуальный подход к каждому ребёнку
           </p>
         </div>
 
-        {/* Desktop Grid */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Card className="border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300 p-6 bg-white hover:bg-green-50/50">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <Icon name="Target" size={26} className="text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Индивидуальный подход</h3>
-            <p className="text-gray-600">Персональная программа коррекции, учитывающая особенности каждого ребёнка</p>
-          </Card>
-
-          <Card className="border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300 p-6 bg-white hover:bg-green-50/50">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <Icon name="Users" size={26} className="text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Опытные специалисты</h3>
-            <p className="text-gray-600">Команда сертифицированных логопедов и нейропсихологов</p>
-          </Card>
-
-          <Card className="border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300 p-6 bg-white hover:bg-green-50/50">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <Icon name="Monitor" size={26} className="text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Онлайн-формат</h3>
-            <p className="text-gray-600">Удобные занятия из дома с интерактивными материалами</p>
-          </Card>
-
-          <Card className="border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300 p-6 bg-white hover:bg-green-50/50">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <Icon name="BarChart" size={26} className="text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Отслеживание прогресса</h3>
-            <p className="text-gray-600">Регулярные отчеты о достижениях вашего ребёнка</p>
-          </Card>
-
-          <Card className="border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300 p-6 bg-white hover:bg-green-50/50">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <Icon name="Heart" size={26} className="text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Поддержка семьи</h3>
-            <p className="text-gray-600">Консультации и рекомендации для родителей</p>
-          </Card>
-
-          <Card className="border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300 p-6 bg-white hover:bg-green-50/50">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <Icon name="Award" size={26} className="text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Гарантия результата</h3>
-            <p className="text-gray-600">Возврат средств, если не увидите улучшений</p>
-          </Card>
-        </div>
-
-        {/* Mobile List */}
-        <div className="md:hidden space-y-4">
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100">
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon name="Target" size={24} className="text-white" />
+        <div className="grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] gap-10 lg:gap-14 items-center">
+          {/* Фото команды */}
+          <div className="relative">
+            <div className="absolute -top-6 -left-6 w-32 h-32 bg-green-200/50 rounded-full blur-2xl" />
+            <div className="absolute -bottom-8 -right-4 w-40 h-40 bg-emerald-200/50 rounded-full blur-3xl" />
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl ring-1 ring-green-100">
+              <img
+                src="/why-us.jpg"
+                alt="Команда логопедов и нейропсихологов за работой"
+                className="w-full h-full object-cover aspect-square"
+                loading="lazy"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent p-6">
+                <div className="text-white">
+                  <div className="text-lg font-semibold">Наша команда</div>
+                  <div className="text-sm text-white/85">
+                    Логопеды и нейропсихологи, которые ведут вашего ребёнка
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Индивидуальный подход</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">Персональная программа коррекции, учитывающая особенности каждого ребёнка</p>
+            </div>
+
+            <div className="hidden lg:flex absolute -bottom-6 left-8 items-center gap-3 bg-white rounded-2xl shadow-xl px-5 py-3 border border-green-100">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
+                <Icon name="ShieldCheck" size={22} className="text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-gray-900">Образовательная лицензия</div>
+                <div className="text-xs text-gray-500">Оплата маткапиталом</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-5 border border-blue-100">
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon name="Users" size={24} className="text-white" />
+          {/* Преимущества */}
+          <div className="grid sm:grid-cols-2 gap-4 lg:gap-5">
+            {FEATURES.map((f) => (
+              <div
+                key={f.title}
+                className="group bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300"
+              >
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-3 shadow-md group-hover:scale-110 transition-transform duration-300`}
+                >
+                  <Icon name={f.icon} size={22} className="text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1.5">{f.title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{f.text}</p>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Опытные специалисты</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">Команда сертифицированных логопедов и нейропсихологов</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 border border-purple-100">
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon name="Monitor" size={24} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Онлайн-формат</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">Удобные занятия из дома с интерактивными материалами</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-5 border border-orange-100">
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon name="BarChart" size={24} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Отслеживание прогресса</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">Регулярные отчеты о достижениях вашего ребёнка</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-5 border border-pink-100">
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon name="Heart" size={24} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Поддержка семьи</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">Консультации и рекомендации для родителей</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-5 border border-yellow-100">
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon name="Award" size={24} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Гарантия результата</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">Возврат средств, если не увидите улучшений</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
