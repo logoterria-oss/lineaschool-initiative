@@ -361,7 +361,7 @@ export default function TestimonialsSection() {
 
         {/* Фото-отзывы */}
         <div>
-          <h3 className="text-2xl font-bold text-center text-gray-800 mb-12">
+          <h3 className="text-2xl font-bold text-center text-gray-800 mb-5">
             Еще больше реальных отзывов
           </h3>
           
