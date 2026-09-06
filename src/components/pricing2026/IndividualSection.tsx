@@ -28,9 +28,7 @@ export default function IndividualSection() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    Один на один с педагогом — 1 месяц
-                  </h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Один на один с педагогом (1 месяц)</h3>
                   <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-semibold">
                     8, 12 или 16 уроков
                   </span>
