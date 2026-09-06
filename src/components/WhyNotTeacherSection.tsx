@@ -50,9 +50,7 @@ export default function WhyNotTeacherSection() {
     <section className="py-20 bg-white">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-green-700">
-            Почему учитель русского языка здесь не поможет?
-          </h2>
+          <h2 className="text-4xl font-bold text-green-700">ПОЧЕМУ УЧИТЕЛЬ РУССКОГО НЕ ПОМОЖЕТ?</h2>
         </div>
 
         {/* Desktop Table */}
