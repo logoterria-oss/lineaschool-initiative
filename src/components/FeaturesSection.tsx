@@ -50,7 +50,7 @@ export default function FeaturesSection() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] gap-10 lg:gap-14 items-center">
+        <div className="grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] gap-10 lg:gap-14 items-start">
           {/* Фото команды */}
           <div className="relative">
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-green-200/50 rounded-full blur-2xl" />
@@ -72,13 +72,29 @@ export default function FeaturesSection() {
               </div>
             </div>
 
-            <div className="hidden lg:flex absolute -bottom-6 left-8 items-center gap-3 bg-white rounded-2xl shadow-xl px-5 py-3 border border-green-100">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
-                <Icon name="ShieldCheck" size={22} className="text-white" />
+            <div className="mt-6 space-y-3">
+              <div className="flex items-start gap-3 bg-white rounded-2xl shadow-md px-5 py-4 border border-green-100">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0">
+                  <Icon name="ShieldCheck" size={22} className="text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-gray-900">Образовательная лицензия</div>
+                  <div className="text-sm text-gray-600 leading-relaxed">
+                    В работе используем только научно доказанные методики
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-bold text-gray-900">Образовательная лицензия</div>
-                <div className="text-xs text-gray-500">Оплата маткапиталом</div>
+
+              <div className="flex items-start gap-3 bg-white rounded-2xl shadow-md px-5 py-4 border border-green-100">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-400 to-green-600 flex items-center justify-center flex-shrink-0">
+                  <Icon name="Wallet" size={22} className="text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-gray-900">Оплата маткапиталом</div>
+                  <div className="text-sm text-gray-600 leading-relaxed">
+                    Занятия можно оплатить материнским капиталом — поможем с оформлением
+                  </div>
+                </div>
               </div>
             </div>
           </div>
