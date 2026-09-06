@@ -87,9 +87,7 @@ export default function FeaturesSection() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-1.5">Оплата маткапиталом</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  100% стоимости занятий можно оплатить материнским капиталом
-                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">100% стоимости занятий можно оплатить за счет материнского капитала</p>
               </div>
             </div>
           </div>
