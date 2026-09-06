@@ -66,6 +66,7 @@ export default function MethodologySection() {
               <h3 className="text-2xl font-bold mb-2">Логопед + нейропсихолог: групповые занятия</h3>
 
               <div className="text-blue-50 leading-relaxed space-y-2">
+                <div>• Произвольное внимание</div>
                 <div>• Саморегуляция</div>
                 <div>• Самоконтроль</div>
               </div>
