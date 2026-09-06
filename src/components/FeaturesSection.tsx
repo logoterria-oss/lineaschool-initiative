@@ -61,9 +61,9 @@ export default function FeaturesSection() {
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent p-6">
                 <div className="text-white">
-                  <div className="text-lg font-semibold">Наша команда</div>
+                  <div className="text-lg font-semibold">Регулярные супервизии</div>
                   <div className="text-sm text-white/85">
-                    Логопеды и нейропсихологи, которые ведут вашего ребёнка
+                    Контроль качества проведения уроков от топовых специалистов
                   </div>
                 </div>
               </div>
