@@ -10,6 +10,17 @@ import {
   setBookingStatus,
 } from '@/lib/bookingsApi';
 import { buildInteractionUrl } from '@/lib/interactionUrl';
+import { CrmCheckResult, checkBookingAgainstCrm } from '@/lib/bookingCrmCheck';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const STATUS_STYLE: Record<BookingStatus, string> = {
   new: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -45,6 +56,8 @@ const BookingsList = ({ currentUser }: Props) => {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [noteFor, setNoteFor] = useState<number | null>(null);
   const [note, setNote] = useState('');
+  const [checkingId, setCheckingId] = useState<number | null>(null);
+  const [warn, setWarn] = useState<{ booking: Booking; result: CrmCheckResult } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -66,6 +79,19 @@ const BookingsList = ({ currentUser }: Props) => {
     setNoteFor(null);
     setNote('');
     load();
+  };
+
+  // Перед подтверждением сверяем заявку с расписанием в CRM: если ребёнка
+  // завели на другое время, к другому педагогу или ещё не завели — предупреждаем
+  const confirmBooking = async (b: Booking) => {
+    setCheckingId(b.id);
+    const result = await checkBookingAgainstCrm(b);
+    setCheckingId(null);
+    if (result.ok) {
+      changeStatus(b, 'confirmed');
+      return;
+    }
+    setWarn({ booking: b, result });
   };
 
   const remove = async (b: Booking) => {
@@ -195,12 +221,16 @@ const BookingsList = ({ currentUser }: Props) => {
                   {b.status !== 'confirmed' && (
                     <Button
                       size="sm"
-                      onClick={() => changeStatus(b, 'confirmed')}
-                      disabled={busyId === b.id}
+                      onClick={() => confirmBooking(b)}
+                      disabled={busyId === b.id || checkingId === b.id}
                       className="gap-1.5"
                     >
-                      <Icon name="Check" size={14} />
-                      Подтвердить
+                      <Icon
+                        name={checkingId === b.id ? 'Loader2' : 'Check'}
+                        size={14}
+                        className={checkingId === b.id ? 'animate-spin' : ''}
+                      />
+                      {checkingId === b.id ? 'Сверяем с CRM…' : 'Подтвердить'}
                     </Button>
                   )}
                   {b.status !== 'rejected' && (
@@ -258,6 +288,55 @@ const BookingsList = ({ currentUser }: Props) => {
             </div>
           ))}
       </div>
+
+      <AlertDialog open={!!warn} onOpenChange={(o) => !o && setWarn(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Icon name="TriangleAlert" size={20} className="text-amber-500" />
+              {warn?.result.failed
+                ? 'Не удалось проверить расписание'
+                : 'Заявка не совпадает с расписанием в CRM'}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                {warn?.result.failed ? (
+                  <p>
+                    Расписание CRM сейчас недоступно, поэтому сверить заявку не получилось.
+                    Можно подтвердить без проверки.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      Проверьте, заведён ли ребёнок «{warn?.booking.childName}» в расписание CRM
+                      на выбранные окна:
+                    </p>
+                    <ul className="space-y-1.5">
+                      {warn?.result.mismatches.map((m, i) => (
+                        <li key={i} className="bg-amber-50 rounded-lg px-3 py-2 text-amber-900">
+                          <span className="font-medium">{m.lesson}</span>
+                          <span className="block text-amber-700">{m.reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Вернуться</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (warn) changeStatus(warn.booking, 'confirmed');
+                setWarn(null);
+              }}
+            >
+              Всё равно подтвердить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
