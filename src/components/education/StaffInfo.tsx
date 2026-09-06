@@ -84,7 +84,23 @@ const teachers: Teacher[] = [
   {
     name: "Мацвей Екатерина Андреевна",
     role: "Логопед, педагог-психолог",
-    diplomas: [],
+    diplomas: [
+      {
+        title:
+          "Диплом бакалавра — 44.03.02 Психолого-педагогическое образование, НГПУ, 2022",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/23b92f79-8e4e-4463-91d2-9f25b4f9bde9.jpg",
+      },
+      {
+        title:
+          "Диплом бакалавра — 44.03.03 Специальное (дефектологическое) образование, НГПУ, 2025",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/015af684-9845-4d98-93ee-84bfbc02551c.jpg",
+      },
+      {
+        title:
+          "Диплом магистра с отличием — 44.04.02 Психолого-педагогическое образование, НГПУ, 2024",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/e850b3a0-f821-4712-a391-6747276074e3.jpg",
+      },
+    ],
   },
 ];
 
