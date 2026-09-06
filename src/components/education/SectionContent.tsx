@@ -1,4 +1,5 @@
 import InfoRows, { DocLink } from "./InfoRows";
+import StaffInfo from "./StaffInfo";
 import {
   mainInfoRows,
   structureInfoRows,
@@ -87,6 +88,8 @@ export default function SectionContent({ id }: { id: string }) {
         <InfoRows rows={educationRows} />
       ) : id === "management" ? (
         <InfoRows rows={managementRows} />
+      ) : id === "staff" ? (
+        <StaffInfo />
       ) : id === "facilities" ? (
         <FacilitiesInfo />
       ) : id === "paid-services" ? (
