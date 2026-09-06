@@ -106,7 +106,7 @@ export default function HeroSection() {
                 },
                 {
                   beforeImage: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/46a271b1-6494-4175-9350-5664622f6687.jpg",
-                  afterImage: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/db9ad841-7611-4ff3-9da3-372fa1441a92.JPG",
+                  afterImage: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/15af0d67-5ad0-48b2-92c4-a66bc81a8584.jpg",
                   beforeAlt: "Классная работа до коррекции",
                   afterAlt: "Классная работа после коррекции"
                 },
