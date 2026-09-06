@@ -44,7 +44,7 @@ export default function FeaturesSection() {
     <section className="py-20 bg-gradient-to-b from-white to-green-50/30 overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
-          <h2 className="text-4xl font-bold text-green-700">Почему выбирают нас?</h2>
+          <h2 className="text-4xl font-bold text-green-700">ПОЧЕМУ ВЫБИРАЮТ НАС?</h2>
         </div>
 
         <div className="grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] gap-10 lg:gap-14 items-stretch">
