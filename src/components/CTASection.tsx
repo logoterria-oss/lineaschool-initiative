@@ -14,9 +14,7 @@ export default function CTASection() {
         <h2 className="text-4xl font-bold text-white mb-6">
           Начните путь к успешному обучению уже сегодня
         </h2>
-        <p className="text-xl text-green-100 mb-8 leading-relaxed">
-          Запишитесь на бесплатную консультацию и узнайте, как мы можем помочь вашему ребёнку
-        </p>
+        <p className="text-xl text-green-100 mb-8 leading-relaxed">Запишитесь на консультацию и узнайте, как мы можем помочь вашему ребёнку</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 text-lg px-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105" onClick={() => setIsBookingModalOpen(true)}>
             <Icon name="Calendar" className="mr-2" size={20} />
