@@ -47,12 +47,39 @@ const teachers: Teacher[] = [
   {
     name: "Камнева Валерия Денисовна",
     role: "Дефектолог, логопед, нейропсихолог",
-    diplomas: [],
+    diplomas: [
+      {
+        title:
+          "Диплом бакалавра — 44.03.03 Специальное (дефектологическое) образование, ВГСПУ, 2024",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/4ad89c79-16ab-49f1-95d0-7c81a7f3e637.jpg",
+      },
+      {
+        title:
+          "Диплом о профессиональной переподготовке — «Логопедия», квалификация «учитель-логопед», ВГСПУ, 2024",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/aebe40af-a37c-4f5b-a4d5-8e26b9872b9e.jpg",
+      },
+      {
+        title:
+          "Диплом о профессиональной переподготовке — «Практическая нейропсихология», 1552 часа, МИРО, 2025",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/5b089400-bbb7-40ea-b531-d7789f15f92c.jpg",
+      },
+    ],
   },
   {
     name: "Канкулова Екатерина Валерьевна",
     role: "Психолог, логопед",
-    diplomas: [],
+    diplomas: [
+      {
+        title:
+          "Диплом о высшем образовании — квалификация «психолог» по специальности «Психология», МГУПС, 2010",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/aafbbd7c-b767-4976-86e5-6cbc95e844f5.jpg",
+      },
+      {
+        title:
+          "Диплом о профессиональной переподготовке — «Логопедия», МГГУ им. М.А. Шолохова, 2013",
+        url: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/9aa20812-2587-41a6-8842-07ff24c110c7.jpg",
+      },
+    ],
   },
   {
     name: "Мацвей Екатерина Андреевна",
