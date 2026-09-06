@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import BookingModal from "@/components/BookingModal";
+import ContactChoiceDialog from "@/components/ContactChoiceDialog";
 
 export default function MobileFloatingButtons() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
-  const handleQuestionClick = () => {
-    window.open('https://t.me/logoterria?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии', '_blank');
-  };
+  const handleQuestionClick = () => setIsContactOpen(true);
 
   return (
     <>
@@ -37,6 +37,8 @@ export default function MobileFloatingButtons() {
         isOpen={isBookingModalOpen} 
         onClose={() => setIsBookingModalOpen(false)} 
       />
+
+      <ContactChoiceDialog open={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </>
   );
 }

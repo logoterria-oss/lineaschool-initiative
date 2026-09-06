@@ -20,9 +20,13 @@ export default function Footer() {
                 <Icon name="Mail" size={16} />
                 <span>lineaschool@mail.ru</span>
               </a>
-              <a href="https://t.me/logoterria?text=Здравствуйте!%20У%20меня%20есть%20вопрос%20по%20коррекции%20дислексии%20и%20дисграфии" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
+              <a href="https://t.me/linea_school" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
+                <Icon name="Send" size={16} />
+                <span>Telegram: @linea_school</span>
+              </a>
+              <a href="https://max.ru/+79169822876" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 text-gray-600 hover:text-green-500">
                 <Icon name="MessageCircle" size={16} />
-                <span>Telegram: @logoterria</span>
+                <span>Max: +7 (916) 982-28-76</span>
               </a>
             </div>
           </div>
