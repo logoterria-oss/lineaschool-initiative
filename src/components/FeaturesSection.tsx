@@ -11,31 +11,31 @@ const FEATURES = [
     icon: "Users",
     title: "Опытные специалисты",
     text: "Команда сертифицированных логопедов и нейропсихологов",
-    color: "from-blue-400 to-cyan-600",
+    color: "from-green-400 to-emerald-600",
   },
   {
     icon: "Monitor",
     title: "Онлайн-формат",
     text: "Удобные занятия из дома с интерактивными материалами",
-    color: "from-purple-400 to-indigo-600",
+    color: "from-green-400 to-emerald-600",
   },
   {
     icon: "BarChart",
     title: "Отслеживание прогресса",
     text: "Регулярные отчёты о достижениях вашего ребёнка",
-    color: "from-orange-400 to-amber-600",
+    color: "from-green-400 to-emerald-600",
   },
   {
     icon: "Heart",
     title: "Поддержка семьи",
     text: "Консультации и рекомендации для родителей",
-    color: "from-pink-400 to-rose-600",
+    color: "from-green-400 to-emerald-600",
   },
   {
     icon: "Award",
     title: "Гарантия результата",
     text: "Возврат средств, если не увидите улучшений",
-    color: "from-teal-400 to-green-600",
+    color: "from-green-400 to-emerald-600",
   },
 ];
 
@@ -82,7 +82,7 @@ export default function FeaturesSection() {
             </div>
 
             <div className="group relative flex items-center gap-4 bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
                 <Icon name="Wallet" size={22} className="text-white" />
               </div>
               <div>
