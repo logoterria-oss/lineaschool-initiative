@@ -111,6 +111,7 @@ export default function TestimonialsSection() {
 
   // Данные для фото-отзывов (по одному изображению)
   const photoReviews = [
+    "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/55982bf6-d600-4155-8b53-1b5ac2ec6498.png",
     "/5298690179890020331.jpg",
     "/5298690179890020340.jpg", 
     "/5298690179890020341.jpg",
@@ -121,7 +122,6 @@ export default function TestimonialsSection() {
     "/5298690179890020345.jpg",
     "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/ca26d372-9ed7-40be-a919-47688f793691.png",
     "/5298690179890020346.jpg",
-    "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/55982bf6-d600-4155-8b53-1b5ac2ec6498.png",
     "/5298690179890020347.jpg", 
     "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/487cf7eb-9342-4e8f-8bf2-9b3cdbde5dcc.png",
     "/5298690179890020349.jpg",
