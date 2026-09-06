@@ -103,6 +103,12 @@ export default function HeroSection() {
                   afterImage: "https://cdn.poehali.dev/files/eb1d9de3-ef3a-4a67-b5ff-9cb32fefb4ab.jpg",
                   beforeAlt: "Рассказ до коррекции",
                   afterAlt: "Рассказ после коррекции"
+                },
+                {
+                  beforeImage: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/db9ad841-7611-4ff3-9da3-372fa1441a92.JPG",
+                  afterImage: "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/46a271b1-6494-4175-9350-5664622f6687.jpg",
+                  beforeAlt: "Классная работа до коррекции",
+                  afterAlt: "Классная работа после коррекции"
                 }
               ]}
             />
