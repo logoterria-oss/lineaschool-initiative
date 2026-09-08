@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import BookingModal from '@/components/BookingModal';
+import CTASection from '@/components/CTASection';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import DiagnosticsSection from '@/components/pricing2026/DiagnosticsSection';
@@ -81,6 +82,8 @@ export default function Pricing20262027() {
           </div>
         </div>
       </main>
+
+      <CTASection />
 
       <Footer />
 
