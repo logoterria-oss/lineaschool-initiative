@@ -118,9 +118,7 @@ export default function FeaturesSection() {
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-1.5">Гарантия результата</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Возврат средств, если не увидите улучшений
-            </p>
+            <p className="text-sm text-gray-600 leading-relaxed">Возврат средств, если не будет улучшений</p>
           </div>
         </div>
       </div>
