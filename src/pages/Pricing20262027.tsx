@@ -1,17 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import BookingModal from '@/components/BookingModal';
 import CTASection from '@/components/CTASection';
-import { Button } from '@/components/ui/button';
-import Icon from '@/components/ui/icon';
 import DiagnosticsSection from '@/components/pricing2026/DiagnosticsSection';
 import SubscriptionsSection from '@/components/pricing2026/SubscriptionsSection';
 import IndividualSection from '@/components/pricing2026/IndividualSection';
 
 export default function Pricing20262027() {
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-
   useEffect(() => {
     document.title = 'Стоимость занятий 2026–2027 - ЛинэяСкул';
 
@@ -66,28 +61,12 @@ export default function Pricing20262027() {
           <DiagnosticsSection />
           <SubscriptionsSection />
           <IndividualSection />
-
-          <div className="text-center mt-12">
-            <p className="text-gray-600 mb-4">
-              Не знаете, какой тариф выбрать? Запишитесь на бесплатную консультацию
-            </p>
-            <Button
-              variant="outline"
-              className="border-green-500 text-green-600 hover:bg-green-50"
-              onClick={() => setIsBookingModalOpen(true)}
-            >
-              <Icon name="MessageCircle" className="mr-2" size={20} />
-              Получить консультацию
-            </Button>
-          </div>
         </div>
       </main>
 
       <CTASection />
 
       <Footer />
-
-      <BookingModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
     </div>
   );
 }
