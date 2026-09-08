@@ -112,8 +112,8 @@ export default function FeaturesSection() {
         </div>
 
         {/* Главное обещание — отдельной строкой, в стиле остальных карточек */}
-        <div className="mt-5 lg:mt-6 flex flex-col sm:flex-row items-center justify-center gap-4 bg-white rounded-2xl p-5 border border-green-100 text-center sm:text-left">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+        <div className="group mt-5 lg:mt-6 flex flex-col sm:flex-row items-center justify-center gap-4 bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300 text-center sm:text-left">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
             <Icon name="Award" size={22} className="text-white" />
           </div>
           <div>
