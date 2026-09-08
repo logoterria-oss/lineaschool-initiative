@@ -71,46 +71,53 @@ def _post_via_ip(ip: str, token: str, method: str, payload: dict, timeout: float
         return resp.status, resp.read().decode('utf-8')[:limit]
 
 
-def send_telegram(token: str, chat_id, text: str, timeout: float = 2.0) -> bool:
-    """Отправить сообщение. True — доставлено.
+def _send_once(token: str, chat_id, text: str, timeout: float) -> str:
+    """Одна отправка. Возвращает 'ok', 'rejected' или 'netfail'.
 
-    Пробуем ограниченное число адресов: недоступный адрес не отвечает
-    мгновенно, а висит до таймаута, поэтому полный обход списка тратит
-    всё время функции и обрывает рассылку остальным получателям.
-    Ошибка Telegram по существу (неверный chat_id, бот заблокирован) —
-    повторять бессмысленно, такие ответы прекращают перебор.
+    Различать важно: отказ Telegram по существу (неизвестный chat_id,
+    бот заблокирован) повторять бессмысленно, а сетевой сбой —
+    наоборот, лечится повторной попыткой.
     """
     global _last_good_ip
 
-    if not token or not chat_id or not text:
-        return False
-
     payload = {'chat_id': str(chat_id), 'text': text}
 
-    for ip in _ip_order()[:MAX_IP_ATTEMPTS]:
+    # Недоступный адрес не отвечает мгновенно, а висит до таймаута, поэтому
+    # список коротким. Если рабочий адрес уже известен, вторую попытку
+    # разумнее сделать к нему же, чем к заведомо молчащему соседу.
+    order = list(_ip_order()[:MAX_IP_ATTEMPTS])
+    if _last_good_ip and order and order[0] == _last_good_ip:
+        order.insert(1, _last_good_ip)
+
+    for ip in order:
         try:
             status, body = _post_via_ip(ip, token, 'sendMessage', payload, timeout)
             if status == 200:
                 _last_good_ip = ip
                 print(f'TG: доставлено на {chat_id} через {ip}')
-                return True
+                return 'ok'
             print(f'TG: {ip} ответил {status}: {body}')
         except urllib.error.HTTPError as e:
-            # Telegram ответил — соединение рабочее, но запрос отклонён.
-            # Другой адрес даст тот же результат, перебор не нужен.
             body = ''
             try:
                 body = e.read().decode('utf-8')[:300]
             except Exception:
                 pass
             print(f'TG: отказ Telegram для {chat_id}: HTTP {e.code} {body}')
-            return False
+            return 'rejected'
         except (socket.timeout, urllib.error.URLError, OSError) as e:
             print(f'TG: {ip} недоступен ({type(e).__name__}), пробуем следующий')
             continue
 
-    print(f'TG: НЕ доставлено на {chat_id} — Telegram не ответил')
-    return False
+    print(f'TG: адрес не ответил при отправке на {chat_id}')
+    return 'netfail'
+
+
+def send_telegram(token: str, chat_id, text: str, timeout: float = 2.0) -> bool:
+    """Отправить сообщение. True — доставлено."""
+    if not token or not chat_id or not text:
+        return False
+    return _send_once(token, chat_id, text, timeout) == 'ok'
 
 
 def get_recent_chats(token: str, timeout: float = 3.0) -> list:
@@ -187,14 +194,31 @@ def notify_all(token: str, chat_ids, text: str, timeout: float = 2.0) -> dict:
     обрабатывается независимо.
     """
     result = {}
+    retry = []
     seen = set()
     for chat_id in chat_ids or []:
         if not chat_id or chat_id in seen:
             continue
         seen.add(chat_id)
         try:
-            result[str(chat_id)] = send_telegram(token, chat_id, text, timeout)
+            outcome = _send_once(token, chat_id, text, timeout)
         except Exception as e:
             print(f'TG: непредвиденная ошибка для {chat_id}: {type(e).__name__}: {e}')
-            result[str(chat_id)] = False
+            outcome = 'netfail'
+        result[str(chat_id)] = outcome == 'ok'
+        if outcome == 'netfail':
+            retry.append(chat_id)
+
+    # Первому получателю часто достаётся «холодный» адрес: пока неизвестно,
+    # какой из адресов Telegram сегодня жив, попытка уходит в таймаут.
+    # После первого успеха рабочий адрес известен — повторяем тех, кого
+    # не удалось доставить по сетевой причине.
+    if retry and _last_good_ip:
+        for chat_id in retry:
+            try:
+                if _send_once(token, chat_id, text, timeout) == 'ok':
+                    result[str(chat_id)] = True
+            except Exception as e:
+                print(f'TG: повтор не удался для {chat_id}: {type(e).__name__}: {e}')
+
     return result
