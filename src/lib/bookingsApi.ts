@@ -224,11 +224,6 @@ export const setBookingStatus = async (
   return data.booking || null;
 };
 
-export const deleteBooking = async (id: number): Promise<boolean> => {
-  const res = await fetch(`${BOOKINGS_URL}?action=booking&id=${id}`, { method: 'DELETE' });
-  return res.ok;
-};
-
 export const fetchBookingLinks = async (): Promise<BookingLink[]> => {
   const res = await fetch(`${BOOKINGS_URL}?action=links`);
   const data = await json(res);

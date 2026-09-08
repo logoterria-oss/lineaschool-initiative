@@ -790,15 +790,17 @@ def handler(event: dict, context) -> dict:
             return _resp(200, {'ok': True, 'booking': _row_to_booking(rows[0])})
 
         if method == 'DELETE' and action == 'booking':
-            # Удаляем заявку целиком, а не одно занятие из неё
-            bid = int(params.get('id'))
-            cur.execute(
-                "DELETE FROM slot_bookings WHERE id = %s OR (batch_id IS NOT NULL "
-                "AND batch_id = (SELECT batch_id FROM slot_bookings WHERE id = %s))",
-                (bid, bid),
+            # Удаление заявок отключено намеренно: несколько заявок родителей
+            # были стёрты безвозвратно, и восстановить их удалось только по
+            # тексту переписки. Ненужную заявку отклоняют — она остаётся
+            # в истории и её видно в фильтре «Отклонённые».
+            return _resp(
+                405,
+                {
+                    'error': 'delete_disabled',
+                    'message': 'Заявки не удаляются. Используйте «Отклонить»',
+                },
             )
-            conn.commit()
-            return _resp(200, {'ok': True})
 
         return _resp(400, {'error': 'unknown_action', 'action': action})
     finally:

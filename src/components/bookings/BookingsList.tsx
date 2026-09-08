@@ -5,7 +5,6 @@ import Icon from '@/components/ui/icon';
 import {
   Booking,
   BookingStatus,
-  deleteBooking,
   fetchBookings,
   setBookingStatus,
 } from '@/lib/bookingsApi';
@@ -92,16 +91,6 @@ const BookingsList = ({ currentUser }: Props) => {
       return;
     }
     setWarn({ booking: b, result });
-  };
-
-  const remove = async (b: Booking) => {
-    const n = b.lessons?.length ?? 1;
-    const what = n > 1 ? `заявку «${b.childName}» (${n} занятия)` : `бронь «${b.childName}»`;
-    if (!confirm(`Удалить ${what}?`)) return;
-    setBusyId(b.id);
-    await deleteBooking(b.id);
-    setBusyId(null);
-    load();
   };
 
   return (
@@ -248,16 +237,6 @@ const BookingsList = ({ currentUser }: Props) => {
                       Отклонить
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => remove(b)}
-                    disabled={busyId === b.id}
-                    className="text-gray-400 hover:text-red-600"
-                    title="Удалить"
-                  >
-                    <Icon name="Trash2" size={14} />
-                  </Button>
                 </div>
               </div>
 
