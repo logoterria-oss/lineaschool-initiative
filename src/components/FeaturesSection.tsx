@@ -32,9 +32,9 @@ const FEATURES = [
     color: "from-green-400 to-emerald-600",
   },
   {
-    icon: "Award",
-    title: "Гарантия результата",
-    text: "Возврат средств, если не увидите улучшений",
+    icon: "ShieldCheck",
+    title: "Образовательная лицензия",
+    text: "Работаем официально: лицензия на образовательную деятельность",
     color: "from-green-400 to-emerald-600",
   },
 ];
@@ -71,12 +71,12 @@ export default function FeaturesSection() {
 
             <div className="group relative flex items-center gap-4 bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <Icon name="ShieldCheck" size={22} className="text-white" />
+                <Icon name="ReceiptText" size={22} className="text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1.5">Образовательная лицензия</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-1.5">Налоговый вычет</h3>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  В работе используем только научно доказанные методики
+                  Вернём 13% от стоимости занятий — подготовим документы
                 </p>
               </div>
             </div>
@@ -108,6 +108,25 @@ export default function FeaturesSection() {
                 <p className="text-sm text-gray-600 leading-relaxed">{f.text}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Главное обещание — во всю ширину, чтобы его точно заметили */}
+        <div className="mt-10 lg:mt-14 relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 shadow-2xl">
+          <div className="absolute -top-10 -right-10 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-16 -left-10 w-64 h-64 bg-emerald-300/20 rounded-full blur-3xl" />
+          <div className="relative flex flex-col sm:flex-row items-center gap-5 sm:gap-7 p-8 sm:p-10 text-center sm:text-left">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0 ring-1 ring-white/30">
+              <Icon name="Award" size={38} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                Гарантия результата
+              </h3>
+              <p className="text-base sm:text-lg text-green-50 leading-relaxed">
+                Возврат средств, если не увидите улучшений
+              </p>
+            </div>
           </div>
         </div>
       </div>
