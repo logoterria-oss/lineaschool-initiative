@@ -89,6 +89,20 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     onClose();
     setIsConfirmationOpen(true);
 
+    // Каждая заявка требует отдельного согласия, поэтому форму очищаем:
+    // иначе следующий человек за тем же компьютером отправил бы заявку
+    // с уже проставленной чужой галочкой.
+    setFormData({
+      childName: "",
+      childBirthDate: "",
+      parentName: "",
+      phone: "+7 ",
+      telegram: "@",
+      messengerTelegram: false,
+      messengerMax: false,
+      privacyConsent: false,
+    });
+
     fetch(leadProcessorUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
