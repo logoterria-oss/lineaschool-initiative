@@ -36,16 +36,19 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     telegram: "@",
     messengerTelegram: false,
     messengerMax: false,
+    privacyConsent: false,
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [messengerError, setMessengerError] = useState("");
+  const [consentError, setConsentError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneError("");
     setMessengerError("");
+    setConsentError("");
 
     const leadProcessorUrl = 'https://functions.poehali.dev/0d734a2e-55b4-41ff-a0f3-d85fb7c1e094';
     const cleanPhone = formData.phone.replace(/\D/g, '');
@@ -58,6 +61,11 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
     if (!formData.messengerTelegram && !formData.messengerMax) {
       setMessengerError("Выберите хотя бы один мессенджер");
+      return;
+    }
+
+    if (!formData.privacyConsent) {
+      setConsentError("Необходимо согласие на обработку персональных данных");
       return;
     }
 
@@ -262,6 +270,36 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           </div>
 
           <div className="flex flex-col space-y-3 pt-4">
+            <div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <Checkbox
+                  checked={formData.privacyConsent}
+                  onCheckedChange={(checked) => {
+                    handleInputChange("privacyConsent", checked as boolean);
+                    if (consentError) setConsentError("");
+                  }}
+                  className="mt-0.5"
+                />
+                <span className="text-xs text-gray-600 leading-snug">
+                  Я даю согласие на{" "}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsPrivacyOpen(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    обработку персональных данных
+                  </button>
+                  {" "}*
+                </span>
+              </label>
+              {consentError && (
+                <p className="text-red-500 text-sm mt-1">{consentError}</p>
+              )}
+            </div>
+
             <Button
               type="submit"
               className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3"
@@ -269,17 +307,6 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               <Icon name="Calendar" size={20} className="mr-2" />
               Записаться
             </Button>
-            
-            <div className="text-xs text-gray-500 text-center">
-              Нажимая на кнопку, вы даёте согласие на{" "}
-              <button 
-                type="button"
-                onClick={() => setIsPrivacyOpen(true)}
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                обработку персональных данных
-              </button>
-            </div>
           </div>
         </form>
       </DialogContent>
