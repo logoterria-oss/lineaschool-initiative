@@ -79,19 +79,25 @@ const LetterheadView = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Заголовок</label>
-            <input
-              className={field}
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Заголовок</label>
+              <span className="text-[11px] text-gray-400">Enter — новая строка</span>
+            </div>
+            <textarea
+              className={`${field} min-h-[64px] resize-y leading-relaxed`}
               value={data.title}
               onChange={(e) => set('title', e.target.value)}
-              placeholder="Запрос о предоставлении сведений"
+              placeholder={'ЗАПРОС о заключении соглашения\nоб информационном обмене'}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Текст: запрос, соглашение и т. д.
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">
+                Текст: запрос, соглашение и т. д.
+              </label>
+              <span className="text-[11px] text-gray-400">Enter — новая строка</span>
+            </div>
             <textarea
               className={`${field} min-h-[240px] resize-y leading-relaxed`}
               value={data.body}

@@ -72,6 +72,7 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
           fontWeight: 700,
           margin: '34px 0 18px',
           lineHeight: 1.4,
+          whiteSpace: 'pre-wrap',
         }}
       >
         {data.title}
