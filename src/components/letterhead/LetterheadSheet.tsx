@@ -105,47 +105,83 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
     </div>
 
     <div style={{ marginTop: 46, fontSize: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18 }}>
-        <div style={{ flex: 1, lineHeight: 1.3, paddingBottom: 4 }}>{data.signerPost}</div>
-        <div style={{ width: 145 }}>
-          <div style={{ borderBottom: '1px solid #000', height: 26 }} />
-          <div style={{ fontSize: 9.5, color: '#555', marginTop: 4, textAlign: 'center' }}>
-            подпись
-          </div>
-        </div>
-        <div style={{ width: 190 }}>
-          <div
-            style={{
-              borderBottom: '1px solid #000',
-              height: 26,
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              paddingBottom: 4,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {data.signerName}
-          </div>
-          <div style={{ fontSize: 9.5, color: '#555', marginTop: 4, textAlign: 'center' }}>
-            расшифровка подписи
-          </div>
-        </div>
-      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <tbody>
+          <tr>
+            <td style={{ verticalAlign: 'bottom', padding: 0, lineHeight: 1.2 }}>
+              {data.signerPost}
+            </td>
+            <td style={{ width: 20, padding: 0 }} />
+            <td
+              style={{
+                width: 145,
+                padding: 0,
+                verticalAlign: 'bottom',
+                borderBottom: '1px solid #000',
+              }}
+            />
+            <td style={{ width: 20, padding: 0 }} />
+            <td
+              style={{
+                width: 190,
+                padding: 0,
+                verticalAlign: 'bottom',
+                textAlign: 'center',
+                borderBottom: '1px solid #000',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.2,
+              }}
+            >
+              {data.signerName}
+            </td>
+          </tr>
+          <tr style={{ fontSize: 9.5, color: '#555' }}>
+            <td style={{ padding: 0 }} />
+            <td style={{ padding: 0 }} />
+            <td style={{ padding: '4px 0 0', textAlign: 'center' }}>подпись</td>
+            <td style={{ padding: 0 }} />
+            <td style={{ padding: '4px 0 0', textAlign: 'center' }}>расшифровка подписи</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <div style={{ marginTop: 28, display: 'flex', alignItems: 'flex-end', gap: 18 }}>
-        <div style={{ width: 200 }}>
-          <div style={{ borderBottom: '1px solid #000', height: 26 }} />
-          <div style={{ fontSize: 9.5, color: '#555', marginTop: 4, textAlign: 'center' }}>
-            дата подписания
-          </div>
-        </div>
-        <div style={{ flex: 1, textAlign: 'right', fontSize: 12, color: '#555', paddingBottom: 4 }}>
-          {data.stampMode === 'mp' && 'М.П. '}
-          {data.stampMode === 'note' && 'Печать не используется. '}
-          {data.city}
-        </div>
-      </div>
+      <table
+        style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginTop: 30 }}
+      >
+        <tbody>
+          <tr>
+            <td
+              style={{
+                width: 200,
+                padding: 0,
+                height: 22,
+                borderBottom: '1px solid #000',
+                verticalAlign: 'bottom',
+              }}
+            />
+            <td style={{ width: 20, padding: 0 }} />
+            <td
+              style={{
+                padding: 0,
+                verticalAlign: 'bottom',
+                textAlign: 'right',
+                fontSize: 12,
+                color: '#555',
+                lineHeight: 1.2,
+              }}
+            >
+              {data.stampMode === 'mp' && 'М.П. '}
+              {data.stampMode === 'note' && 'Печать не используется. '}
+              {data.city}
+            </td>
+          </tr>
+          <tr style={{ fontSize: 9.5, color: '#555' }}>
+            <td style={{ padding: '4px 0 0', textAlign: 'center' }}>дата подписания</td>
+            <td style={{ padding: 0 }} />
+            <td style={{ padding: 0 }} />
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 ));
