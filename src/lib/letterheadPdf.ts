@@ -14,8 +14,9 @@ export const buildDocFileName = (title: string, suffix: string): string => {
   return `${clean || 'Документ'}_${suffix}.pdf`;
 };
 
-const buildPdf = async (el: HTMLElement): Promise<jsPDF | null> => {
+const buildPdf = async (el: HTMLElement, meta?: string): Promise<jsPDF | null> => {
   const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  if (meta) pdf.setProperties({ keywords: meta });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
 
@@ -76,13 +77,17 @@ const buildPdf = async (el: HTMLElement): Promise<jsPDF | null> => {
   }
 };
 
-export const savePaperToPdf = async (el: HTMLElement, fileName: string): Promise<void> => {
-  const pdf = await buildPdf(el);
+export const savePaperToPdf = async (
+  el: HTMLElement,
+  fileName: string,
+  meta?: string,
+): Promise<void> => {
+  const pdf = await buildPdf(el, meta);
   if (pdf) pdf.save(fileName);
 };
 
-export const paperToPdfBase64 = async (el: HTMLElement): Promise<string> => {
-  const pdf = await buildPdf(el);
+export const paperToPdfBase64 = async (el: HTMLElement, meta?: string): Promise<string> => {
+  const pdf = await buildPdf(el, meta);
   if (!pdf) return '';
   return pdf.output('datauristring').split(',')[1] || '';
 };

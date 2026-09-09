@@ -5,6 +5,8 @@ import LetterheadSheet, { LetterData } from '@/components/letterhead/LetterheadS
 import { savePaperToPdf, paperToPdfBase64, buildDocFileName } from '@/lib/letterheadPdf';
 import { ORG_DETAILS } from '@/lib/orgDetails';
 import { LETTERHEAD_DOCS_URL, SavedDoc } from '@/lib/letterheadApi';
+import { encodeMeta } from '@/lib/letterheadParse';
+import ImportDocPanel from '@/components/letterhead/ImportDocPanel';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -44,9 +46,24 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
         },
   );
 
+  const [imported, setImported] = useState('');
+
   const set = (k: keyof LetterData, v: string) => {
     setArchived(false);
     setData((p) => ({ ...p, [k]: v }) as LetterData);
+  };
+
+  const applyImport = (patch: Partial<LetterData>, note: string) => {
+    setArchived(false);
+    setImported(note);
+    setData((p) => {
+      const next = { ...p };
+      (Object.keys(patch) as Array<keyof LetterData>).forEach((k) => {
+        const v = patch[k];
+        if (v !== undefined && v !== '') (next as Record<string, unknown>)[k] = v;
+      });
+      return next;
+    });
   };
 
   const fileName = buildDocFileName(data.title, ORG_DETAILS.fileSuffix);
@@ -55,7 +72,7 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
     if (!sheetRef.current) return;
     setSaving(true);
     try {
-      await savePaperToPdf(sheetRef.current, fileName);
+      await savePaperToPdf(sheetRef.current, fileName, encodeMeta(data));
     } finally {
       setSaving(false);
     }
@@ -65,7 +82,7 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
     if (!sheetRef.current) return;
     setArchiving(true);
     try {
-      const pdfBase64 = await paperToPdfBase64(sheetRef.current);
+      const pdfBase64 = await paperToPdfBase64(sheetRef.current, encodeMeta(data));
       await fetch(LETTERHEAD_DOCS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,6 +108,15 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
 
       <div className="grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-6 items-start">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4 lg:sticky lg:top-4">
+          <ImportDocPanel onApply={applyImport} />
+
+          {imported && (
+            <div className="flex items-start gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg p-2.5">
+              <Icon name="CircleCheck" size={14} className="mt-0.5 flex-shrink-0" />
+              <span className="leading-relaxed">{imported}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Номер документа</label>
