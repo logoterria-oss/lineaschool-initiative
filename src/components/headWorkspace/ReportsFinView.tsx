@@ -4,6 +4,8 @@ import Icon from '@/components/ui/icon';
 import PaymentReportModal from '@/components/PaymentReportModal';
 import RetentionReportModal from '@/components/RetentionReportModal';
 import LetterheadView from '@/components/headWorkspace/LetterheadView';
+import SavedDocsList from '@/components/letterhead/SavedDocsList';
+import { SavedDoc } from '@/lib/letterheadApi';
 
 const REPORTS = [
   {
@@ -51,23 +53,66 @@ const REPORTS = [
     iconBg: 'bg-amber-100',
     iconColor: 'text-amber-600',
   },
+  {
+    id: 'saved-docs',
+    label: 'Сохранённые',
+    description: 'Архив созданных документов на фирменном бланке',
+    icon: 'FolderOpen' as const,
+    color: 'border-orange-200 hover:border-orange-400',
+    iconBg: 'bg-orange-100',
+    iconColor: 'text-orange-600',
+  },
 ];
 
 const ReportsFinView = () => {
   const navigate = useNavigate();
   const [openReport, setOpenReport] = useState<string | null>(null);
+  const [editDoc, setEditDoc] = useState<SavedDoc | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const back = (
+    <button
+      onClick={() => {
+        setOpenReport(null);
+        setEditDoc(null);
+      }}
+      className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+    >
+      <Icon name="ArrowLeft" size={16} />
+      Назад к отчётам
+    </button>
+  );
 
   if (openReport === 'letterhead') {
     return (
       <div className="space-y-4">
-        <button
-          onClick={() => setOpenReport(null)}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
-        >
-          <Icon name="ArrowLeft" size={16} />
-          Назад к отчётам
-        </button>
-        <LetterheadView />
+        {back}
+        <LetterheadView
+          key={editDoc?.id ?? 'new'}
+          initial={editDoc}
+          onSaved={() => setRefreshKey((k) => k + 1)}
+        />
+      </div>
+    );
+  }
+
+  if (openReport === 'saved-docs') {
+    return (
+      <div className="space-y-4">
+        {back}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Сохранённые документы</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Архив официальных бланков — скачайте PDF или откройте для правки
+          </p>
+        </div>
+        <SavedDocsList
+          refreshKey={refreshKey}
+          onOpen={(d) => {
+            setEditDoc(d);
+            setOpenReport('letterhead');
+          }}
+        />
       </div>
     );
   }
@@ -83,7 +128,7 @@ const ReportsFinView = () => {
                 ? navigate('/admin/report/student-dynamics')
                 : report.id === 'fact-income'
                   ? navigate('/admin/report/fact-income')
-                  : setOpenReport(report.id)
+                  : (setEditDoc(null), setOpenReport(report.id))
             }
             className={`w-full flex items-center gap-4 bg-white rounded-xl border-2 ${report.color} p-5 text-left shadow-sm hover:shadow-md transition-all duration-200`}
           >

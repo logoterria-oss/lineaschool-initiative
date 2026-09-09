@@ -2,37 +2,79 @@ import { useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import LetterheadSheet, { LetterData } from '@/components/letterhead/LetterheadSheet';
-import { savePaperToPdf } from '@/lib/letterheadPdf';
+import { savePaperToPdf, paperToPdfBase64, buildDocFileName } from '@/lib/letterheadPdf';
 import { ORG_DETAILS } from '@/lib/orgDetails';
+import { LETTERHEAD_DOCS_URL, SavedDoc } from '@/lib/letterheadApi';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-const LetterheadView = () => {
+interface Props {
+  initial?: SavedDoc | null;
+  onSaved?: () => void;
+}
+
+const LetterheadView = ({ initial = null, onSaved }: Props) => {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
-  const [data, setData] = useState<LetterData>({
-    docNumber: '',
-    docDate: today(),
-    recipient: '',
-    title: '',
-    body: '',
-    signerPost: ORG_DETAILS.signerPost,
-    signerName: ORG_DETAILS.signerName,
-    city: 'г. Новосибирск',
-    stampMode: 'none',
-  });
+  const [archiving, setArchiving] = useState(false);
+  const [archived, setArchived] = useState(false);
+  const [data, setData] = useState<LetterData>(
+    initial
+      ? {
+          docNumber: initial.doc_number || '',
+          docDate: initial.doc_date ? initial.doc_date.slice(0, 10) : today(),
+          recipient: initial.recipient || '',
+          title: initial.title || '',
+          body: initial.body || '',
+          signerPost: initial.signer_post || ORG_DETAILS.signerPost,
+          signerName: initial.signer_name || ORG_DETAILS.signerName,
+          city: initial.city || 'г. Новосибирск',
+          stampMode: (initial.stamp_mode as LetterData['stampMode']) || 'none',
+        }
+      : {
+          docNumber: '',
+          docDate: today(),
+          recipient: '',
+          title: '',
+          body: '',
+          signerPost: ORG_DETAILS.signerPost,
+          signerName: ORG_DETAILS.signerName,
+          city: 'г. Новосибирск',
+          stampMode: 'none',
+        },
+  );
 
-  const set = (k: keyof LetterData, v: string) =>
-    setData((p) => ({ ...p, [k]: v } as LetterData));
+  const set = (k: keyof LetterData, v: string) => {
+    setArchived(false);
+    setData((p) => ({ ...p, [k]: v }) as LetterData);
+  };
+
+  const fileName = buildDocFileName(data.title, ORG_DETAILS.fileSuffix);
 
   const savePdf = async () => {
     if (!sheetRef.current) return;
     setSaving(true);
     try {
-      const name = data.docNumber ? `Бланк_${data.docNumber}` : `Бланк_${data.docDate}`;
-      await savePaperToPdf(sheetRef.current, `${name}.pdf`);
+      await savePaperToPdf(sheetRef.current, fileName);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveToArchive = async () => {
+    if (!sheetRef.current) return;
+    setArchiving(true);
+    try {
+      const pdfBase64 = await paperToPdfBase64(sheetRef.current);
+      await fetch(LETTERHEAD_DOCS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, fileName, pdfBase64 }),
+      });
+      setArchived(true);
+      onSaved?.();
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -158,10 +200,36 @@ const LetterheadView = () => {
             </p>
           </div>
 
-          <Button onClick={savePdf} disabled={saving} className="w-full bg-green-600 hover:bg-green-700">
-            <Icon name={saving ? 'Loader2' : 'Download'} size={16} className={`mr-2 ${saving ? 'animate-spin' : ''}`} />
-            {saving ? 'Готовим файл…' : 'Сохранить PDF'}
-          </Button>
+          <div className="space-y-2 pt-1">
+            <div className="text-[11px] text-gray-400 truncate" title={fileName}>
+              Файл: {fileName}
+            </div>
+            <Button
+              onClick={savePdf}
+              disabled={saving || archiving}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              <Icon
+                name={saving ? 'Loader2' : 'Download'}
+                size={16}
+                className={`mr-2 ${saving ? 'animate-spin' : ''}`}
+              />
+              {saving ? 'Готовим файл…' : 'Скачать PDF'}
+            </Button>
+            <Button
+              onClick={saveToArchive}
+              disabled={saving || archiving}
+              variant="outline"
+              className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+            >
+              <Icon
+                name={archiving ? 'Loader2' : archived ? 'Check' : 'Archive'}
+                size={16}
+                className={`mr-2 ${archiving ? 'animate-spin' : ''}`}
+              />
+              {archiving ? 'Сохраняем…' : archived ? 'Сохранено в архив' : 'Сохранить в архив'}
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto pb-4">

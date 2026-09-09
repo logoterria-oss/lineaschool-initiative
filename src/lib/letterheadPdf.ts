@@ -3,7 +3,18 @@ import html2canvas from 'html2canvas';
 
 const SCALE = 2;
 
-export const savePaperToPdf = async (el: HTMLElement, fileName: string): Promise<void> => {
+export const buildDocFileName = (title: string, suffix: string): string => {
+  const clean = (title || 'Документ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, '')
+    .slice(0, 70)
+    .trim()
+    .replace(/\s/g, '_');
+  return `${clean || 'Документ'}_${suffix}.pdf`;
+};
+
+const buildPdf = async (el: HTMLElement): Promise<jsPDF | null> => {
   const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
@@ -39,7 +50,7 @@ export const savePaperToPdf = async (el: HTMLElement, fileName: string): Promise
 
     const page = document.createElement('canvas');
     const ctx = page.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return null;
 
     let offset = 0;
     let first = true;
@@ -59,8 +70,19 @@ export const savePaperToPdf = async (el: HTMLElement, fileName: string): Promise
       offset += sliceH;
     }
 
-    pdf.save(fileName);
+    return pdf;
   } finally {
     holder.remove();
   }
+};
+
+export const savePaperToPdf = async (el: HTMLElement, fileName: string): Promise<void> => {
+  const pdf = await buildPdf(el);
+  if (pdf) pdf.save(fileName);
+};
+
+export const paperToPdfBase64 = async (el: HTMLElement): Promise<string> => {
+  const pdf = await buildPdf(el);
+  if (!pdf) return '';
+  return pdf.output('datauristring').split(',')[1] || '';
 };

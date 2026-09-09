@@ -34,8 +34,19 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
     }}
   >
     <div style={{ textAlign: 'center', lineHeight: 1.35 }}>
-      <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '0.02em' }}>
-        {O.fullName.toUpperCase()}
+      <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: '0.06em' }}>
+        ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ
+      </div>
+      <div
+        style={{
+          fontSize: 17,
+          fontWeight: 700,
+          letterSpacing: '0.02em',
+          marginTop: 3,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {O.personName.toUpperCase()}
       </div>
       <div style={{ fontSize: 11.5, marginTop: 6 }}>
         ОГРНИП {O.ogrnip} · ИНН {O.inn}
@@ -94,26 +105,42 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
     </div>
 
     <div style={{ marginTop: 46, fontSize: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20 }}>
-        <div style={{ flex: 1 }}>{data.signerPost}</div>
-        <div style={{ width: 150, textAlign: 'center' }}>
-          <div style={{ borderBottom: '1px solid #000', height: 22 }} />
-          <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>подпись</div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18 }}>
+        <div style={{ flex: 1, lineHeight: 1.3, paddingBottom: 4 }}>{data.signerPost}</div>
+        <div style={{ width: 145 }}>
+          <div style={{ borderBottom: '1px solid #000', height: 26 }} />
+          <div style={{ fontSize: 9.5, color: '#555', marginTop: 4, textAlign: 'center' }}>
+            подпись
+          </div>
         </div>
-        <div style={{ width: 170, textAlign: 'center' }}>
-          <div style={{ borderBottom: '1px solid #000', height: 22, paddingBottom: 2 }}>
+        <div style={{ width: 190 }}>
+          <div
+            style={{
+              borderBottom: '1px solid #000',
+              height: 26,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              paddingBottom: 4,
+              whiteSpace: 'nowrap',
+            }}
+          >
             {data.signerName}
           </div>
-          <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>расшифровка подписи</div>
+          <div style={{ fontSize: 9.5, color: '#555', marginTop: 4, textAlign: 'center' }}>
+            расшифровка подписи
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 26, display: 'flex', alignItems: 'flex-end', gap: 20 }}>
-        <div style={{ width: 210, textAlign: 'center' }}>
-          <div style={{ borderBottom: '1px solid #000', height: 22 }} />
-          <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>дата подписания</div>
+      <div style={{ marginTop: 28, display: 'flex', alignItems: 'flex-end', gap: 18 }}>
+        <div style={{ width: 200 }}>
+          <div style={{ borderBottom: '1px solid #000', height: 26 }} />
+          <div style={{ fontSize: 9.5, color: '#555', marginTop: 4, textAlign: 'center' }}>
+            дата подписания
+          </div>
         </div>
-        <div style={{ flex: 1, textAlign: 'right', fontSize: 12, color: '#555' }}>
+        <div style={{ flex: 1, textAlign: 'right', fontSize: 12, color: '#555', paddingBottom: 4 }}>
           {data.stampMode === 'mp' && 'М.П. '}
           {data.stampMode === 'note' && 'Печать не используется. '}
           {data.city}
