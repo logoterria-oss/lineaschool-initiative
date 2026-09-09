@@ -13,6 +13,24 @@ export interface LetterData {
   stampMode: 'none' | 'mp' | 'note';
 }
 
+const SIG_ROW: React.CSSProperties = {
+  height: 26,
+  display: 'flex',
+  alignItems: 'flex-end',
+  justifyContent: 'center',
+  paddingBottom: 3,
+  lineHeight: 1.15,
+  boxSizing: 'border-box',
+};
+
+const SIG_CAP: React.CSSProperties = {
+  fontSize: 9.5,
+  color: '#555',
+  textAlign: 'center',
+  paddingTop: 4,
+  lineHeight: 1.2,
+};
+
 const dmy = (iso: string) => {
   if (!iso) return '«____» ______________ 20___ г.';
   const [y, m, d] = iso.slice(0, 10).split('-');
@@ -98,90 +116,52 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
         textAlign: 'justify',
         whiteSpace: 'pre-wrap',
         marginTop: data.title ? 0 : 34,
-        flex: 1,
       }}
     >
       {data.body || ' '}
     </div>
 
-    <div style={{ marginTop: 46, fontSize: 14 }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-        <tbody>
-          <tr>
-            <td style={{ verticalAlign: 'bottom', padding: 0, lineHeight: 1.2 }}>
-              {data.signerPost}
-            </td>
-            <td style={{ width: 20, padding: 0 }} />
-            <td
-              style={{
-                width: 145,
-                padding: 0,
-                verticalAlign: 'bottom',
-                borderBottom: '1px solid #000',
-              }}
-            />
-            <td style={{ width: 20, padding: 0 }} />
-            <td
-              style={{
-                width: 190,
-                padding: 0,
-                verticalAlign: 'bottom',
-                textAlign: 'center',
-                borderBottom: '1px solid #000',
-                whiteSpace: 'nowrap',
-                lineHeight: 1.2,
-              }}
-            >
-              {data.signerName}
-            </td>
-          </tr>
-          <tr style={{ fontSize: 9.5, color: '#555' }}>
-            <td style={{ padding: 0 }} />
-            <td style={{ padding: 0 }} />
-            <td style={{ padding: '4px 0 0', textAlign: 'center' }}>подпись</td>
-            <td style={{ padding: 0 }} />
-            <td style={{ padding: '4px 0 0', textAlign: 'center' }}>расшифровка подписи</td>
-          </tr>
-        </tbody>
-      </table>
+    <div style={{ marginTop: 'auto', paddingTop: 46, fontSize: 14 }}>
+      <div style={{ display: 'flex', gap: 20 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ ...SIG_ROW, justifyContent: 'flex-start' }}>{data.signerPost}</div>
+          <div style={SIG_CAP}>&nbsp;</div>
+        </div>
+        <div style={{ width: 145 }}>
+          <div style={{ ...SIG_ROW, borderBottom: '1px solid #000' }} />
+          <div style={SIG_CAP}>подпись</div>
+        </div>
+        <div style={{ width: 190 }}>
+          <div
+            style={{ ...SIG_ROW, borderBottom: '1px solid #000', whiteSpace: 'nowrap' }}
+          >
+            {data.signerName}
+          </div>
+          <div style={SIG_CAP}>расшифровка подписи</div>
+        </div>
+      </div>
 
-      <table
-        style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginTop: 30 }}
-      >
-        <tbody>
-          <tr>
-            <td
-              style={{
-                width: 200,
-                padding: 0,
-                height: 22,
-                borderBottom: '1px solid #000',
-                verticalAlign: 'bottom',
-              }}
-            />
-            <td style={{ width: 20, padding: 0 }} />
-            <td
-              style={{
-                padding: 0,
-                verticalAlign: 'bottom',
-                textAlign: 'right',
-                fontSize: 12,
-                color: '#555',
-                lineHeight: 1.2,
-              }}
-            >
-              {data.stampMode === 'mp' && 'М.П. '}
-              {data.stampMode === 'note' && 'Печать не используется. '}
-              {data.city}
-            </td>
-          </tr>
-          <tr style={{ fontSize: 9.5, color: '#555' }}>
-            <td style={{ padding: '4px 0 0', textAlign: 'center' }}>дата подписания</td>
-            <td style={{ padding: 0 }} />
-            <td style={{ padding: 0 }} />
-          </tr>
-        </tbody>
-      </table>
+      <div style={{ display: 'flex', gap: 20, marginTop: 30 }}>
+        <div style={{ width: 200 }}>
+          <div style={{ ...SIG_ROW, borderBottom: '1px solid #000' }} />
+          <div style={SIG_CAP}>дата подписания</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              ...SIG_ROW,
+              justifyContent: 'flex-end',
+              fontSize: 12,
+              color: '#555',
+            }}
+          >
+            {data.stampMode === 'mp' && 'М.П. '}
+            {data.stampMode === 'note' && 'Печать не используется. '}
+            {data.city}
+          </div>
+          <div style={SIG_CAP}>&nbsp;</div>
+        </div>
+      </div>
     </div>
   </div>
 ));

@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const SCALE = 2;
+const A4_PX = 1123;
 
 export const buildDocFileName = (title: string, suffix: string): string => {
   const clean = (title || 'Документ')
@@ -29,7 +30,7 @@ const buildPdf = async (el: HTMLElement, meta?: string): Promise<jsPDF | null> =
 
   const clone = el.cloneNode(true) as HTMLElement;
   clone.style.width = '794px';
-  clone.style.minHeight = '0';
+  clone.style.minHeight = `${A4_PX}px`;
   clone.style.boxShadow = 'none';
   clone.style.border = 'none';
   clone.style.borderRadius = '0';
@@ -37,6 +38,10 @@ const buildPdf = async (el: HTMLElement, meta?: string): Promise<jsPDF | null> =
   document.body.appendChild(holder);
 
   try {
+    const pages = Math.max(1, Math.ceil(clone.scrollHeight / A4_PX));
+    clone.style.height = `${pages * A4_PX}px`;
+    clone.style.minHeight = `${pages * A4_PX}px`;
+
     const canvas = await html2canvas(holder, {
       scale: SCALE,
       backgroundColor: '#ffffff',
