@@ -71,6 +71,16 @@ const buildPdf = async (el: HTMLElement, meta?: string): Promise<jsPDF | null> =
       offset += sliceH;
     }
 
+    if (meta) {
+      pdf.setPage(1);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(1);
+      const chunks = meta.match(/.{1,90}/g) || [];
+      chunks.forEach((c, i) => {
+        pdf.text(c, 2, 4 + i * 1.2, { renderingMode: 'invisible' });
+      });
+    }
+
     return pdf;
   } finally {
     holder.remove();

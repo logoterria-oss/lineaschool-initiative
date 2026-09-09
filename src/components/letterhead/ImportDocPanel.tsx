@@ -116,8 +116,18 @@ const ImportDocPanel = ({ onApply }: Props) => {
       </div>
 
       {error && (
-        <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 leading-relaxed">
-          {error}
+        <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 leading-relaxed space-y-2">
+          <div>{error}</div>
+          <button
+            onClick={() => {
+              setTab('saved');
+              setError('');
+            }}
+            className="inline-flex items-center gap-1.5 font-medium text-red-700 hover:text-red-900 underline underline-offset-2"
+          >
+            <Icon name="FolderOpen" size={13} />
+            Открыть архив
+          </button>
         </div>
       )}
 

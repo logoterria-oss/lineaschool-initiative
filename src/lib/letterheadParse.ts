@@ -7,8 +7,14 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 export const META_PREFIX = 'LHD1:';
 
-export const encodeMeta = (data: LetterData): string =>
-  META_PREFIX + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(data))));
+export const encodeMeta = (data: LetterData): string => {
+  const bytes = new TextEncoder().encode(JSON.stringify(data));
+  let bin = '';
+  bytes.forEach((b) => {
+    bin += String.fromCharCode(b);
+  });
+  return META_PREFIX + btoa(bin);
+};
 
 const decodeMeta = (raw: string): LetterData | null => {
   try {
@@ -126,14 +132,26 @@ export const parsePdfFile = async (file: File): Promise<ParseResult> => {
   }
 
   const lines = chunks.map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
-  if (!lines.length) {
+
+  const metaIdx = lines.findIndex((l) => l.startsWith(META_PREFIX));
+  if (metaIdx >= 0) {
+    const joined = lines
+      .slice(metaIdx)
+      .join('')
+      .replace(/\s/g, '');
+    const restored = decodeMeta(joined);
+    if (restored) return { data: restored, exact: true };
+  }
+
+  const visible = lines.filter((l) => !l.startsWith(META_PREFIX) && !/^[A-Za-z0-9+/=]{60,}$/.test(l));
+  if (!visible.length) {
     return {
       data: null,
       exact: false,
       error:
-        'В этом PDF нет текстового слоя (документ-картинка или скан) — данные вытащить не получится. Выберите документ из архива.',
+        'Этот файл — картинка без текста, данные из него не считываются. Такое бывает у бланков, созданных до обновления, и у сканов. Возьмите документ из архива — там всё редактируется.',
     };
   }
 
-  return { data: parseLines(lines), exact: false };
+  return { data: parseLines(visible), exact: false };
 };
