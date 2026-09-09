@@ -109,10 +109,8 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
 
       <div style={{ marginTop: 26, display: 'flex', alignItems: 'flex-end', gap: 20 }}>
         <div style={{ width: 210, textAlign: 'center' }}>
-          <div style={{ borderBottom: '1px solid #000', height: 22, paddingBottom: 2 }}>
-            {data.docDate ? dmy(data.docDate) : ''}
-          </div>
-          <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>дата</div>
+          <div style={{ borderBottom: '1px solid #000', height: 22 }} />
+          <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>дата подписания</div>
         </div>
         <div style={{ flex: 1, textAlign: 'right', fontSize: 12, color: '#555' }}>
           М.П. {data.city ? `· ${data.city}` : ''}
