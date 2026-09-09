@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import PaymentReportModal from '@/components/PaymentReportModal';
 import RetentionReportModal from '@/components/RetentionReportModal';
+import LetterheadView from '@/components/headWorkspace/LetterheadView';
 
 const REPORTS = [
   {
@@ -41,11 +42,35 @@ const REPORTS = [
     iconBg: 'bg-blue-100',
     iconColor: 'text-blue-600',
   },
+  {
+    id: 'letterhead',
+    label: 'Официальный бланк организации',
+    description: 'Запросы, соглашения и письма на фирменном бланке — PDF',
+    icon: 'FileSignature' as const,
+    color: 'border-amber-200 hover:border-amber-400',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+  },
 ];
 
 const ReportsFinView = () => {
   const navigate = useNavigate();
   const [openReport, setOpenReport] = useState<string | null>(null);
+
+  if (openReport === 'letterhead') {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setOpenReport(null)}
+          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+        >
+          <Icon name="ArrowLeft" size={16} />
+          Назад к отчётам
+        </button>
+        <LetterheadView />
+      </div>
+    );
+  }
 
   return (
     <>
