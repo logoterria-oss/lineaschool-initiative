@@ -10,6 +10,7 @@ export interface LetterData {
   signerPost: string;
   signerName: string;
   city: string;
+  stampMode: 'none' | 'mp' | 'note';
 }
 
 const dmy = (iso: string) => {
@@ -113,7 +114,9 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
           <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>дата подписания</div>
         </div>
         <div style={{ flex: 1, textAlign: 'right', fontSize: 12, color: '#555' }}>
-          М.П. {data.city ? `· ${data.city}` : ''}
+          {data.stampMode === 'mp' && 'М.П. '}
+          {data.stampMode === 'note' && 'Печать не используется. '}
+          {data.city}
         </div>
       </div>
     </div>

@@ -19,9 +19,11 @@ const LetterheadView = () => {
     signerPost: ORG_DETAILS.signerPost,
     signerName: ORG_DETAILS.signerName,
     city: 'г. Новосибирск',
+    stampMode: 'none',
   });
 
-  const set = (k: keyof LetterData, v: string) => setData((p) => ({ ...p, [k]: v }));
+  const set = (k: keyof LetterData, v: string) =>
+    setData((p) => ({ ...p, [k]: v } as LetterData));
 
   const savePdf = async () => {
     if (!sheetRef.current) return;
@@ -128,6 +130,32 @@ const LetterheadView = () => {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Город</label>
             <input className={field} value={data.city} onChange={(e) => set('city', e.target.value)} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Отметка о печати</label>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ['none', 'Без отметки'],
+                ['note', 'Без печати'],
+                ['mp', 'М.П.'],
+              ] as const).map(([v, l]) => (
+                <button
+                  key={v}
+                  onClick={() => set('stampMode', v)}
+                  className={`py-2 px-2 rounded-lg text-xs font-medium border transition-all ${
+                    data.stampMode === v
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              ИП не обязан иметь печать — «М.П.» нужно только если печать есть
+            </p>
           </div>
 
           <Button onClick={savePdf} disabled={saving} className="w-full bg-green-600 hover:bg-green-700">
