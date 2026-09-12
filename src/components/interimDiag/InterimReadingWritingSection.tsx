@@ -25,6 +25,7 @@ import {
   readingCharIndex,
 } from './readingWriting';
 import { fmtRate, per100, rateChangeText, rateDynamic, rateLabel } from './errorRate';
+import { errorCountText } from '@/lib/errorCount';
 import DynamicChain, { ChainStep } from './DynamicChain';
 import { InterimHistoryEntry } from './InterimPersonalDataSection';
 import CompareRow from './ReadingWritingCompareRow';
@@ -232,7 +233,8 @@ export default function InterimReadingWritingSection({
     const canCompare = points.every((p) => per100(p.value, p.words) !== null);
     const steps: ChainStep[] = points.map((p) => ({
       date: p.date,
-      value: canCompare ? rateLabel(p.value, p.words) : p.value,
+      // Спецзначение показываем словами, а не техническим «uncountable»
+      value: canCompare ? rateLabel(p.value, p.words) : errorCountText(p.value),
     }));
     return <DynamicChain steps={steps} finalDynamic={errorDynamic(metric)} />;
   };

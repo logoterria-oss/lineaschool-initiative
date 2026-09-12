@@ -1,5 +1,6 @@
 import Icon from '@/components/ui/icon';
 import { PastEntry } from './pastDiagnostics';
+import { errorCountText } from '@/lib/errorCount';
 
 interface Props {
   items: PastEntry[];
@@ -65,9 +66,9 @@ export default function PastDiagnosticsTable({
               </td>
               <td className="py-2 pr-3">{it.readingSpeed || '—'}</td>
               <td className="py-2 pr-3">{it.readingComprehension || '—'}</td>
-              <td className="py-2 pr-3">{it.dysgraphicErrors || '—'}</td>
-              <td className="py-2 pr-3">{it.dysorthographicErrors || '—'}</td>
-              <td className="py-2 pr-3">{it.totalErrors || '—'}</td>
+              <td className="py-2 pr-3">{errorCountText(it.dysgraphicErrors) || '—'}</td>
+              <td className="py-2 pr-3">{errorCountText(it.dysorthographicErrors) || '—'}</td>
+              <td className="py-2 pr-3">{errorCountText(it.totalErrors) || '—'}</td>
               <td className="py-2 pr-3 text-gray-600">
                 {Object.values(it.levels || {}).filter((v) => v && v !== 'норма').length || '—'}
               </td>

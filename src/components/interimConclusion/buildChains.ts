@@ -6,7 +6,7 @@ import {
 } from '@/components/interimDiag/impairedProcesses';
 import { RWMetric, readingCharIndex } from '@/components/interimDiag/readingWriting';
 import { per100, rateLabel } from '@/components/interimDiag/errorRate';
-import { isUncountable } from '@/lib/errorCount';
+import { errorCountText, isUncountable } from '@/lib/errorCount';
 import { ConclusionStep } from './ConclusionChain';
 
 export interface InterimHistoryItem {
@@ -189,7 +189,8 @@ export function errorRateChain(
   return withLabels(
     points.map((p) => ({
       date: p.date,
-      value: canCompare ? rateLabel(p.value, p.words) : p.value,
+      // Спецзначение показываем словами: «uncountable» в отчёте нечитаемо
+      value: canCompare ? rateLabel(p.value, p.words) : errorCountText(p.value),
       kind: p.kind,
     })),
   );

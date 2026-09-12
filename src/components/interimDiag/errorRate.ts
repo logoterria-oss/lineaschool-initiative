@@ -1,5 +1,5 @@
 import { ProcessDynamic } from './impairedProcesses';
-import { isUncountable } from '@/lib/errorCount';
+import { errorCountText, isUncountable } from '@/lib/errorCount';
 
 /**
  * Пересчёт ошибок на 100 слов.
@@ -37,7 +37,8 @@ export function fmtRate(rate: number): string {
  */
 export function rateLabel(errors: string | undefined, words: string | undefined): string {
   const rate = per100(errors, words);
-  if (rate === null) return (errors ?? '').trim();
+  // Без пересчёта отдаём значение как есть, спецзначение — словами
+  if (rate === null) return errorCountText((errors ?? '').trim());
   return `${fmtRate(rate)} на 100 слов`;
 }
 

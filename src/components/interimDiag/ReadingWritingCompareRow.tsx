@@ -2,6 +2,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { ProcessDynamic } from './impairedProcesses';
+import { errorCountText } from '@/lib/errorCount';
 
 export function DynamicArrow({ dyn }: { dyn: ProcessDynamic }) {
   if (dyn === 'up') return <Icon name="ArrowUp" size={18} strokeWidth={2.75} className="text-dynamic-up" />;
@@ -54,7 +55,8 @@ export default function CompareRow({
           </div>
         ) : (
           <span className="text-sm text-gray-500 min-w-[70px]">
-            {`${from}${unit ? ' ' + unit : ''}`}
+            {/* «Невозможно подсчитать» вместо технического значения */}
+            {`${errorCountText(from)}${unit ? ' ' + unit : ''}`}
           </span>
         )}
         <Icon name="ArrowRight" size={16} className="text-gray-400" />
