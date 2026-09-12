@@ -5,6 +5,19 @@ interface RecommendationsViewProps {
 }
 
 export default function RecommendationsView({ diagData }: RecommendationsViewProps) {
+  // Рекомендации, введённые специалистом вручную, заменяют списки
+  const manual = (diagData.manualRecommendations || '').trim();
+  if (manual) {
+    return (
+      <section>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">
+          Рекомендации и направления работы
+        </h2>
+        <div className="text-sm leading-relaxed whitespace-pre-wrap">{manual}</div>
+      </section>
+    );
+  }
+
   if (diagData.normaDevelopment) {
     return null;
   }

@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import ErrorCountField from "@/components/diag/ErrorCountField";
+import ErrorTypeGroup from "@/components/diag/ErrorTypeGroup";
 import DictationPicker from "@/components/dictations/DictationPicker";
 import { PRIMARY_SET } from "@/components/dictations/dictationCatalog";
 
@@ -110,70 +111,48 @@ export default function WritingSkillSection({
           />
         </div>
 
-        <div>
-          <Label htmlFor="dysgraphic-errors" className="text-base font-semibold">Количество дисграфических ошибок</Label>
-          <Input
-            id="dysgraphic-errors"
-            type="number"
-            value={dysgraphicErrors}
-            onChange={(e) => onInputChange("dysgraphicErrors", e.target.value)}
-            className="mt-2 w-32"
-            min="0"
-          />
-        </div>
+        <ErrorCountField
+          id="dysgraphic-errors"
+          label="Количество дисграфических ошибок"
+          value={dysgraphicErrors}
+          onChange={(v) => onInputChange("dysgraphicErrors", v)}
+        />
 
-        <div>
-          <Label htmlFor="dysorthographic-errors" className="text-base font-semibold">Количество орфографических ошибок</Label>
-          <Input
-            id="dysorthographic-errors"
-            type="number"
-            value={dysorthographicErrors}
-            onChange={(e) => onInputChange("dysorthographicErrors", e.target.value)}
-            className="mt-2 w-32"
-            min="0"
-          />
-        </div>
+        <ErrorCountField
+          id="dysorthographic-errors"
+          label="Количество орфографических ошибок"
+          value={dysorthographicErrors}
+          onChange={(v) => onInputChange("dysorthographicErrors", v)}
+        />
 
-        <div>
-          <Label htmlFor="total-errors" className="text-base font-semibold">Ошибок всего</Label>
-          <Input
-            id="total-errors"
-            type="number"
-            value={totalErrors}
-            onChange={(e) => onInputChange("totalErrors", e.target.value)}
-            className="mt-2 w-32"
-            min="0"
-          />
-        </div>
+        <ErrorCountField
+          id="total-errors"
+          label="Ошибок всего"
+          value={totalErrors}
+          onChange={(v) => onInputChange("totalErrors", v)}
+        />
       </div>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Ошибки языкового анализа и синтеза</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "нет",
-            "пропуски", 
+      <ErrorTypeGroup
+        idPrefix="analysis-errors"
+        field="analysisErrors"
+        label="Ошибки языкового анализа и синтеза"
+        options={[
+            "пропуски",
             "вставки",
             "перестановки",
-            "антиципации (предвосхищение)"
-          ].map(option => (
-            <div key={option} className="flex items-center space-x-2">
-              <Checkbox
-                id={`analysis-errors-${option}`}
-                checked={analysisErrors.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("analysisErrors", option, !!checked)}
-              />
-              <Label htmlFor={`analysis-errors-${option}`} className="text-sm">{option}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
+            "антиципации (предвосхищение)",
+          ]}
+        selected={analysisErrors}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      ></ErrorTypeGroup>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Ошибки акустико-артикуляторного сходства</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "нет",
+      <ErrorTypeGroup
+        idPrefix="acoustic-errors"
+        field="acousticErrors"
+        label="Ошибки акустико-артикуляторного сходства"
+        options={[
             "замены и смешения звонких-глухих согласных",
             "ошибки обозначения мягкости",
             "замены и смешения свистящих-шипящих согласных",
@@ -182,73 +161,49 @@ export default function WritingSkillSection({
             "замены и смешения соноров",
             "замены и смешения гласных в сильной позиции",
             "замены и смешения согласных по способу образования",
-            "замены и смешения согласных по месту образования"
-          ].map(option => (
-            <div key={option} className="flex items-start space-x-2">
-              <Checkbox
-                id={`acoustic-errors-${option}`}
-                checked={acousticErrors.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("acousticErrors", option, !!checked)}
-                className="mt-0.5"
-              />
-              <Label htmlFor={`acoustic-errors-${option}`} className="text-sm leading-5">{option}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
+            "замены и смешения согласных по месту образования",
+          ]}
+        selected={acousticErrors}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      ></ErrorTypeGroup>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Моторные ошибки</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "нет",
+      <ErrorTypeGroup
+        idPrefix="motor-errors"
+        field="motorErrors"
+        label="Моторные ошибки"
+        options={[
             "ошибки кинетического запуска",
             "графический поиск при написании буквы",
             "лишние элементы при написании буквы",
             "недописывание отдельных элементов буквы",
             "персеверации (повтор целой буквы, узнаваемой ее части или слога)",
-            "неоднократные правильные обводки букв"
-          ].map(option => (
-            <div key={option} className="flex items-start space-x-2">
-              <Checkbox
-                id={`motor-errors-${option}`}
-                checked={motorErrors.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("motorErrors", option, !!checked)}
-                className="mt-0.5"
-              />
-              <Label htmlFor={`motor-errors-${option}`} className="text-sm leading-5">{option}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
+            "неоднократные правильные обводки букв",
+          ]}
+        selected={motorErrors}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      ></ErrorTypeGroup>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Зрительно-моторные ошибки</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "нет",
+      <ErrorTypeGroup
+        idPrefix="visual-motor-errors"
+        field="visualMotorErrors"
+        label="Зрительно-моторные ошибки"
+        options={[
             "смешение оптически сходных букв",
             "неточность передачи графического образа буквы",
-            "неадекватность начертания буквы"
-          ].map(option => (
-            <div key={option} className="flex items-start space-x-2">
-              <Checkbox
-                id={`visual-motor-errors-${option}`}
-                checked={visualMotorErrors.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("visualMotorErrors", option, !!checked)}
-                className="mt-0.5"
-              />
-              <Label htmlFor={`visual-motor-errors-${option}`} className="text-sm leading-5">{option}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
+            "неадекватность начертания буквы",
+          ]}
+        selected={visualMotorErrors}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      ></ErrorTypeGroup>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Зрительно-пространственные ошибки</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "нет",
+      <ErrorTypeGroup
+        idPrefix="visual-spatial-errors"
+        field="visualSpatialErrors"
+        label="Зрительно-пространственные ошибки"
+        options={[
             "зеркальность написания букв",
             "неудержание строки",
             "дисметрия букв",
@@ -257,129 +212,100 @@ export default function WritingSkillSection({
             "отсутствие слитности написания букв в словах",
             "левостороннее игнорирование",
             "неравномерность расстояний между словами",
-            "избегания переноса слов"
-          ].map(option => (
-            <div key={option} className="flex items-start space-x-2">
-              <Checkbox
-                id={`visual-spatial-errors-${option}`}
-                checked={visualSpatialErrors.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("visualSpatialErrors", option, !!checked)}
-                className="mt-0.5"
-              />
-              <Label htmlFor={`visual-spatial-errors-${option}`} className="text-sm leading-5">{option}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
+            "избегания переноса слов",
+          ]}
+        selected={visualSpatialErrors}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      ></ErrorTypeGroup>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Дополнительные характеристики письма</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "нет",
+      <ErrorTypeGroup
+        idPrefix="additional-characteristics"
+        field="additionalCharacteristics"
+        label="Дополнительные характеристики письма"
+        options={[
             "гипертонус и гипотонус при письме",
-            "микрография или макрография"
-          ].map(option => (
-            <div key={option} className="flex items-start space-x-2">
-              <Checkbox
-                id={`additional-characteristics-${option}`}
-                checked={additionalCharacteristics.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("additionalCharacteristics", option, !!checked)}
-                className="mt-0.5"
-              />
-              <Label htmlFor={`additional-characteristics-${option}`} className="text-sm leading-5">{option}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
+            "микрография или макрография",
+          ]}
+        selected={additionalCharacteristics}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      ></ErrorTypeGroup>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Нарушения регуляции письменной деятельности</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "нет",
+      <ErrorTypeGroup
+        idPrefix="regulation-violations"
+        field="regulationViolations"
+        label="Нарушения регуляции письменной деятельности"
+        options={[
             "пропуски элементов букв, букв, слогов, слов",
             "персеверации (навязчивые повторения) элементов букв, букв, слогов, слов",
             "контоминации (объединение слов)",
             "антиципации (предвосхищение слов и их элементов)",
             "ошибки обозначения границ предложения",
-            "орфографические ошибки"
-          ].map(option => (
-            <div key={option} className="flex items-start space-x-2">
-              <Checkbox
-                id={`regulation-violations-${option}`}
-                checked={regulationViolations.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("regulationViolations", option, !!checked)}
-                className="mt-0.5"
-              />
-              <Label htmlFor={`regulation-violations-${option}`} className="text-sm leading-5">{option}</Label>
-            </div>
-          ))}
-          <div className="mt-3">
-            <Label htmlFor="regulation-violations-other" className="text-sm font-medium">Другие ошибки регуляции (укажите через запятую)</Label>
-            <Input
-              id="regulation-violations-other"
-              placeholder="Укажите другие нарушения регуляции"
-              value={regulationViolationsOther || ""}
-              onChange={(e) => onInputChange("regulationViolationsOther", e.target.value)}
-              className="mt-2"
-            />
-          </div>
+            "орфографические ошибки",
+          ]}
+        selected={regulationViolations}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      >
+        <div className="mt-3">
+          <Label htmlFor="regulation-violations-other" className="text-sm font-medium">Другие ошибки регуляции (укажите через запятую)</Label>
+          <Input
+            id="regulation-violations-other"
+            placeholder="Укажите другие нарушения регуляции"
+            value={regulationViolationsOther || ""}
+            onChange={(e) => onInputChange("regulationViolationsOther", e.target.value)}
+            className="mt-2"
+          />
         </div>
-      </div>
+      </ErrorTypeGroup>
 
-      <div className="ml-4">
-        <Label className="text-base font-semibold">Орфографические ошибки</Label>
-        <div className="mt-2 space-y-2">
-          {[
-            "Заглавная буква в начале предложения",
-            "Правописание безударных гласных",
-            "Слова с удвоенными согласными",
-            "Правописание слов с мягким знаком",
-            "Правописание парных глухих и звонких согласных",
-            "Буквосочетания жи-ши, ча-ща, чу-щу",
-            "Заглавная буква в именах собственных",
-            "Буквосочетания чк, чн, чт, щн, нч",
-            "Разделительный мягкий знак",
-            "Не с глаголами",
-            "Правописание предлогов со словами",
-            "Правописание слов с непроизносимым согласным",
-            "Правописание приставок",
-            "Правописание суффиксов",
-            "Разделительный твёрдый знак",
-            "Соединительные гласные о и е в сложных словах",
-            "Мягкий знак после шипящих на конце имён существительных",
-            "Правописание слов с буквами ь и ъ",
-            "Безударные падежные окончания имён существительных",
-            "Безударные падежные окончания имён прилагательных",
-            "Мягкий знак после шипящих на конце глаголов 2-го лица ед.ч.",
-            "Мягкий знак в глаголах на -ться, -тся",
-            "Безударные личные окончания глаголов",
-            "Правописание местоимений",
-            "Непроверяемые гласные и согласные"
-          ].map(option => (
-            <div key={option} className="flex items-start space-x-2">
-              <Checkbox
-                id={`orthographic-error-types-${option}`}
-                checked={orthographicErrorTypes.includes(option)}
-                onCheckedChange={(checked) => onCheckboxChange("orthographicErrorTypes", option, !!checked)}
-                className="mt-0.5"
-              />
-              <Label htmlFor={`orthographic-error-types-${option}`} className="text-sm leading-5">{option}</Label>
-            </div>
-          ))}
-          <div className="mt-3">
-            <Label htmlFor="orthographic-errors-other" className="text-sm font-medium">Другие орфографические ошибки (укажите через запятую)</Label>
-            <Input
-              id="orthographic-errors-other"
-              placeholder="Укажите другие орфографические ошибки"
-              value={orthographicErrorsOther || ""}
-              onChange={(e) => onInputChange("orthographicErrorsOther", e.target.value)}
-              className="mt-2"
-            />
-          </div>
+      <ErrorTypeGroup
+        idPrefix="orthographic-error-types"
+        field="orthographicErrorTypes"
+        label="Орфографические ошибки"
+        options={[
+          "Заглавная буква в начале предложения",
+          "Правописание безударных гласных",
+          "Слова с удвоенными согласными",
+          "Правописание слов с мягким знаком",
+          "Правописание парных глухих и звонких согласных",
+          "Буквосочетания жи-ши, ча-ща, чу-щу",
+          "Заглавная буква в именах собственных",
+          "Буквосочетания чк, чн, чт, щн, нч",
+          "Разделительный мягкий знак",
+          "Не с глаголами",
+          "Правописание предлогов со словами",
+          "Правописание слов с непроизносимым согласным",
+          "Правописание приставок",
+          "Правописание суффиксов",
+          "Разделительный твёрдый знак",
+          "Соединительные гласные о и е в сложных словах",
+          "Мягкий знак после шипящих на конце имён существительных",
+          "Правописание слов с буквами ь и ъ",
+          "Безударные падежные окончания имён существительных",
+          "Безударные падежные окончания имён прилагательных",
+          "Мягкий знак после шипящих на конце глаголов 2-го лица ед.ч.",
+          "Мягкий знак в глаголах на -ться, -тся",
+          "Безударные личные окончания глаголов",
+          "Правописание местоимений",
+          "Непроверяемые гласные и согласные",
+        ]}
+        selected={orthographicErrorTypes}
+        onCheckboxChange={onCheckboxChange}
+        onInputChange={onInputChange}
+      >
+        <div className="mt-3">
+          <Label htmlFor="orthographic-errors-other" className="text-sm font-medium">Другие орфографические ошибки (укажите через запятую)</Label>
+          <Input
+            id="orthographic-errors-other"
+            placeholder="Укажите другие орфографические ошибки"
+            value={orthographicErrorsOther || ""}
+            onChange={(e) => onInputChange("orthographicErrorsOther", e.target.value)}
+            className="mt-2"
+          />
         </div>
-      </div>
+      </ErrorTypeGroup>
     </div>
   );
 }

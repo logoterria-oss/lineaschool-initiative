@@ -6,6 +6,7 @@ import {
 } from '@/components/interimDiag/impairedProcesses';
 import { RWMetric, readingCharIndex } from '@/components/interimDiag/readingWriting';
 import { per100, rateLabel } from '@/components/interimDiag/errorRate';
+import { isUncountable } from '@/lib/errorCount';
 import { ConclusionStep } from './ConclusionChain';
 
 export interface InterimHistoryItem {
@@ -109,6 +110,7 @@ export function metricChain(
 }
 
 function toNum(v: string): number | null {
+  if (isUncountable(v)) return Number.POSITIVE_INFINITY;
   const n = Number((v || '').replace(',', '.').trim());
   return Number.isFinite(n) && (v || '').trim() !== '' ? n : null;
 }

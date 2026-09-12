@@ -1,5 +1,6 @@
 import { InterimPrimaryData } from './InterimPersonalDataSection';
 import { ProcessDynamic } from './impairedProcesses';
+import { isUncountable } from '@/lib/errorCount';
 
 // Ключи показателей, у которых есть сравнение «было → стало»
 export type RWMetric =
@@ -300,6 +301,7 @@ export function baselineFromPrimary(p: InterimPrimaryData | undefined): ReadingW
 }
 
 function toNum(v: string): number | null {
+  if (isUncountable(v)) return Number.POSITIVE_INFINITY;
   const s = (v || '').toString().replace(',', '.').trim();
   if (s === '') return null;
   const n = Number(s);

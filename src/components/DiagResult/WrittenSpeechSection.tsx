@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { errorCountText } from "@/lib/errorCount";
 
 interface WrittenSpeechSectionProps {
   diagData: {
@@ -60,13 +61,13 @@ const WrittenSpeechSection = ({ diagData }: WrittenSpeechSectionProps) => {
           <p><strong>Понимание прочитанного:</strong> {diagData.readingComprehension}%</p>
         )}
         {diagData.dysgraphicErrors && (
-          <p><strong>Количество дисграфических ошибок:</strong> {diagData.dysgraphicErrors}</p>
+          <p><strong>Количество дисграфических ошибок:</strong> {errorCountText(diagData.dysgraphicErrors)}</p>
         )}
         {diagData.dysorthographicErrors && (
-          <p><strong>Количество орфографических ошибок:</strong> {diagData.dysorthographicErrors}</p>
+          <p><strong>Количество орфографических ошибок:</strong> {errorCountText(diagData.dysorthographicErrors)}</p>
         )}
         {diagData.totalErrors && (
-          <p><strong>Ошибок всего:</strong> {diagData.totalErrors}</p>
+          <p><strong>Ошибок всего:</strong> {errorCountText(diagData.totalErrors)}</p>
         )}
         {diagData.analysisErrors.length > 0 && (
           <p><strong>Ошибки языкового анализа:</strong> {diagData.analysisErrors.join(', ')}</p>

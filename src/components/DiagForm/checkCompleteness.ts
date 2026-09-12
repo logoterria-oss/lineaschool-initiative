@@ -101,6 +101,7 @@ export function checkPrimaryCompleteness(data: DiagFormData): IncompleteSection[
       // Также достаточно отметок в любой из групп заключения — виды дислексии,
       // дисграфии или синдромы тоже считаются заполненным заключением.
       const filled =
+        !!(data.manualConclusion || '').trim() ||
         data.normaDevelopment ||
         !isEmpty(data.speechDisorders) ||
         !isEmpty(data.dyslexiaTypes) ||
@@ -111,7 +112,14 @@ export function checkPrimaryCompleteness(data: DiagFormData): IncompleteSection[
       return;
     }
 
-    const fields = section.rules.filter((r) => isEmpty(data[r.key])).map((r) => r.label);
+    // Ручной ввод рекомендаций заменяет списки-галочки
+    const manualRecs = !!(data.manualRecommendations || '').trim();
+    const rules =
+      section.anchor === 'section-final' && manualRecs
+        ? section.rules.filter((r) => r.key !== 'recommendations' && r.key !== 'workDirections')
+        : section.rules;
+
+    const fields = rules.filter((r) => isEmpty(data[r.key])).map((r) => r.label);
     if (fields.length > 0) {
       result.push({ title: section.title, fields, anchor: section.anchor });
     }

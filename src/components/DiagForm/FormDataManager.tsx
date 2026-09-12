@@ -76,6 +76,8 @@ export const useFormDataManager = () => {
     dysgraphiaTypes: [] as string[],
     brainSyndromes: [] as string[],
     normaDevelopment: false,
+    manualConclusion: "",
+    manualRecommendations: "",
     // Финальные поля
     recommendations: [] as string[],
     workDirections: [] as string[],

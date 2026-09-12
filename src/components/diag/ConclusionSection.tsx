@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 
 interface ConclusionData {
@@ -11,6 +12,7 @@ interface ConclusionData {
   dysgraphiaTypes: string[];
   brainSyndromes: string[];
   normaDevelopment?: boolean;
+  manualConclusion?: string;
 }
 
 interface ConclusionProps {
@@ -25,6 +27,8 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
   const [showLanguageAnalysisType, setShowLanguageAnalysisType] = useState(
     formData.speechDisorders.includes("нарушения языкового анализа и синтеза")
   );
+
+  const [showManual, setShowManual] = useState(!!formData.manualConclusion);
 
   const hasAnyDisorder =
     formData.speechDisorders.length > 0 ||
@@ -249,6 +253,38 @@ export default function ConclusionSection({ formData, onInputChange }: Conclusio
               )}
             </div>
           </div>
+        </div>
+
+        {/* Ручной ввод заключения */}
+        <div className="pt-2 border-t border-gray-200">
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="manual-conclusion-toggle"
+              checked={showManual}
+              onCheckedChange={(checked) => {
+                setShowManual(!!checked);
+                if (!checked) onInputChange("manualConclusion", "");
+              }}
+              className="mt-0.5"
+            />
+            <div>
+              <Label htmlFor="manual-conclusion-toggle" className="text-sm font-semibold leading-5 cursor-pointer">
+                Ручной ввод
+              </Label>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Заменит автоматически собранное заключение в отчёте
+              </p>
+            </div>
+          </div>
+          {showManual && (
+            <Textarea
+              value={formData.manualConclusion || ""}
+              onChange={(e) => onInputChange("manualConclusion", e.target.value)}
+              placeholder="Введите заключение своими словами"
+              rows={5}
+              className="mt-3 bg-white"
+            />
+          )}
         </div>
       </div>
     </section>

@@ -1,4 +1,5 @@
 import { ProcessDynamic } from './impairedProcesses';
+import { isUncountable } from '@/lib/errorCount';
 
 /**
  * Пересчёт ошибок на 100 слов.
@@ -9,6 +10,7 @@ import { ProcessDynamic } from './impairedProcesses';
  */
 
 export function toNum(v: string | undefined): number | null {
+  if (isUncountable(v)) return null;
   const s = (v ?? '').toString().replace(',', '.').trim();
   if (s === '') return null;
   const n = Number(s);

@@ -2,12 +2,15 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 
 interface FinalData {
   recommendations: string[];
   workDirections: string[];
   diagnosisDate: string;
   logopedist: string;
+  manualRecommendations?: string;
 }
 
 interface FinalProps {
@@ -16,6 +19,8 @@ interface FinalProps {
 }
 
 export default function FinalSection({ formData, onInputChange }: FinalProps) {
+  const [showManual, setShowManual] = useState(!!formData.manualRecommendations);
+
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
     const currentValues = formData[field as keyof FinalData] as string[];
     if (checked) {
@@ -83,6 +88,38 @@ export default function FinalSection({ formData, onInputChange }: FinalProps) {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Ручной ввод рекомендаций */}
+        <div className="pt-2 border-t border-gray-200">
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="manual-recommendations-toggle"
+              checked={showManual}
+              onCheckedChange={(checked) => {
+                setShowManual(!!checked);
+                if (!checked) onInputChange("manualRecommendations", "");
+              }}
+              className="mt-0.5"
+            />
+            <div>
+              <Label htmlFor="manual-recommendations-toggle" className="text-sm font-semibold leading-5 cursor-pointer">
+                Ручной ввод
+              </Label>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Заменит список рекомендаций и направлений в отчёте
+              </p>
+            </div>
+          </div>
+          {showManual && (
+            <Textarea
+              value={formData.manualRecommendations || ""}
+              onChange={(e) => onInputChange("manualRecommendations", e.target.value)}
+              placeholder="Введите рекомендации своими словами"
+              rows={5}
+              className="mt-3 bg-white"
+            />
+          )}
         </div>
 
         {/* Дата диагностики */}

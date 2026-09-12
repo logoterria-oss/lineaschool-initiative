@@ -155,7 +155,8 @@ const FormSections = ({ formData, onInputChange, missingBySection }: FormSection
               dyslexiaTypes: formData.dyslexiaTypes,
               dysgraphiaTypes: formData.dysgraphiaTypes,
               brainSyndromes: formData.brainSyndromes,
-              normaDevelopment: formData.normaDevelopment
+              normaDevelopment: formData.normaDevelopment,
+              manualConclusion: formData.manualConclusion
             }}
             onInputChange={onInputChange}
           />
@@ -171,7 +172,8 @@ const FormSections = ({ formData, onInputChange, missingBySection }: FormSection
               recommendations: formData.recommendations,
               workDirections: formData.workDirections,
               diagnosisDate: formData.diagnosisDate,
-              logopedist: formData.logopedist
+              logopedist: formData.logopedist,
+              manualRecommendations: formData.manualRecommendations
             }}
             onInputChange={onInputChange}
           />

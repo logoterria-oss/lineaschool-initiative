@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { errorCountText } from '@/lib/errorCount';
 
 interface DiagData {
   childName: string;
@@ -417,7 +418,7 @@ async function createPDFContent(diagData: DiagData, serialNumber: string): Promi
         </div>
         ` : ''}
         
-        ${diagData.dysgraphicErrors ? `<div style="margin-bottom: 8px; margin-top: 10px;"><strong>Дисграфические ошибки:</strong> ${diagData.dysgraphicErrors}</div>` : ''}
+        ${diagData.dysgraphicErrors ? `<div style="margin-bottom: 8px; margin-top: 10px;"><strong>Дисграфические ошибки:</strong> ${errorCountText(diagData.dysgraphicErrors)}</div>` : ''}
         ${diagData.analysisErrors && diagData.analysisErrors.length > 0 ? `<div style="margin-bottom: 8px;"><strong>Ошибки анализа:</strong> ${formatArray(diagData.analysisErrors)}</div>` : ''}
         ${diagData.acousticErrors && diagData.acousticErrors.length > 0 ? `<div style="margin-bottom: 8px;"><strong>Акустические ошибки:</strong> ${formatArray(diagData.acousticErrors)}</div>` : ''}
         ${diagData.motorErrors && diagData.motorErrors.length > 0 ? `<div style="margin-bottom: 8px;"><strong>Моторные ошибки:</strong> ${formatArray(diagData.motorErrors)}</div>` : ''}

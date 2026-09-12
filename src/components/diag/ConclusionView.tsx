@@ -7,6 +7,10 @@ interface ConclusionViewProps {
 export default function ConclusionView({ diagData }: ConclusionViewProps) {
   const generateConclusion = () => {
     try {
+      // Заключение, введённое специалистом вручную, имеет приоритет
+      const manual = (diagData.manualConclusion || '').trim();
+      if (manual) return manual;
+
       const conclusionParts = [];
       
       if (diagData.speechDisorders && Array.isArray(diagData.speechDisorders) && diagData.speechDisorders.length > 0) {
@@ -59,7 +63,7 @@ export default function ConclusionView({ diagData }: ConclusionViewProps) {
       <h2 className="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">
         Заключение
       </h2>
-      <div className="text-sm leading-relaxed">
+      <div className="text-sm leading-relaxed whitespace-pre-wrap">
         {generateConclusion()}
       </div>
     </section>

@@ -1,5 +1,6 @@
 import { DiagData } from '@/types/DiagData';
 import { formatList } from '@/utils/diagUtils';
+import { errorCountText } from '@/lib/errorCount';
 
 interface WrittenSpeechViewProps {
   diagData: DiagData;
@@ -70,9 +71,9 @@ export default function WrittenSpeechView({ diagData, onImageClick }: WrittenSpe
         {diagData.dictationWords && (
           <div><strong>Объём работы:</strong> {diagData.dictationWords} слов</div>
         )}
-        <div><strong>Дисграфические ошибки:</strong> {diagData.dysgraphicErrors || 'Не указано'}</div>
-        <div><strong>Орфографические ошибки:</strong> {diagData.dysorthographicErrors || 'Не указано'}</div>
-        <div><strong>Ошибок всего:</strong> {diagData.totalErrors || 'Не указано'}</div>
+        <div><strong>Дисграфические ошибки:</strong> {errorCountText(diagData.dysgraphicErrors) || 'Не указано'}</div>
+        <div><strong>Орфографические ошибки:</strong> {errorCountText(diagData.dysorthographicErrors) || 'Не указано'}</div>
+        <div><strong>Ошибок всего:</strong> {errorCountText(diagData.totalErrors) || 'Не указано'}</div>
         <div><strong>Ошибки анализа:</strong> {formatList(diagData.analysisErrors)}</div>
         <div><strong>Акустические ошибки:</strong> {formatList(diagData.acousticErrors)}</div>
         <div><strong>Моторные ошибки:</strong> {formatList(diagData.motorErrors)}</div>
