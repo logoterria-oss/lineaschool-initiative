@@ -66,6 +66,7 @@ interface SummaryCell {
   teacher_id: number;
   teacher_name: string;
   form: 'individual' | 'group';
+  is_substitute?: boolean;
 }
 
 interface SummaryStudent {
@@ -200,6 +201,10 @@ const HomeworkControlSection = (
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-green-500 inline-block" /> Хорошо</span>
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-yellow-400 inline-block" /> Выполнено плохо / не полностью / не вовремя</span>
           <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-red-500 inline-block" /> Не выполнено</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-full bg-amber-400 text-gray-900 inline-flex items-center justify-center text-[9px] font-bold">З</span>
+            Урок вёл педагог на замене
+          </span>
           <span className="text-gray-400">· наведите на дату, чтобы увидеть педагога и форму урока</span>
         </div>
 
@@ -227,10 +232,15 @@ const HomeworkControlSection = (
                   {s.lessons.map((l) => (
                     <span
                       key={`${l.date}-${l.teacher_id}`}
-                      title={`${fmtDate(l.date)} · ${l.form === 'group' ? 'Групповой' : 'Индивидуальный'} · ${l.teacher_name}`}
-                      className={`min-w-[52px] text-center px-2 py-1 rounded-md border text-xs font-medium font-mono cursor-default ${STATUS_STYLE[l.status]} ${l.is_future && l.status === '' ? 'opacity-50' : ''}`}
+                      title={`${fmtDate(l.date)} · ${l.form === 'group' ? 'Групповой' : 'Индивидуальный'} · ${l.teacher_name}${l.is_substitute ? ' (замена)' : ''}`}
+                      className={`relative min-w-[52px] text-center px-2 py-1 rounded-md border text-xs font-medium font-mono cursor-default ${STATUS_STYLE[l.status]} ${l.is_future && l.status === '' ? 'opacity-50' : ''} ${l.is_substitute ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
                     >
                       {fmtDate(l.date)}
+                      {l.is_substitute && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-gray-900 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold leading-none">
+                          З
+                        </span>
+                      )}
                     </span>
                   ))}
                 </div>

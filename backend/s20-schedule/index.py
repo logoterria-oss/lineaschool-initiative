@@ -823,6 +823,9 @@ HW_ALL_TEACHERS = [
     {"id": 13, "name": "Зинченко Ирина"},
 ]
 
+# Педагоги, которые ведут уроки только на замене основного преподавателя
+HW_SUBSTITUTE_IDS = {13}
+
 
 def _hw_resolve_month(params):
     """Возвращает (month, month_from, month_to, available_months). Будущие месяцы не разрешены."""
@@ -911,6 +914,7 @@ def _hw_all(params, cors_headers):
                         "teacher_name": teacher_name_by_id[tid],
                         "form": form,
                         "is_future": is_future,
+                        "is_substitute": tid in HW_SUBSTITUTE_IDS,
                     }
 
     # Сохранённые статусы (ключ — педагог+ученик+дата)
@@ -932,6 +936,7 @@ def _hw_all(params, cors_headers):
                 "teacher_id": info["teacher_id"],
                 "teacher_name": info["teacher_name"],
                 "form": info["form"],
+                "is_substitute": info.get("is_substitute", False),
                 "status": saved.get((info["teacher_id"], cid, d), ""),
             })
         students.append({"id": cid, "name": entry["name"], "lessons": ldates})
