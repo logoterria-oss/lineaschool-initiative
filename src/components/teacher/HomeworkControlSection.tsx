@@ -15,6 +15,10 @@ const GROUP_TEACHERS = [
   { id: 15, name: 'Мацвей Екатерина' },
 ];
 
+const SUBSTITUTE_TEACHERS = [
+  { id: 13, name: 'Зинченко Ирина' },
+];
+
 type HwStatus = '' | 'green' | 'yellow' | 'red';
 
 interface LessonCell {
@@ -284,6 +288,27 @@ const HomeworkControlSection = (
               >
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Icon name="Users" size={18} className="text-purple-600" />
+                </div>
+                <span className="font-medium text-gray-900">{t.name}</span>
+                <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Замена
+          </h3>
+          <div className="grid gap-2">
+            {SUBSTITUTE_TEACHERS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTeacher(t)}
+                className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-amber-400 hover:shadow-sm transition-all"
+              >
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Icon name="UserCheck" size={18} className="text-amber-600" />
                 </div>
                 <span className="font-medium text-gray-900">{t.name}</span>
                 <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto" />
