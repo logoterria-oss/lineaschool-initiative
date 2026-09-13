@@ -126,13 +126,38 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
             )
             row = cur.fetchone()
 
+            # Закрытие после полуночи относится ко ВЧЕРАШНЕЙ смене.
+            # Админ уходит в 01:52 — календарно это уже новый день, но
+            # смену он закрывает ту, которую открыл накануне. Без этого
+            # отметка ухода падала в today и день «закрывался» раньше,
+            # чем открывался.
+            if act == "finish" and not (row or {}).get("started_at"):
+                cur.execute(
+                    "SELECT id, started_at, finished_at FROM admin_shifts "
+                    "WHERE staff_id = %s AND shift_date = %s::date - 1 "
+                    "AND started_at IS NOT NULL AND finished_at IS NULL",
+                    (me["id"], date),
+                )
+                prev = cur.fetchone()
+                if prev:
+                    row = prev
+
             if not row:
                 cur.execute(
                     "INSERT INTO admin_shifts (staff_id, staff_name, shift_date, time_from, time_to, kind) "
-                    "VALUES (%s, %s, %s, '', '', 'work') RETURNING id",
+                    "VALUES (%s, %s, %s, '', '', 'work') RETURNING id, started_at, finished_at",
                     (me["id"], me["full_name"], date),
                 )
                 row = cur.fetchone()
+
+            # Нельзя закрыть смену, которую не открывали: иначе в дне
+            # остаётся время ухода без времени прихода.
+            if act == "finish" and not row.get("started_at"):
+                return _json(400, {"error": "Смена не открыта — закрывать нечего"})
+
+            # Повторное открытие затёрло бы отметку ухода
+            if act == "start" and row.get("finished_at"):
+                return _json(400, {"error": "Смена за этот день уже закрыта"})
 
             field = "started_at" if act == "start" else "finished_at"
             cur.execute(
@@ -171,6 +196,20 @@ def my_shift_state(event: dict) -> dict:
                 (me["id"], date),
             )
             row = cur.fetchone()
+
+            # После полуночи вчерашняя смена ещё идёт: кнопка должна
+            # предлагать её закрыть, а не открывать новую.
+            if not (row or {}).get("started_at"):
+                cur.execute(
+                    "SELECT to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
+                    "to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at, kind "
+                    "FROM admin_shifts WHERE staff_id = %s AND shift_date = %s::date - 1 "
+                    "AND started_at IS NOT NULL AND finished_at IS NULL",
+                    (me["id"], date),
+                )
+                prev = cur.fetchone()
+                if prev:
+                    row = prev
         return _json(200, {
             "ok": True,
             "started_at": (row or {}).get("started_at"),
@@ -201,7 +240,9 @@ def push_shift_to_interaction(cur) -> dict:
     cur.execute(
         f"SELECT s.phone FROM admin_shifts sh "
         f"JOIN staff s ON s.id = sh.staff_id "
-        f"WHERE sh.shift_date = {MSK_TODAY} "
+        # Вчерашнюю незакрытую смену тоже считаем идущей: админ,
+        # работающий за полночь, не должен исчезать из состава смены
+        f"WHERE sh.shift_date >= {MSK_TODAY} - 1 "
         f"AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
         f"AND s.role = 'admin' AND s.status = 'active'"
     )
@@ -244,7 +285,9 @@ def sync_interaction() -> dict:
 def on_shift_now() -> dict:
     """Кто из администраторов сейчас на смене — открытый список для «Окна взаимодействия».
 
-    На смене = сегодня нажал «На смене» и ещё не нажал «Смена закончена».
+    На смене = нажал «На смене» и ещё не нажал «Смена закончена».
+    Вчерашняя незакрытая смена тоже считается идущей — админ может
+    работать за полночь.
     """
     conn = db_conn()
     try:
@@ -254,7 +297,7 @@ def on_shift_now() -> dict:
                 f"to_char(sh.started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at "
                 f"FROM admin_shifts sh "
                 f"LEFT JOIN staff s ON s.id = sh.staff_id "
-                f"WHERE sh.shift_date = {MSK_TODAY} "
+                f"WHERE sh.shift_date >= {MSK_TODAY} - 1 "
                 f"AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
                 f"ORDER BY sh.started_at",
                 (),
