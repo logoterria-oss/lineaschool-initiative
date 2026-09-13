@@ -35,6 +35,8 @@ export interface MyShiftState {
   started_at: string | null;
   finished_at: string | null;
   planned: boolean;
+  /** День смены по Москве — его определяет сервер */
+  date?: string | null;
 }
 
 const authHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
@@ -52,12 +54,20 @@ export async function fetchShifts(
   return { shifts: data.shifts || [], admins: data.admins || [], tasks: data.tasks || [] };
 }
 
-/** Состояние моей смены на дату — открыта, закрыта или ещё не начата */
-export async function fetchMyShift(date: string): Promise<MyShiftState | null> {
-  const r = await fetch(`${API_URL}?action=my-shift&date=${date}`, { headers: authHeaders() });
+/**
+ * Состояние моей смены на сегодня — открыта, закрыта или ещё не начата.
+ * «Сегодня» считает сервер по Москве, дату с клиента не шлём.
+ */
+export async function fetchMyShift(): Promise<MyShiftState | null> {
+  const r = await fetch(`${API_URL}?action=my-shift`, { headers: authHeaders() });
   if (!r.ok) return null;
   const data = await r.json();
-  return { started_at: data.started_at, finished_at: data.finished_at, planned: !!data.planned };
+  return {
+    started_at: data.started_at,
+    finished_at: data.finished_at,
+    planned: !!data.planned,
+    date: data.date || null,
+  };
 }
 
 /** Задача, поставленная руководителем на конкретный день */
@@ -145,19 +155,26 @@ export async function fetchOnShiftNow(): Promise<OnShiftAdmin[]> {
   return data.on_shift || [];
 }
 
-/** Отметка «на смене» / «смена закончена» */
-export async function markMyShift(
-  date: string,
-  action: 'start' | 'finish',
-): Promise<MyShiftState | null> {
+/**
+ * Отметка «на смене» / «смена закончена».
+ * Дату не передаём: день смены и время определяет сервер по Москве.
+ * Часы на компьютере сотрудника не участвуют — админы работают из
+ * разных часовых поясов, и их дата уводила бы смену не в тот день.
+ */
+export async function markMyShift(action: 'start' | 'finish'): Promise<MyShiftState | null> {
   const r = await fetch(API_URL, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ action, date }),
+    body: JSON.stringify({ action }),
   });
   const data = await r.json().catch(() => ({}));
   if (!data.ok) return null;
-  return { started_at: data.started_at, finished_at: data.finished_at, planned: true };
+  return {
+    started_at: data.started_at,
+    finished_at: data.finished_at,
+    planned: true,
+    date: data.date || null,
+  };
 }
 
 /**

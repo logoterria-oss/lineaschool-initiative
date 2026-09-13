@@ -1,5 +1,5 @@
 import Icon from '@/components/ui/icon';
-import { AdminShift, ShiftTask, shiftTime } from '@/lib/adminShiftsApi';
+import { AdminShift, ShiftTask, shiftTime, moscowToday } from '@/lib/adminShiftsApi';
 import { formatMinutes } from '@/lib/workLogApi';
 
 interface Props {
@@ -40,12 +40,27 @@ const ShiftDayDetails = ({ date, shifts, tasks, asModal, onClose }: Props) => {
                 <Icon name={s.started_at ? 'CircleCheck' : 'Circle'} size={13} />
                 {s.started_at ? `Открыл смену: ${shiftTime(s.started_at)}` : 'Смена не открыта'}
               </div>
+              {/* Смену не закрыли до полуночи — в 00:00 по Москве она
+                  закрывается сама, но в графике это видно как нарушение */}
               <div
                 className={`flex items-center gap-1.5 ${
-                  s.finished_at ? 'text-green-700' : 'text-gray-400'
+                  s.finished_at
+                    ? 'text-green-700'
+                    : s.started_at && date < moscowToday()
+                      ? 'text-amber-600'
+                      : 'text-gray-400'
                 }`}
               >
-                <Icon name={s.finished_at ? 'CircleCheck' : 'Circle'} size={13} />
+                <Icon
+                  name={
+                    s.finished_at
+                      ? 'CircleCheck'
+                      : s.started_at && date < moscowToday()
+                        ? 'CircleAlert'
+                        : 'Circle'
+                  }
+                  size={13}
+                />
                 {s.finished_at ? `Закрыл смену: ${shiftTime(s.finished_at)}` : 'Смена не закрыта'}
               </div>
             </div>

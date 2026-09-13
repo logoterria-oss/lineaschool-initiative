@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -25,14 +25,28 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
   const [state, setState] = useState<MyShiftState | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const dayRef = useRef(moscowToday());
   const { items, headTasks, marks, doneCount, total, reload } = useShiftChecklist();
 
   const load = useCallback(async () => {
-    setState(await fetchMyShift(today()));
+    setState(await fetchMyShift());
   }, []);
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  /* Смена живёт в пределах московских суток. В полночь по Москве
+     перечитываем состояние: незакрытая смена считается закрытой,
+     и кнопка снова становится «На смене» для нового дня. */
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (moscowToday() !== dayRef.current) {
+        dayRef.current = moscowToday();
+        load();
+      }
+    }, 60_000);
+    return () => clearInterval(id);
   }, [load]);
 
   useEffect(() => {
@@ -62,7 +76,7 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
 
   const doMark = async (act: 'start' | 'finish', reason = '') => {
     setBusy(true);
-    const next = await markMyShift(today(), act);
+    const next = await markMyShift(act);
     setBusy(false);
     if (!next) {
       toast({ title: 'Не удалось отметить смену', variant: 'destructive' });
@@ -76,7 +90,8 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
       const report = buildReport();
       if (reason) report.push({ title: 'Причина невыполненных задач', done: false, comment: reason });
       sendShiftReport({
-        date: today(),
+        // День смены присылает сервер (по Москве), а не часы на ПК
+        date: next.date || today(),
         staff_name: staffName || '',
         started_at: next.started_at,
         finished_at: next.finished_at,

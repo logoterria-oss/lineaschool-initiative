@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 import urllib.request
 import urllib.error
 import psycopg2
@@ -28,6 +29,18 @@ MSK_TODAY = f"({MSK_NOW})::date"
 
 def db_conn():
     return psycopg2.connect(os.environ["DATABASE_URL"])
+
+
+def _msk_today() -> str:
+    """Сегодняшняя дата по Москве — единая точка правды для смен.
+
+    Сервер живёт в UTC, сотрудники — в разных часовых поясах,
+    поэтому день смены считаем только отсюда.
+    """
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(hours=3)
+    ).strftime("%Y-%m-%d")
 
 
 def _json(status, payload):
@@ -105,8 +118,13 @@ def _me(cur, event):
 def mark_shift(event: dict, body: dict, act: str) -> dict:
     """Отметка «на смене» и «смена закончена» самим администратором.
 
-    Ставится в тот день графика, где этот администратор запланирован.
-    Если смены на сегодня в графике нет — создаём её, чтобы отметка не потерялась.
+    День смены и время отметки берём ТОЛЬКО с сервера, по Москве.
+    Часы на компьютере сотрудника не участвуют: администраторы работают
+    из разных часовых поясов (например, Новосибирск +4 к Москве), и дата
+    с их ПК уводила бы смену не в тот день.
+
+    Смена живёт в пределах московских суток: не закрыли до 00:00 —
+    она считается закрытой, отметка ухода уже не ставится.
     """
     conn = db_conn()
     try:
@@ -115,38 +133,19 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
             if not me:
                 return _json(401, {"error": "Требуется вход"})
 
-            date = str(body.get("date") or "")[:10]
-            if len(date) != 10:
-                return _json(400, {"error": "date required"})
-
             cur.execute(
-                "SELECT id, started_at, finished_at FROM admin_shifts "
-                "WHERE staff_id = %s AND shift_date = %s",
-                (me["id"], date),
+                f"SELECT id, started_at, finished_at, to_char({MSK_TODAY}, 'YYYY-MM-DD') AS today "
+                f"FROM admin_shifts WHERE staff_id = %s AND shift_date = {MSK_TODAY}",
+                (me["id"],),
             )
             row = cur.fetchone()
 
-            # Закрытие после полуночи относится ко ВЧЕРАШНЕЙ смене.
-            # Админ уходит в 01:52 — календарно это уже новый день, но
-            # смену он закрывает ту, которую открыл накануне. Без этого
-            # отметка ухода падала в today и день «закрывался» раньше,
-            # чем открывался.
-            if act == "finish" and not (row or {}).get("started_at"):
-                cur.execute(
-                    "SELECT id, started_at, finished_at FROM admin_shifts "
-                    "WHERE staff_id = %s AND shift_date = %s::date - 1 "
-                    "AND started_at IS NOT NULL AND finished_at IS NULL",
-                    (me["id"], date),
-                )
-                prev = cur.fetchone()
-                if prev:
-                    row = prev
-
             if not row:
                 cur.execute(
-                    "INSERT INTO admin_shifts (staff_id, staff_name, shift_date, time_from, time_to, kind) "
-                    "VALUES (%s, %s, %s, '', '', 'work') RETURNING id, started_at, finished_at",
-                    (me["id"], me["full_name"], date),
+                    f"INSERT INTO admin_shifts (staff_id, staff_name, shift_date, time_from, time_to, kind) "
+                    f"VALUES (%s, %s, {MSK_TODAY}, '', '', 'work') "
+                    f"RETURNING id, started_at, finished_at",
+                    (me["id"], me["full_name"]),
                 )
                 row = cur.fetchone()
 
@@ -172,49 +171,38 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
 
             # Сразу сообщаем окну взаимодействия обновлённый состав смены
             hook = push_shift_to_interaction(cur)
-        return _json(200, {"ok": True, **marks, "interaction": hook})
+        return _json(200, {"ok": True, **marks, "date": _msk_today(), "interaction": hook})
     finally:
         conn.close()
 
 
 def my_shift_state(event: dict) -> dict:
-    """Состояние смены администратора на сегодня — для кнопки в кабинете."""
-    params = event.get("queryStringParameters") or {}
-    date = str(params.get("date") or "")[:10]
+    """Состояние смены администратора на сегодня — для кнопки в кабинете.
+
+    «Сегодня» определяет сервер по Москве. Дату с компьютера сотрудника
+    не используем: в Новосибирске после 21:00 по Москве уже следующие
+    сутки, и кнопка показывала бы смену не того дня.
+    """
     conn = db_conn()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             me = _me(cur, event)
             if not me:
                 return _json(401, {"error": "Требуется вход"})
-            if len(date) != 10:
-                return _json(400, {"error": "date required"})
             cur.execute(
-                "SELECT to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
-                "to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at, kind "
-                "FROM admin_shifts WHERE staff_id = %s AND shift_date = %s",
-                (me["id"], date),
+                f"SELECT to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
+                f"to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at, kind "
+                f"FROM admin_shifts WHERE staff_id = %s AND shift_date = {MSK_TODAY}",
+                (me["id"],),
             )
             row = cur.fetchone()
-
-            # После полуночи вчерашняя смена ещё идёт: кнопка должна
-            # предлагать её закрыть, а не открывать новую.
-            if not (row or {}).get("started_at"):
-                cur.execute(
-                    "SELECT to_char(started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
-                    "to_char(finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at, kind "
-                    "FROM admin_shifts WHERE staff_id = %s AND shift_date = %s::date - 1 "
-                    "AND started_at IS NOT NULL AND finished_at IS NULL",
-                    (me["id"], date),
-                )
-                prev = cur.fetchone()
-                if prev:
-                    row = prev
         return _json(200, {
             "ok": True,
             "started_at": (row or {}).get("started_at"),
             "finished_at": (row or {}).get("finished_at"),
             "planned": bool(row),
+            # Дата смены по Москве — фронт показывает её рядом с кнопкой
+            "date": _msk_today(),
         })
     finally:
         conn.close()
@@ -240,9 +228,9 @@ def push_shift_to_interaction(cur) -> dict:
     cur.execute(
         f"SELECT s.phone FROM admin_shifts sh "
         f"JOIN staff s ON s.id = sh.staff_id "
-        # Вчерашнюю незакрытую смену тоже считаем идущей: админ,
-        # работающий за полночь, не должен исчезать из состава смены
-        f"WHERE sh.shift_date >= {MSK_TODAY} - 1 "
+        # Смена живёт в пределах московских суток: в 00:00 незакрытая
+        # смена считается закрытой и из состава уходит сама
+        f"WHERE sh.shift_date = {MSK_TODAY} "
         f"AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
         f"AND s.role = 'admin' AND s.status = 'active'"
     )
@@ -285,9 +273,9 @@ def sync_interaction() -> dict:
 def on_shift_now() -> dict:
     """Кто из администраторов сейчас на смене — открытый список для «Окна взаимодействия».
 
-    На смене = нажал «На смене» и ещё не нажал «Смена закончена».
-    Вчерашняя незакрытая смена тоже считается идущей — админ может
-    работать за полночь.
+    На смене = сегодня по Москве нажал «На смене» и ещё не нажал
+    «Смена закончена». В 00:00 по Москве смена считается закрытой:
+    незакрытая вчерашняя из состава уходит сама.
     """
     conn = db_conn()
     try:
@@ -297,7 +285,7 @@ def on_shift_now() -> dict:
                 f"to_char(sh.started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at "
                 f"FROM admin_shifts sh "
                 f"LEFT JOIN staff s ON s.id = sh.staff_id "
-                f"WHERE sh.shift_date >= {MSK_TODAY} - 1 "
+                f"WHERE sh.shift_date = {MSK_TODAY} "
                 f"AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
                 f"ORDER BY sh.started_at",
                 (),
