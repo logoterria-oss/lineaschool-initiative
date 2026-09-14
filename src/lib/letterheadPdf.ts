@@ -316,7 +316,14 @@ export interface PdfInput {
 }
 
 const buildPdf = async (input: PdfInput, meta?: string): Promise<jsPDF> => {
-  const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  // putOnlyUsedFonts — в файл попадут только встроенные шрифты,
+  // иначе Acrobat ругается на невстроенные и не даёт подписать сертификатом
+  const doc = new jsPDF({
+    orientation: 'p',
+    unit: 'mm',
+    format: 'a4',
+    putOnlyUsedFonts: true,
+  });
   await loadFonts(doc);
   if (meta) doc.setProperties({ keywords: meta });
 
@@ -423,16 +430,58 @@ const buildPdf = async (input: PdfInput, meta?: string): Promise<jsPDF> => {
   return doc;
 };
 
+/**
+ * Убирает действие при открытии (/OpenAction) — Acrobat считает его
+ * «скрытым действием» и мешает подписанию. Заменяем на пробелы той же
+ * длины, чтобы не сдвинуть смещения объектов в таблице xref.
+ */
+const stripOpenAction = (doc: jsPDF): Uint8Array => {
+  const raw = doc.output('arraybuffer');
+  const bytes = new Uint8Array(raw);
+  const needle = '/OpenAction [3 0 R /';
+  const codes = Array.from(needle, (c) => c.charCodeAt(0));
+
+  for (let i = 0; i + codes.length < bytes.length; i += 1) {
+    let hit = true;
+    for (let j = 0; j < codes.length; j += 1) {
+      if (bytes[i + j] !== codes[j]) {
+        hit = false;
+        break;
+      }
+    }
+    if (!hit) continue;
+    let end = i;
+    while (end < bytes.length && bytes[end] !== 0x0a && bytes[end] !== 0x0d) end += 1;
+    bytes.fill(0x20, i, end);
+    break;
+  }
+  return bytes;
+};
+
 export const savePaperToPdf = async (
   input: PdfInput,
   fileName: string,
   meta?: string,
 ): Promise<void> => {
   const doc = await buildPdf(input, meta);
-  doc.save(fileName);
+  const blob = new Blob([stripOpenAction(doc).buffer as ArrayBuffer], {
+    type: 'application/pdf',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 };
 
 export const paperToPdfBase64 = async (input: PdfInput, meta?: string): Promise<string> => {
   const doc = await buildPdf(input, meta);
-  return doc.output('datauristring').split(',')[1] || '';
+  const bytes = stripOpenAction(doc);
+  let bin = '';
+  const step = 8192;
+  for (let i = 0; i < bytes.length; i += step) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + step));
+  }
+  return btoa(bin);
 };

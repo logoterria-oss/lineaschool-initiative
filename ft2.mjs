@@ -1,0 +1,13 @@
+import { jsPDF } from 'jspdf';
+import fs from 'fs';
+const url='https://functions.poehali.dev/3f32132e-3d38-4099-90c1-0fa0d31dd012';
+const [n,b]=await Promise.all(['normal','bold'].map(s=>fetch(`${url}?style=${s}`).then(r=>r.json())));
+const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4',putOnlyUsedFonts:true});
+doc.addFileToVFS('NS-normal.ttf',n.b64);doc.addFont('NS-normal.ttf','NS','normal');
+doc.addFileToVFS('NS-bold.ttf',b.b64);doc.addFont('NS-bold.ttf','NS','bold');
+doc.setDisplayMode('none','continuous');
+doc.setProperties({keywords:'LHD1:test'});
+doc.setFont('NS','normal');doc.setFontSize(11);
+doc.text('Договор № 001 — проверка', 20, 30);
+doc.setFontSize(1); doc.text('LHD1:abcdef', 2, 4, {renderingMode:'invisible'});
+fs.writeFileSync('/tmp/final.pdf',Buffer.from(doc.output('arraybuffer')));
