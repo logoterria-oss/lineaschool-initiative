@@ -26,6 +26,10 @@ STATUS_DROPPED = 3
 STATUS_NAMES = {1: "Активен", 2: "Завершил", 3: "Бросил",
                 4: "Каникулы (заморожен)", 5: "Каникулы"}
 
+# Сколько уроков за 2 месяца делают педагога регулярным, а не
+# разовой подменой. Еженедельные занятия — это 6-8 уроков.
+REGULAR_MIN_LESSONS = 3
+
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -321,16 +325,25 @@ def handle_sync(token):
         # Дата последнего урока — только по занятиям в CRM
         left = last_by.get(cid)
 
-        # Педагоги за последние 2 месяца обучения — с кем ребёнок
-        # занимался непосредственно перед уходом
+        # Педагоги регулярных занятий за последние 2 месяца обучения.
+        # Разовые подмены и диагностики не в счёт: постоянный педагог
+        # ведёт ребёнка еженедельно, за 2 месяца это 6-8 уроков.
         recent = []
         if left:
             edge = left - timedelta(days=62)
-            seen = set()
-            for ld, tid in sorted(teach_by.get(cid, []), reverse=True):
-                if ld < edge or tid in seen:
-                    continue
-                seen.add(tid)
+            per_teacher = {}
+            for ld, tid in teach_by.get(cid, []):
+                if ld >= edge:
+                    per_teacher[tid] = per_teacher.get(tid, 0) + 1
+
+            ranked = sorted(per_teacher.items(), key=lambda kv: -kv[1])
+            regular = [(tid, n) for tid, n in ranked if n >= REGULAR_MIN_LESSONS]
+            # Занимался мало (ушёл быстро) — показываем основного педагога,
+            # иначе строка осталась бы пустой
+            if not regular and ranked:
+                regular = ranked[:1]
+
+            for tid, _ in regular:
                 tname = teacher_names.get(tid)
                 if tname:
                     recent.append(surname_first(tname))
