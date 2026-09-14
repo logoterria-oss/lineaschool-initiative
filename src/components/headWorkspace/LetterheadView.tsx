@@ -2,11 +2,14 @@ import { useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import LetterheadSheet, { LetterData } from '@/components/letterhead/LetterheadSheet';
-import { savePaperToPdf, paperToPdfBase64, buildDocFileName } from '@/lib/letterheadPdf';
+import { savePaperToPdf, paperToPdfBase64, buildDocFileName, PdfInput } from '@/lib/letterheadPdf';
 import { ORG_DETAILS } from '@/lib/orgDetails';
 import { LETTERHEAD_DOCS_URL, SavedDoc } from '@/lib/letterheadApi';
 import { encodeMeta } from '@/lib/letterheadParse';
+import { EMPTY_REQUISITES, Requisites, parseBlocks } from '@/lib/letterheadMarkup';
 import ImportDocPanel from '@/components/letterhead/ImportDocPanel';
+import BodyEditor from '@/components/letterhead/BodyEditor';
+import RequisitesEditor from '@/components/letterhead/RequisitesEditor';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -32,6 +35,10 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
           signerName: initial.signer_name || ORG_DETAILS.signerName,
           city: initial.city || 'г. Новосибирск',
           stampMode: (initial.stamp_mode as LetterData['stampMode']) || 'none',
+          requisites: initial.requisites
+            ? { ...EMPTY_REQUISITES, ...initial.requisites }
+            : EMPTY_REQUISITES,
+          showSignature: initial.show_signature !== false,
         }
       : {
           docNumber: '',
@@ -43,14 +50,21 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
           signerName: ORG_DETAILS.signerName,
           city: 'г. Новосибирск',
           stampMode: 'none',
+          requisites: EMPTY_REQUISITES,
+          showSignature: true,
         },
   );
 
   const [imported, setImported] = useState('');
 
-  const set = (k: keyof LetterData, v: string) => {
+  const set = (k: keyof LetterData, v: string | boolean) => {
     setArchived(false);
     setData((p) => ({ ...p, [k]: v }) as LetterData);
+  };
+
+  const setReq = (patch: Partial<Requisites>) => {
+    setArchived(false);
+    setData((p) => ({ ...p, requisites: { ...p.requisites, ...patch } }));
   };
 
   const applyImport = (patch: Partial<LetterData>, note: string) => {
@@ -68,21 +82,33 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
 
   const fileName = buildDocFileName(data.title, ORG_DETAILS.fileSuffix);
 
+  const pdfInput = (): PdfInput => ({
+    title: data.title,
+    docNumber: data.docNumber,
+    docDate: data.docDate,
+    recipient: data.recipient,
+    blocks: parseBlocks(data.body),
+    requisites: data.requisites,
+    signerPost: data.signerPost,
+    signerName: data.signerName,
+    city: data.city,
+    stampMode: data.stampMode,
+    showSignature: data.showSignature,
+  });
+
   const savePdf = async () => {
-    if (!sheetRef.current) return;
     setSaving(true);
     try {
-      await savePaperToPdf(sheetRef.current, fileName, encodeMeta(data));
+      await savePaperToPdf(pdfInput(), fileName, encodeMeta(data));
     } finally {
       setSaving(false);
     }
   };
 
   const saveToArchive = async () => {
-    if (!sheetRef.current) return;
     setArchiving(true);
     try {
-      const pdfBase64 = await paperToPdfBase64(sheetRef.current, encodeMeta(data));
+      const pdfBase64 = await paperToPdfBase64(pdfInput(), encodeMeta(data));
       await fetch(LETTERHEAD_DOCS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,20 +187,19 @@ const LetterheadView = ({ initial = null, onSaved }: Props) => {
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-gray-600">
-                Текст: запрос, соглашение и т. д.
-              </label>
-              <span className="text-[11px] text-gray-400">Enter — новая строка</span>
-            </div>
-            <textarea
-              className={`${field} min-h-[240px] resize-y leading-relaxed`}
-              value={data.body}
-              onChange={(e) => set('body', e.target.value)}
-              placeholder="Введите текст документа…"
+          <BodyEditor value={data.body} onChange={(v) => set('body', v)} />
+
+          <RequisitesEditor value={data.requisites} onChange={setReq} />
+
+          <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={data.showSignature}
+              onChange={(e) => set('showSignature', e.target.checked)}
+              className="w-4 h-4 accent-green-600"
             />
-          </div>
+            Показывать подпись руководителя внизу
+          </label>
 
           <div className="grid grid-cols-2 gap-3">
             <div>

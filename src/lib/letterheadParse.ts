@@ -2,6 +2,7 @@ import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { LetterData } from '@/components/letterhead/LetterheadSheet';
 import { ORG_DETAILS as O } from '@/lib/orgDetails';
+import { EMPTY_REQUISITES } from '@/lib/letterheadMarkup';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -20,7 +21,12 @@ const decodeMeta = (raw: string): LetterData | null => {
   try {
     const b64 = raw.slice(META_PREFIX.length);
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    return JSON.parse(new TextDecoder().decode(bytes));
+    const d = JSON.parse(new TextDecoder().decode(bytes)) as Partial<LetterData>;
+    return {
+      ...d,
+      requisites: d.requisites ? { ...EMPTY_REQUISITES, ...d.requisites } : EMPTY_REQUISITES,
+      showSignature: d.showSignature !== false,
+    } as LetterData;
   } catch {
     return null;
   }
@@ -90,7 +96,11 @@ const parseLines = (lines: string[]): Partial<LetterData> => {
   }
   if (title.length) out.title = title.join('\n');
 
-  const bodyLines = rest.slice(i).filter((l) => l !== O.signerPost && l !== O.signerName);
+  const bodyLines = rest
+    .slice(i)
+    .filter((l) => l !== O.signerPost && l !== O.signerName)
+    /* Нумерованные разделы вида «3. ЦЕНА ДОГОВОРА» — это заголовки */
+    .map((l) => (/^\d+\.\s+[А-ЯЁ][А-ЯЁ\s,()–-]{4,}$/.test(l.trim()) ? `# ${l.trim()}` : l));
   if (bodyLines.length) out.body = bodyLines.join('\n');
 
   return out;
@@ -101,6 +111,45 @@ export interface ParseResult {
   exact: boolean;
   error?: string;
 }
+
+/** Раздел «Адреса, реквизиты и подписи сторон» переносим в отдельный блок */
+const splitRequisites = (body: string): Partial<LetterData> => {
+  const lines = body.split('\n');
+  const idx = lines.findIndex((l) =>
+    /^#?\s*\d*\.?\s*(адреса|реквизиты).*(реквизиты|подписи).*сторон/i.test(l.trim()),
+  );
+  if (idx < 0) return { body };
+
+  const tail = lines.slice(idx + 1);
+  const rightIdx = tail.findIndex((l) => /^заказчик\s*:?\s*$/i.test(l.trim()));
+  const left = (rightIdx > 0 ? tail.slice(0, rightIdx) : tail).join('\n');
+  const right = rightIdx > 0 ? tail.slice(rightIdx + 1).join('\n') : '';
+
+  const clean = (s: string) =>
+    s
+      .split('\n')
+      .filter((l) => !/^_+\s*\/|^\s*\(подпись\)|^исполнитель\s*:?\s*$/i.test(l.trim()))
+      .join('\n')
+      .trim();
+
+  const signOf = (s: string) => (s.match(/\/\s*([^/]+?)\s*\//) || [])[1] || '';
+  const dateOf = (s: string) => (s.match(/«[^»]*»[^\n]*г\./) || [])[0] || '';
+
+  return {
+    body: lines.slice(0, idx).join('\n').trimEnd(),
+    requisites: {
+      ...EMPTY_REQUISITES,
+      enabled: true,
+      leftBody: clean(left),
+      leftSign: signOf(left),
+      leftDate: dateOf(left),
+      rightBody: clean(right),
+      rightSign: signOf(right),
+      rightDate: dateOf(right),
+    },
+    showSignature: false,
+  };
+};
 
 export const parsePdfFile = async (file: File): Promise<ParseResult> => {
   const buf = await file.arrayBuffer();
@@ -153,5 +202,7 @@ export const parsePdfFile = async (file: File): Promise<ParseResult> => {
     };
   }
 
-  return { data: parseLines(visible), exact: false };
+  const parsed = parseLines(visible);
+  if (parsed.body) Object.assign(parsed, splitRequisites(parsed.body));
+  return { data: parsed, exact: false };
 };

@@ -62,7 +62,8 @@ def handler(event: dict, context) -> dict:
     if method == "GET":
         cur.execute(
             f"SELECT id, title, doc_number, doc_date, recipient, body, signer_post, "
-            f"signer_name, city, stamp_mode, file_name, pdf_url, created_by, created_at "
+            f"signer_name, city, stamp_mode, requisites, show_signature, "
+            f"file_name, pdf_url, created_by, created_at "
             f"FROM {TABLE} ORDER BY created_at DESC LIMIT 300"
         )
         rows = cur.fetchall()
@@ -76,14 +77,19 @@ def handler(event: dict, context) -> dict:
         if d.get("pdfBase64"):
             pdf_url = _upload_pdf(d["pdfBase64"], d.get("fileName", "doc.pdf"))
         doc_date = d.get("docDate") or None
+        req = d.get("requisites")
+        req_sql = _esc(json.dumps(req, ensure_ascii=False)) + "::jsonb" if req else "NULL"
+        show_sign = "TRUE" if d.get("showSignature", True) else "FALSE"
         cur.execute(
             f"INSERT INTO {TABLE} (title, doc_number, doc_date, recipient, body, signer_post, "
-            f"signer_name, city, stamp_mode, file_name, pdf_url, created_by) VALUES ("
+            f"signer_name, city, stamp_mode, requisites, show_signature, "
+            f"file_name, pdf_url, created_by) VALUES ("
             f"{_esc(d.get('title', ''))}, {_esc(d.get('docNumber', ''))}, "
             f"{_esc(doc_date) if doc_date else 'NULL'}, {_esc(d.get('recipient', ''))}, "
             f"{_esc(d.get('body', ''))}, {_esc(d.get('signerPost', ''))}, "
             f"{_esc(d.get('signerName', ''))}, {_esc(d.get('city', ''))}, "
-            f"{_esc(d.get('stampMode', 'none'))}, {_esc(d.get('fileName', ''))}, "
+            f"{_esc(d.get('stampMode', 'none'))}, {req_sql}, {show_sign}, "
+            f"{_esc(d.get('fileName', ''))}, "
             f"{_esc(pdf_url)}, {_esc(d.get('createdBy', ''))}) RETURNING id"
         )
         new_id = cur.fetchone()["id"]

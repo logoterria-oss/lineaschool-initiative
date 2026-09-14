@@ -12,6 +12,8 @@ export interface SavedDoc {
   signer_name: string;
   city: string;
   stamp_mode: string;
+  requisites: import('@/lib/letterheadMarkup').Requisites | null;
+  show_signature: boolean;
   file_name: string;
   pdf_url: string;
   created_by: string;

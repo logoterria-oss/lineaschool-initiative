@@ -3,6 +3,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { LetterData } from '@/components/letterhead/LetterheadSheet';
 import { parsePdfFile } from '@/lib/letterheadParse';
+import { EMPTY_REQUISITES } from '@/lib/letterheadMarkup';
 import { LETTERHEAD_DOCS_URL, SavedDoc } from '@/lib/letterheadApi';
 
 interface Props {
@@ -22,6 +23,8 @@ const docToData = (d: SavedDoc): Partial<LetterData> => ({
   signerName: d.signer_name || '',
   city: d.city || '',
   stampMode: (d.stamp_mode as LetterData['stampMode']) || 'none',
+  requisites: d.requisites ? { ...EMPTY_REQUISITES, ...d.requisites } : EMPTY_REQUISITES,
+  showSignature: d.show_signature !== false,
 });
 
 const ImportDocPanel = ({ onApply }: Props) => {
