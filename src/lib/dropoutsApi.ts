@@ -4,8 +4,10 @@ const API_URL = 'https://functions.poehali.dev/4ff19097-3569-4d95-9f19-93784e6eb
 export interface Dropout {
   id: number;
   name: string;
-  /** Дата последнего занятия — она же дата ухода */
+  /** Дата последнего урока — считается по CRM */
   left_at: string | null;
+  /** Дата отказа со слов родителя — вводит администратор */
+  refused_at: string | null;
   /** Дата первого занятия */
   first_lesson: string | null;
   /** Сколько месяцев занимался до ухода */
@@ -44,11 +46,11 @@ export async function syncDropouts(): Promise<boolean> {
   return !!data.ok;
 }
 
-/** Сохранить причину ухода, конфликты и дату ухода */
+/** Сохранить дату отказа, причину и конфликты */
 export async function saveDropoutNote(p: {
   student_id: number;
   student_name: string;
-  left_at: string | null;
+  refused_at: string | null;
   reason: string;
   conflicts: string;
 }): Promise<boolean> {

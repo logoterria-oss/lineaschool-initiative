@@ -7,26 +7,26 @@ import { Dropout, dropoutDate, monthsText } from '@/lib/dropoutsApi';
 
 interface Props {
   student: Dropout;
-  onSave: (p: { left_at: string | null; reason: string; conflicts: string }) => Promise<void>;
+  onSave: (p: { refused_at: string | null; reason: string; conflicts: string }) => Promise<void>;
 }
 
 /** Строка таблицы бросивших: расчётные данные слева, заметки админа — правятся */
 const DropoutRow = ({ student, onSave }: Props) => {
   const [edit, setEdit] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [leftAt, setLeftAt] = useState(student.left_at || '');
+  const [refusedAt, setRefusedAt] = useState(student.refused_at || '');
   const [reason, setReason] = useState(student.reason);
   const [conflicts, setConflicts] = useState(student.conflicts);
 
   const save = async () => {
     setBusy(true);
-    await onSave({ left_at: leftAt || null, reason, conflicts });
+    await onSave({ refused_at: refusedAt || null, reason, conflicts });
     setBusy(false);
     setEdit(false);
   };
 
   const cancel = () => {
-    setLeftAt(student.left_at || '');
+    setRefusedAt(student.refused_at || '');
     setReason(student.reason);
     setConflicts(student.conflicts);
     setEdit(false);
@@ -36,16 +36,22 @@ const DropoutRow = ({ student, onSave }: Props) => {
     <tr className="border-b border-gray-100 align-top hover:bg-gray-50/60">
       <td className="px-3 py-3 font-medium text-gray-900 whitespace-nowrap">{student.name}</td>
 
-      <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
+      {/* Дата последнего урока приходит из CRM — только для чтения */}
+      <td className="px-3 py-3 text-gray-700 whitespace-nowrap">{dropoutDate(student.left_at)}</td>
+
+      {/* Дата отказа — со слов родителя, вводит администратор */}
+      <td className="px-3 py-3 whitespace-nowrap">
         {edit ? (
           <Input
             type="date"
-            value={leftAt}
-            onChange={(e) => setLeftAt(e.target.value)}
+            value={refusedAt}
+            onChange={(e) => setRefusedAt(e.target.value)}
             className="h-8 w-[150px] text-xs"
           />
         ) : (
-          dropoutDate(student.left_at)
+          <span className={student.refused_at ? 'text-gray-700' : 'text-gray-400'}>
+            {student.refused_at ? dropoutDate(student.refused_at) : 'не указана'}
+          </span>
         )}
       </td>
 

@@ -214,7 +214,7 @@ def load_notes():
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                f"SELECT student_id, to_char(left_at, 'YYYY-MM-DD') AS left_at, "
+                f"SELECT student_id, to_char(refused_at, 'YYYY-MM-DD') AS refused_at, "
                 f"reason, conflicts, updated_by FROM {SCHEMA}.dropout_notes"
             )
             for r in cur.fetchall():
@@ -258,8 +258,10 @@ def handle_list():
         rows.append({
             "id": c["student_id"],
             "name": c["name"],
-            # Дата ухода: правка администратора важнее расчёта по занятиям
-            "left_at": note.get("left_at") or c["left_at"],
+            # Дата последнего урока считается по CRM и руками не правится
+            "left_at": c["left_at"],
+            # Дата отказа — со слов родителя, её вводит администратор
+            "refused_at": note.get("refused_at") or None,
             "first_lesson": c["first_lesson"],
             "months": float(c["months"] or 0),
             "teachers": c["teachers"] or [],
@@ -286,7 +288,6 @@ def handle_sync(token):
         customers = f_customers.result()
         teacher_names = f_teachers.result()
         lessons = f_lessons.result()
-    notes = load_notes()
 
     # Занятия по ученику: первая и последняя дата, педагоги по датам
     first_by, last_by = {}, {}
@@ -317,8 +318,8 @@ def handle_sync(token):
             continue
 
         first = first_by.get(cid)
-        # Дата ухода: правка администратора важнее расчёта по занятиям
-        left = parse_crm_date(notes.get(cid, {}).get("left_at")) or last_by.get(cid)
+        # Дата последнего урока — только по занятиям в CRM
+        left = last_by.get(cid)
 
         # Педагоги за последние 2 месяца обучения — с кем ребёнок
         # занимался непосредственно перед уходом
@@ -357,27 +358,30 @@ def handle_sync(token):
 
 
 def handle_save(event, body):
-    """Сохранить причину ухода, конфликты и дату ухода по ученику."""
+    """Сохранить дату отказа, причину и конфликты по ученику.
+
+    Дата последнего урока сюда не попадает: её считает CRM.
+    """
     student_id = body.get("student_id")
     if not student_id:
         return _json(400, {"error": "student_id required"})
 
-    left_at = str(body.get("left_at") or "")[:10] or None
+    refused_at = str(body.get("refused_at") or "")[:10] or None
     conn = db()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             author = _author(cur, event)
             cur.execute(
                 f"INSERT INTO {SCHEMA}.dropout_notes "
-                f"(student_id, student_name, left_at, reason, conflicts, updated_by, updated_at) "
+                f"(student_id, student_name, refused_at, reason, conflicts, updated_by, updated_at) "
                 f"VALUES (%s, %s, %s, %s, %s, %s, now()) "
                 f"ON CONFLICT (student_id) DO UPDATE SET "
-                f"student_name = EXCLUDED.student_name, left_at = EXCLUDED.left_at, "
+                f"student_name = EXCLUDED.student_name, refused_at = EXCLUDED.refused_at, "
                 f"reason = EXCLUDED.reason, conflicts = EXCLUDED.conflicts, "
                 f"updated_by = EXCLUDED.updated_by, updated_at = now() "
-                f"RETURNING student_id, to_char(left_at, 'YYYY-MM-DD') AS left_at, "
+                f"RETURNING student_id, to_char(refused_at, 'YYYY-MM-DD') AS refused_at, "
                 f"reason, conflicts, updated_by",
-                (int(student_id), str(body.get("student_name") or "")[:255], left_at,
+                (int(student_id), str(body.get("student_name") or "")[:255], refused_at,
                  str(body.get("reason") or ""), str(body.get("conflicts") or ""), author),
             )
             saved = dict(cur.fetchone())

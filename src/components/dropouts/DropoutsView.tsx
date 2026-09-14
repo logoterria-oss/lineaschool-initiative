@@ -41,7 +41,7 @@ const DropoutsView = () => {
 
   const handleSave = async (
     s: Dropout,
-    p: { left_at: string | null; reason: string; conflicts: string },
+    p: { refused_at: string | null; reason: string; conflicts: string },
   ) => {
     const ok = await saveDropoutNote({ student_id: s.id, student_name: s.name, ...p });
     if (!ok) {
@@ -114,7 +114,8 @@ const DropoutsView = () => {
             <thead>
               <tr className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
                 <th className="px-3 py-2.5 font-semibold">ФИО</th>
-                <th className="px-3 py-2.5 font-semibold">Дата ухода</th>
+                <th className="px-3 py-2.5 font-semibold">Дата последнего урока</th>
+                <th className="px-3 py-2.5 font-semibold">Дата отказа</th>
                 <th className="px-3 py-2.5 font-semibold">Занимался</th>
                 <th className="px-3 py-2.5 font-semibold">Педагоги (2 мес)</th>
                 <th className="px-3 py-2.5 font-semibold">Причина отказа</th>
