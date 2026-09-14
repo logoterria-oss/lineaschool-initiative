@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Список бросивших",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Сохранение без ученика отклонено",
+      "method": "POST",
+      "path": "/",
+      "body": {"reason": "нет времени"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Метод не поддерживается",
+      "method": "DELETE",
+      "path": "/",
+      "expectedStatus": 405,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

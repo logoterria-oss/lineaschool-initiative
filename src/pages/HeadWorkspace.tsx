@@ -10,6 +10,7 @@ import LeadsListView from '@/components/headWorkspace/LeadsListView';
 import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
 import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
+import DropoutsView from '@/components/dropouts/DropoutsView';
 import PaymentsView from '@/components/headWorkspace/PaymentsView';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
 import QuestionnairesView from '@/components/headWorkspace/QuestionnairesView';
@@ -74,6 +75,7 @@ const HeadWorkspace = () => {
       case 'interactions': return <InteractionsView />;
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;
+      case 'dropouts': return <DropoutsView />;
       case 'payments': return <PaymentsView />;
       case 'reports-fin': return <ReportsFinView />;
       case 'calendar': return <RecurringPaymentsView />;
