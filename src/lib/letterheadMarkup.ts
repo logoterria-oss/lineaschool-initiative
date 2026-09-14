@@ -40,6 +40,7 @@ export const plainText = (pieces: Piece[]): string => pieces.map((p) => p.text).
 /** Реквизиты сторон — отдельный блок в конце договора */
 export interface Requisites {
   enabled: boolean;
+  heading: string;
   leftTitle: string;
   leftBody: string;
   leftSign: string;
@@ -52,6 +53,7 @@ export interface Requisites {
 
 export const EMPTY_REQUISITES: Requisites = {
   enabled: false,
+  heading: 'АДРЕСА, РЕКВИЗИТЫ И ПОДПИСИ СТОРОН',
   leftTitle: 'Исполнитель:',
   leftBody: '',
   leftSign: '',

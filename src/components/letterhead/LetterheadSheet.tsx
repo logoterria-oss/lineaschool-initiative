@@ -81,24 +81,26 @@ const ReqColumn = ({
   </div>
 );
 
+const SHEET: React.CSSProperties = {
+  width: 794,
+  minHeight: 1123,
+  padding: '53px 57px 60px 76px',
+  fontFamily: '"Noto Sans", Arial, sans-serif',
+  fontSize: 13,
+  color: '#000',
+  display: 'flex',
+  flexDirection: 'column',
+};
+
 const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data }, ref) => {
   const blocks = parseBlocks(data.body);
   const r = data.requisites;
 
   return (
+    <div ref={ref} className="mx-auto flex flex-col gap-5" style={{ width: 794 }}>
     <div
-      ref={ref}
-      className="bg-white shadow-lg mx-auto"
-      style={{
-        width: 794,
-        minHeight: 1123,
-        padding: '53px 57px 60px 76px',
-        fontFamily: '"Noto Sans", Arial, sans-serif',
-        fontSize: 13,
-        color: '#000',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className="bg-white shadow-lg"
+      style={SHEET}
     >
       <div style={{ textAlign: 'center', lineHeight: 1.35 }}>
         <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.05em' }}>
@@ -156,23 +158,6 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
         ))}
       </div>
 
-      {r.enabled && (
-        <div style={{ display: 'flex', gap: 26, marginTop: 26 }}>
-          <ReqColumn
-            title={r.leftTitle}
-            body={r.leftBody}
-            sign={r.leftSign}
-            date={r.leftDate}
-          />
-          <ReqColumn
-            title={r.rightTitle}
-            body={r.rightBody}
-            sign={r.rightSign}
-            date={r.rightDate}
-          />
-        </div>
-      )}
-
       {data.showSignature && (
         <div style={{ marginTop: 'auto', paddingTop: 44, fontSize: 13 }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
@@ -196,6 +181,34 @@ const LetterheadSheet = forwardRef<HTMLDivElement, { data: LetterData }>(({ data
           )}
         </div>
       )}
+    </div>
+
+    {r.enabled && (
+      <div className="bg-white shadow-lg" style={SHEET}>
+        {r.heading?.trim() && (
+          <div
+            style={{
+              textAlign: 'center',
+              fontWeight: 700,
+              fontSize: 14.5,
+              marginBottom: 22,
+              lineHeight: 1.35,
+            }}
+          >
+            {r.heading}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 26 }}>
+          <ReqColumn title={r.leftTitle} body={r.leftBody} sign={r.leftSign} date={r.leftDate} />
+          <ReqColumn
+            title={r.rightTitle}
+            body={r.rightBody}
+            sign={r.rightSign}
+            date={r.rightDate}
+          />
+        </div>
+      </div>
+    )}
     </div>
   );
 });

@@ -132,6 +132,14 @@ const splitRequisites = (body: string): Partial<LetterData> => {
       .join('\n')
       .trim();
 
+  const heading =
+    lines[idx]
+      .trim()
+      .replace(/^#+\s*/, '')
+      .replace(/^\d+\.?\s*/, '')
+      .replace(/\*\*/g, '')
+      .trim() || EMPTY_REQUISITES.heading;
+
   const signOf = (s: string) => (s.match(/\/\s*([^/]+?)\s*\//) || [])[1] || '';
   const dateOf = (s: string) => (s.match(/«[^»]*»[^\n]*г\./) || [])[0] || '';
 
@@ -140,6 +148,7 @@ const splitRequisites = (body: string): Partial<LetterData> => {
     requisites: {
       ...EMPTY_REQUISITES,
       enabled: true,
+      heading,
       leftBody: clean(left),
       leftSign: signOf(left),
       leftDate: dateOf(left),

@@ -40,6 +40,19 @@ const RequisitesEditor = ({ value: r, onChange }: Props) => (
 
     {r.enabled && (
       <div className="p-3 space-y-4 bg-white">
+        <div className="space-y-1">
+          <span className="text-xs font-semibold text-gray-700">Заголовок раздела</span>
+          <input
+            className={field}
+            value={r.heading ?? ''}
+            onChange={(e) => onChange({ heading: e.target.value })}
+            placeholder="АДРЕСА, РЕКВИЗИТЫ И ПОДПИСИ СТОРОН"
+          />
+          <p className="text-[11px] text-gray-400 leading-snug">
+            Печатается на отдельной последней странице — в тело договора дописывать не нужно
+          </p>
+        </div>
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-700">Левая колонка</span>

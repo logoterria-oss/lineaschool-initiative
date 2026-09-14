@@ -211,63 +211,94 @@ const drawBlocks = (cur: Cursor, blocks: Block[]) => {
   });
 };
 
-/** Реквизиты сторон: две колонки, при нехватке места уезжают на новую страницу */
+/**
+ * Реквизиты сторон: всегда с новой страницы, с заголовком раздела.
+ * Если колонки не влезают по высоте — межстрочный интервал ужимается,
+ * чтобы блок гарантированно не залез на нижний колонтитул.
+ */
 const drawRequisites = (cur: Cursor, r: Requisites) => {
   const { doc } = cur;
   const gap = 10;
   const colW = (TEXT_W - gap) / 2;
   const colX = [ML, ML + colW + gap];
+  const BOTTOM = PAGE_H - MB;
 
-  cur.need(20);
-  cur.y += 6;
+  // Реквизиты — отдельная (последняя) страница
+  doc.addPage();
+  cur.y = MT + 6;
 
-  const column = (side: 0 | 1, startY: number): number => {
-    const title = side === 0 ? r.leftTitle : r.rightTitle;
-    const body = side === 0 ? r.leftBody : r.rightBody;
-    const sign = side === 0 ? r.leftSign : r.rightSign;
-    const dateTxt = side === 0 ? r.leftDate : r.rightDate;
-    const x = colX[side];
+  const heading = (r.heading || '').trim();
+  if (heading) {
+    doc.setFont('NS', 'bold');
+    doc.setFontSize(FS_H1);
+    doc.splitTextToSize(heading, TEXT_W).forEach((s: string) => {
+      cur.y += LINE * 1.2;
+      doc.text(s, PAGE_W / 2, cur.y, { align: 'center' });
+    });
+    cur.y += 8;
+  }
+
+  const side = (i: 0 | 1) => ({
+    title: i === 0 ? r.leftTitle : r.rightTitle,
+    body: i === 0 ? r.leftBody : r.rightBody,
+    sign: i === 0 ? r.leftSign : r.rightSign,
+    date: i === 0 ? r.leftDate : r.rightDate,
+  });
+
+  const column = (i: 0 | 1, startY: number, k: number, draw: boolean): number => {
+    const { title, body, sign, date: dateTxt } = side(i);
+    const x = colX[i];
     let y = startY;
 
     doc.setFont('NS', 'bold');
     doc.setFontSize(FS_BODY);
-    doc.text(title, x, y);
-    y += LINE * 1.2;
+    if (draw) doc.text(title, x, y);
+    y += LINE * 1.2 * k;
 
     doc.setFont('NS', 'normal');
     doc.setFontSize(10);
     body.split('\n').forEach((raw) => {
       if (!raw.trim()) {
-        y += LINE * 0.6;
+        y += LINE * 0.6 * k;
         return;
       }
       doc.splitTextToSize(raw, colW).forEach((s: string) => {
-        doc.text(s, x, y);
-        y += LINE * 0.92;
+        if (draw) doc.text(s, x, y);
+        y += LINE * 0.92 * k;
       });
     });
 
-    y += LINE * 2.2;
-    doc.setLineWidth(0.25);
-    doc.line(x, y, x + 42, y);
-    doc.setFontSize(10);
-    doc.text(`/ ${sign} /`, x + 46, y);
+    y += LINE * 2.2 * k;
+    if (draw) {
+      doc.setLineWidth(0.25);
+      doc.line(x, y, x + 42, y);
+      doc.setFontSize(10);
+      doc.text(`/ ${sign} /`, x + 46, y);
+    }
     y += 4;
-    doc.setFontSize(8);
-    doc.setTextColor(90);
-    doc.text('(подпись)', x + 8, y);
-    doc.text('(расшифровка)', x + 46, y);
-    doc.setTextColor(0);
+    if (draw) {
+      doc.setFontSize(8);
+      doc.setTextColor(90);
+      doc.text('(подпись)', x + 8, y);
+      doc.text('(расшифровка)', x + 46, y);
+      doc.setTextColor(0);
+    }
 
-    y += LINE * 2;
-    doc.setFontSize(10);
-    doc.text(dateTxt, x, y);
+    y += LINE * 2 * k;
+    if (draw) {
+      doc.setFontSize(10);
+      doc.text(dateTxt, x, y);
+    }
     return y;
   };
 
   const top = cur.y;
-  const h = Math.max(column(0, top), column(1, top));
-  cur.y = h;
+  const rawBottom = Math.max(column(0, top, 1, false), column(1, top, 1, false));
+  const avail = BOTTOM - top;
+  const needed = rawBottom - top;
+  const k = needed > avail && needed > 0 ? Math.max(0.62, avail / needed) : 1;
+
+  cur.y = Math.max(column(0, top, k, true), column(1, top, k, true));
 };
 
 export interface PdfInput {
