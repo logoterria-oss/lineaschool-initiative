@@ -54,13 +54,23 @@ const DropoutsView = () => {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) ||
-        r.reason.toLowerCase().includes(q) ||
-        r.teachers.some((t) => t.toLowerCase().includes(q)),
-    );
+    const found = !q
+      ? rows
+      : rows.filter(
+          (r) =>
+            r.name.toLowerCase().includes(q) ||
+            r.reason.toLowerCase().includes(q) ||
+            r.teachers.some((t) => t.toLowerCase().includes(q)),
+        );
+
+    /* Свежие отказы сверху. Без даты отказа — в конце списка,
+       между собой по дате последнего урока. */
+    return [...found].sort((a, b) => {
+      if (a.refused_at && b.refused_at) return b.refused_at.localeCompare(a.refused_at);
+      if (a.refused_at) return -1;
+      if (b.refused_at) return 1;
+      return (b.left_at || '').localeCompare(a.left_at || '');
+    });
   }, [rows, query]);
 
   /* Заполненность причин — по ней видно, сколько работы осталось */
