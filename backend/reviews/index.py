@@ -41,13 +41,22 @@ def db():
 
 
 def _api_key_ok(event) -> bool:
-    """Ключ мессенджера: без него отзывы принимать нельзя."""
-    expected = os.environ.get("REVIEWS_API_KEY") or ""
-    if not expected:
-        return False
+    """Ключ мессенджера: без него отзывы принимать нельзя.
+
+    Используем тот же ключ, что мессенджер уже применяет для окон
+    педагогов — разработчику не нужно заводить второй. Отдельный
+    REVIEWS_API_KEY тоже подойдёт, если когда-нибудь захотим
+    развести доступы.
+    """
     headers = event.get("headers") or {}
-    got = headers.get("X-Api-Key") or headers.get("x-api-key") or ""
-    return pysecrets.compare_digest(str(got), expected)
+    got = str(headers.get("X-Api-Key") or headers.get("x-api-key") or "")
+    if not got:
+        return False
+    for name in ("TEACHER_WINDOWS_API_KEY", "REVIEWS_API_KEY"):
+        expected = os.environ.get(name) or ""
+        if expected and pysecrets.compare_digest(got, expected):
+            return True
+    return False
 
 
 def _staff_ok(cur, event) -> bool:
