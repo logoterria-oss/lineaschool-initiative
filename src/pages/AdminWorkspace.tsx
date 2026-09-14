@@ -10,6 +10,7 @@ import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
 import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
 import DropoutsView from '@/components/dropouts/DropoutsView';
+import ReviewsView from '@/components/reviews/ReviewsView';
 import StudentsListView from '@/components/headWorkspace/StudentsListView';
 import StaffListView from '@/components/headWorkspace/StaffListView';
 import StubView from '@/components/headWorkspace/StubView';
@@ -60,6 +61,10 @@ const AdminWorkspace = () => {
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;
       case 'dropouts': return <DropoutsView />;
+      case 'reviews-improve':
+        return <ReviewsView kind="improve" title="Что улучшить — отзывы" />;
+      case 'reviews-lesson':
+        return <ReviewsView kind="free_lesson" title="Бесплатный урок за отзыв" />;
       case 'violations': return <TeacherViolationsManager withRole />;
       case 'students-list': return <StudentsListView />;
       case 'leads-list': return <LeadsListView />;

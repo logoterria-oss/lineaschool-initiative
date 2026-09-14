@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Список без входа закрыт",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Приём отзыва без ключа закрыт",
+      "method": "POST",
+      "path": "/",
+      "body": {"kind": "improve", "text": "тест"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Метод не поддерживается",
+      "method": "DELETE",
+      "path": "/",
+      "expectedStatus": 405,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
 import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
 import DropoutsView from '@/components/dropouts/DropoutsView';
+import ReviewsView from '@/components/reviews/ReviewsView';
 import PaymentsView from '@/components/headWorkspace/PaymentsView';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
 import QuestionnairesView from '@/components/headWorkspace/QuestionnairesView';
@@ -76,6 +77,10 @@ const HeadWorkspace = () => {
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;
       case 'dropouts': return <DropoutsView />;
+      case 'reviews-improve':
+        return <ReviewsView kind="improve" title="Что улучшить — отзывы" />;
+      case 'reviews-lesson':
+        return <ReviewsView kind="free_lesson" title="Бесплатный урок за отзыв" />;
       case 'payments': return <PaymentsView />;
       case 'reports-fin': return <ReportsFinView />;
       case 'calendar': return <RecurringPaymentsView />;

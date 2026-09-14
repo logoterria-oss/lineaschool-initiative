@@ -54,6 +54,8 @@ export const HEAD_MENU: MenuGroup[] = [
       { id: 'vacations', label: 'Даты каникул', kind: 'component', icon: 'CalendarOff' },
       { id: 'progress', label: 'Мониторинг прогресса', kind: 'component', icon: 'TrendingUp' },
       { id: 'dropouts', label: 'Бросившие', kind: 'component', icon: 'UserMinus' },
+      { id: 'reviews-improve', label: 'Что улучшить — отзывы', kind: 'component', icon: 'MessageSquareHeart' },
+      { id: 'reviews-lesson', label: 'Бесплатный урок за отзыв', kind: 'component', icon: 'Gift' },
     ],
   },
   {
