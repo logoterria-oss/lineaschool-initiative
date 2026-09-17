@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import ContactChoiceDialog from "@/components/ContactChoiceDialog";
+import LineaStudiesLogo from "@/components/LineaStudiesLogo";
 
 export default function NavigationWithoutBooking() {
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -12,8 +13,8 @@ export default function NavigationWithoutBooking() {
         <div className="flex justify-end md:justify-between items-center h-14 sm:h-16 md:h-20 lg:h-24">
           <a href="/" className="flex items-center space-x-2 xs:space-x-2.5 sm:space-x-3 md:space-x-6 min-w-0 flex-shrink overflow-hidden order-2 md:order-1">
             <span className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-green-600 truncate order-1 md:order-2 md:ml-4">ЛинэяСтадис</span>
-            <div className="w-11 h-11 xs:w-12 xs:h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 lg:w-16 lg:h-16 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0 order-2 md:order-1">
-              <Icon name="BookOpen" size={22} className="text-white xs:w-6 xs:h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
+            <div className="order-2 md:order-1">
+              <LineaStudiesLogo />
             </div>
           </a>
           <div className="hidden md:flex items-center space-x-3 lg:space-x-6 flex-shrink-0 order-2">
