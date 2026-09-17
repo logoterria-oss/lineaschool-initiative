@@ -22,6 +22,7 @@ const Privacy = lazyWithRetry(() => import("./pages/Privacy"));
 const EducationInfo = lazyWithRetry(() => import("./pages/EducationInfo"));
 const ExtensionPage = lazyWithRetry(() => import("./pages/ExtensionPage"));
 const ParentQuestionnaire = lazyWithRetry(() => import("./pages/ParentQuestionnaire"));
+const QuestionnaireView = lazyWithRetry(() => import("./pages/QuestionnaireView"));
 const DiagForm = lazyWithRetry(() => import("./pages/DiagForm"));
 const InterimDiagForm = lazyWithRetry(() => import("./pages/InterimDiagForm"));
 const DiagConclusion = lazyWithRetry(() => import("./pages/DiagConclusion"));
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/sveden" element={<EducationInfo />} />
             <Route path="/extension" element={<ExtensionPage />} />
             <Route path="/anketa" element={<ParentQuestionnaire />} />
+            <Route path="/anketa/:id" element={<QuestionnaireView />} />
             <Route path="/diag_form" element={<DiagForm />} />
             <Route path="/interim_diag_form" element={<InterimDiagForm />} />
             <Route path="/diag/:serialNumber" element={<DiagConclusion />} />

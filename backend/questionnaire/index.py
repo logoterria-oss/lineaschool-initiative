@@ -11,18 +11,25 @@ import urllib.request
 import psycopg2
 from typing import Dict, Any, Optional
 
+from form_hook import form_payload, mark_hook_result, norm_phone, send_form_hook
+
 # API «Окна взаимодействия» — туда передаём заполненную анкету,
 # чтобы она сразу легла в карточку диалога с этим родителем.
 INTERACTION_API_URL = 'https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1'
 
-def norm_phone(raw: Optional[str]) -> str:
-    '''Телефон в едином виде 7XXXXXXXXXX — по нему окно находит диалог.'''
-    digits = re.sub(r'\D', '', raw or '')
-    if len(digits) == 11 and digits[0] == '8':
-        digits = '7' + digits[1:]
-    if len(digits) == 10:
-        digits = '7' + digits
-    return digits
+
+def service_key_ok(event: Dict[str, Any]) -> bool:
+    '''Служебные запросы окна ходят с тем же ключом, что и хук броней.'''
+    key = os.environ.get('INTERACTION_SERVICE_KEY')
+    if not key:
+        return False
+    headers = event.get('headers') or {}
+    got = ''
+    for name, value in headers.items():
+        if str(name).lower() == 'x-service-key':
+            got = str(value or '')
+            break
+    return bool(got) and got == key
 
 
 def fetch_questionnaire(cur, questionnaire_id: int) -> Dict[str, Any]:
@@ -79,7 +86,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Service-Key',
                 'Access-Control-Max-Age': '86400'
             },
             'body': ''
@@ -166,8 +173,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Передаём анкету в «Окно взаимодействия» — до закрытия соединения,
             # чтобы отдать полную запись из базы, а не только присланные поля.
             saved = fetch_questionnaire(cur, questionnaire_id)
-
             cur.close()
+
+            # Хук в «Окно взаимодействия»: сотрудник сразу видит ссылку на анкету
+            # в чате клиента. Не дошло — анкета останется в ?action=feed&status=new.
+            try:
+                hook_result = send_form_hook(saved)
+                mark_hook_result(conn, questionnaire_id, hook_result)
+            except Exception as e:
+                print(f'form-hook failed: {e}')
+
             conn.close()
 
             try:
@@ -236,8 +251,55 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         try:
-            params = event.get('queryStringParameters', {})
-            
+            params = event.get('queryStringParameters', {}) or {}
+
+            # Страховочная выгрузка для «Окна взаимодействия»: если хук не дошёл,
+            # окно само забирает анкеты. status=new — те, что ещё не забирали.
+            if params.get('action') == 'feed':
+                if not service_key_ok(event):
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json'},
+                        'body': json.dumps({'error': 'unauthorized'}),
+                    }
+
+                status = params.get('status') or 'new'
+                dsn = os.environ.get('DATABASE_URL')
+                conn = psycopg2.connect(dsn)
+                cur = conn.cursor()
+
+                where = 'WHERE interaction_sent_at IS NULL' if status == 'new' else ''
+                cur.execute(f"""
+                    SELECT id, parent_name, child_name, parent_phone
+                    FROM parent_questionnaire
+                    {where}
+                    ORDER BY id
+                    LIMIT 200
+                """)
+                columns = [desc[0] for desc in cur.description]
+                forms = [form_payload(dict(zip(columns, row))) for row in cur.fetchall()]
+
+                # Отдали — значит забрали: помечаем, чтобы не приходили повторно.
+                if status == 'new' and forms:
+                    cur.execute(
+                        """
+                        UPDATE parent_questionnaire
+                        SET interaction_sent_at = CURRENT_TIMESTAMP
+                        WHERE id = ANY(%s)
+                        """,
+                        ([int(f['id']) for f in forms],),
+                    )
+                    conn.commit()
+
+                cur.close()
+                conn.close()
+
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'forms': forms}, ensure_ascii=False),
+                }
+
             dsn = os.environ.get('DATABASE_URL')
             conn = psycopg2.connect(dsn)
             cur = conn.cursor()

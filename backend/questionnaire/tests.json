@@ -49,6 +49,13 @@
       "path": "/?phone=%2B79001234567",
       "expectedStatus": 200,
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Feed requires service key",
+      "method": "GET",
+      "path": "/?action=feed&status=new",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
     }
   ]
 }
