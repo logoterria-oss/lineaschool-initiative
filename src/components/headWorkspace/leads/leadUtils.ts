@@ -173,19 +173,21 @@ export function isContactOverdue(l: Lead): boolean {
   return todayKey() > w.end;
 }
 
+// Порядок столбцов таблицы. «Расписание» и «Педагоги» убраны из показа —
+// сами данные в базе остаются, просто не отображаются.
+// «Номер для связи» и «Ответственный» вынесены в конец: ответственный
+// нужен для подсветки новых лидов, а телефон — чтобы было куда звонить.
 export const COLS: { key: keyof Lead; label: string; w: string }[] = [
   { key: 'parent_name', label: 'ФИ родителя', w: 'min-w-[210px]' },
   { key: 'student_name', label: 'ФИ ученика', w: 'min-w-[210px]' },
   { key: 'student_age', label: 'Возраст', w: 'w-16' },
-  { key: 'contact', label: 'Номер для связи', w: 'min-w-[170px]' },
   { key: 'request_date', label: 'Дата заявки', w: 'w-24' },
-  { key: 'responsible', label: 'Ответственный', w: 'min-w-[170px]' },
   { key: 'processing_status', label: 'Статус обработки', w: 'min-w-[230px]' },
   { key: 'lead_status', label: 'Статус лида', w: 'min-w-[170px]' },
+  { key: 'comment', label: 'Комментарий', w: 'min-w-[240px]' },
   { key: 'diag_date', label: 'Дата диаг.', w: 'w-24' },
   { key: 'report_link', label: 'Ссылка на закл.', w: 'min-w-[180px]' },
-  { key: 'schedule', label: 'Расписание', w: 'min-w-[160px]' },
-  { key: 'teachers', label: 'Педагоги', w: 'min-w-[140px]' },
-  { key: 'comment', label: 'Комментарий', w: 'min-w-[240px]' },
   { key: 'contact_when', label: 'Когда связаться', w: 'min-w-[190px]' },
+  { key: 'contact', label: 'Номер для связи', w: 'min-w-[170px]' },
+  { key: 'responsible', label: 'Ответственный', w: 'min-w-[170px]' },
 ];
