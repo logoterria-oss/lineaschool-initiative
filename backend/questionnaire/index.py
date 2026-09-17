@@ -6,8 +6,67 @@ Returns: Success/error response
 
 import json
 import os
+import re
+import urllib.request
 import psycopg2
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+
+# API «Окна взаимодействия» — туда передаём заполненную анкету,
+# чтобы она сразу легла в карточку диалога с этим родителем.
+INTERACTION_API_URL = 'https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1'
+
+def norm_phone(raw: Optional[str]) -> str:
+    '''Телефон в едином виде 7XXXXXXXXXX — по нему окно находит диалог.'''
+    digits = re.sub(r'\D', '', raw or '')
+    if len(digits) == 11 and digits[0] == '8':
+        digits = '7' + digits[1:]
+    if len(digits) == 10:
+        digits = '7' + digits
+    return digits
+
+
+def fetch_questionnaire(cur, questionnaire_id: int) -> Dict[str, Any]:
+    '''Читаем сохранённую анкету целиком — отдаём ровно то, что лежит в базе.'''
+    cur.execute('SELECT * FROM parent_questionnaire WHERE id = %s', (questionnaire_id,))
+    row = cur.fetchone()
+    if not row:
+        return {}
+    columns = [desc[0] for desc in cur.description]
+    result = dict(zip(columns, row))
+    if result.get('previous_specialists'):
+        try:
+            result['previous_specialists'] = json.loads(result['previous_specialists'])
+        except (ValueError, TypeError):
+            pass
+    return result
+
+
+def push_to_interaction(data: Dict[str, Any]) -> None:
+    '''Передаём анкету в «Окно взаимодействия». Молча, чтобы не ломать отправку.'''
+    phone = norm_phone(str(data.get('parent_phone') or ''))
+    if not phone:
+        return
+    payload = json.dumps({
+        'action': 'questionnaire',
+        'phone': phone,
+        'questionnaire_id': data.get('id'),
+        'parent_name': data.get('parent_name'),
+        'child_name': data.get('child_name'),
+        'parent_email': data.get('parent_email'),
+        'city': data.get('city'),
+        'city_region': data.get('city_region'),
+        'city_timezone': data.get('city_timezone'),
+        'created_at': str(data.get('created_at') or ''),
+        'answers': {k: (str(v) if hasattr(v, 'isoformat') else v) for k, v in data.items()},
+    }, ensure_ascii=False, default=str).encode('utf-8')
+    req = urllib.request.Request(
+        f'{INTERACTION_API_URL}?action=questionnaire',
+        data=payload,
+        headers={'Content-Type': 'application/json'},
+        method='POST',
+    )
+    with urllib.request.urlopen(req, timeout=5):
+        pass
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -103,10 +162,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             questionnaire_id = cur.fetchone()[0]
             conn.commit()
-            
+
+            # Передаём анкету в «Окно взаимодействия» — до закрытия соединения,
+            # чтобы отдать полную запись из базы, а не только присланные поля.
+            saved = fetch_questionnaire(cur, questionnaire_id)
+
             cur.close()
             conn.close()
-            
+
+            try:
+                push_to_interaction(saved)
+            except Exception:
+                pass
+
             try:
                 import urllib.request
                 import urllib.error
@@ -174,6 +242,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             conn = psycopg2.connect(dsn)
             cur = conn.cursor()
             
+            # Анкета по телефону родителя — так «Окно взаимодействия»
+            # подтягивает анкету к нужному диалогу.
+            if params.get('phone'):
+                wanted = norm_phone(params.get('phone'))
+                cur.execute("""
+                    SELECT * FROM parent_questionnaire
+                    ORDER BY created_at DESC
+                """)
+                columns = [desc[0] for desc in cur.description]
+                found = None
+                for row in cur.fetchall():
+                    rec = dict(zip(columns, row))
+                    if norm_phone(str(rec.get('parent_phone') or '')) == wanted:
+                        found = rec
+                        break
+                cur.close()
+                conn.close()
+
+                if not found:
+                    return {
+                        'statusCode': 404,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'message': 'Анкета не найдена'})
+                    }
+
+                if found.get('previous_specialists'):
+                    try:
+                        found['previous_specialists'] = json.loads(found['previous_specialists'])
+                    except (ValueError, TypeError):
+                        pass
+
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps(found, default=str)
+                }
+
             # Get all responses
             if params.get('all') == 'true':
                 cur.execute("""

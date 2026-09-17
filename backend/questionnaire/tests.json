@@ -42,6 +42,13 @@
       "path": "/?childName=Иванов",
       "expectedStatus": 200,
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test search questionnaire by phone",
+      "method": "GET",
+      "path": "/?phone=%2B79001234567",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
     }
   ]
 }
