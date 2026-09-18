@@ -5,6 +5,7 @@ import GroupRegulation from '@/components/teacher/regulations/GroupRegulation';
 import IndividualCriteriaTable from '@/components/teacher/IndividualCriteriaTable';
 import GroupCriteriaTable from '@/components/teacher/GroupCriteriaTable';
 import GroupKpiInfo from '@/components/teacher/GroupKpiInfo';
+import SavePdfBlock from '@/components/teacher/SavePdfBlock';
 
 type IconName = 'Users' | 'User' | 'ShieldCheck';
 
@@ -154,11 +155,19 @@ const RegulationsView = () => {
           <GroupRegulation onBack={reset} hideHeader />
         )
       ) : tab === 'criteria' ? (
-        isIndividual ? <IndividualCriteriaTable /> : <GroupCriteriaTable />
-      ) : isIndividual ? (
-        <GroupKpiInfo {...INDIVIDUAL_KPI_PROPS} />
+        <SavePdfBlock
+          title={`Критерии оценки: ${isIndividual ? 'индивидуальные' : 'групповые'} занятия`}
+          fileName={`Критерии оценки — ${isIndividual ? 'индивидуальные' : 'групповые'} занятия.pdf`}
+        >
+          {isIndividual ? <IndividualCriteriaTable /> : <GroupCriteriaTable />}
+        </SavePdfBlock>
       ) : (
-        <GroupKpiInfo />
+        <SavePdfBlock
+          title={`KPI: ${isIndividual ? 'индивидуальные' : 'групповые'} занятия`}
+          fileName={`KPI — ${isIndividual ? 'индивидуальные' : 'групповые'} занятия.pdf`}
+        >
+          {isIndividual ? <GroupKpiInfo {...INDIVIDUAL_KPI_PROPS} /> : <GroupKpiInfo />}
+        </SavePdfBlock>
       )}
     </div>
   );

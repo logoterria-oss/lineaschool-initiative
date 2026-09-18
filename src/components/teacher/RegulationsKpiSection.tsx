@@ -6,6 +6,7 @@ import IndividualCriteriaTable from './IndividualCriteriaTable';
 import GroupCriteriaTable from './GroupCriteriaTable';
 import GroupKpiInfo from './GroupKpiInfo';
 import GroupPenaltyInfo from './GroupPenaltyInfo';
+import SavePdfBlock from './SavePdfBlock';
 
 const BackButton = ({ onClick }: { onClick: () => void }) => (
   <button
@@ -98,22 +99,32 @@ const RegulationsKpiSection = ({ form }: { form: LessonForm }) => {
       </div>
 
       {tab === 'criteria' ? (
-        form === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />
+        <SavePdfBlock
+          title={`Критерии оценки: ${form === 'group' ? 'групповые' : 'индивидуальные'} занятия`}
+          fileName={`Критерии оценки — ${form === 'group' ? 'групповые' : 'индивидуальные'} занятия.pdf`}
+        >
+          {form === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />}
+        </SavePdfBlock>
       ) : tab === 'kpi' ? (
-        form === 'group' ? (
-          <GroupKpiInfo />
-        ) : (
-          <GroupKpiInfo
-            bonusRows={[
-              { score: 'от 30 до 34', bonus: '+ 100 ₽', total: '400 ₽' },
-              { score: 'от 35 до 40', bonus: '+ 200 ₽', total: '500 ₽' },
-              { score: 'от 41 до 45', bonus: '+ 350 ₽', total: '650 ₽' },
-            ]}
-            exampleScore={37}
-            exampleBonus="200 ₽"
-            exampleTotal="500 ₽"
-          />
-        )
+        <SavePdfBlock
+          title={`KPI: ${form === 'group' ? 'групповые' : 'индивидуальные'} занятия`}
+          fileName={`KPI — ${form === 'group' ? 'групповые' : 'индивидуальные'} занятия.pdf`}
+        >
+          {form === 'group' ? (
+            <GroupKpiInfo />
+          ) : (
+            <GroupKpiInfo
+              bonusRows={[
+                { score: 'от 30 до 34', bonus: '+ 100 ₽', total: '400 ₽' },
+                { score: 'от 35 до 40', bonus: '+ 200 ₽', total: '500 ₽' },
+                { score: 'от 41 до 45', bonus: '+ 350 ₽', total: '650 ₽' },
+              ]}
+              exampleScore={37}
+              exampleBonus="200 ₽"
+              exampleTotal="500 ₽"
+            />
+          )}
+        </SavePdfBlock>
       ) : form === 'group' ? (
         <GroupPenaltyInfo />
       ) : (

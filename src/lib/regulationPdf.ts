@@ -36,18 +36,36 @@ const waitImages = async (root: HTMLElement) => {
  * Границы абзацев по вертикали (в пикселях от начала контента).
  * По ним подбираем места разрыва страниц, чтобы не резать текст посередине.
  */
+/**
+ * Неделимый блок: строка таблицы или карточка (рамка со скруглением).
+ * Внутрь таких блоков разрез не ставим — иначе критерий или карточка
+ * окажутся разорванными между страницами.
+ */
+const isAtomic = (el: HTMLElement): boolean => {
+  if (el.tagName === 'TR') return true;
+  const s = getComputedStyle(el);
+  const hasBorder = parseFloat(s.borderTopWidth) > 0 || parseFloat(s.borderLeftWidth) > 0;
+  const rounded = parseFloat(s.borderTopLeftRadius) > 0;
+  return hasBorder && rounded;
+};
+
 const collectBreakPoints = (root: HTMLElement, holderTop: number): number[] => {
   const points = new Set<number>();
 
+  const add = (el: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    if (rect.height > 0) {
+      points.add(Math.round(rect.top - holderTop));
+      points.add(Math.round(rect.bottom - holderTop));
+    }
+  };
+
   const walk = (el: HTMLElement, depth: number) => {
     for (const kid of Array.from(el.children) as HTMLElement[]) {
-      const rect = kid.getBoundingClientRect();
-      if (rect.height > 0) {
-        points.add(Math.round(rect.top - holderTop));
-        points.add(Math.round(rect.bottom - holderTop));
-      }
-      // Глубже второго уровня не идём: мелкие строки списков дробят разметку.
-      if (depth < 2) walk(kid, depth + 1);
+      add(kid);
+      // Внутрь неделимого блока не идём — он должен уехать на страницу целиком.
+      if (isAtomic(kid)) continue;
+      if (depth < 6) walk(kid, depth + 1);
     }
   };
 
@@ -65,18 +83,23 @@ const fitBreak = (points: number[], from: number, limit: number): number => {
   return best;
 };
 
-// Сохраняет регламент в PDF: один снимок страницы, разрезанный по абзацам.
-export const saveElementToPdf = async (
+export interface PdfPage {
+  dataUrl: string;
+  /** Высота картинки на странице PDF, мм */
+  heightMM: number;
+}
+
+/**
+ * Делает снимок содержимого и нарезает его на страницы A4 по границам
+ * абзацев и строк таблиц. Вынесено отдельно, чтобы нарезку можно было
+ * проверить визуально, не скачивая файл.
+ */
+export const renderPdfPages = async (
   el: HTMLElement,
-  fileName: string,
   title: string,
-): Promise<void> => {
-  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 12;
-  const imgW = pageW - margin * 2;
-  const usableH = pageH - margin * 2;
+  imgW: number,
+  usableH: number,
+): Promise<PdfPage[]> => {
 
   // Собираем «страницу» целиком: заголовок + весь контент.
   const wrap = document.createElement('div');
@@ -118,10 +141,10 @@ export const saveElementToPdf = async (
 
     const page = document.createElement('canvas');
     const ctx = page.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return [];
 
+    const pages: PdfPage[] = [];
     let offset = 0;
-    let first = true;
 
     while (offset < fullHpx) {
       let sliceH = Math.min(pageHpx, fullHpx - offset);
@@ -139,23 +162,39 @@ export const saveElementToPdf = async (
       ctx.fillRect(0, 0, fullWpx, sliceH);
       ctx.drawImage(canvas, 0, offset, fullWpx, sliceH, 0, 0, fullWpx, sliceH);
 
-      if (!first) pdf.addPage();
-      first = false;
-
-      pdf.addImage(
-        page.toDataURL('image/jpeg', 0.92),
-        'JPEG',
-        margin,
-        margin,
-        imgW,
-        sliceH / pxPerMM,
-      );
+      pages.push({
+        dataUrl: page.toDataURL('image/jpeg', 0.92),
+        heightMM: sliceH / pxPerMM,
+      });
 
       offset += sliceH;
     }
 
-    pdf.save(fileName);
+    return pages;
   } finally {
     holder.remove();
   }
+};
+
+// Сохраняет документ в PDF: один снимок страницы, разрезанный по абзацам.
+export const saveElementToPdf = async (
+  el: HTMLElement,
+  fileName: string,
+  title: string,
+): Promise<void> => {
+  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margin = 12;
+  const imgW = pageW - margin * 2;
+  const usableH = pageH - margin * 2;
+
+  const pages = await renderPdfPages(el, title, imgW, usableH);
+
+  pages.forEach((p, i) => {
+    if (i > 0) pdf.addPage();
+    pdf.addImage(p.dataUrl, 'JPEG', margin, margin, imgW, p.heightMM);
+  });
+
+  pdf.save(fileName);
 };

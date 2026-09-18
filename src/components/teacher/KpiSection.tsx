@@ -5,6 +5,7 @@ import GroupCriteriaTable from './GroupCriteriaTable';
 import RegulationsSection from './RegulationsSection';
 import GroupKpiInfo from './GroupKpiInfo';
 import GroupPenaltyInfo from './GroupPenaltyInfo';
+import SavePdfBlock from './SavePdfBlock';
 import TeacherSupervisions from '@/components/supervision/TeacherSupervisions';
 import TeacherViolations from '@/components/violations/TeacherViolations';
 
@@ -198,20 +199,29 @@ const KpiSection = () => {
           </div>
 
           {tab === 'criteria' ? (
-            section === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />
+            <SavePdfBlock
+              title={`Критерии оценки: ${section === 'group' ? 'групповые' : 'индивидуальные'} занятия`}
+              fileName={`Критерии оценки — ${section === 'group' ? 'групповые' : 'индивидуальные'} занятия.pdf`}
+            >
+              {section === 'group' ? <GroupCriteriaTable /> : <IndividualCriteriaTable />}
+            </SavePdfBlock>
           ) : tab === 'kpi' && section === 'group' ? (
-            <GroupKpiInfo />
+            <SavePdfBlock title="KPI: групповые занятия" fileName="KPI — групповые занятия.pdf">
+              <GroupKpiInfo />
+            </SavePdfBlock>
           ) : tab === 'kpi' && section === 'individual' ? (
-            <GroupKpiInfo
-              bonusRows={[
-                { score: 'от 30 до 34', bonus: '+ 100 ₽', total: '400 ₽' },
-                { score: 'от 35 до 40', bonus: '+ 200 ₽', total: '500 ₽' },
-                { score: 'от 41 до 45', bonus: '+ 350 ₽', total: '650 ₽' },
-              ]}
-              exampleScore={37}
-              exampleBonus="200 ₽"
-              exampleTotal="500 ₽"
-            />
+            <SavePdfBlock title="KPI: индивидуальные занятия" fileName="KPI — индивидуальные занятия.pdf">
+              <GroupKpiInfo
+                bonusRows={[
+                  { score: 'от 30 до 34', bonus: '+ 100 ₽', total: '400 ₽' },
+                  { score: 'от 35 до 40', bonus: '+ 200 ₽', total: '500 ₽' },
+                  { score: 'от 41 до 45', bonus: '+ 350 ₽', total: '650 ₽' },
+                ]}
+                exampleScore={37}
+                exampleBonus="200 ₽"
+                exampleTotal="500 ₽"
+              />
+            </SavePdfBlock>
           ) : tab === 'penalty' && section === 'group' ? (
             <GroupPenaltyInfo />
           ) : tab === 'penalty' && section === 'individual' ? (
