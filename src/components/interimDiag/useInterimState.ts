@@ -3,6 +3,7 @@ import type { InterimPersonalData, InterimStudent } from './InterimPersonalDataS
 import type { ImpairedProcessesState, ProcessLevelsState } from './impairedProcesses';
 import { EMPTY_IMPAIRED_STATE } from './impairedProcesses';
 import type { InterimRecommendationsData } from './InterimRecommendationsSection';
+import { DEFAULT_PARENT_RECOMMENDATIONS } from './InterimRecommendationsSection';
 import type { ReadingWritingBaseline, ReadingWritingState } from './readingWriting';
 import { EMPTY_RW_STATE } from './readingWriting';
 import type { InterimDraft } from './draft';
@@ -50,7 +51,8 @@ export function useInterimState() {
 
   const [recommendations, setRecommendations] = useState<InterimRecommendationsData>({
     teacherRecommendations: '',
-    parentRecommendations: '',
+    // Фраза про ДЗ идёт всем по умолчанию — логопед стирает её, если ДЗ выполняется
+    parentRecommendations: DEFAULT_PARENT_RECOMMENDATIONS,
     logopedist: '',
   });
 

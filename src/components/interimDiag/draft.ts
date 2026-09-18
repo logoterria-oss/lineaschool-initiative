@@ -1,6 +1,7 @@
 import type { InterimPersonalData, InterimStudent } from './InterimPersonalDataSection';
 import type { ImpairedProcessesState, ProcessLevelsState } from './impairedProcesses';
 import type { InterimRecommendationsData } from './InterimRecommendationsSection';
+import { DEFAULT_PARENT_RECOMMENDATIONS } from './InterimRecommendationsSection';
 import type { ReadingWritingBaseline, ReadingWritingState } from './readingWriting';
 import type { HwMark } from '@/components/interimConclusion/buildHomework';
 
@@ -41,7 +42,10 @@ export function isEmptyInterim(d: InterimDraft): boolean {
   if (Object.values(d.impaired || {}).some(Boolean)) return false;
   if (d.primaryConclusion?.trim()) return false;
   if (d.recommendations?.teacherRecommendations?.trim()) return false;
-  if (d.recommendations?.parentRecommendations?.trim()) return false;
+  // Рекомендации родителям подставляются автоматически, поэтому признаком
+  // заполненности считаем только текст, отличающийся от подставленного.
+  const parentRec = d.recommendations?.parentRecommendations?.trim();
+  if (parentRec && parentRec !== DEFAULT_PARENT_RECOMMENDATIONS) return false;
 
   const rw = d.rw;
   if (rw) {

@@ -15,6 +15,14 @@ export interface InterimRecommendationsData {
   logopedist: string;
 }
 
+/**
+ * Рекомендации родителям про домашнее задание.
+ * Подставляются всем автоматически: если ДЗ выполняется, логопед стирает текст.
+ */
+export const DEFAULT_PARENT_RECOMMENDATIONS =
+  'Следить за наличием выполненного домашнего задания, отправлять фото выполненного ' +
+  'домашнего задания в мессенджер. Следовать рекомендациям педагогов.';
+
 interface Props {
   data: InterimRecommendationsData;
   onChange: (patch: Partial<InterimRecommendationsData>) => void;
@@ -59,6 +67,10 @@ export default function InterimRecommendationsSection({
             rows={4}
             placeholder="Введите рекомендации родителям"
           />
+          <p className="mt-1.5 text-xs text-gray-500">
+            Текст про домашнее задание подставлен автоматически. Если ученик выполняет ДЗ —
+            удалите его или замените своим.
+          </p>
         </div>
 
         <div>
