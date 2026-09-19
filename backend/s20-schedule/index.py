@@ -833,18 +833,84 @@ HW_DIAGNOSTIC_TYPE_IDS = {3}       # тип занятия «Диагности�
 HW_DIAGNOSTIC_SUBJECT_IDS = {5}    # предмет «Диагностика»
 
 
-def _is_diagnostic_lesson(lesson: dict) -> bool:
+def _is_diagnostic_lesson(lesson: dict, diag_slots: set = None) -> bool:
     """Занятие-диагностика: домашнее задание на нём не задаётся.
 
     Такие занятия не должны попадать ни в контроль ДЗ, ни в отчёт
     о выполнении домашних заданий в промежуточном заключении.
+
+    Полагаться на разметку CRM целиком нельзя: часть диагностик заводят
+    обычным индивидуальным уроком. Поэтому дополнительно сверяем занятие
+    с датами реально проведённых диагностик из наших заключений
+    (diag_slots — множество пар «ученик + дата»).
     """
     if lesson.get("lesson_type_id") in HW_DIAGNOSTIC_TYPE_IDS:
         return True
     if lesson.get("subject_id") in HW_DIAGNOSTIC_SUBJECT_IDS:
         return True
     name = (lesson.get("lesson_type_name") or "").strip().lower()
-    return name.startswith("диагностика")
+    if name.startswith("диагностика"):
+        return True
+
+    if diag_slots:
+        lesson_date = (lesson.get("date") or "")[:10]
+        for cid in (lesson.get("customer_ids") or []):
+            if (cid, lesson_date) in diag_slots:
+                return True
+    return False
+
+
+def _load_diag_slots(customers: list) -> set:
+    """Пары «id ученика + дата» проведённых диагностик — из наших заключений.
+
+    Диагностику логопед всегда сохраняет как заключение, поэтому это самый
+    надёжный признак: он работает даже когда в CRM занятие оформлено
+    обычным уроком.
+    """
+    schema = os.environ.get("MAIN_DB_SCHEMA", "public")
+    try:
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT student_name, to_char(date_of_examination, 'YYYY-MM-DD') "
+            f"FROM {schema}.speech_therapy_reports WHERE date_of_examination IS NOT NULL"
+        )
+        reports = cur.fetchall()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"diag slots load failed: {e}")
+        return set()
+
+    def tokens(s):
+        s = re.sub(r"[^а-яa-z\s-]", " ", (s or "").lower().replace("ё", "е"))
+        return [t for t in s.split() if len(t) >= 3 and t != "лет"]
+
+    # Индекс по первым буквам слов имени: перебирать всех учеников для каждого
+    # заключения слишком долго, а функция обязана уложиться в таймаут.
+    index = {}
+    for c in customers:
+        cid = c.get("id")
+        if cid is None:
+            continue
+        have = tokens(c.get("name") or "")
+        for t in have:
+            index.setdefault(t[:4], []).append((cid, have))
+
+    slots = set()
+    for student_name, exam_date in reports:
+        want = tokens(student_name)
+        if len(want) < 2 or not exam_date:
+            continue
+        seen = set()
+        for t in want:
+            for cid, have in index.get(t[:4], ()):
+                if cid in seen:
+                    continue
+                seen.add(cid)
+                if _hw_name_match(want, have):
+                    slots.add((cid, exam_date))
+    return slots
 
 
 def _hw_resolve_month(params):
@@ -907,13 +973,14 @@ def _hw_all(params, cors_headers):
     names = {c.get("id"): _hw_surname_first((c.get("name") or "").strip()) for c in customers}
     teacher_name_by_id = {t["id"]: t["name"] for t in HW_ALL_TEACHERS}
     known_ids = set(teacher_name_by_id.keys())
+    diag_slots = _load_diag_slots(customers)
 
     # student_id -> {name, lessons: {date -> {teacher_id, teacher_name, form, is_future}}}
     rows = {}
     for ls in lessons:
         if ls.get("status") == 2:
             continue
-        if _is_diagnostic_lesson(ls):
+        if _is_diagnostic_lesson(ls, diag_slots):
             continue
         lesson_date = (ls.get("date") or "")[:10]
         if not lesson_date or lesson_date < month_from or lesson_date > month_to:
@@ -992,6 +1059,7 @@ def _hw_table(params, cors_headers):
         return _hw_json(502, {"error": f"CRM error: {str(e)}"}, cors_headers)
 
     names = {c.get("id"): _hw_surname_first((c.get("name") or "").strip()) for c in customers}
+    diag_slots = _load_diag_slots(customers)
 
     students = {}
     for ls in lessons:
@@ -999,7 +1067,7 @@ def _hw_table(params, cors_headers):
             continue
         if ls.get("status") == 2:
             continue
-        if _is_diagnostic_lesson(ls):
+        if _is_diagnostic_lesson(ls, diag_slots):
             continue
         lesson_date = (ls.get("date") or "")[:10]
         if not lesson_date or lesson_date < month_from or lesson_date > month_to:
