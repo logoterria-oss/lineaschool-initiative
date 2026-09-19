@@ -31,6 +31,14 @@
       "method": "GET",
       "path": "/?mode=hw_history&name=%D0%9C%D0%BE%D0%B8%D1%81%D0%B5%D0%B5%D0%B2%20%D0%90%D0%BB%D0%B5%D0%BA%D1%81%D0%B5%D0%B9%20%D0%A1%D0%B5%D1%80%D0%B3%D0%B5%D0%B5%D0%B2%D0%B8%D1%87",
       "expectedStatus": 200
+    },
+    {
+      "name": "Контроль ДЗ: сводная отвечает за месяц",
+      "method": "GET",
+      "path": "/?mode=hw_all&month=2026-09",
+      "expectedStatus": 200,
+      "expectedBody": {"month": "2026-09"},
+      "bodyMatcher": "partial"
     }
   ]
 }

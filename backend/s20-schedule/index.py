@@ -826,6 +826,15 @@ HW_ALL_TEACHERS = [
 # Педагоги, которые ведут уроки только на замене основного преподавателя
 HW_SUBSTITUTE_IDS = {13}
 
+# Предмет «Диагностика» в CRM: на таких занятиях домашнего задания не бывает,
+# поэтому в контроль ДЗ и в отчёт для заключения они попадать не должны.
+HW_DIAGNOSTIC_SUBJECT_IDS = {5}
+
+
+def _is_diagnostic_lesson(lesson: dict) -> bool:
+    """Занятие-диагностика — ДЗ на нём не задаётся."""
+    return lesson.get("subject_id") in HW_DIAGNOSTIC_SUBJECT_IDS
+
 
 def _hw_resolve_month(params):
     """Возвращает (month, month_from, month_to, available_months). Будущие месяцы не разрешены."""
@@ -892,6 +901,8 @@ def _hw_all(params, cors_headers):
     rows = {}
     for ls in lessons:
         if ls.get("status") == 2:
+            continue
+        if _is_diagnostic_lesson(ls):
             continue
         lesson_date = (ls.get("date") or "")[:10]
         if not lesson_date or lesson_date < month_from or lesson_date > month_to:
@@ -976,6 +987,8 @@ def _hw_table(params, cors_headers):
         if teacher_id not in (ls.get("teacher_ids") or []):
             continue
         if ls.get("status") == 2:
+            continue
+        if _is_diagnostic_lesson(ls):
             continue
         lesson_date = (ls.get("date") or "")[:10]
         if not lesson_date or lesson_date < month_from or lesson_date > month_to:
