@@ -826,14 +826,25 @@ HW_ALL_TEACHERS = [
 # Педагоги, которые ведут уроки только на замене основного преподавателя
 HW_SUBSTITUTE_IDS = {13}
 
-# Предмет «Диагностика» в CRM: на таких занятиях домашнего задания не бывает,
-# поэтому в контроль ДЗ и в отчёт для заключения они попадать не должны.
-HW_DIAGNOSTIC_SUBJECT_IDS = {5}
+# Диагностика в CRM помечается двумя разными способами, и полагаться
+# только на один нельзя: у части диагностик предмет стоит как обычный «урок»,
+# а у части обычных занятий — предмет «Диагностика». Поэтому проверяем оба поля.
+HW_DIAGNOSTIC_TYPE_IDS = {3}       # тип занятия «Диагностика»
+HW_DIAGNOSTIC_SUBJECT_IDS = {5}    # предмет «Диагностика»
 
 
 def _is_diagnostic_lesson(lesson: dict) -> bool:
-    """Занятие-диагностика — ДЗ на нём не задаётся."""
-    return lesson.get("subject_id") in HW_DIAGNOSTIC_SUBJECT_IDS
+    """Занятие-диагностика: домашнее задание на нём не задаётся.
+
+    Такие занятия не должны попадать ни в контроль ДЗ, ни в отчёт
+    о выполнении домашних заданий в промежуточном заключении.
+    """
+    if lesson.get("lesson_type_id") in HW_DIAGNOSTIC_TYPE_IDS:
+        return True
+    if lesson.get("subject_id") in HW_DIAGNOSTIC_SUBJECT_IDS:
+        return True
+    name = (lesson.get("lesson_type_name") or "").strip().lower()
+    return name.startswith("диагностика")
 
 
 def _hw_resolve_month(params):
