@@ -46,6 +46,7 @@ const RetentionReport = lazyWithRetry(() => import("./pages/RetentionReport"));
 const RetentionDynamics = lazyWithRetry(() => import("./pages/RetentionDynamics"));
 const StudentDynamicsReport = lazyWithRetry(() => import("./pages/StudentDynamicsReport"));
 const SubscriptionMarginReport = lazyWithRetry(() => import("./pages/SubscriptionMarginReport"));
+const UnitMarginReport = lazyWithRetry(() => import("./pages/UnitMarginReport"));
 const ReportsAdmin = lazyWithRetry(() => import("./components/ReportsAdmin"));
 const TelegramSetup = lazyWithRetry(() => import("./pages/TelegramSetup"));
 const PaymentLeadsPage = lazyWithRetry(() => import("./pages/PaymentLeadsPage"));
@@ -120,6 +121,7 @@ const App = () => (
             <Route path="/admin/report/retention-dynamics" element={<RetentionDynamics />} />
             <Route path="/admin/report/student-dynamics" element={<StudentDynamicsReport />} />
             <Route path="/admin/report/subscription-margin" element={<SubscriptionMarginReport />} />
+            <Route path="/admin/report/unit-margin" element={<UnitMarginReport />} />
             <Route path="/admin/reports" element={<ReportsAdmin />} />
             <Route path="/admin/telegram-setup" element={<TelegramSetup />} />
             <Route path="/telegram-setup" element={<TelegramSetup />} />

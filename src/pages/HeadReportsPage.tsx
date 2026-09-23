@@ -34,9 +34,9 @@ const REPORTS = [
     iconColor: 'text-blue-600',
   },
   {
-    id: 'subscription-margin',
-    label: 'Маржинальность абонементов',
-    description: 'Прямые и косвенные расходы, прибыль с одного ученика',
+    id: 'unit-margin',
+    label: 'Маржинальность урока',
+    description: 'Средняя цена и маржа одного занятия: индивидуально и в группе',
     icon: 'Calculator' as const,
     color: 'border-amber-200 hover:border-amber-400',
     iconBg: 'bg-amber-100',
@@ -47,7 +47,7 @@ const REPORTS = [
 /** Отчёты-страницы: открываются по ссылке, без окна выбора параметров. */
 const PAGE_REPORTS: Record<string, string> = {
   'student-dynamics': '/admin/report/student-dynamics',
-  'subscription-margin': '/admin/report/subscription-margin',
+  'unit-margin': '/admin/report/unit-margin',
 };
 
 const HeadReportsPage = () => {
