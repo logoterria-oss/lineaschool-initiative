@@ -7,6 +7,7 @@ interface Props {
   num: number;
   title: string;
   sections: ScheduleCheckState[];
+  /** Дата вчерашнего дня — подписываем её в пункте «Вчерашний день» */
   yesterday: string;
   loading: boolean;
   failed: boolean;
@@ -39,9 +40,9 @@ const findingNote = (f: ScheduleFinding): string => {
 };
 
 /**
- * Пункт 1 чек-листа: четыре проверки по AlfaCRM.
+ * Пункт чек-листа с проверками по AlfaCRM («Вчерашний день», «Расписание на сегодня»).
  * Запрос в CRM тяжёлый, поэтому идёт только по общей кнопке «Проверить в CRM»
- * в шапке чек-листа. Пустая проверка — «нет» и зелёная галка,
+ * в шапке чек-листа. Чистая проверка — короткий ответ и зелёная галка,
  * находки — список с галочками.
  */
 const ScheduleChecksCard = ({
@@ -56,7 +57,10 @@ const ScheduleChecksCard = ({
   marks,
   readOnly,
   onMark,
-}: Props) => (
+}: Props) => {
+  const isYesterday = sections.some((s) => s.group === 'yesterday');
+
+  return (
   <div
     className={`rounded-xl border px-3 py-2.5 transition-colors ${
       checked && allDone && !failed ? 'border-green-200 bg-green-50/60' : 'border-gray-200 bg-white'
@@ -79,6 +83,9 @@ const ScheduleChecksCard = ({
         >
           <span className="text-gray-400 mr-1.5">{num}.</span>
           {title}
+          {isYesterday && yesterday && (
+            <span className="text-gray-400"> — {fmtShort(yesterday)}</span>
+          )}
         </div>
 
         {loading && <div className="mt-2 text-[11px] text-gray-400">Смотрим CRM…</div>}
@@ -101,12 +108,7 @@ const ScheduleChecksCard = ({
               <div key={s.key} className="rounded-lg border border-gray-200 bg-gray-50/70 px-2.5 py-2">
                 <div className="flex items-start gap-1.5 text-[12px] leading-snug text-gray-700">
                   <span className="text-gray-400">{s.letter})</span>
-                  <span className="flex-1">
-                    {s.title}
-                    {s.key === 'm1a' && yesterday && (
-                      <span className="text-gray-400"> — {fmtShort(yesterday)}</span>
-                    )}
-                  </span>
+                  <span className="flex-1">{s.title}</span>
                   {!s.clean && (
                     <span className="shrink-0 text-[10px] font-medium bg-amber-100 text-amber-700 rounded px-1.5 py-0.5">
                       {s.findings.length}
@@ -117,8 +119,7 @@ const ScheduleChecksCard = ({
                 {s.clean ? (
                   <div className="mt-1 ml-4 flex items-center gap-1.5 text-[12px] text-green-600">
                     <Icon name="Check" size={13} />
-                    Нет
-                    <span className="text-gray-400">— {s.empty}</span>
+                    <span className="text-gray-400">{s.empty}</span>
                   </div>
                 ) : (
                   <div className="mt-1.5 ml-4 space-y-1">
@@ -166,6 +167,7 @@ const ScheduleChecksCard = ({
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default ScheduleChecksCard;

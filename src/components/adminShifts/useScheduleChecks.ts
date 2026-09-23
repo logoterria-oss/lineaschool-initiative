@@ -3,14 +3,24 @@ import { ScheduleFinding, fetchScheduleChecks } from '@/lib/adminShiftsApi';
 import { SCHEDULE_CHECKS, ScheduleCheckKey } from '@/lib/shiftChecklist';
 import { MarkState } from './useShiftChecklist';
 
-/** Ключ отметки по одной находке: «m1b:425» — подпункт и id из CRM */
+/** Ключ отметки по одной находке: «m2a:425» — подпункт и id из CRM */
 export const findingKey = (check: ScheduleCheckKey, id: number | string) => `${check}:${id}`;
+
+/** Группа проверок = пункт чек-листа: вчерашний день или расписание на сегодня */
+export type CheckGroup = 'yesterday' | 'schedule';
+
+/** Пункт чек-листа, к которому относится группа проверок */
+const GROUP_ITEM_KEY: Record<CheckGroup, string> = {
+  yesterday: 'm1',
+  schedule: 'm2',
+};
 
 export interface ScheduleCheckState {
   key: ScheduleCheckKey;
   letter: string;
   title: string;
   empty: string;
+  group: CheckGroup;
   findings: ScheduleFinding[];
   /** Ничего не нашли — подпункт закрыт автоматически */
   clean: boolean;
@@ -36,7 +46,7 @@ const readCache = (date: string): CachedChecks | null => {
 };
 
 /**
- * Автопроверки расписания для пункта 1.
+ * Проверки по CRM для пунктов 1 и 2 чек-листа.
  * В CRM ходим ТОЛЬКО по кнопке: запрос тяжёлый, дёргать его на каждом
  * открытии админки нельзя. Результат держим в сессии до конца дня.
  * Пустой подпункт закрываем сами — админу нечего отмечать.
@@ -93,21 +103,40 @@ export function useScheduleChecks(
   /** Проверка уже сделана — есть данные из CRM */
   const checked = checks !== null;
 
-  // Пункт 1 целиком — когда разобраны все четыре подпункта.
-  // Пока проверку не запускали, показываем отметку, сохранённую в базе.
-  const allDone = checked
-    ? sections.length > 0 && sections.every((s) => s.done)
-    : !!marks.m1?.done;
+  /** Подпункты конкретного пункта чек-листа */
+  const sectionsFor = useCallback(
+    (group: CheckGroup) => sections.filter((s) => s.group === group),
+    [sections],
+  );
 
-  // Держим общую галочку пункта 1 в согласии с подпунктами:
+  /**
+   * Пункт закрыт, когда разобраны все его подпункты.
+   * Пока проверку не запускали, показываем отметку, сохранённую в базе.
+   */
+  const groupDone = useCallback(
+    (group: CheckGroup) => {
+      const list = sections.filter((s) => s.group === group);
+      if (!checked) return !!marks[GROUP_ITEM_KEY[group]]?.done;
+      return list.length > 0 && list.every((s) => s.done);
+    },
+    [sections, checked, marks],
+  );
+
+  // Держим галочки пунктов 1 и 2 в согласии с подпунктами:
   // иначе прогресс дня врал бы при разобранных находках.
   // До ручной проверки в CRM ничего не трогаем — отметка остаётся за админом.
   useEffect(() => {
     if (loading || !checked || sections.length === 0) return;
-    const cur = marks.m1;
-    if (!!cur?.done === allDone) return;
-    setMark('m1', { done: allDone, comment: cur?.comment || '' });
-  }, [allDone, loading, checked, sections.length, marks, setMark]);
+    (['yesterday', 'schedule'] as CheckGroup[]).forEach((group) => {
+      const list = sections.filter((s) => s.group === group);
+      if (list.length === 0) return;
+      const itemKey = GROUP_ITEM_KEY[group];
+      const allDone = list.every((s) => s.done);
+      const cur = marks[itemKey];
+      if (!!cur?.done === allDone) return;
+      setMark(itemKey, { done: allDone, comment: cur?.comment || '' });
+    });
+  }, [sections, loading, checked, marks, setMark]);
 
-  return { sections, yesterday, loading, failed, checked, allDone, reload: load };
+  return { sections, sectionsFor, groupDone, yesterday, loading, failed, checked, reload: load };
 }

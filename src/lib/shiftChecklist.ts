@@ -6,12 +6,15 @@ export interface ChecklistItem {
   title: string;
   place: string;
   block: ChecklistBlock;
-  /** Пункт проверяется автоматически по CRM — рисуем его отдельной карточкой */
-  auto?: 'schedule';
+  /**
+   * Пункт проверяется по CRM — рисуем его отдельной карточкой с подпунктами.
+   * 'yesterday' — вчерашний день, 'schedule' — расписание на сегодня.
+   */
+  auto?: 'yesterday' | 'schedule';
 }
 
-/** Ключи автопроверок расписания (пункт 1) — как их отдаёт бэкенд */
-export type ScheduleCheckKey = 'm1a' | 'm1b' | 'm1c' | 'm1d';
+/** Ключи проверок по CRM — как их отдаёт бэкенд */
+export type ScheduleCheckKey = 'm1a' | 'm1b' | 'm2a' | 'm2b' | 'm2c';
 
 export interface ScheduleCheckMeta {
   key: ScheduleCheckKey;
@@ -19,36 +22,49 @@ export interface ScheduleCheckMeta {
   title: string;
   /** Что пишем, когда CRM ничего не нашла */
   empty: string;
+  /** К какому пункту чек-листа относится подпункт */
+  group: 'yesterday' | 'schedule';
 }
 
 /**
- * Подразделы пункта 1. Каждый — отдельный поиск по AlfaCRM:
+ * Подпункты проверок по AlfaCRM. Каждый — отдельный поиск:
  * пусто → «нет» и зелёная галка, есть находки → список с галочками.
  */
 export const SCHEDULE_CHECKS: ScheduleCheckMeta[] = [
   {
     key: 'm1a',
     letter: 'а',
-    title: 'Не проведённые уроки за вчера (нет статуса «проведено»)',
-    empty: 'Нет — все вчерашние уроки проведены',
+    title: 'Все уроки проведены (нет статуса «проведено»)',
+    empty: 'Да — все вчерашние уроки проведены',
+    group: 'yesterday',
   },
   {
     key: 'm1b',
     letter: 'б',
+    title: 'Все списания корректны',
+    empty: 'Да — списания по вчерашним урокам корректны',
+    group: 'yesterday',
+  },
+  {
+    key: 'm2a',
+    letter: 'а',
     title: 'Неоплаченные занятия сегодня',
     empty: 'Нет — все сегодняшние занятия оплачены',
+    group: 'schedule',
   },
   {
-    key: 'm1c',
-    letter: 'в',
+    key: 'm2b',
+    letter: 'б',
     title: 'Наслоения в расписании: два урока у педагога в одно время',
     empty: 'Нет — наслоений у педагогов не найдено',
+    group: 'schedule',
   },
   {
-    key: 'm1d',
-    letter: 'г',
+    key: 'm2c',
+    letter: 'в',
     title: 'Группы, где осталось меньше 3 учеников (без отменивших)',
     empty: 'Нет — во всех группах 3 и больше учеников',
+    group: 'schedule',
   },
 ];
 
@@ -68,17 +84,18 @@ export const CHECKLIST: ChecklistItem[] = [
   {
     key: 'm1',
     num: 1,
-    title: 'Проверить расписание: непроведённые уроки, оплаты, наслоения, наполняемость групп',
-    place: 'AlfaCRM — проверки идут автоматически',
+    title: 'Вчерашний день',
+    place: 'AlfaCRM',
     block: 'morning',
-    auto: 'schedule',
+    auto: 'yesterday',
   },
   {
     key: 'm2',
     num: 2,
-    title: 'Проверить уроки за вчера: все ли проведены, корректно ли списаны (особенно группы)',
+    title: 'Расписание на сегодня',
     place: 'AlfaCRM',
     block: 'morning',
+    auto: 'schedule',
   },
   {
     key: 'm3',

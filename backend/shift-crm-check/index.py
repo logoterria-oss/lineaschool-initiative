@@ -252,7 +252,7 @@ def _is_diagnostic(ls: dict) -> bool:
     return "диагност" in (ls.get("lesson_type_name") or "").lower()
 
 
-# ---------- подпункт «а»: не проведённые уроки за вчера ----------
+# ---------- вчера «а»: не проведённые уроки ----------
 
 def not_held_yesterday(lessons, teachers, groups, customers) -> List[dict]:
     out = []
@@ -273,7 +273,47 @@ def not_held_yesterday(lessons, teachers, groups, customers) -> List[dict]:
     return out
 
 
-# ---------- подпункт «б»: неоплаченные занятия сегодня ----------
+# ---------- вчера «б»: некорректные списания ----------
+
+def wrong_charges_yesterday(lessons, teachers, groups, customers) -> List[dict]:
+    """Проведённые вчера уроки, где списание выглядит неверным.
+
+    Ищем однозначную ошибку: ученик был на занятии, а деньги с абонемента
+    не ушли. Обратный случай (пропуск со списанием) законен — прогул без
+    уважительной причины оплачивается, поэтому его не показываем.
+    Диагностику пропускаем: в CRM она стоит 0 ₽ и платится отдельно.
+    """
+    out = []
+    for ls in lessons:
+        if ls.get("status") != ST_DONE or _skip_service(ls, groups):
+            continue
+        if _is_diagnostic(ls):
+            continue
+        tids = [t for t in (ls.get("teacher_ids") or []) if t]
+        teacher = teachers.get(tids[0], f"#{tids[0]}") if tids else "—"
+        for d in _details(ls):
+            cid = d.get("customer_id") or d.get("client_id")
+            if cid is None:
+                continue
+            # Не был на занятии — списание зависит от причины, это не ошибка
+            if d.get("is_attend") == 0:
+                continue
+            if _num(d.get("commission")) > 0:
+                continue
+            out.append({
+                "id": f"{ls.get('id')}-{cid}",
+                "name": _name(customers, cid),
+                "time": _time(ls.get("time_from")),
+                "teacher": teacher,
+                "title": _lesson_title(ls, groups, customers),
+                "form": "индив." if ls.get("lesson_type_id") == 1 else "группа",
+                "note": "был на уроке, списания нет",
+            })
+    out.sort(key=lambda x: (x["time"], x["name"]))
+    return out
+
+
+# ---------- сегодня «а»: неоплаченные занятия ----------
 
 def unpaid_today(lessons, teachers, groups, customers) -> List[dict]:
     """Ученик идёт сегодня на урок, а денег на балансе нет — занятие не оплачено."""
@@ -317,7 +357,7 @@ def unpaid_today(lessons, teachers, groups, customers) -> List[dict]:
     return out
 
 
-# ---------- подпункт «в»: наслоения в расписании ----------
+# ---------- сегодня «б»: наслоения в расписании ----------
 
 def overlaps_today(lessons, teachers, groups, customers) -> List[dict]:
     """Два урока у одного педагога в одно и то же время."""
@@ -360,7 +400,7 @@ def overlaps_today(lessons, teachers, groups, customers) -> List[dict]:
     return out
 
 
-# ---------- подпункт «г»: группы меньше 3 человек ----------
+# ---------- сегодня «в»: группы меньше 3 человек ----------
 
 def small_groups_today(lessons, teachers, groups, customers) -> List[dict]:
     """Групповые занятия, где осталось 1-2 не отменивших ученика."""
@@ -432,9 +472,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         "date": today,
         "yesterday": yesterday,
         "checks": {
+            # Пункт 1 «Вчерашний день»
             "m1a": not_held_yesterday(ls_yest, teachers, groups, customers),
-            "m1b": unpaid_today(ls_today, teachers, groups, customers),
-            "m1c": overlaps_today(ls_today, teachers, groups, customers),
-            "m1d": small_groups_today(ls_today, teachers, groups, customers),
+            "m1b": wrong_charges_yesterday(ls_yest, teachers, groups, customers),
+            # Пункт 2 «Расписание на сегодня»
+            "m2a": unpaid_today(ls_today, teachers, groups, customers),
+            "m2b": overlaps_today(ls_today, teachers, groups, customers),
+            "m2c": small_groups_today(ls_today, teachers, groups, customers),
         },
     })

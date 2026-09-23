@@ -108,18 +108,18 @@ const TodayTasksView = () => {
           <div className="space-y-2">
             {items.map((i) => {
               const m = marks[i.key] || { done: false, comment: '' };
-              if (i.auto === 'schedule') {
+              if (i.auto) {
                 return (
                   <ScheduleChecksCard
                     key={i.key}
                     num={i.num}
                     title={i.title}
-                    sections={schedule.sections}
+                    sections={schedule.sectionsFor(i.auto)}
                     yesterday={schedule.yesterday}
                     loading={schedule.loading}
                     failed={schedule.failed}
                     checked={schedule.checked}
-                    allDone={schedule.allDone}
+                    allDone={schedule.groupDone(i.auto)}
                     marks={marks}
                     onMark={setMark}
                   />
