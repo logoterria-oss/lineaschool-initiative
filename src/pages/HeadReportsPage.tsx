@@ -33,7 +33,22 @@ const REPORTS = [
     iconBg: 'bg-blue-100',
     iconColor: 'text-blue-600',
   },
+  {
+    id: 'subscription-margin',
+    label: 'Маржинальность абонементов',
+    description: 'Прямые и косвенные расходы, прибыль с одного ученика',
+    icon: 'Calculator' as const,
+    color: 'border-amber-200 hover:border-amber-400',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+  },
 ];
+
+/** Отчёты-страницы: открываются по ссылке, без окна выбора параметров. */
+const PAGE_REPORTS: Record<string, string> = {
+  'student-dynamics': '/admin/report/student-dynamics',
+  'subscription-margin': '/admin/report/subscription-margin',
+};
 
 const HeadReportsPage = () => {
   const navigate = useNavigate();
@@ -63,8 +78,8 @@ const HeadReportsPage = () => {
                 <button
                   key={report.id}
                   onClick={() =>
-                    report.id === 'student-dynamics'
-                      ? navigate('/admin/report/student-dynamics')
+                    PAGE_REPORTS[report.id]
+                      ? navigate(PAGE_REPORTS[report.id])
                       : setOpenReport(report.id)
                   }
                   className={`w-full flex items-center gap-4 bg-white rounded-xl border-2 ${report.color} p-5 text-left shadow-sm hover:shadow-md transition-all duration-200`}

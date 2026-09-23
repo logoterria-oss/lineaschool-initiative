@@ -1,0 +1,38 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Список сохранённых отчётов",
+      "method": "GET",
+      "path": "/?action=reports",
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Пресет косвенных расходов",
+      "method": "GET",
+      "path": "/?action=defaults",
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Неизвестное действие",
+      "method": "GET",
+      "path": "/?action=nope",
+      "expectedStatus": 400
+    },
+    {
+      "name": "Факт месяца без параметра month",
+      "method": "GET",
+      "path": "/?action=crm",
+      "expectedStatus": 400
+    }
+  ]
+}

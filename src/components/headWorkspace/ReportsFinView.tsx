@@ -45,6 +45,15 @@ const REPORTS = [
     iconColor: 'text-blue-600',
   },
   {
+    id: 'subscription-margin',
+    label: 'Маржинальность абонементов',
+    description: 'Прямые и косвенные расходы, прибыль с одного ученика',
+    icon: 'Calculator' as const,
+    color: 'border-rose-200 hover:border-rose-400',
+    iconBg: 'bg-rose-100',
+    iconColor: 'text-rose-600',
+  },
+  {
     id: 'letterhead',
     label: 'Официальный бланк организации',
     description: 'Запросы, соглашения и письма на фирменном бланке — PDF',
@@ -63,6 +72,13 @@ const REPORTS = [
     iconColor: 'text-orange-600',
   },
 ];
+
+/** Отчёты-страницы: открываются по ссылке, а не окном внутри кабинета. */
+const PAGE_REPORTS: Record<string, string> = {
+  'student-dynamics': '/admin/report/student-dynamics',
+  'fact-income': '/admin/report/fact-income',
+  'subscription-margin': '/admin/report/subscription-margin',
+};
 
 const ReportsFinView = () => {
   const navigate = useNavigate();
@@ -124,11 +140,11 @@ const ReportsFinView = () => {
           <button
             key={report.id}
             onClick={() =>
-              report.id === 'student-dynamics'
-                ? navigate('/admin/report/student-dynamics')
-                : report.id === 'fact-income'
-                  ? navigate('/admin/report/fact-income')
-                  : (setEditDoc(null), setOpenReport(report.id))
+              PAGE_REPORTS[report.id]
+                ? navigate(PAGE_REPORTS[report.id], {
+                    state: { from: '/admin/head-workspace' },
+                  })
+                : (setEditDoc(null), setOpenReport(report.id))
             }
             className={`w-full flex items-center gap-4 bg-white rounded-xl border-2 ${report.color} p-5 text-left shadow-sm hover:shadow-md transition-all duration-200`}
           >
