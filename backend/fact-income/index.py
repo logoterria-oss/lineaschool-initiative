@@ -127,6 +127,19 @@ def _fetch_customers(token):
     return out
 
 
+def _is_test_customer(name):
+    """Техническая карточка для проверок — в доходы не берём.
+
+    Ищем слово «тест» В ЛЮБОМ месте имени: в CRM есть и «Тест-ученик-1»,
+    и «Юля Тест-ученик-2». Смотрим на отдельное слово, чтобы настоящие
+    фамилии вроде «Тестова Мария» не пропали.
+    """
+    s = (name or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    return bool(re.search(r"(?<![а-яa-z])(тест|test)(ов(ый|ая|ое|ые))?(?![а-яa-z])", s))
+
+
 def _month_bounds(month):
     y, m = int(month[:4]), int(month[5:7])
     first = date(y, m, 1)
@@ -572,6 +585,13 @@ def _build_year(token, months, refresh=False):
                 monthly[m], lessons_count[m] = {}, 0
 
     customers = _fetch_customers(token)
+    # Технические карточки («Тест-ученик-1») — не настоящая работа школы,
+    # в доходах им делать нечего.
+    for cid in [c for c, i in customers.items() if _is_test_customer(i.get("name"))]:
+        customers.pop(cid, None)
+        for m in months:
+            monthly.get(m, {}).pop(cid, None)
+
     diag_pay = _diag_payments(months)
 
     # Оплаченные диагностики разносим по ученикам CRM: платит родитель своим

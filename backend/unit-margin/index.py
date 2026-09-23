@@ -25,7 +25,8 @@ from concurrent.futures import ThreadPoolExecutor
 Источник — проведённые занятия (status=3) в AlfaCRM за месяц. В details
 каждого занятия лежит строка на каждого ребёнка со списанной суммой
 (commission). Диагностики исключаем: это разовая услуга с другой ценой
-и другой экономикой, она исказит среднюю.
+и другой экономикой, она исказит среднюю. Технические карточки
+(«Тест-ученик-1») тоже выкидываем — это не работа школы.
 
 Постоянные (косвенные) расходы школы здесь НЕ участвуют — маржинальность
 по определению считается только на переменных затратах.
@@ -101,6 +102,37 @@ def _fetch_teachers(token):
     return out
 
 
+def _test_customer_ids(conn):
+    """id технических карточек CRM («Тест-ученик-1», «Юля Тест-ученик-2»).
+
+    Имена берём из локального кэша клиентов, а не из CRM: обход всех
+    карточек по API занимает десятки секунд и упирается в таймаут функции.
+    Кэш обновляет отдельная функция crm-sync-cache.
+    """
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id, name FROM {SCHEMA}.crm_customers_cache")
+        rows = cur.fetchall()
+    return {cid for cid, name in rows if _is_test_customer(name)}
+
+
+def _is_test_customer(name):
+    """Техническая карточка для проверок — в экономику не берём.
+
+    Такие записи заводят в CRM для тестов, их занятия — не настоящая работа
+    школы: они искажают и среднюю цену, и наполняемость.
+
+    Ищем слово «тест» В ЛЮБОМ месте имени, а не только в начале: в CRM
+    встречаются и «Тест-ученик-1», и «Юля Тест-ученик-2», и «тест Абраменко
+    Виктория». При этом смотрим именно на ОТДЕЛЬНОЕ слово — настоящие
+    фамилии вроде «Тестова Мария» или «Протестов» не трогаем.
+    """
+    s = (name or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    # «тест», «тест-ученик-1», «test», «тестовый/тестовая/тестовое»
+    return bool(re.search(r"(?<![а-яa-z])(тест|test)(ов(ый|ая|ое|ые))?(?![а-яa-z])", s))
+
+
 def _fetch_lessons(token, date_from, date_to, status=3):
     """Проведённые занятия за период. Страниц много — тянем параллельно."""
     url = f"{S20_HOST}/v2api/1/lesson/index"
@@ -149,7 +181,7 @@ def _r2(v):
 
 # ---------- факт месяца ----------
 
-def _build_month(token, month):
+def _build_month(token, month, test_ids=frozenset()):
     """Срез месяца: уроки, списания и педагоги в разрезе формы занятия.
 
     Юнит — ОДНО ПРОВЕДЁННОЕ ЗАНЯТИЕ целиком.
@@ -170,6 +202,11 @@ def _build_month(token, month):
     d_from, d_to = _month_bounds(month)
     lessons = _fetch_lessons(token, d_from.isoformat(), d_to.isoformat(), status=3)
     teachers = _fetch_teachers(token)
+
+    # Технические карточки («Тест-ученик-1») — не настоящая работа школы.
+    # Их места не считаем ни в выручке, ни в наполняемости.
+    skipped_test_units = 0
+    skipped_test_lessons = 0
 
     def _side():
         return {
@@ -196,6 +233,17 @@ def _build_month(token, month):
         if "диагност" in (ls.get("lesson_type_name") or "").lower():
             diag_lessons += 1
             continue
+
+        # Выкидываем места тестовых учеников. Если после этого на занятии
+        # никого не осталось — это тестовое занятие целиком, пропускаем его:
+        # иначе в знаменатель наполняемости попал бы пустой урок.
+        real = [d for d in details if d.get("customer_id") not in test_ids]
+        if len(real) != len(details):
+            skipped_test_units += len(details) - len(real)
+        if not real:
+            skipped_test_lessons += 1
+            continue
+        details = real
 
         # lesson_type_id: 1 — индивидуальное, 2 — групповое.
         form = "individual" if ls.get("lesson_type_id") == 1 else "group"
@@ -315,6 +363,9 @@ def _build_month(token, month):
         "diag_lessons": diag_lessons,
         "lessons_total": len(lessons),
         "skipped_no_details": skipped_no_details,
+        # Сколько выкинули технических карточек («Тест-ученик-1»).
+        "skipped_test_units": skipped_test_units,
+        "skipped_test_lessons": skipped_test_lessons,
     }
 
 
@@ -365,7 +416,7 @@ def handler(event: dict, context) -> dict:
                         if cached:
                             return _json({"success": True, "data": cached[0],
                                           "cached": True, "computed_at": cached[1]})
-                    data = _build_month(_token(), month)
+                    data = _build_month(_token(), month, _test_customer_ids(conn))
                     _cache_write(conn, month, data)
                     return _json({"success": True, "data": data, "cached": False})
                 finally:

@@ -73,8 +73,14 @@ export default function UnitMonthPicker({
             {fact.group.avg_present_size}
           </div>
           <div>
-            Диагностик (исключены):{' '}
-            <b className="text-gray-900">{fact.diag_lessons}</b>
+            Исключено:{' '}
+            <b className="text-gray-900">{fact.diag_lessons}</b> диагностик
+            {(fact.skipped_test_units || 0) > 0 && (
+              <>
+                {' '}и <b className="text-gray-900">{fact.skipped_test_units}</b> мест
+                тестовых учеников
+              </>
+            )}
           </div>
           <div className="sm:col-span-2 lg:col-span-4 text-gray-500">
             Пропусков:{' '}

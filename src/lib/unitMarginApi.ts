@@ -64,6 +64,10 @@ export interface UnitFact {
   teachers: UnitFactTeacher[];
   diag_lessons: number;
   lessons_total: number;
+  /** Мест технических карточек («Тест-ученик-1»), выкинутых из расчёта. */
+  skipped_test_units?: number;
+  /** Занятий целиком из тестовых карточек. */
+  skipped_test_lessons?: number;
 }
 
 export interface UnitMarginReport {

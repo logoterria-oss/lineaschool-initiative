@@ -122,6 +122,27 @@ def _fetch_teachers(token):
     return out
 
 
+def _is_test_customer(name):
+    """Техническая карточка для проверок — в экономику не берём.
+
+    Ищем слово «тест» В ЛЮБОМ месте имени: в CRM встречаются и
+    «Тест-ученик-1», и «Юля Тест-ученик-2». Смотрим именно на отдельное
+    слово, чтобы фамилии вроде «Тестова Мария» не пропали.
+    """
+    s = (name or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    return bool(re.search(r"(?<![а-яa-z])(тест|test)(ов(ый|ая|ое|ые))?(?![а-яa-z])", s))
+
+
+def _test_customer_ids(conn):
+    """id технических карточек из локального кэша клиентов CRM."""
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id, name FROM {SCHEMA}.crm_customers_cache")
+        rows = cur.fetchall()
+    return {cid for cid, name in rows if _is_test_customer(name)}
+
+
 def _fetch_lessons(token, date_from, date_to, status=3):
     """Проведённые занятия за период. Страниц много — тянем параллельно."""
     url = f"{S20_HOST}/v2api/1/lesson/index"
@@ -289,7 +310,7 @@ def short_name(name):
 
 # ---------- факт месяца ----------
 
-def _build_month(token, month):
+def _build_month(token, month, test_ids=frozenset()):
     """Срез месяца: занятия, педагоги и деньги в разрезе абонементов."""
     d_from, d_to = _month_bounds(month)
     lessons = _fetch_lessons(token, d_from.isoformat(), d_to.isoformat(), status=3)
@@ -297,11 +318,13 @@ def _build_month(token, month):
 
     # Ученики, у которых в этом месяце были занятия — только по ним
     # спрашиваем абонементы, иначе ушли бы сотни лишних запросов.
+    # Технические карточки («Тест-ученик-1») сразу выкидываем.
     cids = set()
     for ls in lessons:
         for d in ls.get("details") or []:
             if isinstance(d, dict) and d.get("customer_id") is not None:
-                cids.add(d["customer_id"])
+                if d["customer_id"] not in test_ids:
+                    cids.add(d["customer_id"])
 
     ct = _fetch_customer_tariffs(token, sorted(cids))
     tariff_dict = _fetch_tariffs(token)
@@ -339,7 +362,8 @@ def _build_month(token, month):
 
     for ls in lessons:
         day = _parse_date(ls.get("date")) or d_from
-        details = [d for d in (ls.get("details") or []) if isinstance(d, dict)]
+        details = [d for d in (ls.get("details") or []) if isinstance(d, dict)
+                   and d.get("customer_id") not in test_ids]
         if not details:
             continue
         is_diag = "диагност" in (ls.get("lesson_type_name") or "").lower()
@@ -523,7 +547,7 @@ def handler(event: dict, context) -> dict:
                         cached = _cache_read(conn, month)
                         if cached:
                             return _json({"success": True, "data": cached, "cached": True})
-                    data = _build_month(_token(), month)
+                    data = _build_month(_token(), month, _test_customer_ids(conn))
                     _cache_write(conn, month, data)
                     return _json({"success": True, "data": data, "cached": False})
                 finally:
