@@ -48,7 +48,7 @@ export default function MarginIndirectForm({
       <div className="flex items-center justify-between gap-2 mb-1">
         <div className="flex items-center gap-2">
           <Icon name="Building2" size={18} className="text-violet-600" />
-          <h2 className="font-semibold text-gray-900">Косвенные расходы</h2>
+          <h2 className="font-semibold text-gray-900">Косвенные (постоянные) расходы</h2>
         </div>
         <button
           onClick={onSaveDefaults}
@@ -60,7 +60,8 @@ export default function MarginIndirectForm({
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-3">
-        Содержание школы целиком. На абонемент ложится доля по числу занятий:{' '}
+        Содержание школы целиком — не зависит от объёма продаж и в маржинальность
+        не входит, а покрывается из маржи. На абонемент ложится доля по числу занятий:{' '}
         <b>{(share * 100).toFixed(2)}%</b> от {fmtMoney(fullTotal)} в месяц.
       </p>
 

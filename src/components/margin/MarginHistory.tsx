@@ -29,7 +29,8 @@ const ChartTip = ({ active, payload }: { active?: boolean; payload?: { payload: 
       <div className="font-semibold text-gray-900 mb-1">{p.label}</div>
       <div className="text-emerald-600">Выручка: <b>{fmtMoney(Number(p.revenue))}</b></div>
       <div className="text-blue-600">Чистая прибыль: <b>{fmtMoney(Number(p.net))}</b></div>
-      <div className="text-violet-600">Маржа: <b>{fmtPercent(Number(p.margin))}</b></div>
+      <div className="text-violet-600">Маржинальность: <b>{fmtPercent(Number(p.margin))}</b></div>
+      <div className="text-gray-500">Рентабельность: <b>{fmtPercent(Number(p.netMargin))}</b></div>
     </div>
   );
 };
@@ -56,7 +57,8 @@ export default function MarginHistory({ reports, currentId, onOpen, onDelete }: 
           label: monthLabel(r.period_month),
           revenue: r.result?.revenue ?? 0,
           net: r.result?.netProfit ?? 0,
-          margin: r.result?.netMarginPercent ?? 0,
+          margin: r.result?.grossMarginPercent ?? 0,
+          netMargin: r.result?.netMarginPercent ?? 0,
         })),
     [reports, activeTariff],
   );
@@ -119,7 +121,7 @@ export default function MarginHistory({ reports, currentId, onOpen, onDelete }: 
           Сохранённые отчёты · {reports.length}
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[760px]">
+          <table className="w-full text-sm min-w-[880px]">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-xs">
                 <th className="text-left font-medium px-4 py-2">Название</th>
@@ -127,7 +129,12 @@ export default function MarginHistory({ reports, currentId, onOpen, onDelete }: 
                 <th className="text-center font-medium px-4 py-2">Месяц</th>
                 <th className="text-right font-medium px-4 py-2">Выручка</th>
                 <th className="text-right font-medium px-4 py-2">Прибыль</th>
-                <th className="text-center font-medium px-4 py-2">Маржа</th>
+                <th className="text-center font-medium px-4 py-2" title="Выручка минус прямые расходы, в % от выручки">
+                  Маржинальность
+                </th>
+                <th className="text-center font-medium px-4 py-2" title="Чистая прибыль в % от выручки">
+                  Рентаб.
+                </th>
                 <th className="text-center font-medium px-4 py-2">Изменён</th>
                 <th className="w-20" />
               </tr>
@@ -161,6 +168,9 @@ export default function MarginHistory({ reports, currentId, onOpen, onDelete }: 
                       }`}
                     >
                       {fmtMoney(net)}
+                    </td>
+                    <td className="px-4 py-2 text-center text-violet-600 font-medium">
+                      {fmtPercent(r.result?.grossMarginPercent ?? 0)}
                     </td>
                     <td className="px-4 py-2 text-center text-gray-500">
                       {fmtPercent(r.result?.netMarginPercent ?? 0)}

@@ -43,11 +43,12 @@ export default function MarginDirectForm({ inputs, onChange, teacherNames }: Pro
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         <Icon name="Users" size={18} className="text-rose-600" />
-        <h2 className="font-semibold text-gray-900">Прямые расходы</h2>
+        <h2 className="font-semibold text-gray-900">Прямые (переменные) расходы</h2>
       </div>
       <p className="text-sm text-gray-500 mb-4">
-        Всё, что тратится именно на этого ребёнка: работа педагогов, взносы,
-        отпускные и комиссия за приём оплаты.
+        Всё, что тратится именно на этого ребёнка и растёт вместе с объёмом занятий:
+        работа педагогов, взносы, отпускные и комиссия за приём оплаты.
+        Именно из этих сумм считается маржинальность.
       </p>
 
       {/* Цена абонемента */}

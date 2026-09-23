@@ -66,15 +66,15 @@ export default function MarginResultView({ result }: Props) {
       tone: 'text-gray-900',
     },
     {
-      label: 'Валовая прибыль',
+      label: 'Маржинальная прибыль',
       value: fmtMoney(result.grossProfit),
-      sub: `маржа ${fmtPercent(result.grossMarginPercent)} — после прямых расходов`,
+      sub: `маржинальность ${fmtPercent(result.grossMarginPercent)} — выручка минус только прямые расходы`,
       tone: result.grossProfit >= 0 ? 'text-emerald-600' : 'text-red-600',
     },
     {
       label: 'Чистая прибыль',
       value: fmtMoney(result.netProfit),
-      sub: `маржа ${fmtPercent(result.netMarginPercent)} — после косвенных и налога`,
+      sub: `рентабельность ${fmtPercent(result.netMarginPercent)} — после косвенных и налога`,
       tone: positive ? 'text-emerald-600' : 'text-red-600',
     },
     {
@@ -117,7 +117,7 @@ export default function MarginResultView({ result }: Props) {
           showFormula={showFormula}
         />
         <Block
-          title="Прямые расходы"
+          title="Прямые (переменные) расходы"
           icon="Users"
           color="text-rose-600"
           total={fmtMoney(result.directTotal)}
@@ -125,7 +125,7 @@ export default function MarginResultView({ result }: Props) {
           showFormula={showFormula}
         />
         <Block
-          title={`Косвенные расходы (доля ${(result.indirectShare * 100).toFixed(2)}%)`}
+          title={`Косвенные (постоянные) расходы · доля ${(result.indirectShare * 100).toFixed(2)}%`}
           icon="Building2"
           color="text-violet-600"
           total={fmtMoney(result.indirectTotal)}
@@ -161,15 +161,17 @@ export default function MarginResultView({ result }: Props) {
             <span>{fmtMoney(result.revenue)}</span>
           </div>
           <div className="flex justify-between">
-            <span>− Прямые расходы</span>
+            <span>− Прямые (переменные) расходы</span>
             <span>−{fmtMoney(result.directTotal)}</span>
           </div>
           <div className="flex justify-between border-t border-gray-300 pt-1.5 font-semibold">
-            <span>= Валовая прибыль</span>
-            <span>{fmtMoney(result.grossProfit)}</span>
+            <span>= Маржинальная прибыль</span>
+            <span>
+              {fmtMoney(result.grossProfit)} ({fmtPercent(result.grossMarginPercent)})
+            </span>
           </div>
           <div className="flex justify-between">
-            <span>− Косвенные расходы</span>
+            <span>− Косвенные (постоянные) расходы</span>
             <span>−{fmtMoney(result.indirectTotal)}</span>
           </div>
           <div className="flex justify-between">
@@ -188,6 +190,12 @@ export default function MarginResultView({ result }: Props) {
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+          Маржинальность {fmtPercent(result.grossMarginPercent)} — это доля выручки,
+          остающаяся после прямых (переменных) расходов: с каждого рубля выручки
+          остаётся {(result.grossMarginPercent / 100).toFixed(2)} ₽. Постоянные расходы
+          школы в маржинальность не входят — они покрываются как раз из этой маржи.
+        </p>
+        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
           {positive
             ? `Абонемент окупает себя и вклад в содержание школы. Запас до нуля: ${fmtMoney(
                 result.pricePerLesson - result.breakEvenPricePerLesson,
