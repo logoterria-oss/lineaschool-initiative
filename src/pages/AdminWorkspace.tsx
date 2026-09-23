@@ -18,7 +18,6 @@ import TeacherViolationsManager from '@/components/violations/TeacherViolationsM
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import PayLinksView from '@/components/headWorkspace/PayLinksView';
 import LeadsListView from '@/components/adminWorkspace/LeadsListView';
-import WorkTimeView from '@/components/workLog/WorkTimeView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import TodayTasksView from '@/components/adminShifts/TodayTasksView';
@@ -27,12 +26,23 @@ import { useInteractionBadges } from '@/components/interaction/useInteractionBad
 import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
 import OnShiftHint from '@/components/interaction/OnShiftHint';
 
+/**
+ * Чек-лист смены — то, с чего админ начинает рабочий день, поэтому
+ * открывается сразу при входе в админку.
+ */
+const CHECKLIST_ITEM: AdminItem = {
+  id: 'today-tasks',
+  label: 'Чек-лист смены',
+  kind: 'component',
+  icon: 'ListChecks',
+};
+
 const AdminWorkspace = () => {
   const navigate = useNavigate();
   const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
   const onShift = useOnShiftAdmins();
   const { me, checking } = useRoleGuard('admin');
-  const [active, setActive] = useState<AdminItem | null>(null);
+  const [active, setActive] = useState<AdminItem | null>(CHECKLIST_ITEM);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
 
   const toggleGroup = (id: string) =>
@@ -69,13 +79,11 @@ const AdminWorkspace = () => {
       case 'students-list': return <StudentsListView />;
       case 'leads-list': return <LeadsListView />;
       case 'staff-list': return <StaffListView readOnly />;
-      case 'work-log': return <WorkTimeView mode="admin" />;
       case 'today-tasks': return <TodayTasksView />;
       default: return <StubView label={active.label} />;
     }
   }, [active, fullName]);
 
-  const workLogActive = active?.id === 'work-log';
   const todayTasksActive = active?.id === 'today-tasks';
 
   const collapsed = false;
@@ -166,21 +174,12 @@ const AdminWorkspace = () => {
       </a>
 
       <button
-        onClick={() => setActive({ id: 'work-log', label: 'Журнал административного учёта', kind: 'component', icon: 'ClipboardPen' })}
-        className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
-          workLogActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
-        }`}
-      >
-        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Журнал административного учёта</span>
-      </button>
-
-      <button
-        onClick={() => setActive({ id: 'today-tasks', label: 'Задачи на сегодня', kind: 'component', icon: 'ListChecks' })}
+        onClick={() => setActive(CHECKLIST_ITEM)}
         className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
           todayTasksActive ? 'bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'
         }`}
       >
-        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Задачи на сегодня</span>
+        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>{CHECKLIST_ITEM.label}</span>
       </button>
 
       <OnShiftHint admins={onShift} collapsed={collapsed} />
