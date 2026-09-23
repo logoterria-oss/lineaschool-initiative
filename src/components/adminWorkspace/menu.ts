@@ -28,7 +28,6 @@ export const ADMIN_MENU: AdminItem[] = [
   { id: 'dropouts', label: 'Бросившие', kind: 'component', icon: 'UserMinus' },
   { id: 'reviews-improve', label: 'Что улучшить — отзывы', kind: 'component', icon: 'MessageSquareHeart' },
   { id: 'reviews-lesson', label: 'Бесплатный урок за отзыв', kind: 'component', icon: 'Gift' },
-  { id: 'today-tasks', label: 'Чек-лист смены', kind: 'component', icon: 'ListChecks' },
   { id: 'violations', label: 'Дисциплинарные нарушения педагогов', kind: 'component', icon: 'TriangleAlert' },
   { id: 'regulations', label: 'Регламент работы администратора', kind: 'stub', icon: 'ScrollText' },
 ];
