@@ -11,13 +11,13 @@ interface Props {
 const TITLES: Record<string, { title: string; sub: string; icon: string; accent: string }> = {
   individual: {
     title: 'Индивидуальное занятие',
-    sub: 'юнит = один проведённый урок',
+    sub: 'юнит = один клиент на уроке (он же весь урок)',
     icon: 'User',
     accent: 'blue',
   },
   group: {
     title: 'Групповое занятие',
-    sub: 'юнит = один урок на одного ребёнка',
+    sub: 'юнит = один клиент на уроке, не весь урок',
     icon: 'Users',
     accent: 'violet',
   },

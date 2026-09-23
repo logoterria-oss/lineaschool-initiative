@@ -69,24 +69,32 @@ export interface CalcRow {
 
 export interface UnitMarginResult {
   form: LessonForm;
-  /** Выручка с одного юнита. */
+  /** Сколько клиентов приходится на одно занятие (для индивидуального — 1). */
+  clientsPerLesson: number;
+  /** Выручка с одного КЛИЕНТА. */
   price: number;
-  /** Разбор переменных расходов. */
+  /** Разбор переменных расходов на одного клиента. */
   costRows: CalcRow[];
   costTotal: number;
-  /** Маржинальная прибыль с урока: цена − переменные расходы. */
+  /** Маржинальная прибыль с одного КЛИЕНТА: цена − переменные расходы. */
   margin: number;
-  /** Маржинальность, %. */
+  /** Маржинальность, %. Одинакова и на клиента, и на занятие целиком. */
   marginPercent: number;
-  /** Налог УСН с этого урока (0, если выключен). */
+  /** Налог УСН с одного клиента (0, если выключен). */
   tax: number;
-  /** Прибыль после налога. */
+  /** Прибыль с клиента после налога. */
   profit: number;
   profitPercent: number;
-  /** Ниже этой цены урок уходит в минус. */
+  /** Ниже этой цены занятие уходит в минус. */
   breakEvenPrice: number;
-  /** Доля зарплаты педагога (с взносами и отпускными) в цене урока, %. */
+  /** Доля зарплаты педагога (с взносами и отпускными) в цене, %. */
   payrollShare: number;
+
+  /* Итоги на ВСЁ занятие целиком: у группы это сумма по всем детям,
+     у индивидуального совпадает с показателями на клиента. */
+  lessonRevenue: number;
+  lessonCost: number;
+  lessonMargin: number;
 }
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
@@ -118,7 +126,7 @@ export function calcUnit(
 
   const costRows: CalcRow[] = [];
 
-  // 1. Зарплата педагога на один юнит.
+  // 1. Зарплата педагога в пересчёте на одного клиента.
   const salary = rate / size;
   costRows.push({
     label: 'Зарплата педагога',
@@ -177,6 +185,7 @@ export function calcUnit(
 
   return {
     form,
+    clientsPerLesson: round2(size),
     price: round2(price),
     costRows,
     costTotal: round2(costTotal),
@@ -187,6 +196,12 @@ export function calcUnit(
     profitPercent: price > 0 ? round2((profit / price) * 100) : 0,
     breakEvenPrice: round2(breakEvenPrice),
     payrollShare: price > 0 ? round2(((salary + sfr + vacation) / price) * 100) : 0,
+    // Занятие целиком: платит каждый ребёнок, а ставку педагога школа
+    // отдаёт один раз за урок — поэтому в группе маржа с занятия кратно
+    // больше, чем с одного клиента.
+    lessonRevenue: round2(price * size),
+    lessonCost: round2(costTotal * size),
+    lessonMargin: round2(margin * size),
   };
 }
 
