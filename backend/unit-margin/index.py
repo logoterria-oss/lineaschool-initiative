@@ -152,21 +152,37 @@ def _r2(v):
 def _build_month(token, month):
     """Срез месяца: уроки, списания и педагоги в разрезе формы занятия.
 
-    Юнит индивидуального занятия — само занятие (там один ребёнок).
-    Юнит группового — одно списание, то есть «ученико-урок»: экономику
-    считаем на одного человека в группе, а не на всю группу.
+    Юнит — ОДНО ПРОВЕДЁННОЕ ЗАНЯТИЕ целиком.
+
+    Про пропуски. В details каждого занятия лежит строка на каждого ребёнка:
+      is_attend  — был ли на занятии (0 — не был);
+      commission — сколько списано с его баланса.
+    Списание за прогул делает сама CRM по правилам школы: пропуск без
+    уважительной причины оплачивается (commission > 0 при is_attend = 0),
+    с уважительной — нет (commission = 0). Правило одинаково для групповых
+    и индивидуальных занятий.
+
+    Для экономики важно именно СПИСАНИЕ, а не присутствие: оплаченный
+    прогул приносит деньги, а бесплатная отработка — нет. Поэтому выручку
+    занятия считаем по числу ОПЛАЧЕННЫХ мест, а присутствие показываем
+    отдельно — чтобы было видно, какая часть выручки пришла с прогулов.
     """
     d_from, d_to = _month_bounds(month)
     lessons = _fetch_lessons(token, d_from.isoformat(), d_to.isoformat(), status=3)
     teachers = _fetch_teachers(token)
 
-    forms = {
-        "individual": {"lessons": 0, "units": 0, "revenue": 0.0,
-                       "paid_units": 0, "free_units": 0, "students": set()},
-        "group": {"lessons": 0, "units": 0, "revenue": 0.0,
-                  "paid_units": 0, "free_units": 0, "students": set(),
-                  "size_sum": 0, "size_n": 0},
-    }
+    def _side():
+        return {
+            "lessons": 0, "units": 0, "revenue": 0.0,
+            "paid_units": 0, "free_units": 0, "students": set(),
+            "size_sum": 0, "size_n": 0,
+            # Пропуски: списанные (неуважительные) и бесплатные (уважительные)
+            "attended_units": 0, "missed_units": 0,
+            "missed_charged": 0, "missed_charged_revenue": 0.0,
+            "missed_free": 0,
+        }
+
+    forms = {"individual": _side(), "group": _side()}
     by_teacher = {}
     diag_lessons = 0
     skipped_no_details = 0
@@ -187,9 +203,10 @@ def _build_month(token, month):
         group_size = len(details)
 
         slot["lessons"] += 1
-        if form == "group":
-            slot["size_sum"] += group_size
-            slot["size_n"] += 1
+        # Физическое число записанных на занятие — справочно, для сверки
+        # с оплаченной наполняемостью.
+        slot["size_sum"] += group_size
+        slot["size_n"] += 1
 
         tids = [t for t in (ls.get("teacher_ids") or []) if t]
         teacher_id = tids[0] if tids else None
@@ -197,9 +214,10 @@ def _build_month(token, month):
             t = by_teacher.setdefault(str(teacher_id), {
                 "teacher_id": teacher_id,
                 "name": teachers.get(teacher_id) or f"#{teacher_id}",
-                "group_lessons": 0, "group_units": 0, "group_revenue": 0.0,
+                "group_lessons": 0, "group_units": 0, "group_paid_units": 0,
+                "group_revenue": 0.0,
                 "individual_lessons": 0, "individual_units": 0,
-                "individual_revenue": 0.0,
+                "individual_paid_units": 0, "individual_revenue": 0.0,
             })
             t[f"{form}_lessons"] += 1
         else:
@@ -210,6 +228,9 @@ def _build_month(token, month):
             if cid is None:
                 continue
             price = _to_float(d.get("commission"))
+            # is_attend: 0 — ребёнка на занятии не было. Списание за такой
+            # пропуск (commission > 0) CRM делает по правилам школы.
+            attended = d.get("is_attend") != 0
             slot["units"] += 1
             slot["revenue"] += price
             slot["students"].add(cid)
@@ -217,9 +238,20 @@ def _build_month(token, month):
                 slot["paid_units"] += 1
             else:
                 slot["free_units"] += 1
+            if attended:
+                slot["attended_units"] += 1
+            else:
+                slot["missed_units"] += 1
+                if price > 0:
+                    slot["missed_charged"] += 1
+                    slot["missed_charged_revenue"] += price
+                else:
+                    slot["missed_free"] += 1
             if t is not None:
                 t[f"{form}_units"] += 1
                 t[f"{form}_revenue"] += price
+                if price > 0:
+                    t[f"{form}_paid_units"] += 1
 
     def pack(form):
         s = forms[form]
@@ -230,16 +262,33 @@ def _build_month(token, month):
             "free_units": s["free_units"],
             "students": len(s["students"]),
             "revenue": _r2(s["revenue"]),
-            # Средняя цена юнита. Делим на ВСЕ списания, включая нулевые:
-            # бесплатные отработки — это реальная себестоимость без выручки,
-            # прятать их значило бы завысить маржинальность.
-            "avg_price": _r2(s["revenue"] / s["units"]) if s["units"] else 0,
-            "avg_price_paid": _r2(s["revenue"] / s["paid_units"]) if s["paid_units"] else 0,
+            # Средняя цена ОПЛАЧЕННОГО места: сколько платит один ребёнок.
+            # Делим на платные списания, а бесплатные (отработки, уважительные
+            # пропуски) учитываем отдельно — через наполняемость.
+            "avg_price": _r2(s["revenue"] / s["paid_units"]) if s["paid_units"] else 0,
+            # Сколько денег приносит одно занятие по факту.
+            "revenue_per_lesson": _r2(s["revenue"] / s["lessons"]) if s["lessons"] else 0,
+            # Посещаемость и пропуски.
+            "attended_units": s["attended_units"],
+            "missed_units": s["missed_units"],
+            "missed_charged": s["missed_charged"],
+            "missed_charged_revenue": _r2(s["missed_charged_revenue"]),
+            "missed_free": s["missed_free"],
+            # Доля выручки, пришедшая со списанных прогулов.
+            "missed_revenue_share": (
+                _r2(s["missed_charged_revenue"] / s["revenue"] * 100) if s["revenue"] else 0
+            ),
         }
-        if form == "group":
-            out["avg_group_size"] = _r2(s["size_sum"] / s["size_n"]) if s["size_n"] else 0
-        else:
-            out["avg_group_size"] = 1
+        # ОПЛАЧЕННАЯ наполняемость: сколько мест на занятии реально принесли
+        # деньги. Именно она формирует выручку занятия, а не число пришедших:
+        # прогульщик со списанием платит, а бесплатная отработка — нет.
+        out["avg_group_size"] = (
+            _r2(s["paid_units"] / s["lessons"]) if s["lessons"] else 0
+        )
+        # Сколько человек физически на занятии — справочно.
+        out["avg_present_size"] = (
+            _r2(s["size_sum"] / s["size_n"]) if s["size_n"] else 0
+        )
         return out
 
     teacher_rows = sorted(
@@ -249,7 +298,12 @@ def _build_month(token, month):
     for t in teacher_rows:
         t["group_revenue"] = _r2(t["group_revenue"])
         t["individual_revenue"] = _r2(t["individual_revenue"])
+        # Наполняемость у педагога — тоже по ОПЛАЧЕННЫМ местам: именно они
+        # формируют выручку его занятия.
         t["avg_group_size"] = (
+            _r2(t["group_paid_units"] / t["group_lessons"]) if t["group_lessons"] else 0
+        )
+        t["avg_present_size"] = (
             _r2(t["group_units"] / t["group_lessons"]) if t["group_lessons"] else 0
         )
 

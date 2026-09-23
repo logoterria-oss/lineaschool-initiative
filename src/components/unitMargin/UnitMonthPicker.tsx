@@ -65,14 +65,31 @@ export default function UnitMonthPicker({
           </div>
           <div>
             Групповых: <b className="text-gray-900">{fact.group.lessons}</b> зан. /{' '}
-            <b className="text-gray-900">{fact.group.units}</b> посещений
+            <b className="text-gray-900">{fact.group.units}</b> мест
           </div>
           <div>
-            Средняя группа: <b className="text-gray-900">{fact.group.avg_group_size} чел.</b>
+            Оплаченных мест в группе:{' '}
+            <b className="text-gray-900">{fact.group.avg_group_size}</b> из{' '}
+            {fact.group.avg_present_size}
           </div>
           <div>
             Диагностик (исключены):{' '}
             <b className="text-gray-900">{fact.diag_lessons}</b>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-4 text-gray-500">
+            Пропусков:{' '}
+            <b className="text-gray-900">
+              {fact.individual.missed_units + fact.group.missed_units}
+            </b>
+            , из них списано как неуважительные{' '}
+            <b className="text-gray-900">
+              {fact.individual.missed_charged + fact.group.missed_charged}
+            </b>{' '}
+            на{' '}
+            {Math.round(
+              fact.individual.missed_charged_revenue + fact.group.missed_charged_revenue,
+            ).toLocaleString('ru-RU')}{' '}
+            ₽ — эти деньги входят в выручку
           </div>
         </div>
       )}

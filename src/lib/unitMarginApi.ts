@@ -7,17 +7,37 @@ const API = (func2url as Record<string, string>)['unit-margin'];
 export interface UnitFactSide {
   /** Сколько занятий проведено. */
   lessons: number;
-  /** Сколько юнитов: для группы — списаний (ученико-уроков). */
+  /** Всего мест на занятиях (строк в details). */
   units: number;
+  /** Мест со списанием — именно они приносят выручку. */
   paid_units: number;
+  /** Мест без списания: отработки, бонусы, уважительные пропуски. */
   free_units: number;
   students: number;
   revenue: number;
-  /** Средняя цена юнита по всем спискам, включая бесплатные отработки. */
+  /** Средняя оплата одного ОПЛАЧЕННОГО места. */
   avg_price: number;
-  /** Средняя цена только по платным спискам. */
-  avg_price_paid: number;
+  /** Сколько денег приносит одно занятие по факту. */
+  revenue_per_lesson: number;
+
+  /* Посещаемость и пропуски (is_attend из CRM). */
+  /** Сколько детей реально были на занятиях. */
+  attended_units: number;
+  /** Сколько пропусков всего. */
+  missed_units: number;
+  /** Пропуски со списанием — неуважительные, их оплатили. */
+  missed_charged: number;
+  /** Деньги, полученные со списанных прогулов. */
+  missed_charged_revenue: number;
+  /** Пропуски без списания — уважительные. */
+  missed_free: number;
+  /** Доля выручки, пришедшая с прогулов, %. */
+  missed_revenue_share: number;
+
+  /** Оплаченная наполняемость: оплаченных мест на одно занятие. */
   avg_group_size: number;
+  /** Физическая наполняемость: сколько человек записано на занятие. */
+  avg_present_size: number;
 }
 
 export interface UnitFactTeacher {
@@ -25,11 +45,16 @@ export interface UnitFactTeacher {
   name: string;
   group_lessons: number;
   group_units: number;
+  group_paid_units: number;
   group_revenue: number;
   individual_lessons: number;
   individual_units: number;
+  individual_paid_units: number;
   individual_revenue: number;
+  /** Оплаченных мест на одно групповое занятие. */
   avg_group_size: number;
+  /** Физически записанных на занятие. */
+  avg_present_size: number;
 }
 
 export interface UnitFact {

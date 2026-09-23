@@ -166,19 +166,29 @@ export default function UnitResultCard({ result, fact, showFormula }: Props) {
 
         {/* Факт месяца */}
         {fact && (
-          <div className="text-[11px] text-gray-500 border-t border-gray-100 pt-3 leading-relaxed">
-            Факт месяца: {fact.lessons} занятий,{' '}
-            {isGroup && `${fact.units} посещений, `}
-            {fact.students} учеников, списано{' '}
-            {Math.round(fact.revenue).toLocaleString('ru-RU')} ₽. Средняя оплата
-            одного ребёнка — {fmtMoney2(result.pricePerClient)}
-            {isGroup && `, средняя наполняемость — ${result.clientsPerLesson} чел.`}
-            {fact.free_units > 0 && (
-              <>
-                {' '}Из {fact.units} посещений {fact.free_units} без списания
-                (отработки, бонусы) — они тянут среднюю вниз: по платным было бы{' '}
-                {fmtMoney2(fact.avg_price_paid)}.
-              </>
+          <div className="text-[11px] text-gray-500 border-t border-gray-100 pt-3 space-y-1.5 leading-relaxed">
+            <div>
+              Факт месяца: {fact.lessons} занятий, {fact.students} учеников,
+              списано {Math.round(fact.revenue).toLocaleString('ru-RU')} ₽. Средняя
+              оплата одного места — {fmtMoney2(result.pricePerClient)}
+              {isGroup &&
+                `, оплаченная наполняемость — ${result.clientsPerLesson} чел. (физически на занятии ${fact.avg_present_size})`}
+              .
+            </div>
+            {fact.missed_units > 0 && (
+              <div className="text-gray-500">
+                <b>Пропуски:</b> {fact.missed_units} из {fact.units} мест. Из них{' '}
+                <b>{fact.missed_charged}</b> списаны как неуважительные — принесли{' '}
+                {Math.round(fact.missed_charged_revenue).toLocaleString('ru-RU')} ₽ (
+                {fact.missed_revenue_share}% всей выручки)
+                {fact.missed_free > 0 && (
+                  <>
+                    , ещё <b>{fact.missed_free}</b> без списания (уважительные,
+                    отработки) — место занято, денег нет
+                  </>
+                )}
+                .
+              </div>
             )}
           </div>
         )}

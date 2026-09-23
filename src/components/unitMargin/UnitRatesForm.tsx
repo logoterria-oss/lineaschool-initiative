@@ -87,7 +87,7 @@ export default function UnitRatesForm({
             step={10}
             hint={
               fact
-                ? `Факт CRM: ${fmtMoney2(fact.individual.avg_price)} — ${fact.individual.revenue.toLocaleString('ru-RU')} ₽ ÷ ${fact.individual.units} зан.`
+                ? `Факт CRM: ${fmtMoney2(fact.individual.avg_price)} — ${fact.individual.revenue.toLocaleString('ru-RU')} ₽ ÷ ${fact.individual.paid_units} оплаченных занятий`
                 : undefined
             }
           />
@@ -108,14 +108,14 @@ export default function UnitRatesForm({
             Групповое занятие
           </div>
           <Num
-            label="Средняя оплата одного ребёнка"
+            label="Средняя оплата одного места"
             value={inputs.group.price}
             onChange={(v) => side('group', { price: v })}
             suffix="₽"
             step={10}
             hint={
               fact
-                ? `Факт CRM: ${fmtMoney2(fact.group.avg_price)} — ${fact.group.revenue.toLocaleString('ru-RU')} ₽ ÷ ${fact.group.units} посещений`
+                ? `Факт CRM: ${fmtMoney2(fact.group.avg_price)} — ${fact.group.revenue.toLocaleString('ru-RU')} ₽ ÷ ${fact.group.paid_units} оплаченных мест`
                 : undefined
             }
           />
@@ -128,16 +128,23 @@ export default function UnitRatesForm({
               step={50}
             />
             <Num
-              label="Средняя наполняемость"
+              label="Оплаченных мест"
               value={inputs.group.groupSize}
               onChange={(v) => side('group', { groupSize: v })}
               suffix="чел."
               step={0.1}
+              hint={
+                fact
+                  ? `физически на занятии ${fact.group.avg_present_size} чел.`
+                  : undefined
+              }
             />
           </div>
           <p className="text-[11px] text-gray-500 leading-snug">
-            Выручка занятия = оплата одного ребёнка × наполняемость. Ставка
-            педагога за урок одна и не зависит от числа детей.
+            Выручка занятия = оплата места × число ОПЛАЧЕННЫХ мест. Прогул без
+            уважительной причины CRM списывает — он оплачен и место считается.
+            Отработки и уважительные пропуски денег не приносят. Ставка педагога
+            за урок одна и не зависит от числа детей.
           </p>
         </div>
       </div>

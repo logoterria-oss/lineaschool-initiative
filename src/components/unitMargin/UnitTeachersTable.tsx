@@ -50,13 +50,23 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {rows.map((t) => {
-                const indPrice = t.individual_units
-                  ? t.individual_revenue / t.individual_units
+                // Средняя цена — по ОПЛАЧЕННЫМ местам: бесплатные отработки
+                // выручки не дают и среднюю занижать не должны.
+                const indPrice = t.individual_paid_units
+                  ? t.individual_revenue / t.individual_paid_units
                   : 0;
-                const grPrice = t.group_units ? t.group_revenue / t.group_units : 0;
+                const grPrice = t.group_paid_units
+                  ? t.group_revenue / t.group_paid_units
+                  : 0;
                 const ind = calcUnit(
                   'individual',
-                  { ...inputs.individual, price: indPrice },
+                  {
+                    ...inputs.individual,
+                    price: indPrice,
+                    groupSize: t.individual_lessons
+                      ? t.individual_paid_units / t.individual_lessons
+                      : 1,
+                  },
                   inputs.rates,
                 );
                 const gr = calcUnit(
@@ -81,8 +91,15 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
                       {t.individual_units ? fmtPercent(ind.marginPercent) : '—'}
                     </td>
                     <td className="py-2 px-3 text-right">{t.group_lessons || '—'}</td>
-                    <td className="py-2 px-3 text-right">
-                      {t.group_lessons ? `${t.avg_group_size} чел.` : '—'}
+                    <td
+                      className="py-2 px-3 text-right"
+                      title={
+                        t.group_lessons
+                          ? `физически на занятии ${t.avg_present_size} чел.`
+                          : undefined
+                      }
+                    >
+                      {t.group_lessons ? `${t.avg_group_size} опл.` : '—'}
                     </td>
                     <td className="py-2 px-3 text-right">
                       {t.group_units ? fmtMoney2(gr.revenue) : '—'}

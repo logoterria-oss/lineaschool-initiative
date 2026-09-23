@@ -79,6 +79,10 @@ export default function UnitMarginReport() {
   /**
    * Подставляет в форму цены и наполняемость из факта месяца.
    * Ставки педагогов при этом не трогаем: они из пресета, а не из CRM.
+   *
+   * Наполняемость берём ОПЛАЧЕННУЮ (paid_units ÷ lessons). У индивидуальных
+   * она бывает меньше единицы: если занятие провели, а списания не было
+   * (отработка, уважительный пропуск) — расход есть, выручки нет.
    */
   const applyFact = useCallback((data: UnitFact, p: Partial<UnitMarginInputs> | null) => {
     setInputs((prev) => ({
@@ -87,7 +91,7 @@ export default function UnitMarginReport() {
         ...prev.individual,
         rate: p?.individual?.rate ?? prev.individual.rate,
         price: data.individual.avg_price,
-        groupSize: 1,
+        groupSize: data.individual.avg_group_size || 1,
       },
       group: {
         ...prev.group,
