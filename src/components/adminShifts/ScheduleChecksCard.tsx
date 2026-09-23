@@ -16,7 +16,6 @@ interface Props {
   marks: Record<string, MarkState>;
   readOnly?: boolean;
   onMark: (key: string, p: MarkState) => void;
-  onReload: () => void;
 }
 
 const fmtShort = (d: string) =>
@@ -41,8 +40,9 @@ const findingNote = (f: ScheduleFinding): string => {
 
 /**
  * Пункт 1 чек-листа: четыре проверки по AlfaCRM.
- * Запрос в CRM тяжёлый, поэтому идёт только по кнопке «Проверить в CRM».
- * Пустая проверка — «нет» и зелёная галка, находки — список с галочками.
+ * Запрос в CRM тяжёлый, поэтому идёт только по общей кнопке «Проверить в CRM»
+ * в шапке чек-листа. Пустая проверка — «нет» и зелёная галка,
+ * находки — список с галочками.
  */
 const ScheduleChecksCard = ({
   num,
@@ -56,7 +56,6 @@ const ScheduleChecksCard = ({
   marks,
   readOnly,
   onMark,
-  onReload,
 }: Props) => (
   <div
     className={`rounded-xl border px-3 py-2.5 transition-colors ${
@@ -73,32 +72,20 @@ const ScheduleChecksCard = ({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-2">
-          <div
-            className={`text-sm leading-snug flex-1 ${
-              checked && allDone && !failed ? 'text-gray-500' : 'text-gray-900'
-            }`}
-          >
-            <span className="text-gray-400 mr-1.5">{num}.</span>
-            {title}
-          </div>
-          {!readOnly && (
-            <button
-              onClick={onReload}
-              disabled={loading}
-              className="shrink-0 flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-600 hover:border-gray-300 hover:text-gray-900 disabled:opacity-50"
-              title="Запросить данные из AlfaCRM"
-            >
-              <Icon name="RefreshCw" size={13} className={loading ? 'animate-spin' : ''} />
-              {loading ? 'Смотрим CRM…' : checked ? 'Проверить заново' : 'Проверить в CRM'}
-            </button>
-          )}
+        <div
+          className={`text-sm leading-snug ${
+            checked && allDone && !failed ? 'text-gray-500' : 'text-gray-900'
+          }`}
+        >
+          <span className="text-gray-400 mr-1.5">{num}.</span>
+          {title}
         </div>
+
+        {loading && <div className="mt-2 text-[11px] text-gray-400">Смотрим CRM…</div>}
 
         {!checked && !loading && !failed && (
           <div className="mt-2 text-[11px] text-gray-400">
-            Данные из CRM не запрашивались. Нажмите «Проверить в CRM» — посмотрим незакрытые
-            занятия, неоплаченные, накладки и малые группы.
+            Данные из CRM не запрашивались — нажмите «Проверить в CRM» вверху.
           </div>
         )}
 

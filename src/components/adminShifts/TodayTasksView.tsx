@@ -40,7 +40,29 @@ const TodayTasksView = () => {
               Выполнено {doneCount} из {total}
             </div>
           </div>
-          <div className="ml-auto text-2xl font-bold text-green-600">{progress}%</div>
+
+          <div className="ml-auto flex items-center gap-3">
+            {/* Одна кнопка на весь чек-лист: запросы в CRM тяжёлые,
+                поэтому ходим туда только по нажатию и сразу по всем пунктам */}
+            <button
+              onClick={schedule.reload}
+              disabled={schedule.loading}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+              title="Запросить данные из AlfaCRM"
+            >
+              <Icon
+                name="RefreshCw"
+                size={14}
+                className={schedule.loading ? 'animate-spin' : ''}
+              />
+              {schedule.loading
+                ? 'Смотрим CRM…'
+                : schedule.checked
+                  ? 'Проверить заново'
+                  : 'Проверить в CRM'}
+            </button>
+            <div className="text-2xl font-bold text-green-600">{progress}%</div>
+          </div>
         </div>
         <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
           <div
@@ -100,7 +122,6 @@ const TodayTasksView = () => {
                     allDone={schedule.allDone}
                     marks={marks}
                     onMark={setMark}
-                    onReload={schedule.reload}
                   />
                 );
               }
