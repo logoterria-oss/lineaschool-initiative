@@ -10,6 +10,8 @@ interface Props {
   yesterday: string;
   loading: boolean;
   failed: boolean;
+  /** Проверку в CRM уже запускали — есть результат */
+  checked: boolean;
   allDone: boolean;
   marks: Record<string, MarkState>;
   readOnly?: boolean;
@@ -38,7 +40,8 @@ const findingNote = (f: ScheduleFinding): string => {
 };
 
 /**
- * Пункт 1 чек-листа: четыре автопроверки по AlfaCRM.
+ * Пункт 1 чек-листа: четыре проверки по AlfaCRM.
+ * Запрос в CRM тяжёлый, поэтому идёт только по кнопке «Проверить в CRM».
  * Пустая проверка — «нет» и зелёная галка, находки — список с галочками.
  */
 const ScheduleChecksCard = ({
@@ -48,6 +51,7 @@ const ScheduleChecksCard = ({
   yesterday,
   loading,
   failed,
+  checked,
   allDone,
   marks,
   readOnly,
@@ -56,45 +60,55 @@ const ScheduleChecksCard = ({
 }: Props) => (
   <div
     className={`rounded-xl border px-3 py-2.5 transition-colors ${
-      allDone && !failed ? 'border-green-200 bg-green-50/60' : 'border-gray-200 bg-white'
+      checked && allDone && !failed ? 'border-green-200 bg-green-50/60' : 'border-gray-200 bg-white'
     }`}
   >
     <div className="flex items-start gap-2.5">
       <div
-        className={`mt-0.5 shrink-0 ${allDone && !failed ? 'text-green-600' : 'text-gray-300'}`}
+        className={`mt-0.5 shrink-0 ${
+          checked && allDone && !failed ? 'text-green-600' : 'text-gray-300'
+        }`}
       >
-        <Icon name={allDone && !failed ? 'CircleCheck' : 'Circle'} size={20} />
+        <Icon name={checked && allDone && !failed ? 'CircleCheck' : 'Circle'} size={20} />
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
           <div
             className={`text-sm leading-snug flex-1 ${
-              allDone && !failed ? 'text-gray-500' : 'text-gray-900'
+              checked && allDone && !failed ? 'text-gray-500' : 'text-gray-900'
             }`}
           >
             <span className="text-gray-400 mr-1.5">{num}.</span>
             {title}
           </div>
-          <button
-            onClick={onReload}
-            disabled={loading}
-            className="shrink-0 text-gray-300 hover:text-gray-500 disabled:opacity-50"
-            title="Проверить в CRM заново"
-          >
-            <Icon name="RefreshCw" size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          {!readOnly && (
+            <button
+              onClick={onReload}
+              disabled={loading}
+              className="shrink-0 flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-600 hover:border-gray-300 hover:text-gray-900 disabled:opacity-50"
+              title="Запросить данные из AlfaCRM"
+            >
+              <Icon name="RefreshCw" size={13} className={loading ? 'animate-spin' : ''} />
+              {loading ? 'Смотрим CRM…' : checked ? 'Проверить заново' : 'Проверить в CRM'}
+            </button>
+          )}
         </div>
 
-        {loading && <div className="mt-2 text-[11px] text-gray-400">Смотрим CRM…</div>}
-
-        {failed && !loading && (
-          <div className="mt-2 text-[11px] text-red-500">
-            CRM не ответила — проверьте расписание вручную и нажмите обновление.
+        {!checked && !loading && !failed && (
+          <div className="mt-2 text-[11px] text-gray-400">
+            Данные из CRM не запрашивались. Нажмите «Проверить в CRM» — посмотрим незакрытые
+            занятия, неоплаченные, накладки и малые группы.
           </div>
         )}
 
-        {!loading && !failed && (
+        {failed && !loading && (
+          <div className="mt-2 text-[11px] text-red-500">
+            CRM не ответила — проверьте расписание вручную или нажмите кнопку ещё раз.
+          </div>
+        )}
+
+        {checked && !loading && (
           <div className="mt-2 space-y-2">
             {sections.map((s) => (
               <div key={s.key} className="rounded-lg border border-gray-200 bg-gray-50/70 px-2.5 py-2">

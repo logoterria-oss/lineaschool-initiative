@@ -96,6 +96,7 @@ const TodayTasksView = () => {
                     yesterday={schedule.yesterday}
                     loading={schedule.loading}
                     failed={schedule.failed}
+                    checked={schedule.checked}
                     allDone={schedule.allDone}
                     marks={marks}
                     onMark={setMark}

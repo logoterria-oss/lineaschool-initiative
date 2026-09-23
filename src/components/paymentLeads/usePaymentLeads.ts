@@ -24,8 +24,8 @@ export function usePaymentLeads(forceHead = false) {
   const [unblockingId, setUnblockingId] = useState<number | null>(null);
 
   useEffect(() => {
-    // При открытии страницы — сначала тихо синхронизируем, потом загружаем список
-    fetch(SYNC_URL).catch(() => {});
+    // При открытии страницы только читаем из базы. Синхронизация с почтой банка —
+    // тяжёлая операция, запускаем её вручную кнопкой «Синхронизировать».
     fetchLeads();
     fetchBlocked();
   }, []);
