@@ -6,7 +6,51 @@ export interface ChecklistItem {
   title: string;
   place: string;
   block: ChecklistBlock;
+  /** Пункт проверяется автоматически по CRM — рисуем его отдельной карточкой */
+  auto?: 'schedule';
 }
+
+/** Ключи автопроверок расписания (пункт 1) — как их отдаёт бэкенд */
+export type ScheduleCheckKey = 'm1a' | 'm1b' | 'm1c' | 'm1d';
+
+export interface ScheduleCheckMeta {
+  key: ScheduleCheckKey;
+  letter: string;
+  title: string;
+  /** Что пишем, когда CRM ничего не нашла */
+  empty: string;
+}
+
+/**
+ * Подразделы пункта 1. Каждый — отдельный поиск по AlfaCRM:
+ * пусто → «нет» и зелёная галка, есть находки → список с галочками.
+ */
+export const SCHEDULE_CHECKS: ScheduleCheckMeta[] = [
+  {
+    key: 'm1a',
+    letter: 'а',
+    title: 'Не проведённые уроки за вчера (нет статуса «проведено»)',
+    empty: 'Нет — все вчерашние уроки проведены',
+  },
+  {
+    key: 'm1b',
+    letter: 'б',
+    title: 'Неоплаченные занятия сегодня',
+    empty: 'Нет — все сегодняшние занятия оплачены',
+  },
+  {
+    key: 'm1c',
+    letter: 'в',
+    title: 'Наслоения в расписании: два урока у педагога в одно время',
+    empty: 'Нет — наслоений у педагогов не найдено',
+  },
+  {
+    key: 'm1d',
+    letter: 'г',
+    title: 'Группы, где осталось меньше 3 учеников (без отменивших)',
+    empty: 'Нет — во всех группах 3 и больше учеников',
+  },
+];
 
 export const BLOCK_TITLES: Record<ChecklistBlock, string> = {
   morning: 'Утро — до 10:00 по Москве',
@@ -24,9 +68,10 @@ export const CHECKLIST: ChecklistItem[] = [
   {
     key: 'm1',
     num: 1,
-    title: 'Проверить расписание на сегодня: нет ли наслоений, конфликтов, неоплаченных занятий',
-    place: 'AlfaCRM',
+    title: 'Проверить расписание: непроведённые уроки, оплаты, наслоения, наполняемость групп',
+    place: 'AlfaCRM — проверки идут автоматически',
     block: 'morning',
+    auto: 'schedule',
   },
   {
     key: 'm2',

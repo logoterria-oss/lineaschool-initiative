@@ -1,6 +1,8 @@
 import Icon from '@/components/ui/icon';
 import { BLOCK_TITLES, ChecklistBlock } from '@/lib/shiftChecklist';
 import ChecklistRow from './ChecklistRow';
+import ScheduleChecksCard from './ScheduleChecksCard';
+import { useScheduleChecks } from './useScheduleChecks';
 import { useShiftChecklist } from './useShiftChecklist';
 
 const BLOCK_ICONS: Record<ChecklistBlock, string> = {
@@ -20,6 +22,7 @@ const fmtDate = (d: string) =>
 /** Чек-лист администратора на сегодня: галочки, комментарии и задачи руководителя */
 const TodayTasksView = () => {
   const { date, blocks, marks, headTasks, loading, doneCount, total, setMark } = useShiftChecklist();
+  const schedule = useScheduleChecks(date, marks, setMark);
 
   if (loading) return <div className="text-sm text-gray-400">Загружаем чек-лист…</div>;
 
@@ -83,6 +86,23 @@ const TodayTasksView = () => {
           <div className="space-y-2">
             {items.map((i) => {
               const m = marks[i.key] || { done: false, comment: '' };
+              if (i.auto === 'schedule') {
+                return (
+                  <ScheduleChecksCard
+                    key={i.key}
+                    num={i.num}
+                    title={i.title}
+                    sections={schedule.sections}
+                    yesterday={schedule.yesterday}
+                    loading={schedule.loading}
+                    failed={schedule.failed}
+                    allDone={schedule.allDone}
+                    marks={marks}
+                    onMark={setMark}
+                    onReload={schedule.reload}
+                  />
+                );
+              }
               return (
                 <ChecklistRow
                   key={i.key}

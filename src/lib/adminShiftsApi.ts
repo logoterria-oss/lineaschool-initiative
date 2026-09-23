@@ -138,6 +138,41 @@ export async function saveChecklistMark(p: {
   return !!data.ok;
 }
 
+const CRM_CHECK_URL = 'https://functions.poehali.dev/6b8a2577-f2c1-45d7-8744-50df279f10e2';
+
+/** Одна находка автопроверки расписания: ученик, группа или пара уроков */
+export interface ScheduleFinding {
+  id: number | string;
+  /** Подпись строки: ФИО ученика как в CRM, группа или описание наслоения */
+  name?: string;
+  title?: string;
+  time?: string;
+  teacher?: string;
+  form?: string;
+  balance?: number;
+  paid_left?: number;
+  students?: string[];
+  cancelled?: string[];
+}
+
+export interface ScheduleChecks {
+  date: string;
+  yesterday: string;
+  checks: Record<string, ScheduleFinding[]>;
+}
+
+/**
+ * Автопроверки расписания по AlfaCRM для пункта 1 чек-листа:
+ * непроведённые уроки за вчера, неоплаченные занятия, наслоения, малые группы.
+ */
+export async function fetchScheduleChecks(date: string): Promise<ScheduleChecks | null> {
+  const r = await fetch(`${CRM_CHECK_URL}?date=${date}`, { headers: authHeaders() });
+  if (!r.ok) return null;
+  const data = await r.json().catch(() => null);
+  if (!data || !data.ok) return null;
+  return { date: data.date, yesterday: data.yesterday, checks: data.checks || {} };
+}
+
 /** Администратор, который прямо сейчас на смене */
 export interface OnShiftAdmin {
   staff_id: number;
