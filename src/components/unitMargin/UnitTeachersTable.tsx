@@ -9,9 +9,9 @@ interface Props {
 }
 
 /**
- * Разрез по педагогам: у каждого своя средняя цена урока и свой средний
- * размер группы, поэтому и маржинальность разная. Ставки берём общие —
- * видно, кто из педагогов «дешевле» школе за счёт полных групп.
+ * Разрез по педагогам: у каждого своя средняя оплата ребёнка и своя
+ * наполняемость групп, поэтому и маржа занятия разная. Ставки берём общие —
+ * видно, кто приносит больше за счёт полных групп.
  */
 export default function UnitTeachersTable({ teachers, inputs }: Props) {
   const [open, setOpen] = useState(false);
@@ -42,9 +42,9 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
                 <th className="py-2 px-3 font-medium text-right">Инд. уроков</th>
                 <th className="py-2 px-3 font-medium text-right">Ср. цена инд.</th>
                 <th className="py-2 px-3 font-medium text-right">Маржа инд.</th>
-                <th className="py-2 px-3 font-medium text-right">Гр. уроков</th>
-                <th className="py-2 px-3 font-medium text-right">Ср. группа</th>
-                <th className="py-2 px-3 font-medium text-right">Ср. цена гр.</th>
+                <th className="py-2 px-3 font-medium text-right">Гр. занятий</th>
+                <th className="py-2 px-3 font-medium text-right">Наполн.</th>
+                <th className="py-2 px-3 font-medium text-right">Выручка занятия</th>
                 <th className="py-2 pl-3 font-medium text-right">Маржа гр.</th>
               </tr>
             </thead>
@@ -85,7 +85,7 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
                       {t.group_lessons ? `${t.avg_group_size} чел.` : '—'}
                     </td>
                     <td className="py-2 px-3 text-right">
-                      {t.group_units ? fmtMoney2(grPrice) : '—'}
+                      {t.group_units ? fmtMoney2(gr.revenue) : '—'}
                     </td>
                     <td className={`py-2 pl-3 text-right font-medium ${t.group_units ? tone(gr.margin) : ''}`}>
                       {t.group_units ? fmtPercent(gr.marginPercent) : '—'}
@@ -96,8 +96,9 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
             </tbody>
           </table>
           <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">
-            Ставки педагога взяты общие из формы — таблица показывает, как на
-            маржинальность влияют цена урока и наполняемость группы.
+            Ставки педагога взяты общие из формы. Выручка группового занятия —
+            средняя оплата ребёнка × фактическая наполняемость у этого педагога:
+            чем полнее группа, тем выше маржа с того же часа работы.
           </p>
         </div>
       )}

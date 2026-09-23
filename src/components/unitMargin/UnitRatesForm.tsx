@@ -105,10 +105,10 @@ export default function UnitRatesForm({
         <div className="rounded-lg border border-violet-100 bg-violet-50/40 p-4 space-y-3">
           <div className="flex items-center gap-1.5 text-sm font-semibold text-violet-900">
             <Icon name="Users" size={15} />
-            Групповое занятие (на 1 человека)
+            Групповое занятие
           </div>
           <Num
-            label="Средняя цена урока с человека"
+            label="Средняя оплата одного ребёнка"
             value={inputs.group.price}
             onChange={(v) => side('group', { price: v })}
             suffix="₽"
@@ -128,7 +128,7 @@ export default function UnitRatesForm({
               step={50}
             />
             <Num
-              label="Средний размер группы"
+              label="Средняя наполняемость"
               value={inputs.group.groupSize}
               onChange={(v) => side('group', { groupSize: v })}
               suffix="чел."
@@ -136,8 +136,8 @@ export default function UnitRatesForm({
             />
           </div>
           <p className="text-[11px] text-gray-500 leading-snug">
-            Час групповой работы делится между детьми: себестоимость одного
-            ребёнка — ставка ÷ размер группы.
+            Выручка занятия = оплата одного ребёнка × наполняемость. Ставка
+            педагога за урок одна и не зависит от числа детей.
           </p>
         </div>
       </div>

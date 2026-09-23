@@ -11,22 +11,23 @@ interface Props {
 const TITLES: Record<string, { title: string; sub: string; icon: string; accent: string }> = {
   individual: {
     title: 'Индивидуальное занятие',
-    sub: 'юнит = один клиент на уроке (он же весь урок)',
+    sub: 'юнит — одно проведённое занятие',
     icon: 'User',
     accent: 'blue',
   },
   group: {
     title: 'Групповое занятие',
-    sub: 'юнит = один клиент на уроке, не весь урок',
+    sub: 'юнит — одно проведённое занятие со всей группой',
     icon: 'Users',
     accent: 'violet',
   },
 };
 
-/** Карточка экономики одного юнита: цена, расходы, маржа. */
+/** Карточка экономики одного ЗАНЯТИЯ: выручка, расходы, маржа. */
 export default function UnitResultCard({ result, fact, showFormula }: Props) {
   const meta = TITLES[result.form];
   const positive = result.margin >= 0;
+  const isGroup = result.form === 'group';
   const accent = meta.accent === 'blue'
     ? 'border-blue-200 bg-blue-50/50 text-blue-900'
     : 'border-violet-200 bg-violet-50/50 text-violet-900';
@@ -45,7 +46,7 @@ export default function UnitResultCard({ result, fact, showFormula }: Props) {
         {/* Главная цифра */}
         <div className="flex items-baseline justify-between gap-3">
           <div>
-            <div className="text-xs text-gray-500">Маржинальность урока</div>
+            <div className="text-xs text-gray-500">Маржинальность занятия</div>
             <div
               className={`text-3xl font-bold ${positive ? 'text-emerald-600' : 'text-red-600'}`}
             >
@@ -53,7 +54,7 @@ export default function UnitResultCard({ result, fact, showFormula }: Props) {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-gray-500">Маржа с урока</div>
+            <div className="text-xs text-gray-500">Маржа с занятия</div>
             <div
               className={`text-xl font-bold ${positive ? 'text-emerald-600' : 'text-red-600'}`}
             >
@@ -64,9 +65,22 @@ export default function UnitResultCard({ result, fact, showFormula }: Props) {
 
         {/* Разбор */}
         <div className="space-y-1.5 text-sm font-mono text-gray-700 border-t border-gray-100 pt-3">
-          <div className="flex justify-between font-semibold text-gray-900">
-            <span>Цена урока</span>
-            <span>{fmtMoney2(result.price)}</span>
+          <div>
+            <div className="flex justify-between font-semibold text-gray-900">
+              <span>Выручка занятия</span>
+              <span>{fmtMoney2(result.revenue)}</span>
+            </div>
+            {showFormula && (
+              <div className="text-[11px] text-gray-400 pl-3.5">
+                {result.revenueFormula}
+              </div>
+            )}
+            {showFormula && isGroup && (
+              <div className="text-[11px] text-gray-400 pl-3.5 italic font-sans">
+                Платит каждый ребёнок группы — чем полнее группа, тем больше
+                выручка с того же занятия
+              </div>
+            )}
           </div>
           {result.costRows.map((r, i) => (
             <div key={`${r.label}-${i}`}>
@@ -117,18 +131,30 @@ export default function UnitResultCard({ result, fact, showFormula }: Props) {
         {/* Служебные показатели */}
         <div className="grid grid-cols-2 gap-3 pt-1">
           <div className="rounded-lg bg-gray-50 p-3">
-            <div className="text-[11px] text-gray-500">Безубыточная цена</div>
+            <div className="text-[11px] text-gray-500">
+              {isGroup ? 'Нужно детей на занятии' : 'Безубыточная цена'}
+            </div>
             <div className="text-sm font-semibold text-gray-900 mt-0.5">
-              {fmtMoney2(result.breakEvenPrice)}
+              {isGroup
+                ? `${result.breakEvenClients} чел.`
+                : fmtMoney2(result.breakEvenRevenue)}
             </div>
             <div className="text-[11px] text-gray-400 mt-0.5">
-              {result.price >= result.breakEvenPrice
-                ? `запас ${fmtMoney2(result.price - result.breakEvenPrice)}`
-                : `не хватает ${fmtMoney2(result.breakEvenPrice - result.price)}`}
+              {isGroup
+                ? result.clientsPerLesson >= result.breakEvenClients
+                  ? `сейчас ${result.clientsPerLesson} — запас ${(
+                      result.clientsPerLesson - result.breakEvenClients
+                    ).toFixed(2)}`
+                  : `сейчас ${result.clientsPerLesson} — не хватает ${(
+                      result.breakEvenClients - result.clientsPerLesson
+                    ).toFixed(2)}`
+                : result.revenue >= result.breakEvenRevenue
+                  ? `запас ${fmtMoney2(result.revenue - result.breakEvenRevenue)}`
+                  : `не хватает ${fmtMoney2(result.breakEvenRevenue - result.revenue)}`}
             </div>
           </div>
           <div className="rounded-lg bg-gray-50 p-3">
-            <div className="text-[11px] text-gray-500">Фонд оплаты труда в цене</div>
+            <div className="text-[11px] text-gray-500">Фонд оплаты труда в выручке</div>
             <div className="text-sm font-semibold text-gray-900 mt-0.5">
               {fmtPercent(result.payrollShare)}
             </div>
@@ -141,13 +167,16 @@ export default function UnitResultCard({ result, fact, showFormula }: Props) {
         {/* Факт месяца */}
         {fact && (
           <div className="text-[11px] text-gray-500 border-t border-gray-100 pt-3 leading-relaxed">
-            Факт месяца: {fact.lessons} занятий, {fact.units} оплачиваемых единиц,{' '}
+            Факт месяца: {fact.lessons} занятий,{' '}
+            {isGroup && `${fact.units} посещений, `}
             {fact.students} учеников, списано{' '}
-            {Math.round(fact.revenue).toLocaleString('ru-RU')} ₽.
+            {Math.round(fact.revenue).toLocaleString('ru-RU')} ₽. Средняя оплата
+            одного ребёнка — {fmtMoney2(result.pricePerClient)}
+            {isGroup && `, средняя наполняемость — ${result.clientsPerLesson} чел.`}
             {fact.free_units > 0 && (
               <>
-                {' '}Из них {fact.free_units} без списания (отработки, бонусы) — они
-                тянут среднюю цену вниз: по платным средняя{' '}
+                {' '}Из {fact.units} посещений {fact.free_units} без списания
+                (отработки, бонусы) — они тянут среднюю вниз: по платным было бы{' '}
                 {fmtMoney2(fact.avg_price_paid)}.
               </>
             )}

@@ -7,15 +7,20 @@
  * Единственный юнит, который одинаково устроен в любом месяце, — ОДИН
  * ПРОВЕДЁННЫЙ УРОК. Его и считаем.
  *
- * Два юнита считаем параллельно и независимо:
- *   • ИНДИВИДУАЛЬНЫЙ урок — один ребёнок, одна оплата, одна ставка педагога;
- *   • ГРУППОВОЙ урок В РАСЧЁТЕ НА ОДНОГО ЧЕЛОВЕКА — ребёнок платит за себя,
- *     а час работы педагога делится между всеми детьми в группе. Поэтому
- *     себестоимость группового юнита = ставка ÷ средний размер группы.
+ * ЮНИТ — ЗАНЯТИЕ ЦЕЛИКОМ, НЕ КЛИЕНТ.
+ * Это принципиально. Школа продаёт не «место в группе», а ставит в
+ * расписание урок: педагогу платят один раз за проведённое занятие,
+ * независимо от того, пришло на него 3 ребёнка или 5.
+ *   • ИНДИВИДУАЛЬНОЕ занятие: выручка — оплата одного ребёнка,
+ *     расход — ставка педагога целиком.
+ *   • ГРУППОВОЕ занятие: выручка — сумма оплат ВСЕХ детей группы
+ *     (средняя цена × средняя наполняемость), расход — та же одна ставка.
+ * Поэтому наполняемость группы бьёт по выручке занятия, а не «размазывает»
+ * зарплату по ученикам: пустая группа — та же ставка, но меньше денег.
  *
- * Выручка юнита берётся из факта CRM: сумма списаний за месяц ÷ число
- * списаний. Никаких прайсов и допущений — сколько реально списали, столько
- * и заработали.
+ * Средние цены берём из факта CRM: сумма списаний за месяц ÷ число
+ * списаний. Никаких прайсов и допущений — сколько реально списали,
+ * столько и заработали.
  *
  * ПОСТОЯННЫХ РАСХОДОВ ЗДЕСЬ НЕТ. Маржинальность по определению считается
  * только на переменных затратах — тех, что возникают ровно потому, что урок
@@ -44,11 +49,11 @@ export interface UnitRates {
 
 /** Параметры одной формы занятий. */
 export interface UnitSide {
-  /** Средняя цена юнита из CRM, ₽ (можно поправить руками). */
+  /** Средняя цена, которую платит ОДИН ребёнок за занятие, ₽ (из CRM). */
   price: number;
-  /** Ставка педагога за проведённый урок, ₽. */
+  /** Ставка педагога за проведённый урок, ₽ — платится один раз за занятие. */
   rate: number;
-  /** Средний размер группы. Для индивидуальных всегда 1. */
+  /** Средняя наполняемость занятия. Для индивидуальных всегда 1. */
   groupSize: number;
 }
 
@@ -57,8 +62,6 @@ export interface UnitMarginInputs {
   individual: UnitSide;
   group: UnitSide;
   rates: UnitRates;
-  /** Постоянные расходы школы за месяц — нужны только для точки безубыточности. */
-  fixed?: FixedLine[];
 }
 
 export interface CalcRow {
@@ -71,32 +74,36 @@ export interface CalcRow {
 
 export interface UnitMarginResult {
   form: LessonForm;
-  /** Сколько клиентов приходится на одно занятие (для индивидуального — 1). */
+  /** Средняя наполняемость занятия (для индивидуального — 1). */
   clientsPerLesson: number;
-  /** Выручка с одного КЛИЕНТА. */
-  price: number;
-  /** Разбор переменных расходов на одного клиента. */
+  /** Средняя цена, которую платит один ребёнок. Справочно. */
+  pricePerClient: number;
+
+  /** ВЫРУЧКА ЗАНЯТИЯ: цена × наполняемость. */
+  revenue: number;
+  revenueFormula: string;
+
+  /** Разбор переменных расходов НА ЗАНЯТИЕ. */
   costRows: CalcRow[];
   costTotal: number;
-  /** Маржинальная прибыль с одного КЛИЕНТА: цена − переменные расходы. */
+
+  /** Маржинальная прибыль С ЗАНЯТИЯ: выручка − переменные расходы. */
   margin: number;
-  /** Маржинальность, %. Одинакова и на клиента, и на занятие целиком. */
+  /** Маржинальность занятия, %. */
   marginPercent: number;
-  /** Налог УСН с одного клиента (0, если выключен). */
+
+  /** Налог УСН с занятия (0, если выключен). */
   tax: number;
-  /** Прибыль с клиента после налога. */
+  /** Прибыль с занятия после налога. */
   profit: number;
   profitPercent: number;
-  /** Ниже этой цены занятие уходит в минус. */
-  breakEvenPrice: number;
-  /** Доля зарплаты педагога (с взносами и отпускными) в цене, %. */
-  payrollShare: number;
 
-  /* Итоги на ВСЁ занятие целиком: у группы это сумма по всем детям,
-     у индивидуального совпадает с показателями на клиента. */
-  lessonRevenue: number;
-  lessonCost: number;
-  lessonMargin: number;
+  /** Минимальная выручка занятия, ниже которой оно убыточно. */
+  breakEvenRevenue: number;
+  /** Сколько детей должно быть на занятии, чтобы выйти в ноль. */
+  breakEvenClients: number;
+  /** Доля зарплаты педагога (с взносами и отпускными) в выручке занятия, %. */
+  payrollShare: number;
 }
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
@@ -122,25 +129,31 @@ export function calcUnit(
   side: UnitSide,
   rates: UnitRates,
 ): UnitMarginResult {
-  const price = safe(side.price);
+  const pricePerClient = safe(side.price);
   const rate = safe(side.rate);
-  const size = form === 'group' ? Math.max(1, safe(side.groupSize) || 1) : 1;
+  // Наполняемость занятия. У индивидуального ребёнок всегда один.
+  const size = form === 'group' ? Math.max(0, safe(side.groupSize)) : 1;
+
+  // ВЫРУЧКА ЗАНЯТИЯ — платит каждый пришедший ребёнок.
+  const revenue = pricePerClient * size;
+  const revenueFormula =
+    form === 'group'
+      ? `${fmtMoney2(pricePerClient)} × ${round2(size)} чел. = ${fmtMoney2(revenue)}`
+      : `${fmtMoney2(pricePerClient)} за занятие`;
 
   const costRows: CalcRow[] = [];
 
-  // 1. Зарплата педагога в пересчёте на одного клиента.
-  const salary = rate / size;
+  // 1. Зарплата педагога — одна ставка за проведённое занятие.
+  //    НЕ делим на детей: педагогу платят за урок, а не за человека.
+  const salary = rate;
   costRows.push({
     label: 'Зарплата педагога',
     value: salary,
-    formula:
-      form === 'group'
-        ? `${fmtMoney(rate)} ÷ ${round2(size)} чел. = ${fmtMoney2(salary)}`
-        : `${fmtMoney(rate)} за урок = ${fmtMoney2(salary)}`,
+    formula: `${fmtMoney(rate)} за проведённое занятие`,
     hint:
       form === 'group'
-        ? 'Час групповой работы делится между детьми в группе: ребёнок оплачивает свою долю'
-        : 'Индивидуальный урок педагог ведёт для одного ребёнка — ставка целиком',
+        ? 'Ставка за урок не зависит от числа детей в группе — платим один раз'
+        : 'Ставка за проведённое индивидуальное занятие',
   });
 
   // 2. Страховые взносы — начисляются сверх зарплаты.
@@ -162,48 +175,48 @@ export function calcUnit(
     hint: 'С каждого урока откладываем 1/8,1 начисленного педагогу',
   });
 
-  // 4. Эквайринг — процент с оплаты родителя.
-  const acquiring = price * (safe(rates.acquiringPercent) / 100);
+  // 4. Эквайринг — процент со всех оплат этого занятия.
+  const acquiring = revenue * (safe(rates.acquiringPercent) / 100);
   costRows.push({
     label: 'Интернет-эквайринг',
     value: acquiring,
-    formula: `${fmtMoney2(price)} × ${rates.acquiringPercent}% = ${fmtMoney2(acquiring)}`,
+    formula: `${fmtMoney2(revenue)} × ${rates.acquiringPercent}% = ${fmtMoney2(acquiring)}`,
     hint: 'Комиссия платёжного сервиса удерживается с каждой оплаты',
   });
 
   const costTotal = salary + sfr + vacation + acquiring;
-  const margin = price - costTotal;
+  const margin = revenue - costTotal;
 
-  const tax = rates.usnEnabled ? price * (safe(rates.usnPercent) / 100) : 0;
+  const tax = rates.usnEnabled ? revenue * (safe(rates.usnPercent) / 100) : 0;
   const profit = margin - tax;
 
-  // Точка безубыточности: при какой цене урок выходит в ноль.
-  // От цены зависят только эквайринг и налог, остальное фиксировано.
+  // Безубыточность занятия: при какой выручке маржа обнулится.
+  // От выручки зависят только эквайринг и налог, зарплата фиксирована.
   const variableRate =
     safe(rates.acquiringPercent) / 100 +
     (rates.usnEnabled ? safe(rates.usnPercent) / 100 : 0);
-  const fixedPart = salary + sfr + vacation;
-  const breakEvenPrice = 1 - variableRate > 0 ? fixedPart / (1 - variableRate) : 0;
+  const payroll = salary + sfr + vacation;
+  const breakEvenRevenue = 1 - variableRate > 0 ? payroll / (1 - variableRate) : 0;
+  // Сколько детей нужно на занятии при текущей цене.
+  const breakEvenClients =
+    pricePerClient > 0 ? breakEvenRevenue / pricePerClient : 0;
 
   return {
     form,
     clientsPerLesson: round2(size),
-    price: round2(price),
+    pricePerClient: round2(pricePerClient),
+    revenue: round2(revenue),
+    revenueFormula,
     costRows,
     costTotal: round2(costTotal),
     margin: round2(margin),
-    marginPercent: price > 0 ? round2((margin / price) * 100) : 0,
+    marginPercent: revenue > 0 ? round2((margin / revenue) * 100) : 0,
     tax: round2(tax),
     profit: round2(profit),
-    profitPercent: price > 0 ? round2((profit / price) * 100) : 0,
-    breakEvenPrice: round2(breakEvenPrice),
-    payrollShare: price > 0 ? round2(((salary + sfr + vacation) / price) * 100) : 0,
-    // Занятие целиком: платит каждый ребёнок, а ставку педагога школа
-    // отдаёт один раз за урок — поэтому в группе маржа с занятия кратно
-    // больше, чем с одного клиента.
-    lessonRevenue: round2(price * size),
-    lessonCost: round2(costTotal * size),
-    lessonMargin: round2(margin * size),
+    profitPercent: revenue > 0 ? round2((profit / revenue) * 100) : 0,
+    breakEvenRevenue: round2(breakEvenRevenue),
+    breakEvenClients: round2(breakEvenClients),
+    payrollShare: revenue > 0 ? round2((payroll / revenue) * 100) : 0,
   };
 }
 
@@ -216,154 +229,6 @@ export const calcAll = (input: UnitMarginInputs): UnitMarginResults => ({
   individual: calcUnit('individual', input.individual, input.rates),
   group: calcUnit('group', input.group, input.rates),
 });
-
-/* ------------------------------------------------------------------ *
- *  ТОЧКА БЕЗУБЫТОЧНОСТИ В УРОКАХ
- *
- *  Маржинальность отвечает на вопрос «сколько остаётся с урока».
- *  Безубыточность отвечает на другой: СКОЛЬКО ТАКИХ УРОКОВ НУЖНО ПРОВЕСТИ
- *  ЗА МЕСЯЦ, чтобы этих остатков хватило на всю постоянку школы.
- *
- *  Считаем на ЗАНЯТИЕ ЦЕЛИКОМ, а не на ученика: педагогу платят один раз
- *  за урок, а платят за него все дети группы. Вклад одного группового
- *  урока в покрытие постоянных = (цена с человека − переменные на
- *  человека − налог) × средний размер группы.
- *
- *  Строки «% от выручки» (РУО и т.п.) растут вместе с объёмом, поэтому
- *  они вычитаются из вклада урока, а не из фиксированной суммы:
- *      N = Фикс ÷ (Вклад урока − % × Выручка урока)
- * ------------------------------------------------------------------ */
-
-/** Строка постоянных расходов школы за месяц. */
-export interface FixedLine {
-  id: string;
-  label: string;
-  /** Сумма в месяц, ₽. */
-  amount: number;
-  /** Дополнительно процент от выручки школы (для РУО и подобных надбавок). */
-  percentOfRevenue?: number;
-  hint?: string;
-}
-
-export interface BreakEvenSide {
-  form: LessonForm;
-  /** Вклад одного ЗАНЯТИЯ в покрытие постоянных расходов, ₽. */
-  contributionPerLesson: number;
-  /** Занятий в месяц до нуля. Infinity — вклад не покрывает даже процентные расходы. */
-  lessonsPerMonth: number;
-  /** То же в неделю и в рабочий день (26 дней). */
-  lessonsPerWeek: number;
-  lessonsPerDay: number;
-  /** Выручка школы в точке безубыточности, ₽/мес. */
-  revenueAtBreakEven: number;
-  /** Сколько ученико-мест это значит: занятий × размер группы. */
-  seatsPerMonth: number;
-  formula: string;
-}
-
-export interface BreakEvenResult {
-  /** Постоянные расходы, фиксированная часть, ₽/мес. */
-  fixedTotal: number;
-  /** Суммарный процент от выручки по строкам постоянных, %. */
-  fixedPercentOfRevenue: number;
-  /** Сценарий «только групповые» и «только индивидуальные». */
-  group: BreakEvenSide;
-  individual: BreakEvenSide;
-  /** Сколько индивидуальных уроков уже есть (факт месяца) — вход в смешанный сценарий. */
-  individualLessonsFact: number;
-  /** Сколько групповых нужно сверх этого факта индивидуальных. */
-  groupLessonsWithIndividual: number;
-  /** Сколько групповых уже провели по факту. */
-  groupLessonsFact: number;
-  /** Разрыв: факт минус норма (отрицательный — не дотягиваем). */
-  groupGap: number;
-}
-
-/** Рабочих дней в месяце для пересчёта «уроков в день». */
-export const WORK_DAYS_IN_MONTH = 26;
-/** Недель в месяце: 365 ÷ 12 ÷ 7. */
-export const WEEKS_IN_MONTH = 4.33;
-
-const sideBreakEven = (
-  r: UnitMarginResult,
-  fixedBase: number,
-  percentOfRevenue: number,
-): BreakEvenSide => {
-  const size = r.form === 'group' ? Math.max(1, r.clientsPerLesson) : 1;
-  const revenuePerLesson = r.price * size;
-  // Вклад урока: прибыль с клиента после налога × число клиентов на уроке.
-  const gross = r.profit * size;
-  const contribution = gross - revenuePerLesson * (percentOfRevenue / 100);
-  const lessons = contribution > 0 ? fixedBase / contribution : Infinity;
-
-  return {
-    form: r.form,
-    contributionPerLesson: round2(contribution),
-    lessonsPerMonth: Number.isFinite(lessons) ? Math.ceil(lessons) : Infinity,
-    lessonsPerWeek: Number.isFinite(lessons) ? round2(lessons / WEEKS_IN_MONTH) : Infinity,
-    lessonsPerDay: Number.isFinite(lessons) ? round2(lessons / WORK_DAYS_IN_MONTH) : Infinity,
-    revenueAtBreakEven: Number.isFinite(lessons) ? round2(lessons * revenuePerLesson) : 0,
-    seatsPerMonth: Number.isFinite(lessons) ? Math.ceil(lessons * size) : Infinity,
-    formula: Number.isFinite(lessons)
-      ? `${fmtMoney(fixedBase)} ÷ ${fmtMoney2(contribution)} = ${Math.ceil(lessons)} зан.`
-      : 'вклад урока ≤ 0 — безубыточность недостижима при этой цене',
-  };
-};
-
-export interface BreakEvenInput {
-  results: UnitMarginResults;
-  fixed: FixedLine[];
-  /** Факт месяца: сколько занятий каждой формы реально провели. */
-  individualLessonsFact: number;
-  groupLessonsFact: number;
-}
-
-export function calcBreakEven(input: BreakEvenInput): BreakEvenResult {
-  const fixedTotal = input.fixed.reduce((s, l) => s + safe(l.amount), 0);
-  const percent = input.fixed.reduce((s, l) => s + safe(l.percentOfRevenue), 0);
-
-  const group = sideBreakEven(input.results.group, fixedTotal, percent);
-  const individual = sideBreakEven(input.results.individual, fixedTotal, percent);
-
-  // Смешанный сценарий: индивидуальные уроки идут как есть, их вклад
-  // уменьшает остаток постоянных — добираем группами.
-  const indivLessons = Math.max(0, safe(input.individualLessonsFact));
-  const coveredByIndividual = individual.contributionPerLesson * indivLessons;
-  const rest = Math.max(0, fixedTotal - coveredByIndividual);
-  const groupWithIndividual =
-    group.contributionPerLesson > 0 ? Math.ceil(rest / group.contributionPerLesson) : Infinity;
-
-  return {
-    fixedTotal: round2(fixedTotal),
-    fixedPercentOfRevenue: round2(percent),
-    group,
-    individual,
-    individualLessonsFact: indivLessons,
-    groupLessonsWithIndividual: groupWithIndividual,
-    groupLessonsFact: Math.max(0, safe(input.groupLessonsFact)),
-    groupGap: Number.isFinite(groupWithIndividual)
-      ? Math.max(0, safe(input.groupLessonsFact)) - groupWithIndividual
-      : -Infinity,
-  };
-}
-
-/** Постоянные расходы школы «как сейчас» — стартовое заполнение формы. */
-export const DEFAULT_FIXED: FixedLine[] = [
-  { id: 'owner', label: 'Собственник-руководитель', amount: 300000 },
-  {
-    id: 'ruo',
-    label: 'РУО (1/2 ставки)',
-    amount: 60000,
-    percentOfRevenue: 1,
-    hint: '60 000 ₽ оклад + 1% от выручки школы',
-  },
-  { id: 'admins', label: 'Администраторы', amount: 21000, hint: '700 ₽ × 30 смен' },
-  { id: 'dev', label: 'Разработчик (1/3 ставки)', amount: 40000 },
-  { id: 'designers', label: 'Дизайнеры презентаций', amount: 25000 },
-  { id: 'accountant', label: 'Бухгалтер', amount: 15000 },
-  { id: 'ads', label: 'Реклама', amount: 78000, hint: '18 000 ₽ в неделю × 4,33' },
-  { id: 'software', label: 'ПО и сервисы', amount: 50000 },
-];
 
 export const DEFAULT_RATES: UnitRates = {
   sfrPercent: 30,

@@ -196,8 +196,8 @@ export default function UnitMarginReport() {
               Маржинальность урока
             </h1>
             <p className="text-gray-500 text-sm mt-1">
-              Юнит — один проведённый урок. Индивидуальные и групповые считаем
-              отдельно, по факту месяца из CRM
+              Юнит — одно проведённое занятие целиком. Индивидуальные и групповые
+              считаем отдельно, по факту месяца из CRM
             </p>
           </div>
         </div>
@@ -261,19 +261,23 @@ export default function UnitMarginReport() {
                   </h3>
                 </div>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  Индивидуальный урок: цена {fmtMoney2(result.individual.price)}, маржа{' '}
+                  Индивидуальное занятие: выручка{' '}
+                  {fmtMoney2(result.individual.revenue)}, маржа{' '}
                   <b>{fmtMoney2(result.individual.margin)}</b> (
-                  {fmtPercent(result.individual.marginPercent)}). Групповой урок на
-                  человека: цена {fmtMoney2(result.group.price)}, маржа{' '}
+                  {fmtPercent(result.individual.marginPercent)}). Групповое занятие
+                  при наполняемости {result.group.clientsPerLesson} чел.: выручка{' '}
+                  {fmtMoney2(result.group.revenue)}, маржа{' '}
                   <b>{fmtMoney2(result.group.margin)}</b> (
                   {fmtPercent(result.group.marginPercent)}). Выгоднее{' '}
                   <b>{better}</b> занятия — разрыв {diff} п.п.
                 </p>
                 <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                  Маржинальность — доля цены урока, остающаяся после переменных
-                  расходов: зарплаты педагога с взносами и отпускными и комиссии
-                  эквайринга. Постоянные расходы школы (аренда, реклама,
-                  администрация) сюда не входят — они покрываются из этой маржи.
+                  Юнит — одно проведённое занятие целиком. Выручка группового
+                  занятия складывается из оплат всех пришедших детей, а ставка
+                  педагога платится один раз независимо от их числа. Маржинальность
+                  — доля выручки, остающаяся после переменных расходов: зарплаты
+                  с взносами и отпускными и комиссии эквайринга. Постоянные расходы
+                  школы сюда не входят — они покрываются уже из этой маржи.
                 </p>
               </div>
 
