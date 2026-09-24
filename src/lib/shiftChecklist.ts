@@ -41,8 +41,8 @@ export const SCHEDULE_CHECKS: ScheduleCheckMeta[] = [
   {
     key: 'm1b',
     letter: 'б',
-    title: 'Все списания корректны',
-    empty: 'Да — списания по вчерашним урокам корректны',
+    title: 'Занятия без списания — проверить каждое',
+    empty: 'Нет — по всем вчерашним занятиям списание прошло',
     group: 'yesterday',
   },
   {

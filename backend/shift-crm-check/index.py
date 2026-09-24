@@ -273,14 +273,14 @@ def not_held_yesterday(lessons, teachers, groups, customers) -> List[dict]:
     return out
 
 
-# ---------- вчера «б»: некорректные списания ----------
+# ---------- вчера «б»: занятия без списания ----------
 
-def wrong_charges_yesterday(lessons, teachers, groups, customers) -> List[dict]:
-    """Проведённые вчера уроки, где списание выглядит неверным.
+def no_charge_yesterday(lessons, teachers, groups, customers) -> List[dict]:
+    """Проведённые вчера уроки, по которым не прошло списание.
 
-    Ищем однозначную ошибку: ученик был на занятии, а деньги с абонемента
-    не ушли. Обратный случай (пропуск со списанием) законен — прогул без
-    уважительной причины оплачивается, поэтому его не показываем.
+    Только факт из CRM: урок стоит «проведён», отметки об отмене у ученика
+    нет, а commission = 0. Правильно это или нет — решает администратор:
+    кто реально был на занятии, знают педагог и родитель, а не CRM.
     Диагностику пропускаем: в CRM она стоит 0 ₽ и платится отдельно.
     """
     out = []
@@ -291,12 +291,13 @@ def wrong_charges_yesterday(lessons, teachers, groups, customers) -> List[dict]:
             continue
         tids = [t for t in (ls.get("teacher_ids") or []) if t]
         teacher = teachers.get(tids[0], f"#{tids[0]}") if tids else "—"
+        status = ls.get("status")
         for d in _details(ls):
             cid = d.get("customer_id") or d.get("client_id")
             if cid is None:
                 continue
-            # Не был на занятии — списание зависит от причины, это не ошибка
-            if d.get("is_attend") == 0:
+            # Ученик снят с занятия по причине — списание тут отдельный разговор
+            if _is_cancelled_detail(d, status):
                 continue
             if _num(d.get("commission")) > 0:
                 continue
@@ -307,7 +308,6 @@ def wrong_charges_yesterday(lessons, teachers, groups, customers) -> List[dict]:
                 "teacher": teacher,
                 "title": _lesson_title(ls, groups, customers),
                 "form": "индив." if ls.get("lesson_type_id") == 1 else "группа",
-                "note": "был на уроке, списания нет",
             })
     out.sort(key=lambda x: (x["time"], x["name"]))
     return out
@@ -474,7 +474,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         "checks": {
             # Пункт 1 «Вчерашний день»
             "m1a": not_held_yesterday(ls_yest, teachers, groups, customers),
-            "m1b": wrong_charges_yesterday(ls_yest, teachers, groups, customers),
+            "m1b": no_charge_yesterday(ls_yest, teachers, groups, customers),
             # Пункт 2 «Расписание на сегодня»
             "m2a": unpaid_today(ls_today, teachers, groups, customers),
             "m2b": overlaps_today(ls_today, teachers, groups, customers),
