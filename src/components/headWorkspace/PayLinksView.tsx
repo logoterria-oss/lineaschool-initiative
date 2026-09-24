@@ -1,53 +1,12 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-
-interface PayLink {
-  label: string;
-  url: string;
-}
-
-const PAY_LINKS: PayLink[] = [
-  { label: 'Первичная диагностика', url: 'https://lineaschool.ru/pay/diagnostika' },
-  {
-    label: 'Промежуточная диагностика',
-    url: 'https://lineaschool.ru/pay/diagnostika-promezhutochnaya',
-  },
-  { label: '2 урока в неделю', url: 'https://lineaschool.ru/pay/abonement-2' },
-  { label: '3 урока в неделю', url: 'https://lineaschool.ru/pay/abonement-3' },
-  { label: '4 урока в неделю', url: 'https://lineaschool.ru/pay/abonement-4' },
-  { label: 'Индивидуально', url: 'https://lineaschool.ru/pay/individual' },
-  {
-    label: 'Архивный 2 урока в неделю (1 инд + 1 гр)',
-    url: 'https://lineaschool.ru/pay/abonement-archive-2',
-  },
-];
+import { PAY_LINKS, copyToClipboard } from '@/lib/payLinks';
 
 const PayLinksView = () => {
   const [copied, setCopied] = useState<string | null>(null);
 
   const copy = async (url: string) => {
-    let ok = false;
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url);
-        ok = true;
-      }
-    } catch {
-      ok = false;
-    }
-    if (!ok) {
-      const ta = document.createElement('textarea');
-      ta.value = url;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.top = '0';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      ta.setSelectionRange(0, url.length);
-      ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
+    const ok = await copyToClipboard(url);
     if (!ok) {
       window.prompt('Скопируйте ссылку:', url);
       return;

@@ -169,6 +169,22 @@ export const vacationReturnDue = (v: StudentVacation | null): boolean => {
   );
 };
 
+// ПДУ (промежуточная диагностика) пора, если с последней прошло 3 месяца
+// и больше. Диагностик не было вообще — тоже пора.
+export const diagnosticDue = (s: Pick<StudentRow, 'last_diagnostic'>): boolean => {
+  if (!s.last_diagnostic) return true;
+  const limit = new Date();
+  limit.setMonth(limit.getMonth() - 3);
+  return new Date(s.last_diagnostic) <= limit;
+};
+
+// В колонке «ПДУ» горит «пора» — то есть срок подошёл, а диагностика
+// ещё не стоит в расписании CRM. Если стоит — там «заплан.», и админу
+// делать нечего.
+export const diagnosticNeedsPlanning = (
+  s: Pick<StudentRow, 'last_diagnostic' | 'scheduled_diagnostic'>,
+): boolean => diagnosticDue(s) && !s.scheduled_diagnostic;
+
 // Несколько статусов сразу: строка подходит, если совпал ЛЮБОЙ из выбранных.
 // Пустой список = ничего не выбрано, показываем всех действующих.
 export const matchesAnyFilter = (

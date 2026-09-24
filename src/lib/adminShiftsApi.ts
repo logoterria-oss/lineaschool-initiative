@@ -112,14 +112,19 @@ export async function saveHeadTasks(
 export async function fetchChecklist(
   date: string,
   staffId?: number,
-): Promise<{ marks: ChecklistMark[]; head_tasks: HeadTask[] }> {
+): Promise<{ marks: ChecklistMark[]; head_tasks: HeadTask[]; handled_before: string[] }> {
   const extra = staffId ? `&staff_id=${staffId}` : '';
   const r = await fetch(`${API_URL}?action=checklist&date=${date}${extra}`, {
     headers: authHeaders(),
   });
-  if (!r.ok) return { marks: [], head_tasks: [] };
+  if (!r.ok) return { marks: [], head_tasks: [], handled_before: [] };
   const data = await r.json().catch(() => ({}));
-  return { marks: data.marks || [], head_tasks: data.head_tasks || [] };
+  return {
+    marks: data.marks || [],
+    head_tasks: data.head_tasks || [],
+    // Ключи находок, закрытых в предыдущие дни, — их больше не показываем
+    handled_before: data.handled_before || [],
+  };
 }
 
 /** Сохранить галочку и комментарий по пункту чек-листа */
@@ -153,12 +158,28 @@ export interface ScheduleFinding {
   paid_left?: number;
   students?: string[];
   cancelled?: string[];
+  /** Пункт 3: название абонемента и ссылка на оплату */
+  tariff?: string;
+  payUrl?: string;
+  payLabel?: string;
+}
+
+/** Ближайший урок ученика: завтра или послезавтра */
+export interface UpcomingLesson {
+  customer_id: number;
+  name: string;
+  date: string;
+  time: string;
+  teacher: string;
+  title: string;
 }
 
 export interface ScheduleChecks {
   date: string;
   yesterday: string;
   checks: Record<string, ScheduleFinding[]>;
+  /** Уроки завтра-послезавтра — для пункта «Остаток занятий» */
+  upcoming: UpcomingLesson[];
 }
 
 /**
@@ -170,7 +191,12 @@ export async function fetchScheduleChecks(date: string): Promise<ScheduleChecks 
   if (!r.ok) return null;
   const data = await r.json().catch(() => null);
   if (!data || !data.ok) return null;
-  return { date: data.date, yesterday: data.yesterday, checks: data.checks || {} };
+  return {
+    date: data.date,
+    yesterday: data.yesterday,
+    checks: data.checks || {},
+    upcoming: data.upcoming || [],
+  };
 }
 
 /** Администратор, который прямо сейчас на смене */

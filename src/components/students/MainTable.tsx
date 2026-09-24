@@ -1,4 +1,4 @@
-import { StudentRow } from '@/lib/studentsApi';
+import { StudentRow, diagnosticDue } from '@/lib/studentsApi';
 import { NameWithDot } from './studentsTableHelpers';
 
 // Абонемент коротко: «арх. 4 ур/нед (3 мес.)» + остаток оплаченных занятий.
@@ -89,13 +89,7 @@ const fmt = (d: string) => d.split('-').reverse().join('.');
 const DiagCell = ({ s }: { s: StudentRow }) => {
   const last = s.last_diagnostic;
   const scheduled = s.scheduled_diagnostic;
-
-  let due = true;
-  if (last) {
-    const limit = new Date();
-    limit.setMonth(limit.getMonth() - 3);
-    due = new Date(last) <= limit;
-  }
+  const due = diagnosticDue(s);
 
   if (due && scheduled) {
     return (

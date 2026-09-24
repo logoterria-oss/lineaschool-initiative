@@ -8,13 +8,14 @@ export interface ChecklistItem {
   block: ChecklistBlock;
   /**
    * Пункт проверяется по CRM — рисуем его отдельной карточкой с подпунктами.
-   * 'yesterday' — вчерашний день, 'schedule' — расписание на сегодня.
+   * 'yesterday' — вчерашний день, 'schedule' — расписание на сегодня,
+   * 'balance' — остаток занятий на абонементах и ПДУ.
    */
-  auto?: 'yesterday' | 'schedule';
+  auto?: 'yesterday' | 'schedule' | 'balance';
 }
 
 /** Ключи проверок по CRM — как их отдаёт бэкенд */
-export type ScheduleCheckKey = 'm1a' | 'm2a' | 'm2b' | 'm2c';
+export type ScheduleCheckKey = 'm1a' | 'm2a' | 'm2b' | 'm2c' | 'm3a' | 'm3b' | 'm3c';
 
 export interface ScheduleCheckMeta {
   key: ScheduleCheckKey;
@@ -23,7 +24,11 @@ export interface ScheduleCheckMeta {
   /** Что пишем, когда CRM ничего не нашла */
   empty: string;
   /** К какому пункту чек-листа относится подпункт */
-  group: 'yesterday' | 'schedule';
+  group: 'yesterday' | 'schedule' | 'balance';
+  /** Что делаем с находкой — подсказка администратору */
+  action?: string;
+  /** Рядом с находкой показываем ссылку на оплату из CRM */
+  payLink?: boolean;
 }
 
 /**
@@ -59,6 +64,32 @@ export const SCHEDULE_CHECKS: ScheduleCheckMeta[] = [
     empty: 'Нет — во всех группах 3 и больше учеников',
     group: 'schedule',
   },
+  {
+    key: 'm3a',
+    letter: 'а',
+    title: 'Остался 1 оплаченный урок — предупредить и отправить ссылку на оплату',
+    empty: 'Нет — ни у кого не остался последний оплаченный урок',
+    group: 'balance',
+    action: 'Написать родителю и отправить ссылку на оплату',
+    payLink: true,
+  },
+  {
+    key: 'm3b',
+    letter: 'б',
+    title: 'Занятия на абонементе закончились, урок завтра-послезавтра — напомнить',
+    empty: 'Нет — у всех с ближайшими уроками есть оплаченные занятия',
+    group: 'balance',
+    action: 'Напомнить об оплате и отправить ссылку',
+    payLink: true,
+  },
+  {
+    key: 'm3c',
+    letter: 'в',
+    title: 'Запланировать ПДУ — активные ученики со статусом «пора»',
+    empty: 'Нет — всем активным ученикам ПДУ пока не нужна',
+    group: 'balance',
+    action: 'Согласовать дату и поставить диагностику в расписание',
+  },
 ];
 
 export const BLOCK_TITLES: Record<ChecklistBlock, string> = {
@@ -93,9 +124,10 @@ export const CHECKLIST: ChecklistItem[] = [
   {
     key: 'm3',
     num: 3,
-    title: 'Проверить активных учеников с 1 или 0 занятий на абонементе → отправить напоминание',
+    title: 'Остаток занятий',
     place: 'AlfaCRM → раздел 7',
     block: 'morning',
+    auto: 'balance',
   },
   {
     key: 'm4',

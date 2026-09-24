@@ -506,7 +506,25 @@ def get_checklist(event: dict) -> dict:
                 (date, staff_id),
             )
             head_tasks = [dict(r) for r in cur.fetchall()]
-        return _json(200, {"ok": True, "marks": marks, "head_tasks": head_tasks})
+
+            # Пункт «Остаток занятий»: напоминание об оплате отправляют один раз.
+            # Если по ученику галку уже поставили в предыдущие дни — сегодня его
+            # в списке не показываем, даже если отмечал другой администратор.
+            # Смотрим на два месяца назад: дальше напоминание уже неактуально.
+            cur.execute(
+                f"SELECT DISTINCT item_key FROM {SCHEMA}.shift_checklist "
+                f"WHERE done = true AND shift_date < %s AND shift_date >= %s::date - 60 "
+                f"AND (item_key LIKE 'm3a:%%' OR item_key LIKE 'm3b:%%' "
+                f"OR item_key LIKE 'm3c:%%')",
+                (date, date),
+            )
+            handled = [r["item_key"] for r in cur.fetchall()]
+        return _json(200, {
+            "ok": True,
+            "marks": marks,
+            "head_tasks": head_tasks,
+            "handled_before": handled,
+        })
     finally:
         conn.close()
 

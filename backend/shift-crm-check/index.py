@@ -1,7 +1,8 @@
 """
-Business: Автопроверки расписания для пункта 1 чек-листа администратора.
-Тянет из AlfaCRM (S20) четыре среза: непроведённые уроки за вчера,
-неоплаченные занятия на сегодня, наслоения у педагогов и малые группы.
+Business: Автопроверки расписания для чек-листа администратора.
+Тянет из AlfaCRM (S20) срезы: непроведённые уроки за вчера, неоплаченные
+занятия на сегодня, наслоения у педагогов, малые группы, а также список
+учеников с уроками завтра-послезавтра — для пункта «Остаток занятий».
 Args: event с httpMethod, queryStringParameters {date: YYYY-MM-DD}
 Returns: HTTP-ответ со списками находок по каждому подпункту
 """
@@ -395,6 +396,49 @@ def small_groups_today(lessons, teachers, groups, customers) -> List[dict]:
     return out
 
 
+# ---------- ближайшие уроки: завтра и послезавтра ----------
+
+def upcoming_lessons(lessons, teachers, groups, customers, today: str) -> List[dict]:
+    """Кто идёт на занятие завтра или послезавтра — по одному ближайшему уроку.
+
+    Нужно пункту 3«б»: напоминаем об оплате тем, у кого занятия на абонементе
+    закончились, а урок уже на носу. Отменённые уроки и снятых с занятия детей
+    не берём — напоминать им не о чем.
+    """
+    found: Dict[Any, dict] = {}
+    for ls in lessons:
+        if ls.get("status") == ST_CANCELLED or _skip_service(ls, groups):
+            continue
+        if _is_diagnostic(ls):
+            continue
+        date = str(ls.get("date") or "")[:10]
+        if not date or date <= today:
+            continue
+        status = ls.get("status")
+        cancelled = {
+            (d.get("customer_id") or d.get("client_id"))
+            for d in _details(ls) if _is_cancelled_detail(d, status)
+        }
+        tids = [t for t in (ls.get("teacher_ids") or []) if t]
+        for cid in _customer_ids(ls):
+            if cid in cancelled:
+                continue
+            item = {
+                "customer_id": cid,
+                "name": _name(customers, cid),
+                "date": date,
+                "time": _time(ls.get("time_from")),
+                "teacher": teachers.get(tids[0], f"#{tids[0]}") if tids else "—",
+                "title": _lesson_title(ls, groups, customers),
+            }
+            prev = found.get(cid)
+            if prev is None or (item["date"], item["time"]) < (prev["date"], prev["time"]):
+                found[cid] = item
+    out = list(found.values())
+    out.sort(key=lambda x: (x["date"], x["time"], x["name"]))
+    return out
+
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Автопроверки расписания на сегодня и вчера для чек-листа администратора"""
     if event.get("httpMethod") == "OPTIONS":
@@ -410,20 +454,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     except ValueError:
         return _json(400, {"error": "bad date"})
     yesterday = (d_today - datetime.timedelta(days=1)).isoformat()
+    tomorrow = (d_today + datetime.timedelta(days=1)).isoformat()
+    day_after = (d_today + datetime.timedelta(days=2)).isoformat()
 
     try:
         token = get_token()
-        with ThreadPoolExecutor(max_workers=5) as pool:
+        with ThreadPoolExecutor(max_workers=6) as pool:
             f_teachers = pool.submit(get_teachers, token)
             f_groups = pool.submit(get_groups, token)
             f_customers = pool.submit(get_customers, token)
             f_yest = pool.submit(lessons_all, token, yesterday, yesterday)
             f_today = pool.submit(lessons_all, token, today, today)
+            f_next = pool.submit(lessons_all, token, tomorrow, day_after)
             teachers = f_teachers.result()
             groups = f_groups.result()
             customers = f_customers.result()
             ls_yest = f_yest.result()
             ls_today = f_today.result()
+            ls_next = f_next.result()
     except Exception as e:
         return _json(502, {"error": f"CRM error: {e}"})
 
@@ -439,4 +487,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "m2b": overlaps_today(ls_today, teachers, groups, customers),
             "m2c": small_groups_today(ls_today, teachers, groups, customers),
         },
+        # Пункт 3 «Остаток занятий»: кто идёт на урок завтра-послезавтра.
+        # Остаток занятий фронт берёт из таблицы учеников — там он считается
+        # ровно так же, как в разделе «Список учеников».
+        "upcoming": upcoming_lessons(ls_next, teachers, groups, customers, today),
     })
