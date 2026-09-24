@@ -14,7 +14,7 @@ export interface ChecklistItem {
 }
 
 /** Ключи проверок по CRM — как их отдаёт бэкенд */
-export type ScheduleCheckKey = 'm1a' | 'm1b' | 'm2a' | 'm2b' | 'm2c';
+export type ScheduleCheckKey = 'm1a' | 'm2a' | 'm2b' | 'm2c';
 
 export interface ScheduleCheckMeta {
   key: ScheduleCheckKey;
@@ -36,13 +36,6 @@ export const SCHEDULE_CHECKS: ScheduleCheckMeta[] = [
     letter: 'а',
     title: 'Все уроки проведены (нет статуса «проведено»)',
     empty: 'Да — все вчерашние уроки проведены',
-    group: 'yesterday',
-  },
-  {
-    key: 'm1b',
-    letter: 'б',
-    title: 'Занятия без списания — проверить каждое',
-    empty: 'Нет — по всем вчерашним занятиям списание прошло',
     group: 'yesterday',
   },
   {
