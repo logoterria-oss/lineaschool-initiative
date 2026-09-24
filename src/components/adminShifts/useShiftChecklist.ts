@@ -21,6 +21,7 @@ export function useShiftChecklist(dateArg?: string) {
   const date = dateArg || moscowToday();
   const [marks, setMarks] = useState<Record<string, MarkState>>({});
   const [headTasks, setHeadTasks] = useState<HeadTask[]>([]);
+  const [handledBefore, setHandledBefore] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const items = useMemo(() => checklistFor(date), [date]);
@@ -34,6 +35,7 @@ export function useShiftChecklist(dateArg?: string) {
     });
     setMarks(map);
     setHeadTasks(data.head_tasks || []);
+    setHandledBefore(data.handled_before || []);
     setLoading(false);
   }, [date]);
 
@@ -63,5 +65,17 @@ export function useShiftChecklist(dateArg?: string) {
     return keys.filter((k) => marks[k]?.done).length;
   }, [items, headTasks, marks]);
 
-  return { date, items, blocks, marks, headTasks, loading, total, doneCount, setMark, reload: load };
+  return {
+    date,
+    items,
+    blocks,
+    marks,
+    headTasks,
+    handledBefore,
+    loading,
+    total,
+    doneCount,
+    setMark,
+    reload: load,
+  };
 }

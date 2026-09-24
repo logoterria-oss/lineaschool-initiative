@@ -15,7 +15,7 @@ export interface ChecklistItem {
 }
 
 /** Ключи проверок по CRM — как их отдаёт бэкенд */
-export type ScheduleCheckKey = 'm1a' | 'm2a' | 'm2b' | 'm2c' | 'm3a' | 'm3b' | 'm3c';
+export type ScheduleCheckKey = 'm1a' | 'm2a' | 'm2b' | 'm2c' | 'm3a' | 'm3b';
 
 export interface ScheduleCheckMeta {
   key: ScheduleCheckKey;
@@ -81,14 +81,6 @@ export const SCHEDULE_CHECKS: ScheduleCheckMeta[] = [
     group: 'balance',
     action: 'Напомнить об оплате и отправить ссылку',
     payLink: true,
-  },
-  {
-    key: 'm3c',
-    letter: 'в',
-    title: 'Запланировать ПДУ — активные ученики со статусом «пора»',
-    empty: 'Нет — всем активным ученикам ПДУ пока не нужна',
-    group: 'balance',
-    action: 'Согласовать дату и поставить диагностику в расписание',
   },
 ];
 

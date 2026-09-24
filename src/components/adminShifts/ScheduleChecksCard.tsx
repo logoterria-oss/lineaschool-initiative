@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { ScheduleFinding } from '@/lib/adminShiftsApi';
+import { copyToClipboard } from '@/lib/payLinks';
 import { MarkState } from './useShiftChecklist';
 import { ScheduleCheckState, findingKey } from './useScheduleChecks';
 
@@ -32,11 +34,42 @@ const findingNote = (f: ScheduleFinding): string => {
   if (f.teacher && f.teacher !== '—') parts.push(f.teacher);
   if (f.name && f.title && f.title !== f.name) parts.push(f.title);
   if (f.form) parts.push(f.form);
+  if (f.tariff) parts.push(f.tariff);
   if (typeof f.paid_left === 'number') parts.push(`оплачено занятий: ${f.paid_left}`);
   if (typeof f.balance === 'number') parts.push(`баланс ${f.balance} ₽`);
   if (f.students?.length) parts.push(`остались: ${f.students.join(', ')}`);
   if (f.cancelled?.length) parts.push(`отменили: ${f.cancelled.join(', ')}`);
   return parts.join(' · ');
+};
+
+/** Ссылка на оплату рядом с учеником: копируем и отправляем родителю */
+const PayLinkButton = ({ url, label }: { url: string; label: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async (e: React.MouseEvent) => {
+    // Клик по ссылке не должен закрывать пункт чек-листа
+    e.stopPropagation();
+    const ok = await copyToClipboard(url);
+    if (!ok) {
+      window.prompt('Скопируйте ссылку:', url);
+      return;
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <span
+      onClick={copy}
+      role="button"
+      tabIndex={-1}
+      title={`${label}: ${url}`}
+      className="shrink-0 inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[10.5px] font-medium text-blue-700 hover:bg-blue-100"
+    >
+      <Icon name={copied ? 'Check' : 'Link'} size={11} />
+      {copied ? 'Скопировано' : 'Ссылка'}
+    </span>
+  );
 };
 
 /**
@@ -123,20 +156,24 @@ const ScheduleChecksCard = ({
                   </div>
                 ) : (
                   <div className="mt-1.5 ml-4 space-y-1">
+                    {s.action && (
+                      <div className="text-[10.5px] text-gray-400">→ {s.action}</div>
+                    )}
                     {s.findings.map((f) => {
                       const key = findingKey(s.key, f.id);
                       const m = marks[key] || { done: false, comment: '' };
                       const note = findingNote(f);
                       return (
-                        <button
+                        <div
                           key={key}
-                          disabled={readOnly}
-                          onClick={() => onMark(key, { done: !m.done, comment: m.comment })}
+                          onClick={() =>
+                            !readOnly && onMark(key, { done: !m.done, comment: m.comment })
+                          }
                           className={`w-full flex items-start gap-2 text-left rounded-md border px-2 py-1.5 transition-colors ${
                             m.done
                               ? 'border-green-200 bg-green-50 text-gray-400'
                               : 'border-gray-200 bg-white hover:border-gray-300'
-                          } ${readOnly ? 'cursor-default' : ''}`}
+                          } ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
                         >
                           <Icon
                             name={m.done ? 'SquareCheck' : 'Square'}
@@ -155,7 +192,10 @@ const ScheduleChecksCard = ({
                               <span className="block text-[10.5px] text-gray-400 mt-px">{note}</span>
                             )}
                           </span>
-                        </button>
+                          {f.payUrl && !m.done && (
+                            <PayLinkButton url={f.payUrl} label={f.payLabel || 'Оплата'} />
+                          )}
+                        </div>
                       );
                     })}
                   </div>

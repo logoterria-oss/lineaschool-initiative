@@ -21,8 +21,9 @@ const fmtDate = (d: string) =>
 
 /** Чек-лист администратора на сегодня: галочки, комментарии и задачи руководителя */
 const TodayTasksView = () => {
-  const { date, blocks, marks, headTasks, loading, doneCount, total, setMark } = useShiftChecklist();
-  const schedule = useScheduleChecks(date, marks, setMark);
+  const { date, blocks, marks, headTasks, handledBefore, loading, doneCount, total, setMark } =
+    useShiftChecklist();
+  const schedule = useScheduleChecks(date, marks, setMark, handledBefore);
 
   if (loading) return <div className="text-sm text-gray-400">Загружаем чек-лист…</div>;
 
