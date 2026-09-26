@@ -40,9 +40,21 @@ export default function PaymentLeadCard({ lead, isHead, togglingId, deletingId, 
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             <Icon name="User" size={16} className="text-gray-400 flex-shrink-0" />
             <span className="font-semibold text-gray-900">{lead.name}</span>
+            {/* Карточку CRM показываем отдельной меткой, а не вместо имени:
+                подбор по имени может ошибиться, и подмена была незаметна */}
+            {lead.crm_name && lead.crm_name !== lead.name && (
+              <span className="text-[11px] text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
+                в CRM: {lead.crm_name}
+              </span>
+            )}
+            {lead.crm_name === null && (
+              <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+                нет карточки в CRM
+              </span>
+            )}
           </div>
           <div className="text-sm text-gray-600 mb-1">{lead.plan}</div>
           <div className="text-xs text-gray-400">

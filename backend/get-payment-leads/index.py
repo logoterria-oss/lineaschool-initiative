@@ -50,7 +50,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Get all leads ordered by created_at DESC
         cur.execute(
-            "SELECT id, name, email, phone, plan, amount, order_id, created_at, paid_at, transaction_id, source FROM payment_leads ORDER BY created_at DESC"
+            "SELECT id, name, plan, amount, order_id, created_at, paid_at, "
+            "transaction_id, source, crm_name FROM payment_leads ORDER BY created_at DESC"
         )
         
         rows = cur.fetchall()
@@ -60,13 +61,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             leads.append({
                 'id': row[0],
                 'name': row[1],
-                'plan': row[4],
-                'amount': float(row[5]),
-                'order_id': row[6],
-                'created_at': row[7].isoformat() if row[7] else None,
-                'paid_at': row[8].isoformat() if row[8] else None,
-                'transaction_id': row[9],
-                'source': row[10] if len(row) > 10 else 'acquiring',
+                'plan': row[2],
+                'amount': float(row[3]),
+                'order_id': row[4],
+                'created_at': row[5].isoformat() if row[5] else None,
+                'paid_at': row[6].isoformat() if row[6] else None,
+                'transaction_id': row[7],
+                'source': row[8] or 'acquiring',
+                # Карточка в CRM, если её удалось надёжно подобрать
+                'crm_name': row[9],
             })
         
         cur.close()

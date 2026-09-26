@@ -13,6 +13,8 @@ export interface PaymentLead {
   paid_at: string | null;
   transaction_id: string | null;
   source?: string;
+  /** Карточка в AlfaCRM, если её удалось подобрать по имени. null — не нашли */
+  crm_name?: string | null;
 }
 
 export interface BlockedPayment {

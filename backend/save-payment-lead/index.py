@@ -8,7 +8,7 @@ import os
 import psycopg2
 import urllib.request
 from typing import Dict, Any
-from crm_match import match_name
+from crm_match import find_customer
 from telegram_send import notify_all
 
 # Администраторы, которым дублируем уведомления помимо основного чата.
@@ -57,8 +57,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     amount = body_data.get('amount')
     order_id = body_data.get('order_id')
 
-    # Подбираем карточку в AlfaCRM (для аналитики), но введённое родителем имя не теряем
-    crm_name = match_name(name) if name else name
+    # Подбираем карточку в AlfaCRM. В заявке храним ИМЯ РОДИТЕЛЯ как есть:
+    # раньше вместо него писалась найденная карточка, и при ошибке подбора
+    # оплата отображалась на чужом ученике без шансов заметить подмену.
+    crm_name = find_customer(name) if name else None
 
     print(f'Saving payment lead: {name} (CRM: {crm_name}), {plan}, {amount}, {order_id}')
     
@@ -80,11 +82,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Родитель мог обновить страницу оплаты — номер заказа тот же.
         # Повтор не считаем ошибкой: просто обновляем данные заявки.
         cur.execute(
-            "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, NOW()) "
+            "INSERT INTO payment_leads (name, crm_name, email, phone, plan, amount, order_id, created_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) "
             "ON CONFLICT (order_id) DO UPDATE SET "
-            "name = EXCLUDED.name, plan = EXCLUDED.plan, amount = EXCLUDED.amount",
-            (crm_name, '', '', plan, amount, order_id)
+            "name = EXCLUDED.name, crm_name = EXCLUDED.crm_name, "
+            "plan = EXCLUDED.plan, amount = EXCLUDED.amount",
+            (name, crm_name, '', '', plan, amount, order_id)
         )
         
         conn.commit()
@@ -103,7 +106,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # до таймаута, уведомление теряется. Раньше сбой первого получателя
             # ещё и обрывал отправку второму, так как цикл был в общем try.
             try:
-                crm_line = f"\n🗂 В CRM: {crm_name}" if crm_name and crm_name != name else ''
+                if crm_name and crm_name != name:
+                    crm_line = f"\n🗂 В CRM: {crm_name}"
+                elif not crm_name:
+                    crm_line = "\n🗂 В CRM: карточка не найдена — проверьте вручную"
+                else:
+                    crm_line = ''
                 message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}{crm_line}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
                 results = notify_all(bot_token, recipients(), message)
                 print(f'Telegram delivery for order {order_id}: {results}')
