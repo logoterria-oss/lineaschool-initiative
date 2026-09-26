@@ -1,0 +1,36 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Пустой note — ошибка 400",
+      "method": "POST",
+      "path": "/",
+      "body": {"urgency": "medium", "note": "   "},
+      "expectedStatus": 400,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Без body — ошибка 400",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET не поддерживается",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 405,
+      "expectedBody": {"ok": false},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

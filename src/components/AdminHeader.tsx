@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import SupportDialog from '@/components/SupportDialog';
 
 interface AdminHeaderProps {
   showOnlyHome?: boolean;
@@ -9,6 +11,7 @@ interface AdminHeaderProps {
 const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const isReportsPage = location.pathname === '/admin/reports';
   const isQuestionnairesPage = location.pathname === '/admin/questionnaires';
@@ -71,25 +74,48 @@ const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
               </Button>
             )}
             {!showOnlyHome && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/')}
-              >
-                <Icon name="Home" className="mr-2" size={16} />
-                <span className="hidden sm:inline">Главная</span>
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSupportOpen(true)}
+                  className="text-blue-700 border-blue-200 hover:bg-blue-50 hover:text-blue-800"
+                >
+                  <Icon name="LifeBuoy" className="sm:mr-2" size={16} />
+                  <span className="hidden sm:inline">Техподдержка</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/')}
+                >
+                  <Icon name="Home" className="mr-2" size={16} />
+                  <span className="hidden sm:inline">Главная</span>
+                </Button>
+              </>
             )}
             {showOnlyHome && (
-              <Button
-                variant="outline"
-                onClick={() => navigate('/')}
-              >
-                <Icon name="Home" className="mr-2" size={18} />
-                На главную
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setSupportOpen(true)}
+                  className="text-blue-700 border-blue-200 hover:bg-blue-50 hover:text-blue-800"
+                >
+                  <Icon name="LifeBuoy" className="sm:mr-2" size={18} />
+                  <span className="hidden sm:inline">Техподдержка</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/')}
+                >
+                  <Icon name="Home" className="mr-2" size={18} />
+                  На главную
+                </Button>
+              </>
             )}
           </div>
+
+          <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
         </div>
       </div>
     </header>

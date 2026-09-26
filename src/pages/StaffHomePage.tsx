@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
+import SupportDialog from '@/components/SupportDialog';
 import { fetchMe, logoutStaff, Staff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
 
 const ROLE_DASH: Record<StaffRole, { path: string; icon: string; label: string }> = {
@@ -14,6 +15,7 @@ const StaffHomePage = () => {
   const navigate = useNavigate();
   const [me, setMe] = useState<Staff | null>(null);
   const [loading, setLoading] = useState(true);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const cachedName = sessionStorage.getItem('staff_name') || '';
   const cachedRole = (sessionStorage.getItem('staff_role') as StaffRole) || null;
@@ -111,13 +113,24 @@ const StaffHomePage = () => {
         </div>
       </div>
 
-      <button
-        onClick={() => navigate('/')}
-        className="mt-8 text-gray-400 hover:text-gray-600 flex items-center gap-2 text-sm transition-colors"
-      >
-        <Icon name="ArrowLeft" size={15} />
-        На главную
-      </button>
+      <div className="mt-8 flex items-center gap-6">
+        <button
+          onClick={() => navigate('/')}
+          className="text-gray-400 hover:text-gray-600 flex items-center gap-2 text-sm transition-colors"
+        >
+          <Icon name="ArrowLeft" size={15} />
+          На главную
+        </button>
+        <button
+          onClick={() => setSupportOpen(true)}
+          className="text-blue-500 hover:text-blue-700 flex items-center gap-2 text-sm transition-colors"
+        >
+          <Icon name="LifeBuoy" size={15} />
+          Техподдержка
+        </button>
+      </div>
+
+      <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
     </div>
   );
 };
