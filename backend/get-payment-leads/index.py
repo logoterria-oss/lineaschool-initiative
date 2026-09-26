@@ -1,6 +1,7 @@
 '''
-Business: Get all payment leads from database for admin
-Args: event with httpMethod
+Business: Список оплат для админки + страховочная выгрузка оплат
+для «Окна взаимодействия» (?action=feed).
+Args: event with httpMethod, queryStringParameters
 Returns: HTTP response with list of payment leads
 '''
 import json
@@ -8,6 +9,22 @@ import os
 import psycopg2
 from typing import Dict, Any
 from datetime import datetime
+from payment_hook import payment_payload
+
+
+def service_key_ok(event: Dict[str, Any]) -> bool:
+    '''Служебные запросы окна ходят с тем же ключом, что и хук анкет.'''
+    key = os.environ.get('INTERACTION_SERVICE_KEY')
+    if not key:
+        return False
+    headers = event.get('headers') or {}
+    got = ''
+    for name, value in headers.items():
+        if str(name).lower() == 'x-service-key':
+            got = str(value or '')
+            break
+    return bool(got) and got == key
+
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -44,6 +61,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    params = event.get('queryStringParameters') or {}
+
+    # Страховочная выгрузка для «Окна взаимодействия»: если хук не дошёл,
+    # окно само забирает оплаты. status=new — те, что ещё не забирали.
+    if params.get('action') == 'feed':
+        if not service_key_ok(event):
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'error': 'unauthorized'}),
+                'isBase64Encoded': False,
+            }
+        return _feed(dsn, params.get('status') or 'new')
+
     try:
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
@@ -91,3 +122,45 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': str(e)}),
             'isBase64Encoded': False
         }
+
+
+def _feed(dsn: str, status: str) -> Dict[str, Any]:
+    '''Оплаты для «Окна взаимодействия». Отдаём только подтверждённые:
+    карточка «Оплачено» не должна появляться по неоплаченной заявке.
+    Телефон подставляем из карточки CRM — по нему окно находит диалог.'''
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor()
+
+    where = 'AND p.interaction_sent_at IS NULL' if status == 'new' else ''
+    cur.execute(f"""
+        SELECT p.name, p.crm_name, p.plan, p.amount, p.order_id,
+               p.paid_at, p.transaction_id, c.phone
+        FROM {schema}.payment_leads p
+        LEFT JOIN {schema}.crm_customers_cache c ON c.name = p.crm_name
+        WHERE p.paid_at IS NOT NULL {where}
+        ORDER BY p.paid_at DESC
+        LIMIT 200
+    """)
+    columns = [desc[0] for desc in cur.description]
+    rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+    payments = [payment_payload(r) for r in rows]
+
+    # Отдали — значит забрали: помечаем, чтобы не приходили повторно
+    if status == 'new' and payments:
+        cur.execute(
+            f"UPDATE {schema}.payment_leads SET interaction_sent_at = CURRENT_TIMESTAMP "
+            f"WHERE order_id = ANY(%s)",
+            ([p['orderId'] for p in payments],),
+        )
+        conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return {
+        'statusCode': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps({'payments': payments}, ensure_ascii=False),
+        'isBase64Encoded': False,
+    }

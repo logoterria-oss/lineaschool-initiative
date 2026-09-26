@@ -7,6 +7,7 @@ import psycopg2
 from email.header import decode_header
 from datetime import datetime, timezone, timedelta
 from html.parser import HTMLParser
+from payment_hook import send_payment_hook, mark_hook_result
 
 CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -148,6 +149,7 @@ def sync_payments():
     conn = psycopg2.connect(dsn)
     matched = 0
     not_found = 0
+    just_paid = []
     try:
         with conn.cursor() as cur:
             for p in payments:
@@ -174,19 +176,56 @@ def sync_payments():
 
                 cur.execute(
                     f"UPDATE {SCHEMA}.payment_leads SET paid_at = %s, transaction_id = %s "
-                    f"WHERE order_id = %s AND paid_at IS NULL",
+                    f"WHERE order_id = %s AND paid_at IS NULL "
+                    f"RETURNING name, crm_name, plan, amount, order_id, paid_at, transaction_id",
                     (p["paid_at"], p["transaction_id"], p["order_id"])
                 )
-                if cur.rowcount > 0:
+                updated = cur.fetchone()
+                if updated:
                     print(f"Marked paid: {p['order_id']}")
                     matched += 1
+                    just_paid.append(dict(zip(
+                        ("name", "crm_name", "plan", "amount",
+                         "order_id", "paid_at", "transaction_id"), updated)))
                 else:
                     not_found += 1
         conn.commit()
+
+        # Оплата подтверждена — показываем карточку в «Окне взаимодействия».
+        # Делаем после commit: сбой отправки не должен откатывать оплату.
+        for row in just_paid:
+            _notify_interaction(conn, row)
     finally:
         conn.close()
 
     return {"ok": True, "matched": matched, "already_paid": 0, "not_found": not_found}
+
+
+def _notify_interaction(conn, row: dict) -> None:
+    """Отдаёт карточку оплаты в «Окно взаимодействия».
+
+    Телефон на странице оплаты не спрашиваем, поэтому берём его из карточки
+    AlfaCRM — по номеру окно кладёт карточку в уже существующий диалог.
+    Любая ошибка отправки не должна ломать приём оплаты: оплата уже
+    зафиксирована, а недоставленную карточку окно заберёт через feed.
+    """
+    try:
+        crm_name = row.get("crm_name")
+        if crm_name:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT phone FROM {SCHEMA}.crm_customers_cache "
+                    f"WHERE name = %s AND phone IS NOT NULL LIMIT 1",
+                    (crm_name,),
+                )
+                found = cur.fetchone()
+                if found:
+                    row = {**row, "phone": found[0]}
+
+        result = send_payment_hook(row)
+        mark_hook_result(conn, row["order_id"], result)
+    except Exception as e:
+        print(f"payment-hook failed for {row.get('order_id')}: {e}")
 
 
 class _HTMLTextExtractor(HTMLParser):

@@ -5,6 +5,7 @@ Args: event с httpMethod
 Returns: HTTP-ответ с количеством загруженных клиентов
 '''
 import os
+import re
 import json
 import psycopg2
 import urllib.request
@@ -41,10 +42,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if cid is None or not nm:
             continue
         safe = nm.replace("'", "''")
+        phone = _first_phone(c.get('phone'))
+        phone_sql = f"'{phone}'" if phone else 'NULL'
         cur.execute(
-            f"INSERT INTO {schema}.crm_customers_cache (id, name, updated_at) "
-            f"VALUES ({int(cid)}, '{safe}', NOW()) "
-            f"ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()"
+            f"INSERT INTO {schema}.crm_customers_cache (id, name, phone, updated_at) "
+            f"VALUES ({int(cid)}, '{safe}', {phone_sql}, NOW()) "
+            f"ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, "
+            f"phone = EXCLUDED.phone, updated_at = NOW()"
         )
         saved += 1
     conn.commit()
@@ -56,6 +60,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
         'body': json.dumps({'success': True, 'cached': saved}),
     }
+
+
+def _first_phone(raw) -> str:
+    """Первый телефон карточки в виде 7XXXXXXXXXX.
+
+    AlfaCRM отдаёт список номеров (у карточки их может быть несколько).
+    Формат единый — по нему «Окно взаимодействия» находит диалог.
+    """
+    if isinstance(raw, list):
+        raw = raw[0] if raw else ''
+    digits = re.sub(r'\D', '', str(raw or ''))
+    if len(digits) == 11 and digits[0] == '8':
+        digits = '7' + digits[1:]
+    if len(digits) == 10:
+        digits = '7' + digits
+    return digits if len(digits) == 11 else ''
 
 
 def _post(url, payload, headers, timeout=20):

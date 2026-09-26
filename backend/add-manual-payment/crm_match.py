@@ -32,6 +32,7 @@ NAME_GROUPS = [
     ["михаил", "миша", "мишка"],
     ["никита", "ник"],
     ["ольга", "оля"],
+    ["павел", "паша", "пашка", "павлик"],
     ["петр", "пётр", "петя", "петенька"],
     ["полина", "поля"],
     ["савелий", "савва", "сава", "савелик"],
@@ -57,6 +58,43 @@ NAME_ALIAS = _build_alias()
 def _canon(w: str) -> str:
     w = w.lower().replace('ё', 'е')
     return NAME_ALIAS.get(w, w)
+
+
+PATRONYMIC_SUF = ('ович', 'евич', 'ьич', 'овна', 'евна', 'ична', 'инична')
+
+
+def _is_given_name(w: str) -> bool:
+    """Имя ли это слово. Кроме словаря уменьшительных ловим имена по
+    окончанию: «Матвей», «Тимофей», «Андрей». Без этого «Матвей» считался
+    фамилией и оплата привязывалась к чужому однофамильцу."""
+    w = _canon(w)
+    if w in NAME_ALIAS.values():
+        return True
+    if w.endswith(PATRONYMIC_SUF):
+        return False
+    return w.endswith(('ей', 'ий', 'ья', 'ан', 'им')) and len(w) >= 4
+
+
+def _split_words(words):
+    """Делит ФИО на имена и фамилии. Отчество отбрасываем: в заявке на
+    оплату родитель его не пишет, а в CRM оно есть — сравнивать нечего.
+    Отчество узнаём по суффиксу либо по позиции: слово после имени."""
+    names, surnames = set(), set()
+    seen_name = False
+    for i, w in enumerate(words):
+        if len(w) < 2:
+            continue
+        if _is_given_name(w):
+            names.add(_canon(w))
+            seen_name = True
+            continue
+        low = w.lower().replace('ё', 'е')
+        # «Ильич» после «Матвей» — отчество, а «Химич» первым словом — фамилия
+        if low.endswith(PATRONYMIC_SUF) or (seen_name and i >= 2 and low.endswith('ич')):
+            continue
+        if len(w) >= 4:
+            surnames.add(_surname_root(w))
+    return names, surnames
 
 
 def _surname_root(w: str) -> str:
@@ -85,30 +123,43 @@ def _load_cached_names():
 def match_name(raw_name: str) -> str:
     """Возвращает имя из CRM-кэша, если нашлось надёжное совпадение, иначе исходное.
     Никогда не бросает исключений — при ошибке возвращает raw_name."""
+    found = find_customer(raw_name)
+    return found or raw_name
+
+
+def find_customer(raw_name: str):
+    """Ищет карточку в CRM-кэше. Возвращает имя из CRM или None, если
+    надёжного совпадения нет — лучше не найти, чем привязать оплату к чужому."""
     name = (raw_name or '').strip()
     if not name:
-        return raw_name
+        return None
     try:
         cached = _load_cached_names()
         entries = []
         for nm in cached:
             nm = (nm or '').strip()
-            if nm:
-                entries.append({'name': nm, 'words': set(_canon(w) for w in nm.lower().replace('ё', 'е').split())})
+            if not nm:
+                continue
+            # Порядок слов важен: по нему отличаем отчество от фамилии
+            ew_names, ew_roots = _split_words(nm.lower().replace('ё', 'е').split())
+            entries.append({'name': nm, 'names': ew_names, 'roots': ew_roots})
 
-        words = [w for w in name.lower().replace('ё', 'е').split() if len(w) >= 2]
-        canon = {_canon(w) for w in words}
-        surname_roots = {_surname_root(w) for w in words
-                         if _canon(w) not in NAME_ALIAS.values() and len(w) >= 4}
-        name_words = {w for w in canon if w in NAME_ALIAS.values()}
+        name_words, surname_roots = _split_words(name.lower().replace('ё', 'е').split())
 
         best, best_score = None, 0.0
         for e in entries:
-            ew = e['words']
-            ew_roots = {_surname_root(w) for w in ew}
+            ew_roots = e['roots']
+            ew_names = e['names']
             common_surname = surname_roots & ew_roots
-            common_name = name_words & ew
+            common_name = name_words & ew_names
+            # Фамилия обязательна: имя «Матвей» есть у десятка учеников,
+            # по нему одному карточку выбирать нельзя.
             if not common_surname:
+                continue
+            # Если у обеих сторон есть распознанные имена, но они не пересекаются —
+            # это разные люди (напр. "Павел Беляев" vs "Павел Черепанов"),
+            # совпадение только по фамилии-корню недостаточно.
+            if name_words and ew_names and not common_name:
                 continue
             score = 2.0 if common_name else 1.0
             score += len(common_surname) * 0.1 + len(common_name) * 0.1
@@ -118,4 +169,4 @@ def match_name(raw_name: str) -> str:
             return best['name']
     except Exception as e:
         print(f"CRM match failed: {e}")
-    return raw_name
+    return None

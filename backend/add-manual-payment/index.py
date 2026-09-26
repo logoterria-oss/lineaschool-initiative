@@ -8,7 +8,8 @@ import os
 import time
 import psycopg2
 from typing import Dict, Any
-from crm_match import match_name
+from crm_match import find_customer
+from payment_hook import send_payment_hook, mark_hook_result
 
 ADMIN_PASSWORD = '426874'
 
@@ -52,9 +53,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if not name or not plan or amount in (None, ''):
         return _resp(400, {'error': 'Заполните имя, тариф и сумму'})
 
-    # Приводим имя к виду из AlfaCRM (только для обычных тарифов, не для "Другое")
+    # Подбираем карточку в AlfaCRM, но введённое имя не подменяем:
+    # подбор может ошибиться, и оплата окажется на чужом ученике незаметно.
+    crm_name = None
     if not plan.lower().startswith('другое'):
-        name = match_name(name)
+        crm_name = find_customer(name)
 
     try:
         amount = float(amount)
@@ -84,21 +87,56 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return _resp(409, {'error': f'Месяц {target_month} сверён с бухгалтером и закрыт для изменений'})
         if paid_at:
             cur.execute(
-                "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, source, created_at, paid_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, 'manual', NOW(), %s) RETURNING id",
-                (name, '', '', plan, amount, order_id, paid_at),
+                "INSERT INTO payment_leads (name, crm_name, email, phone, plan, amount, order_id, source, created_at, paid_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, 'manual', NOW(), %s) RETURNING id, paid_at",
+                (name, crm_name, '', '', plan, amount, order_id, paid_at),
             )
         else:
             cur.execute(
-                "INSERT INTO payment_leads (name, email, phone, plan, amount, order_id, source, created_at, paid_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, 'manual', NOW(), NOW()) RETURNING id",
-                (name, '', '', plan, amount, order_id),
+                "INSERT INTO payment_leads (name, crm_name, email, phone, plan, amount, order_id, source, created_at, paid_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, 'manual', NOW(), NOW()) RETURNING id, paid_at",
+                (name, crm_name, '', '', plan, amount, order_id),
             )
-        new_id = cur.fetchone()[0]
+        new_id, saved_paid_at = cur.fetchone()
         conn.commit()
+
+        # Оплата проведена — показываем карточку в «Окне взаимодействия».
+        # После commit: сбой отправки не должен откатывать оплату.
+        _notify_interaction(conn, {
+            'name': name, 'crm_name': crm_name, 'plan': plan, 'amount': amount,
+            'order_id': order_id, 'paid_at': saved_paid_at, 'transaction_id': None,
+        }, schema)
+
         cur.close()
         conn.close()
         return _resp(200, {'success': True, 'id': new_id, 'order_id': order_id})
     except Exception as e:
         print(f'Database error: {str(e)}')
         return _resp(500, {'error': str(e)})
+
+
+def _notify_interaction(conn, row: Dict[str, Any], schema: str) -> None:
+    """Отдаёт карточку оплаты в «Окно взаимодействия».
+
+    Телефон при ручном вводе не спрашиваем, поэтому берём его из карточки
+    AlfaCRM — по номеру окно кладёт карточку в существующий диалог.
+    Ошибка отправки не ломает приём оплаты: она уже зафиксирована,
+    а недоставленную карточку окно заберёт через feed.
+    """
+    try:
+        crm_name = row.get('crm_name')
+        if crm_name:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT phone FROM {schema}.crm_customers_cache "
+                    f"WHERE name = %s AND phone IS NOT NULL LIMIT 1",
+                    (crm_name,),
+                )
+                found = cur.fetchone()
+                if found:
+                    row = {**row, 'phone': found[0]}
+
+        result = send_payment_hook(row)
+        mark_hook_result(conn, row['order_id'], result)
+    except Exception as e:
+        print(f"payment-hook failed for {row.get('order_id')}: {e}")
