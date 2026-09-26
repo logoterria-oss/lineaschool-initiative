@@ -24,11 +24,33 @@ export function usePaymentLeads(forceHead = false) {
   const [unblockingId, setUnblockingId] = useState<number | null>(null);
 
   useEffect(() => {
-    // При открытии страницы только читаем из базы. Синхронизация с почтой банка —
-    // тяжёлая операция, запускаем её вручную кнопкой «Синхронизировать».
+    // Сначала быстро показываем то, что уже в базе.
     fetchLeads();
     fetchBlocked();
+    // Затем тихо подстраховываем внешний планировщик: если он отвалился,
+    // оплаты всё равно подтвердятся, пока кто-то работает в разделе.
+    backgroundSync();
   }, []);
+
+  /**
+   * Запасная проверка почты при открытии раздела.
+   * Основной путь — внешний планировщик раз в 10 минут; это подстраховка
+   * на случай, если он недоступен. Не чаще раза в BACKUP_SYNC_INTERVAL,
+   * молча: без спиннера и без сообщений — сотрудник ничего не ждёт.
+   */
+  const backgroundSync = async () => {
+    const last = Number(localStorage.getItem(BACKUP_SYNC_KEY) || 0);
+    if (Date.now() - last < BACKUP_SYNC_INTERVAL) return;
+    localStorage.setItem(BACKUP_SYNC_KEY, String(Date.now()));
+    try {
+      const resp = await fetch(SYNC_URL);
+      const data = await resp.json();
+      // Обновляем список, только если реально нашлись новые оплаты
+      if (data.ok && data.matched > 0) await fetchLeads();
+    } catch {
+      // Молчим: это фоновая подстраховка, есть кнопка «Синхронизировать»
+    }
+  };
 
   const fetchBlocked = async () => {
     try {
