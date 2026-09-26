@@ -23,6 +23,9 @@ SENDER_FILTER = "oplata@tbank.ru"
 FOLDERS_TO_CHECK = ["INBOX", "INBOX/Receipts"]
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
 SEARCH_DAYS = 7
+# Сколько свежих писем разбираем в каждой папке. Оплат за неделю — единицы,
+# ограничение нужно на случай рассылки, чтобы не упереться в таймаут.
+MAX_EMAILS_PER_FOLDER = 40
 
 
 def handler(event: dict, context) -> dict:
@@ -113,16 +116,21 @@ def sync_payments():
             fids = message_ids[0].split()
             print(f"  {len(fids)} bank emails in {folder!r}")
 
-            # Тянем письма пачкой и парсим каждое один раз
-            for msg_id in reversed(fids):
+            # Забираем все письма ОДНИМ запросом: раньше на каждое письмо шёл
+            # отдельный поход в почту, и на холодном старте это не укладывалось
+            # в таймаут. Берём только свежие — с конца списка.
+            recent = list(reversed(fids))[:MAX_EMAILS_PER_FOLDER]
+            fetched = _fetch_batch(imap, recent)
+
+            for msg_id in recent:
                 if not (unpaid_orders - found_orders):
                     break
                 try:
-                    _, data = imap.fetch(msg_id, "(BODY.PEEK[])")
-                    if not data or not data[0]:
+                    raw = fetched.get(msg_id)
+                    if not raw:
                         continue
 
-                    msg = email.message_from_bytes(data[0][1])
+                    msg = email.message_from_bytes(raw)
                     paid_at = _parse_email_date(msg.get("Date", ""))
 
                     body_html = _get_body(msg, prefer="html")
@@ -208,6 +216,40 @@ def sync_payments():
         conn.close()
 
     return {"ok": True, "matched": matched, "already_paid": 0, "not_found": not_found}
+
+
+def _fetch_batch(imap, msg_ids: list) -> dict:
+    """Забирает несколько писем одним запросом к почте.
+
+    Отдельный fetch на каждое письмо — это отдельный сетевой поход туда-обратно.
+    На 13 письмах набегали секунды, из-за чего функция не укладывалась в таймаут
+    после простоя. Просим все письма разом и раскладываем ответ по номерам.
+    """
+    if not msg_ids:
+        return {}
+    try:
+        ids = b",".join(msg_ids).decode()
+        _, data = imap.fetch(ids, "(BODY.PEEK[])")
+        result = {}
+        idx = 0
+        for part in data or []:
+            # Почта отвечает парами: (заголовок с номером, тело письма)
+            if isinstance(part, tuple) and len(part) > 1 and part[1]:
+                if idx < len(msg_ids):
+                    result[msg_ids[idx]] = part[1]
+                idx += 1
+        return result
+    except Exception as e:
+        print(f"Batch fetch failed ({e}), возвращаемся к поштучной загрузке")
+        result = {}
+        for mid in msg_ids:
+            try:
+                _, data = imap.fetch(mid, "(BODY.PEEK[])")
+                if data and data[0] and isinstance(data[0], tuple):
+                    result[mid] = data[0][1]
+            except Exception:
+                continue
+        return result
 
 
 def _notify_interaction(conn, row: dict) -> None:
