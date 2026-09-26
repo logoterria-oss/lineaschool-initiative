@@ -18,9 +18,11 @@ CORS = {
 MAIL_HOST = "imap.mail.ru"
 MAIL_USER = "abram.viktoriya.00@mail.ru"
 SENDER_FILTER = "oplata@tbank.ru"
-FOLDERS_TO_CHECK = ["INBOX", "INBOX/Receipts", "Receipts"]
+# Папки почты, где лежат письма банка. Каждая папка — отдельный сетевой
+# запрос (2-3 секунды), поэтому держим здесь только реально существующие.
+FOLDERS_TO_CHECK = ["INBOX", "INBOX/Receipts"]
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
-SEARCH_DAYS = 14
+SEARCH_DAYS = 7
 
 
 def handler(event: dict, context) -> dict:
@@ -53,7 +55,14 @@ def sync_payments():
     conn = psycopg2.connect(dsn)
     try:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT order_id FROM {SCHEMA}.payment_leads WHERE paid_at IS NULL")
+            # Только свежие заявки: письма ищем за SEARCH_DAYS дней, поэтому
+            # заявка годовой давности в них физически не встретится. Берём с
+            # запасом в пару дней — на случай, если письмо банка задержалось.
+            cur.execute(
+                f"SELECT order_id FROM {SCHEMA}.payment_leads "
+                f"WHERE paid_at IS NULL AND created_at > NOW() - INTERVAL '%s days'"
+                % (SEARCH_DAYS + 2)
+            )
             unpaid_orders = {row[0] for row in cur.fetchall()}
             # Чёрный список: заявки/транзакции, удалённые вручную — их не воскрешаем
             cur.execute(f"SELECT order_id, transaction_id FROM {SCHEMA}.payment_blocklist")

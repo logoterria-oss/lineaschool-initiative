@@ -123,6 +123,12 @@ def send_payment_hook(row: Dict[str, Any]) -> Dict[str, Any]:
         except urllib.error.HTTPError as e:
             text = e.read().decode(errors='replace')[:300]
             last = {'ok': False, 'error': f'HTTP {e.code}: {text}', 'attempts': attempt}
+            # 401/403/404 — окно не принимает хук (ключ не тот либо обработчик
+            # ещё не внедрён). Повторы не помогут, а съедают по 4 секунды
+            # на каждой оплате. Уходим сразу: карточку окно заберёт из feed.
+            if e.code in (401, 403, 404):
+                print(f"payment-hook: окно отклонило хук ({e.code}) — повторы бессмысленны")
+                return last
         except Exception as e:
             last = {'ok': False, 'error': str(e), 'attempts': attempt}
 
