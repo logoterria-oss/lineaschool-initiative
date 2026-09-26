@@ -17,6 +17,10 @@ const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
   const isQuestionnairesPage = location.pathname === '/admin/questionnaires';
   const isDashboard = ['/admin', '/admin/diag', '/admin/teacher', '/admin/manager', '/admin/role-select'].includes(location.pathname);
 
+  // Единый стиль круглых иконок-кнопок в шапке
+  const iconBtn =
+    'p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors';
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4">
@@ -61,58 +65,35 @@ const AdminHeader = ({ showOnlyHome = false }: AdminHeaderProps) => {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Иконки-действия: тот же вид, что в окне взаимодействия —
+              без подписей, серые, с мягкой подсветкой при наведении. */}
+          <div className="flex items-center gap-1">
             {!showOnlyHome && !isDashboard && (
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => navigate('/admin')}
-                className="hidden sm:flex"
+                title="Админ-панель"
+                aria-label="Админ-панель"
+                className={iconBtn}
               >
-                <Icon name="LayoutGrid" className="mr-2" size={16} />
-                Админ-панель
-              </Button>
+                <Icon name="LayoutGrid" size={20} />
+              </button>
             )}
-            {!showOnlyHome && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSupportOpen(true)}
-                  className="text-blue-700 border-blue-200 hover:bg-blue-50 hover:text-blue-800"
-                >
-                  <Icon name="LifeBuoy" className="sm:mr-2" size={16} />
-                  <span className="hidden sm:inline">Техподдержка</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/')}
-                >
-                  <Icon name="Home" className="mr-2" size={16} />
-                  <span className="hidden sm:inline">Главная</span>
-                </Button>
-              </>
-            )}
-            {showOnlyHome && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setSupportOpen(true)}
-                  className="text-blue-700 border-blue-200 hover:bg-blue-50 hover:text-blue-800"
-                >
-                  <Icon name="LifeBuoy" className="sm:mr-2" size={18} />
-                  <span className="hidden sm:inline">Техподдержка</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/')}
-                >
-                  <Icon name="Home" className="mr-2" size={18} />
-                  На главную
-                </Button>
-              </>
-            )}
+            <button
+              onClick={() => setSupportOpen(true)}
+              title="Техподдержка"
+              aria-label="Техподдержка"
+              className={iconBtn}
+            >
+              <Icon name="LifeBuoy" size={20} />
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              title="На главную"
+              aria-label="На главную"
+              className={iconBtn}
+            >
+              <Icon name="Home" size={20} />
+            </button>
           </div>
 
           <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />

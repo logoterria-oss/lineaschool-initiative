@@ -10,6 +10,7 @@ import {
   StaffRole,
 } from '@/lib/staffApi';
 import { homePathForRole } from '@/lib/useRoleGuard';
+import SupportDialog from '@/components/SupportDialog';
 import EmailVerifyModal from '@/components/staffAuth/EmailVerifyModal';
 import ForgotPasswordModal from '@/components/staffAuth/ForgotPasswordModal';
 
@@ -80,6 +81,7 @@ const RoleSelectPage = () => {
 
   const [verifyData, setVerifyData] = useState<{ phone: string; crmEmail: string } | null>(null);
   const [showForgot, setShowForgot] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [checkingSession, setCheckingSession] = useState(() => !!getStaffToken());
 
   // Автовход: если есть действующая сессия (токен живёт 30 дней) — сразу в кабинет.
@@ -365,6 +367,14 @@ const RoleSelectPage = () => {
     <div className="relative min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center px-4">
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <button
+          onClick={() => setSupportOpen(true)}
+          title="Техподдержка"
+          aria-label="Техподдержка"
+          className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-400 shadow-sm transition-all duration-200"
+        >
+          <Icon name="LifeBuoy" size={20} />
+        </button>
+        <button
           onClick={handleLogout}
           title="Выйти"
           className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-300 shadow-sm transition-all duration-200"
@@ -412,6 +422,8 @@ const RoleSelectPage = () => {
         <Icon name="ArrowLeft" size={15} />
         На главную
       </button>
+
+      <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
     </div>
   );
 };

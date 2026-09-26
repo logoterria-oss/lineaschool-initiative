@@ -57,7 +57,15 @@ const StaffHomePage = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center px-4 py-10">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <button
+          onClick={() => setSupportOpen(true)}
+          title="Техподдержка"
+          aria-label="Техподдержка"
+          className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-400 shadow-sm transition-all duration-200"
+        >
+          <Icon name="LifeBuoy" size={20} />
+        </button>
         <button
           onClick={onLogout}
           title="Выйти"
@@ -113,22 +121,13 @@ const StaffHomePage = () => {
         </div>
       </div>
 
-      <div className="mt-8 flex items-center gap-6">
-        <button
-          onClick={() => navigate('/')}
-          className="text-gray-400 hover:text-gray-600 flex items-center gap-2 text-sm transition-colors"
-        >
-          <Icon name="ArrowLeft" size={15} />
-          На главную
-        </button>
-        <button
-          onClick={() => setSupportOpen(true)}
-          className="text-blue-500 hover:text-blue-700 flex items-center gap-2 text-sm transition-colors"
-        >
-          <Icon name="LifeBuoy" size={15} />
-          Техподдержка
-        </button>
-      </div>
+      <button
+        onClick={() => navigate('/')}
+        className="mt-8 text-gray-400 hover:text-gray-600 flex items-center gap-2 text-sm transition-colors"
+      >
+        <Icon name="ArrowLeft" size={15} />
+        На главную
+      </button>
 
       <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
     </div>
