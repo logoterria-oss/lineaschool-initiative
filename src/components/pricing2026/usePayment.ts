@@ -17,7 +17,12 @@ export function usePayment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const clientName = `${lastName.trim()} ${firstName.trim()}`.trim();
-  const isNameValid = lastName.trim().length >= 2 && firstName.trim().length >= 2;
+
+  /** Фамилия и имя: минимум 2 буквы в каждом, иначе оплату не опознать.
+   *  Проверяем именно буквы — «-» или эмодзи не должны сходить за фамилию. */
+  const isFilled = (value: string) =>
+    (value.trim().match(/[a-zа-яё]/gi) || []).length >= 2;
+  const isNameValid = isFilled(lastName) && isFilled(firstName);
 
   const open = (payment: PaymentTarget) => setTarget(payment);
 

@@ -10,6 +10,12 @@ import psycopg2
 from typing import Dict, Any
 from datetime import datetime
 from payment_hook import payment_payload
+from crm_match import find_customer, load_cached_names
+
+# Сколько заявок без карточки CRM досчитываем за один запрос списка.
+# Сопоставление идёт в памяти по готовому кэшу имён, поэтому даже пара
+# сотен укладывается в доли секунды.
+BACKFILL_LIMIT = 400
 
 
 def service_key_ok(event: Dict[str, Any]) -> bool:
@@ -78,7 +84,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
-        
+
+        # Досчитываем карточки CRM для заявок, у которых их ещё нет: кэш CRM
+        # обновляется, алгоритм сопоставления улучшается, и старые оплаты
+        # не должны навсегда оставаться «без карточки».
+        _backfill_crm_names(conn)
+
         # Get all leads ordered by created_at DESC
         cur.execute(
             "SELECT id, name, plan, amount, order_id, created_at, paid_at, "
@@ -122,6 +133,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': str(e)}),
             'isBase64Encoded': False
         }
+
+
+def _backfill_crm_names(conn) -> None:
+    """Подбирает карточку CRM для заявок, где crm_name пуст.
+
+    Считаем в памяти по одному разу загруженному кэшу имён — на 400 заявках
+    это доли секунды. Любая ошибка здесь не должна ломать выдачу списка:
+    без карточки заявка просто покажется как «нет карточки в CRM».
+    """
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT id, name FROM {schema}.payment_leads "
+            f"WHERE crm_name IS NULL AND name <> '' "
+            f"ORDER BY created_at DESC LIMIT {BACKFILL_LIMIT}"
+        )
+        pending = cur.fetchall()
+        if not pending:
+            cur.close()
+            return
+
+        names = load_cached_names(conn)
+        if not names:
+            cur.close()
+            return
+
+        found = 0
+        for lead_id, raw_name in pending:
+            match = find_customer(raw_name, names)
+            if not match:
+                continue
+            cur.execute(
+                f"UPDATE {schema}.payment_leads SET crm_name = %s WHERE id = %s",
+                (match, lead_id),
+            )
+            found += 1
+        conn.commit()
+        cur.close()
+        print(f'CRM backfill: проверено {len(pending)}, найдено карточек {found}')
+    except Exception as e:
+        conn.rollback()
+        print(f'CRM backfill failed: {e}')
 
 
 def _feed(dsn: str, status: str) -> Dict[str, Any]:

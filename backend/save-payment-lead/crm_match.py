@@ -1,46 +1,77 @@
-"""Сопоставление имени ребёнка с карточкой клиента в AlfaCRM (S20).
-Приводит имя к виду, как оно записано в CRM (учитывает уменьшительные формы
-и составные карточки вида 'Марк и Сеня Константиновы').
-Источник имён — локальный кэш в таблице crm_customers_cache (быстро, без вызова API)."""
+"""Поиск карточки клиента в AlfaCRM (S20) по имени, которое родитель
+указал при оплате.
+
+Правило простое: имя плательщика НИКОГДА не подменяем — его возвращает
+только поле `name` заявки. Здесь мы лишь ищем, какой карточке CRM оно
+соответствует, чтобы показать её рядом («в CRM: …»).
+
+Источник имён — локальный кэш crm_customers_cache (быстро, без вызова API).
+"""
 import os
+import re
+from difflib import SequenceMatcher
+
 import psycopg2
 
+# Уменьшительные формы: первая в группе — та, к которой приводим остальные.
 NAME_GROUPS = [
-    ["александр", "александра", "саша", "сашка", "шура", "саня"],
-    ["алексей", "леша", "лёша", "леха", "алеша"],
-    ["анастасия", "настя", "ната", "настенька"],
-    ["анна", "аня", "анюта", "нюра"],
-    ["артем", "артём", "тема", "тёма"],
+    ["александр", "александра", "саша", "сашка", "шура", "саня", "сандра"],
+    ["алексей", "леша", "леха", "алеша", "алексеи"],
+    ["алиса", "алисия"],
+    ["анастасия", "настя", "настенька", "ася"],
+    ["анна", "аня", "анюта", "нюра", "анечка"],
+    ["антон", "тоша", "антоша"],
+    ["арина", "ариша"],
+    ["артем", "тема", "артемий", "артемка"],
     ["богдан", "бодя"],
     ["валерия", "лера", "валера"],
+    ["варвара", "варя"],
     ["василий", "вася"],
+    ["василиса", "вася", "василиса"],
+    ["вероника", "ника", "ники"],
     ["виктория", "вика"],
     ["владислав", "влад", "владик", "слава"],
     ["владимир", "вова", "володя"],
+    ["георгий", "гоша", "жора", "гера"],
+    ["григорий", "гриша"],
+    ["даниил", "даня", "данила", "данил"],
     ["дмитрий", "дима", "митя"],
     ["евгения", "женя"],
-    ["евгений", "женя"],
+    ["евгений", "женя", "женек"],
     ["екатерина", "катя", "катюша", "катенька"],
-    ["елизавета", "лиза"],
+    ["елена", "лена", "леночка", "аленка", "алена"],
+    ["елизавета", "лиза", "лизавета"],
     ["иван", "ваня", "ванечка"],
     ["илья", "илюша"],
+    ["кирилл", "кира", "киря"],
     ["константин", "костя"],
     ["ксения", "ксюша", "ксюха"],
-    ["леонид", "леня", "лёня"],
-    ["мария", "маша", "машенька", "маня"],
-    ["марк"],
+    ["леонид", "леня"],
+    ["макар", "макарка"],
+    ["максим", "макс"],
+    ["мария", "маша", "машенька", "маня", "маруся"],
+    ["матвей", "матвейка"],
     ["михаил", "миша", "мишка"],
-    ["никита", "ник"],
+    ["никита", "никитка"],
+    ["николай", "коля"],
     ["ольга", "оля"],
     ["павел", "паша", "пашка", "павлик"],
-    ["петр", "пётр", "петя", "петенька"],
+    ["петр", "петя", "петенька"],
     ["полина", "поля"],
+    ["роман", "рома"],
+    ["ростислав", "ростик"],
     ["савелий", "савва", "сава", "савелик"],
-    ["семен", "семён", "сема", "сёма", "сеня"],
-    ["сергей", "сережа", "серёжа", "серж"],
+    ["святослав", "свят"],
+    ["семен", "сема", "сеня", "семён"],
+    ["сергей", "сережа", "серж"],
+    ["софия", "софья", "соня", "софа"],
+    ["степан", "степа", "стеша"],
     ["татьяна", "таня"],
-    ["федор", "фёдор", "федя"],
+    ["тимофей", "тима", "тимоша"],
+    ["ульяна", "уля"],
+    ["федор", "федя"],
     ["юлия", "юля"],
+    ["ярослав", "ярик"],
 ]
 
 
@@ -48,125 +79,158 @@ def _build_alias():
     alias = {}
     for group in NAME_GROUPS:
         for form in group:
-            alias[form] = group[0]
+            # Первая форма группы — каноническая. Если краткое имя встречается
+            # в двух группах (Женя), оставляем первую: сравниваем всё равно
+            # обе стороны одинаково.
+            alias.setdefault(form.replace('ё', 'е'), group[0].replace('ё', 'е'))
     return alias
 
 
 NAME_ALIAS = _build_alias()
 
+# Отчество: в заявке на оплату его обычно нет, а в CRM есть — сравнивать
+# нечего, поэтому отбрасываем с обеих сторон.
+PATRONYMIC_RE = re.compile(r'^.{3,}(ович|евич|ьич|овна|евна|ична|инична)$')
 
-def _canon(w: str) -> str:
-    w = w.lower().replace('ё', 'е')
-    return NAME_ALIAS.get(w, w)
-
-
-PATRONYMIC_SUF = ('ович', 'евич', 'ьич', 'овна', 'евна', 'ична', 'инична')
-
-
-def _is_given_name(w: str) -> bool:
-    """Имя ли это слово. Кроме словаря уменьшительных ловим имена по
-    окончанию: «Матвей», «Тимофей», «Андрей». Без этого «Матвей» считался
-    фамилией и оплата привязывалась к чужому однофамильцу."""
-    w = _canon(w)
-    if w in NAME_ALIAS.values():
-        return True
-    if w.endswith(PATRONYMIC_SUF):
-        return False
-    return w.endswith(('ей', 'ий', 'ья', 'ан', 'им')) and len(w) >= 4
+# Падежные и родовые окончания: «Боковая»/«Боковой», «Лапочкин»/«Лапочкина»,
+# «Нестеровский»/«Нестеровская» должны сводиться к одному корню.
+# Плюс множественное число: «Марк и Сеня Константиновы», «Карцевы».
+SURNAME_SUFFIXES = (
+    'овская', 'евская', 'овский', 'евский',
+    'ская', 'ский', 'ской', 'цкая', 'цкий', 'цкой',
+    'овы', 'евы', 'ины', 'ыны',
+    'ова', 'ева', 'ина', 'ына', 'ого', 'ому',
+    'ов', 'ев', 'ин', 'ын',
+    'ая', 'яя', 'ый', 'ий', 'ой',
+)
 
 
-def _split_words(words):
-    """Делит ФИО на имена и фамилии. Отчество отбрасываем: в заявке на
-    оплату родитель его не пишет, а в CRM оно есть — сравнивать нечего.
-    Отчество узнаём по суффиксу либо по позиции: слово после имени."""
-    names, surnames = set(), set()
-    seen_name = False
-    for i, w in enumerate(words):
-        if len(w) < 2:
-            continue
-        if _is_given_name(w):
-            names.add(_canon(w))
-            seen_name = True
-            continue
-        low = w.lower().replace('ё', 'е')
-        # «Ильич» после «Матвей» — отчество, а «Химич» первым словом — фамилия
-        if low.endswith(PATRONYMIC_SUF) or (seen_name and i >= 2 and low.endswith('ич')):
-            continue
-        if len(w) >= 4:
-            surnames.add(_surname_root(w))
-    return names, surnames
+def _words(text: str) -> list:
+    """Слова имени без эмодзи, цифр и знаков препинания."""
+    low = (text or '').lower().replace('ё', 'е')
+    low = re.sub(r'[^а-яa-z\s-]+', ' ', low)
+    return [w for w in low.replace('-', ' ').split() if len(w) >= 2]
 
 
-def _surname_root(w: str) -> str:
-    w = w.lower().replace('ё', 'е')
-    for suf in ('овы', 'евы', 'ова', 'ева', 'ове', 'ову', 'ов', 'ев',
-                'ины', 'ина', 'ин', 'ыны', 'ына', 'ын'):
-        if w.endswith(suf) and len(w) - len(suf) >= 3:
+def _root(word: str) -> str:
+    """Корень слова: уменьшительное → полное имя, затем срез окончания."""
+    w = NAME_ALIAS.get(word, word)
+    for suf in SURNAME_SUFFIXES:
+        if w.endswith(suf) and len(w) - len(suf) >= 4:
             return w[:-len(suf)]
+    if len(w) >= 6 and w[-1] in 'аяьйе':
+        return w[:-1]
     return w
 
 
-def _load_cached_names():
+def _tokens(full_name: str) -> list:
+    """Корни значимых слов имени: отчество отброшено, порядок не важен."""
+    out = []
+    for w in _words(full_name):
+        if PATRONYMIC_RE.match(w):
+            continue
+        root = _root(w)
+        if len(root) >= 3 and root not in out:
+            out.append(root)
+    return out
+
+
+def _similar(a: str, b: str) -> bool:
+    """Считаем корни одним словом. Небольшая нестрогость нужна для опечаток
+    («Магомедшапиев»/«Магомедшапиев»), но не настолько, чтобы склеить
+    разные фамилии."""
+    if a == b:
+        return True
+    if len(a) >= 5 and len(b) >= 5:
+        return SequenceMatcher(None, a, b).ratio() >= 0.9
+    return False
+
+
+def load_cached_names(conn=None) -> list:
+    """Имена карточек из кэша CRM. Если соединение уже открыто — переиспользуем:
+    при пакетном сопоставлении не нужно ходить в базу на каждое имя."""
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute(f"SELECT name FROM {_schema()}.crm_customers_cache")
+        names = [r[0] for r in cur.fetchall()]
+        cur.close()
+        return names
+
     dsn = os.environ.get('DATABASE_URL')
     if not dsn:
         return []
-    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
-    conn = psycopg2.connect(dsn)
-    cur = conn.cursor()
-    cur.execute(f"SELECT name FROM {schema}.crm_customers_cache")
-    names = [r[0] for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return names
+    own = psycopg2.connect(dsn)
+    try:
+        return load_cached_names(own)
+    finally:
+        own.close()
 
 
-def match_name(raw_name: str) -> str:
-    """Возвращает имя из CRM-кэша, если нашлось надёжное совпадение, иначе исходное.
-    Никогда не бросает исключений — при ошибке возвращает raw_name."""
-    found = find_customer(raw_name)
-    return found or raw_name
+def _schema() -> str:
+    return os.environ.get('MAIN_DB_SCHEMA', 'public')
 
 
-def find_customer(raw_name: str):
-    """Ищет карточку в CRM-кэше. Возвращает имя из CRM или None, если
-    надёжного совпадения нет — лучше не найти, чем привязать оплату к чужому."""
-    name = (raw_name or '').strip()
-    if not name:
+# Старое имя функции — оставлено, чтобы не ломать существующие вызовы
+_load_cached_names = load_cached_names
+
+
+def find_customer(raw_name: str, cached_names: list = None):
+    """Карточка CRM для имени плательщика или None, если уверенности нет.
+
+    Совпадение считаем надёжным, когда сошлись минимум ДВА слова
+    (например фамилия и имя): по одному имени «Матвей» карточку выбирать
+    нельзя — их в базе десяток. Исключение — когда и в заявке, и в карточке
+    всего одно слово и такая карточка в базе единственная.
+    Если на первом месте оказались несколько разных карточек — не угадываем.
+    """
+    tokens = _tokens(raw_name or '')
+    if not tokens:
         return None
     try:
-        cached = _load_cached_names()
-        entries = []
-        for nm in cached:
+        names = cached_names if cached_names is not None else load_cached_names()
+        scored = []
+        for nm in names:
             nm = (nm or '').strip()
             if not nm:
                 continue
-            # Порядок слов важен: по нему отличаем отчество от фамилии
-            ew_names, ew_roots = _split_words(nm.lower().replace('ё', 'е').split())
-            entries.append({'name': nm, 'names': ew_names, 'roots': ew_roots})
-
-        name_words, surname_roots = _split_words(name.lower().replace('ё', 'е').split())
-
-        best, best_score = None, 0.0
-        for e in entries:
-            ew_roots = e['roots']
-            ew_names = e['names']
-            common_surname = surname_roots & ew_roots
-            common_name = name_words & ew_names
-            # Фамилия обязательна: имя «Матвей» есть у десятка учеников,
-            # по нему одному карточку выбирать нельзя.
-            if not common_surname:
+            card = _tokens(nm)
+            if not card:
                 continue
-            # Если у обеих сторон есть распознанные имена, но они не пересекаются —
-            # это разные люди (напр. "Павел Беляев" vs "Павел Черепанов"),
-            # совпадение только по фамилии-корню недостаточно.
-            if name_words and ew_names and not common_name:
+            hits = [t for t in tokens if any(_similar(t, c) for c in card)]
+            if len(hits) >= 2:
+                # Чем больше совпало и чем ближе состав имён — тем лучше
+                score = len(hits) * 10 - abs(len(card) - len(tokens))
+            elif len(hits) == 1 and len(tokens) == 1 and len(card) == 1:
+                # Одно слово с обеих сторон: карточка совпала целиком.
+                # Если таких карточек окажется несколько — отсечём ниже.
+                score = 5
+            else:
                 continue
-            score = 2.0 if common_name else 1.0
-            score += len(common_surname) * 0.1 + len(common_name) * 0.1
-            if score > best_score:
-                best_score, best = score, e
-        if best and best_score >= 1:
-            return best['name']
+            scored.append((score, nm))
+
+        if not scored:
+            return None
+        best = max(s for s, _ in scored)
+        top = sorted({nm for s, nm in scored if s == best})
+        if len(top) == 1:
+            return top[0]
+        # Один и тот же ученик часто заведён в CRM дважды («Катя Гусева» и
+        # «Гусева Екатерина Евгеньевна»). Если у всех лидеров одинаковый набор
+        # слов — это дубли одной карточки, берём самую полную запись.
+        if len({frozenset(_tokens(nm)) for nm in top}) == 1:
+            return max(top, key=len)
+        # Одна оплата на двух детей («Марк и Сеня Константиновы») — в CRM это
+        # две разные карточки. Обе и показываем, а не выбираем одну наугад.
+        if all(set(_tokens(nm)) <= set(tokens) for nm in top):
+            return ', '.join(top)
+        print(f"CRM match ambiguous for {raw_name!r}: {top}")
+        return None
     except Exception as e:
         print(f"CRM match failed: {e}")
     return None
+
+
+def match_name(raw_name: str) -> str:
+    """Совместимость со старым вызовом: имя из CRM либо исходное.
+    Для заявок на оплату использовать НЕ нужно — там имя клиента не подменяем."""
+    return find_customer(raw_name) or raw_name

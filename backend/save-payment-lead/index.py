@@ -57,9 +57,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     amount = body_data.get('amount')
     order_id = body_data.get('order_id')
 
-    # Подбираем карточку в AlfaCRM. В заявке храним ИМЯ РОДИТЕЛЯ как есть:
-    # раньше вместо него писалась найденная карточка, и при ошибке подбора
-    # оплата отображалась на чужом ученике без шансов заметить подмену.
+    # Подбираем карточку в AlfaCRM. В заявке храним ИМЯ, КОТОРОЕ ВВЁЛ КЛИЕНТ,
+    # как есть: раньше вместо него писалась найденная карточка, и при ошибке
+    # подбора оплата отображалась на чужом ученике без шансов заметить подмену.
+    # Никогда не пишите найденную карточку в поле name.
     crm_name = find_customer(name) if name else None
 
     print(f'Saving payment lead: {name} (CRM: {crm_name}), {plan}, {amount}, {order_id}')
@@ -112,6 +113,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     crm_line = "\n🗂 В CRM: карточка не найдена — проверьте вручную"
                 else:
                     crm_line = ''
+                # Одно слово вместо «Фамилия Имя» — опознать плательщика
+                # трудно, поэтому сразу просим уточнить у родителя.
+                if len((name or '').split()) < 2:
+                    crm_line += "\n⚠️ Указано только одно слово — уточните ФИО ребёнка"
                 message = f"🔔 Клиент перешел на страницу оплаты!\n\n👤 Имя: {name}{crm_line}\n📦 Тариф: {plan}\n💵 Сумма: {amount}₽\n🔢 ID заказа: {order_id}"
                 results = notify_all(bot_token, recipients(), message)
                 print(f'Telegram delivery for order {order_id}: {results}')
