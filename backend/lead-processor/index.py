@@ -32,7 +32,8 @@ def recipients() -> list:
 
 
 def save_lead_to_db(parent_name: str, student_name: str, contact: str,
-                    messengers: list = None, telegram: str = ''):
+                    messengers: list = None, telegram: str = '',
+                    marketing_consent: bool = False):
     """Сохраняет новую заявку в таблицу leads (для раздела 'Список лидов')."""
     dsn = os.environ.get('DATABASE_URL')
     if not dsn:
@@ -54,9 +55,10 @@ def save_lead_to_db(parent_name: str, student_name: str, contact: str,
         conn.autocommit = True
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO leads (parent_name, student_name, contact, request_date, source) "
+            "INSERT INTO leads (parent_name, student_name, contact, request_date, "
+            "source, marketing_consent) "
             f"VALUES ('{esc(parent_name)}', '{esc(student_name)}', '{esc(contact_full)}', "
-            f"'{esc(req_date)}', 'site')"
+            f"'{esc(req_date)}', 'site', {'TRUE' if marketing_consent else 'FALSE'})"
         )
         cur.close()
         conn.close()
@@ -180,7 +182,8 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '',
 
 def send_telegram_notification(child_name: str, parent_name: str, child_birth_date: str, 
                                telegram: str, phone: str, email: str = '', 
-                               date: str = '', time: str = '', messengers: list = None):
+                               date: str = '', time: str = '', messengers: list = None,
+                               marketing_consent: bool = False):
     bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
     chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
     
@@ -217,7 +220,10 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
         message_parts.append(f"\n📅 Дата: {date}")
     if time:
         message_parts.append(f"\n🕐 Время: {time}")
-    
+    message_parts.append(
+        f"\n📣 Реклама: {'согласие получено' if marketing_consent else 'отказ'}"
+    )
+
     message = ''.join(message_parts)
     
     recipient_ids = recipients()
@@ -337,6 +343,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         child_birth_date = body_data.get('childBirthDate', '')
         telegram_username = body_data.get('telegram', '')
         messengers = body_data.get('messengers', [])
+        # Добровольное согласие на рекламные рассылки (SMS, e-mail, соцсети).
+        # Фиксируем в заявке: без него слать промо нельзя.
+        marketing_consent = bool(body_data.get('marketingConsent'))
         
         email = body_data.get('email', '')
         phone = body_data.get('phone', '')
@@ -376,6 +385,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             note_parts.append(f'Telegram: {telegram_username}')
         if date and time:
             note_parts.append(f'Запись на диагностику: {date} в {time}')
+        note_parts.append(
+            'Согласие на рекламную рассылку (SMS, e-mail, соцсети): '
+            + ('ДА' if marketing_consent else 'НЕТ')
+        )
         if custom_note:
             note_parts.append(custom_note)
         
@@ -401,6 +414,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             contact=phone,
             messengers=messengers,
             telegram=telegram_username,
+            marketing_consent=marketing_consent,
         )
 
         # Отправка в Telegram. Никогда не роняем запрос из-за проблем с Telegram:
@@ -416,7 +430,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 email=email,
                 date=date,
                 time=time,
-                messengers=messengers
+                messengers=messengers,
+                marketing_consent=marketing_consent
             )
         except Exception as tg_err:
             print(f'Telegram notification skipped due to error: {str(tg_err)}')

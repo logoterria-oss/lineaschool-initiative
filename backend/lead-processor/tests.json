@@ -15,7 +15,8 @@
         "parentName": "Тестовый Родитель",
         "phone": "+79236251611",
         "messengers": ["Telegram", "Max"],
-        "telegram": "@testuser"
+        "telegram": "@testuser",
+        "marketingConsent": true
       },
       "expectedStatus": 200,
       "expectedBody": {

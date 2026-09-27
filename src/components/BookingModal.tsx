@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -10,13 +9,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Icon from "@/components/ui/icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationModal from "@/components/ConfirmationModal";
@@ -36,6 +28,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     telegram: "@",
     messengerTelegram: false,
     messengerMax: false,
+    marketingConsent: false,
     privacyConsent: false,
   });
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
@@ -82,7 +75,10 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       messengers: messengers,
       email: '',
       date: '',
-      time: ''
+      time: '',
+      // Согласие на рекламную рассылку — добровольное, поэтому фиксируем
+      // выбор родителя как есть: по нему решается, можно ли слать промо
+      marketingConsent: formData.marketingConsent,
     };
 
     // Показываем подтверждение сразу, заявку отправляем в фоне.
@@ -100,6 +96,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       telegram: "@",
       messengerTelegram: false,
       messengerMax: false,
+      marketingConsent: false,
       privacyConsent: false,
     });
 
@@ -284,6 +281,23 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           </div>
 
           <div className="flex flex-col space-y-3 pt-4">
+            {/* Согласие на рекламу — добровольное и отдельное от согласия на
+                обработку ПДн: закон требует не «зашивать» его в обязательное */}
+            <label className="flex items-start gap-2 cursor-pointer">
+              <Checkbox
+                checked={formData.marketingConsent}
+                onCheckedChange={(checked) =>
+                  handleInputChange("marketingConsent", checked as boolean)
+                }
+                className="mt-0.5"
+              />
+              <span className="text-xs text-gray-600 leading-snug">
+                Я согласен(на) получать рекламно-информационные рассылки о
+                занятиях, акциях и мероприятиях по SMS, электронной почте,
+                в мессенджерах и социальных сетях. Отказаться можно в любой момент
+              </span>
+            </label>
+
             <div>
               <label className="flex items-start gap-2 cursor-pointer">
                 <Checkbox
