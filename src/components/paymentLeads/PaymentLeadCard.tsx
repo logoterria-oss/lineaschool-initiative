@@ -44,13 +44,17 @@ export default function PaymentLeadCard({ lead, isHead, togglingId, deletingId, 
             <Icon name="User" size={16} className="text-gray-400 flex-shrink-0" />
             <span className="font-semibold text-gray-900">{lead.name}</span>
             {/* Карточку CRM показываем отдельной меткой, а не вместо имени:
-                подбор по имени может ошибиться, и подмена была незаметна */}
-            {lead.crm_name && lead.crm_name !== lead.name && (
-              <span className="text-[11px] text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
-                в CRM: {lead.crm_name}
+                подбор по имени может ошибиться, и подмена была незаметна.
+                Метка есть у каждой заявки с найденной карточкой: если имя
+                совпадает — короткое «в CRM», иначе выводим имя карточки,
+                чтобы расхождение было видно. */}
+            {lead.crm_name && (
+              <span className="flex items-center gap-1 text-[11px] text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
+                <Icon name="Check" size={11} className="text-green-600 flex-shrink-0" />
+                {lead.crm_name === lead.name ? 'в CRM' : `в CRM: ${lead.crm_name}`}
               </span>
             )}
-            {lead.crm_name === null && (
+            {!lead.crm_name && (
               <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
                 нет карточки в CRM
               </span>
