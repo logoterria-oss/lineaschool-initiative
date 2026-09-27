@@ -295,6 +295,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 Я согласен(на) получать рекламно-информационные рассылки о
                 занятиях, акциях и мероприятиях по SMS, электронной почте,
                 в мессенджерах и социальных сетях. Отказаться можно в любой момент
+                <span className="text-gray-400"> (необязательно)</span>
               </span>
             </label>
 
