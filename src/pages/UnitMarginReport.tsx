@@ -271,6 +271,8 @@ export default function UnitMarginReport() {
         result,
         totals: monthTotals,
         month: inputs.periodMonth,
+        individualFact: fact?.individual,
+        groupFact: fact?.group,
       });
     } catch {
       flash('Не удалось сформировать PDF');
