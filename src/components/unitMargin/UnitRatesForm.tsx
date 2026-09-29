@@ -10,10 +10,15 @@ interface Props {
   onResetFromFact: () => void;
   onSaveDefaults: () => void;
   savingDefaults: boolean;
+  /**
+   * Ставки, реально ушедшие в расчёт, когда включены данные супервизий.
+   * null — считаем по общей ставке из этой формы (поля ниже главные).
+   */
+  appliedRates?: { individual: number; group: number } | null;
 }
 
 const Num = ({
-  label, value, onChange, suffix, hint, step = 1,
+  label, value, onChange, suffix, hint, step = 1, muted = false,
 }: {
   label: string;
   value: number;
@@ -21,6 +26,8 @@ const Num = ({
   suffix?: string;
   hint?: string;
   step?: number;
+  /** Поле не участвует в расчёте напрямую — гасим, чтобы не путало. */
+  muted?: boolean;
 }) => (
   <div>
     <label className="block text-xs text-gray-500 mb-1">{label}</label>
@@ -30,7 +37,11 @@ const Num = ({
         step={step}
         value={Number.isFinite(value) ? value : ''}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full border border-gray-300 rounded-md px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+        className={`w-full border rounded-md px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+          muted
+            ? 'border-gray-200 bg-gray-50 text-gray-500'
+            : 'border-gray-300'
+        }`}
       />
       {suffix && (
         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
@@ -49,6 +60,7 @@ const Num = ({
  */
 export default function UnitRatesForm({
   inputs, fact, onChange, onResetFromFact, onSaveDefaults, savingDefaults,
+  appliedRates = null,
 }: Props) {
   const side = (key: 'individual' | 'group', p: Partial<UnitSide>) =>
     onChange({ [key]: { ...inputs[key], ...p } } as Partial<UnitMarginInputs>);
@@ -56,12 +68,33 @@ export default function UnitRatesForm({
   const rates = (p: Partial<UnitRates>) =>
     onChange({ rates: { ...inputs.rates, ...p } });
 
+  /**
+   * Когда ставки берутся из супервизий, поле ниже в расчёт НЕ идёт: оно
+   * остаётся запасным — по нему считаются занятия педагогов, которых в
+   * супервизиях нет (подмена руководителем, новый сотрудник). Подписываем
+   * это прямо, иначе цифра в поле противоречит цифре в расчёте.
+   */
+  const rateLabel = appliedRates ? 'Запасная ставка за урок' : 'Ставка педагога за урок';
+  const rateHint = (form: 'individual' | 'group') =>
+    appliedRates
+      ? `В расчёте — ${fmtMoney2(appliedRates[form])} из супервизий. Это значение применяется только к педагогам без своей ставки`
+      : form === 'individual'
+        ? 'Сколько школа платит педагогу за проведённое индивидуальное занятие'
+        : undefined;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon name="SlidersHorizontal" size={17} className="text-amber-600" />
-          <h3 className="font-semibold text-gray-900">Ставки и проценты</h3>
+          <div>
+            <h3 className="font-semibold text-gray-900">Цены и проценты</h3>
+            {appliedRates && (
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                ставки педагогов берутся из супервизий — в блоке ниже
+              </p>
+            )}
+          </div>
         </div>
         <button
           onClick={onResetFromFact}
@@ -92,12 +125,13 @@ export default function UnitRatesForm({
             }
           />
           <Num
-            label="Ставка педагога за урок"
+            label={rateLabel}
             value={inputs.individual.rate}
             onChange={(v) => side('individual', { rate: v })}
             suffix="₽"
             step={50}
-            hint="Сколько школа платит педагогу за проведённое индивидуальное занятие"
+            hint={rateHint('individual')}
+            muted={!!appliedRates}
           />
         </div>
 
@@ -121,11 +155,13 @@ export default function UnitRatesForm({
           />
           <div className="grid grid-cols-2 gap-3">
             <Num
-              label="Ставка педагога за урок"
+              label={rateLabel}
               value={inputs.group.rate}
               onChange={(v) => side('group', { rate: v })}
               suffix="₽"
               step={50}
+              hint={rateHint('group')}
+              muted={!!appliedRates}
             />
             <Num
               label="Оплаченных мест"
@@ -143,8 +179,8 @@ export default function UnitRatesForm({
           <p className="text-[11px] text-gray-500 leading-snug">
             Выручка занятия = оплата места × число ОПЛАЧЕННЫХ мест. Прогул без
             уважительной причины CRM списывает — он оплачен и место считается.
-            Отработки и уважительные пропуски денег не приносят. Ставка педагога
-            за урок одна и не зависит от числа детей.
+            Отработки и уважительные пропуски денег не приносят. Ставка платится
+            один раз за занятие и не зависит от числа детей в группе.
           </p>
         </div>
       </div>

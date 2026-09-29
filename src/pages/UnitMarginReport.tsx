@@ -321,6 +321,14 @@ export default function UnitMarginReport() {
                 onResetFromFact={() => fact && applyFact(fact, preset)}
                 onSaveDefaults={onSaveDefaults}
                 savingDefaults={savingDefaults}
+                appliedRates={
+                  useRealRates && (weighted.individual.lessons > 0 || weighted.group.lessons > 0)
+                    ? {
+                        individual: effectiveInputs.individual.rate,
+                        group: effectiveInputs.group.rate,
+                      }
+                    : null
+                }
               />
 
               {/* Точные ставки педагогов из супервизий */}
