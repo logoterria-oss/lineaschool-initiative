@@ -315,14 +315,26 @@ export const DEFAULT_RATES: UnitRates = {
 export const DEFAULT_TEACHER_RATE = 650;
 
 /**
+ * Первый месяц, с которого ведётся отчёт.
+ *
+ * Раньше сентября 2026 данные для юнит-экономики неполные: не было
+ * супервизий со ставками педагогов, поэтому маржа считалась бы по одной
+ * усреднённой ставке и не сходилась бы с более поздними месяцами.
+ * Сравнивать такие месяцы между собой нельзя, поэтому не показываем их.
+ */
+export const FIRST_REPORT_MONTH = '2026-09';
+
+/**
  * Последний закрытый месяц — им открывается отчёт.
  * В текущем месяце занятия ещё идут, средняя цена урока будет неполной.
+ * Ниже границы отчётности не опускаемся.
  */
 export const lastClosedMonth = () => {
   const d = new Date();
   d.setDate(1);
   d.setMonth(d.getMonth() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return m < FIRST_REPORT_MONTH ? FIRST_REPORT_MONTH : m;
 };
 
 const MONTHS = [
@@ -336,13 +348,19 @@ export const monthLabel = (m: string) => {
   return MONTHS[idx] ? `${MONTHS[idx]} ${y}` : m;
 };
 
-/** Последние N месяцев, начиная с текущего. */
+/**
+ * Последние N месяцев, начиная с текущего.
+ * Месяцы раньше FIRST_REPORT_MONTH отбрасываем: по ним нет сопоставимых
+ * данных, и выбрать их в отчёте нельзя.
+ */
 export const recentMonths = (count = 24): string[] => {
   const out: string[] = [];
   const d = new Date();
   d.setDate(1);
   for (let i = 0; i < count; i++) {
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (m < FIRST_REPORT_MONTH) break;
+    out.push(m);
     d.setMonth(d.getMonth() - 1);
   }
   return out;
