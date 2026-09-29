@@ -20,6 +20,7 @@ import {
 import { fetchSupervisions, type Supervision } from '@/lib/supervisionsApi';
 import { fetchTeacherRates, type TeacherRate } from '@/lib/teacherRatesApi';
 import { periodLabelForMonth, weightedRate } from '@/lib/unitTeacherRates';
+import { downloadUnitMarginPdf } from '@/lib/unitMarginPdf';
 import {
   DEFAULT_RATES, DEFAULT_TEACHER_RATE, UnitMarginInputs,
   calcAll, calcMonthTotals, lastClosedMonth, monthLabel,
@@ -68,6 +69,9 @@ export default function UnitMarginReport() {
   const [teacherRates, setTeacherRates] = useState<TeacherRate[]>([]);
   /** Считать по реальным ставкам каждого педагога, а не по одной общей. */
   const [useRealRates, setUseRealRates] = useState(true);
+
+  /** Готовим PDF: шрифт с кириллицей грузится с сервера, это не мгновенно. */
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const flash = (msg: string) => {
     setToast(msg);
@@ -260,6 +264,21 @@ export default function UnitMarginReport() {
     }
   };
 
+  const onDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await downloadUnitMarginPdf({
+        result,
+        totals: monthTotals,
+        month: inputs.periodMonth,
+      });
+    } catch {
+      flash('Не удалось сформировать PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   const onDelete = async (r: SavedReport) => {
     if (!window.confirm(`Удалить расчёт за ${monthLabel(r.period_month)}?`)) return;
     try {
@@ -283,7 +302,12 @@ export default function UnitMarginReport() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Шапка */}
-        <UnitReportHeader onBack={() => navigate(-1)} />
+        <UnitReportHeader
+          onBack={() => navigate(-1)}
+          onDownloadPdf={onDownloadPdf}
+          pdfDisabled={!fact || loading}
+          pdfLoading={pdfLoading}
+        />
 
         <div className="space-y-4">
           <UnitMonthPicker
