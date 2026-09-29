@@ -2,21 +2,28 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { UnitMarginInputs, calcUnit, fmtMoney2, fmtPercent } from '@/lib/unitMarginModel';
 import type { UnitFactTeacher } from '@/lib/unitMarginApi';
+import type { TeacherRateRow } from '@/lib/unitTeacherRates';
 
 interface Props {
   teachers: UnitFactTeacher[];
   inputs: UnitMarginInputs;
+  /** Личные ставки педагогов. Пусто — считаем всех по общей ставке. */
+  rateRows?: TeacherRateRow[];
 }
 
 /**
- * Разрез по педагогам: у каждого своя средняя оплата ребёнка и своя
- * наполняемость групп, поэтому и маржа занятия разная. Ставки берём общие —
- * видно, кто приносит больше за счёт полных групп.
+ * Разрез по педагогам: у каждого своя средняя оплата ребёнка, своя
+ * наполняемость групп и своя ставка — поэтому и маржа занятия разная.
  */
-export default function UnitTeachersTable({ teachers, inputs }: Props) {
+export default function UnitTeachersTable({ teachers, inputs, rateRows = [] }: Props) {
   const [open, setOpen] = useState(false);
   const rows = teachers.filter((t) => t.group_units + t.individual_units > 0);
   if (!rows.length) return null;
+
+  // Ставка конкретного педагога по форме занятий; нет своей — общая из формы
+  const rateOf = (teacherId: number, form: 'individual' | 'group') =>
+    rateRows.find((r) => r.teacherId === teacherId && r.form === form)?.rate
+    ?? inputs[form].rate;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -39,6 +46,7 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
             <thead>
               <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
                 <th className="py-2 pr-3 font-medium">Педагог</th>
+                <th className="py-2 px-3 font-medium text-right">Ставка</th>
                 <th className="py-2 px-3 font-medium text-right">Инд. уроков</th>
                 <th className="py-2 px-3 font-medium text-right">Ср. цена инд.</th>
                 <th className="py-2 px-3 font-medium text-right">Маржа инд.</th>
@@ -62,6 +70,7 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
                   'individual',
                   {
                     ...inputs.individual,
+                    rate: rateOf(t.teacher_id, 'individual'),
                     price: indPrice,
                     groupSize: t.individual_lessons
                       ? t.individual_paid_units / t.individual_lessons
@@ -73,6 +82,7 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
                   'group',
                   {
                     ...inputs.group,
+                    rate: rateOf(t.teacher_id, 'group'),
                     price: grPrice,
                     groupSize: t.avg_group_size || inputs.group.groupSize,
                   },
@@ -83,6 +93,13 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
                 return (
                   <tr key={t.teacher_id} className="text-gray-700">
                     <td className="py-2 pr-3 font-medium text-gray-900">{t.name}</td>
+                    <td className="py-2 px-3 text-right text-gray-600">
+                      {/* У педагога может быть разная ставка по формам —
+                          показываем ту, по которой он реально работал */}
+                      {t.individual_lessons && t.group_lessons
+                        ? `${rateOf(t.teacher_id, 'individual')} / ${rateOf(t.teacher_id, 'group')}`
+                        : `${rateOf(t.teacher_id, t.group_lessons ? 'group' : 'individual')} ₽`}
+                    </td>
                     <td className="py-2 px-3 text-right">{t.individual_units || '—'}</td>
                     <td className="py-2 px-3 text-right">
                       {t.individual_units ? fmtMoney2(indPrice) : '—'}
@@ -113,9 +130,12 @@ export default function UnitTeachersTable({ teachers, inputs }: Props) {
             </tbody>
           </table>
           <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">
-            Ставки педагога взяты общие из формы. Выручка группового занятия —
-            средняя оплата ребёнка × фактическая наполняемость у этого педагога:
-            чем полнее группа, тем выше маржа с того же часа работы.
+            {rateRows.length > 0
+              ? 'Ставка у каждого своя — из раздела «Супервизии → Ставки».'
+              : 'Ставка взята общая из формы.'}{' '}
+            Выручка группового занятия — средняя оплата ребёнка × фактическая
+            наполняемость у этого педагога: чем полнее группа, тем выше маржа
+            с того же часа работы.
           </p>
         </div>
       )}

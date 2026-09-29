@@ -7,11 +7,15 @@ import UnitResultCard from '@/components/unitMargin/UnitResultCard';
 import UnitTeachersTable from '@/components/unitMargin/UnitTeachersTable';
 import UnitMonthTotalCard from '@/components/unitMargin/UnitMonthTotalCard';
 import UnitPlanCard from '@/components/unitMargin/UnitPlanCard';
+import UnitWeightedRateCard from '@/components/unitMargin/UnitWeightedRateCard';
 import {
   UnitFact, UnitMarginReport as SavedReport, UnitPlanMonth,
   deleteUnitReport, fetchUnitDefaults, fetchUnitFact, fetchUnitPlan,
   fetchUnitReports, saveUnitDefaults, saveUnitReport,
 } from '@/lib/unitMarginApi';
+import { fetchSupervisions, type Supervision } from '@/lib/supervisionsApi';
+import { fetchTeacherRates, type TeacherRate } from '@/lib/teacherRatesApi';
+import { periodLabelForMonth, weightedRate } from '@/lib/unitTeacherRates';
 import {
   DEFAULT_RATES, DEFAULT_TEACHER_RATE, UnitMarginInputs,
   calcAll, calcMonthTotals, fmtMoney2, fmtPercent, lastClosedMonth, monthLabel,
@@ -55,6 +59,12 @@ export default function UnitMarginReport() {
   const [plan, setPlan] = useState<UnitPlanMonth[]>([]);
   const [planLoading, setPlanLoading] = useState(false);
 
+  /** Супервизии и сохранённые ставки — источник точных ставок педагогов. */
+  const [supervisions, setSupervisions] = useState<Supervision[]>([]);
+  const [teacherRates, setTeacherRates] = useState<TeacherRate[]>([]);
+  /** Считать по реальным ставкам каждого педагога, а не по одной общей. */
+  const [useRealRates, setUseRealRates] = useState(true);
+
   const flash = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(''), 2600);
@@ -80,6 +90,9 @@ export default function UnitMarginReport() {
       })
       .catch(() => {});
     fetchUnitReports().then(setReports).catch(() => {});
+    // Ставки педагогов: без них расчёт просто останется на общей ставке
+    fetchSupervisions().then(setSupervisions).catch(() => {});
+    fetchTeacherRates().then(setTeacherRates).catch(() => {});
   }, []);
 
   /**
@@ -131,7 +144,49 @@ export default function UnitMarginReport() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputs.periodMonth]);
 
-  const result = useMemo(() => calcAll(inputs), [inputs]);
+  /**
+   * Средневзвешенные ставки педагогов за месяц отчёта.
+   * Ставка каждого × число его занятий ÷ все занятия формы. Считаем всегда,
+   * даже когда галочка выключена: карточка показывает, что изменится.
+   */
+  const weighted = useMemo(() => {
+    const teachers = fact?.teachers ?? [];
+    return {
+      individual: weightedRate(
+        teachers, 'individual', inputs.periodMonth,
+        supervisions, teacherRates, inputs.individual.rate,
+      ),
+      group: weightedRate(
+        teachers, 'group', inputs.periodMonth,
+        supervisions, teacherRates, inputs.group.rate,
+      ),
+    };
+  }, [fact, inputs.periodMonth, inputs.individual.rate, inputs.group.rate,
+      supervisions, teacherRates]);
+
+  /**
+   * Вход расчёта с учётом точных ставок. Подменяем ТОЛЬКО ставку педагога:
+   * цены и наполняемость остаются фактом CRM. Если супервизий нет и ни одна
+   * ставка не найдена — оставляем общую, иначе расчёт «поплыл» бы на пустом.
+   */
+  const effectiveInputs = useMemo<UnitMarginInputs>(() => {
+    if (!useRealRates) return inputs;
+    return {
+      ...inputs,
+      individual: {
+        ...inputs.individual,
+        rate: weighted.individual.lessons > 0
+          ? weighted.individual.rate
+          : inputs.individual.rate,
+      },
+      group: {
+        ...inputs.group,
+        rate: weighted.group.lessons > 0 ? weighted.group.rate : inputs.group.rate,
+      },
+    };
+  }, [inputs, weighted, useRealRates]);
+
+  const result = useMemo(() => calcAll(effectiveInputs), [effectiveInputs]);
 
   /**
    * Итог выбранного месяца: экономику одного занятия умножаем на реальное
@@ -185,7 +240,9 @@ export default function UnitMarginReport() {
       await saveUnitReport({
         period_month: inputs.periodMonth,
         title: monthLabel(inputs.periodMonth),
-        inputs,
+        // Сохраняем ПРИМЕНЁННЫЕ ставки: иначе по сохранённому расчёту нельзя
+        // было бы понять, из каких цифр получился результат
+        inputs: effectiveInputs,
         result,
         note,
       });
@@ -266,6 +323,19 @@ export default function UnitMarginReport() {
                 savingDefaults={savingDefaults}
               />
 
+              {/* Точные ставки педагогов из супервизий */}
+              {fact && (
+                <UnitWeightedRateCard
+                  individual={weighted.individual}
+                  group={weighted.group}
+                  periodLabel={periodLabelForMonth(inputs.periodMonth)}
+                  flatIndividual={inputs.individual.rate}
+                  flatGroup={inputs.group.rate}
+                  applied={useRealRates}
+                  onToggle={setUseRealRates}
+                />
+              )}
+
               <div className="flex justify-end">
                 <button
                   onClick={() => setShowFormula((v) => !v)}
@@ -336,9 +406,13 @@ export default function UnitMarginReport() {
                 </p>
               </div>
 
-              {/* Педагоги */}
+              {/* Педагоги: у каждого своя ставка, если считаем по реальным */}
               {fact && (
-                <UnitTeachersTable teachers={fact.teachers} inputs={inputs} />
+                <UnitTeachersTable
+                  teachers={fact.teachers}
+                  inputs={effectiveInputs}
+                  rateRows={useRealRates ? [...weighted.individual.rows, ...weighted.group.rows] : []}
+                />
               )}
 
               {/* Сохранение */}
