@@ -56,6 +56,21 @@ S20_EMAIL = "abram.viktoriya.00@mail.ru"
 
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
 
+# Педагоги, чьи занятия НЕ входят в экономику школы.
+# Руководитель иногда подменяет педагога или проводит занятие сам — это не
+# регулярная работа школы, ставки за такие уроки нет. Одно-два занятия за
+# месяц заметно искажают и среднюю цену, и средневзвешенную ставку.
+EXCLUDED_TEACHER_IDS = frozenset({1})  # Виктория Абраменко — руководитель
+
+# Педагог ведёт только свою форму занятий. Если в CRM у группового педагога
+# всплыло одиночное индивидуальное занятие — это ошибка проставления или
+# разовая подмена: ставки по этой форме у него нет, и одно занятие ощутимо
+# сдвигает среднюю цену. Ключ — id педагога в CRM, значение — формы, которые
+# у него не учитываем.
+EXCLUDED_TEACHER_FORMS = {
+    15: {"individual"},  # Екатерина Мацвей — групповой педагог
+}
+
 CORS = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
@@ -220,6 +235,9 @@ def _build_month(token, month, test_ids=frozenset()):
     # Их места не считаем ни в выручке, ни в наполняемости.
     skipped_test_units = 0
     skipped_test_lessons = 0
+    # Занятия исключённых педагогов (руководитель на подмене).
+    skipped_excluded_lessons = 0
+    skipped_excluded_units = 0
 
     def _side():
         return {
@@ -258,8 +276,24 @@ def _build_month(token, month, test_ids=frozenset()):
             continue
         details = real
 
+        tids_all = [t for t in (ls.get("teacher_ids") or []) if t]
+        # Занятие руководителя — разовая подмена, а не работа школы.
+        # Выкидываем целиком: и выручку, и занятие из знаменателя.
+        if tids_all and tids_all[0] in EXCLUDED_TEACHER_IDS:
+            skipped_excluded_lessons += 1
+            skipped_excluded_units += len(details)
+            continue
+
         # lesson_type_id: 1 — индивидуальное, 2 — групповое.
         form = "individual" if ls.get("lesson_type_id") == 1 else "group"
+
+        # Педагог не ведёт эту форму занятий — разовая подмена или ошибка
+        # в CRM. Ставки по ней у него нет, в экономику не берём.
+        if tids_all and form in EXCLUDED_TEACHER_FORMS.get(tids_all[0], ()):
+            skipped_excluded_lessons += 1
+            skipped_excluded_units += len(details)
+            continue
+
         slot = forms[form]
         group_size = len(details)
 
@@ -379,6 +413,9 @@ def _build_month(token, month, test_ids=frozenset()):
         # Сколько выкинули технических карточек («Тест-ученик-1»).
         "skipped_test_units": skipped_test_units,
         "skipped_test_lessons": skipped_test_lessons,
+        # Занятия руководителя на подмене — в экономику не берём.
+        "skipped_excluded_lessons": skipped_excluded_lessons,
+        "skipped_excluded_units": skipped_excluded_units,
     }
 
 
@@ -430,7 +467,15 @@ def _count_planned(token, month, test_ids=frozenset()):
         # Занятие целиком из тестовых карточек — не работа школы.
         if details and not real:
             continue
+        # Занятия руководителя на подмене в план тоже не берём — иначе
+        # план и факт считались бы по разным правилам.
+        tids = [t for t in (ls.get("teacher_ids") or []) if t]
+        if tids and tids[0] in EXCLUDED_TEACHER_IDS:
+            continue
         form = "individual" if ls.get("lesson_type_id") == 1 else "group"
+        # Форма, которую педагог не ведёт, — в план тоже не идёт.
+        if tids and form in EXCLUDED_TEACHER_FORMS.get(tids[0], ()):
+            continue
         counts[form] += 1
         seats[form] += len(real)
 
