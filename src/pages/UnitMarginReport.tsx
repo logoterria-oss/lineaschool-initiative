@@ -8,6 +8,10 @@ import UnitTeachersTable from '@/components/unitMargin/UnitTeachersTable';
 import UnitMonthTotalCard from '@/components/unitMargin/UnitMonthTotalCard';
 import UnitPlanCard from '@/components/unitMargin/UnitPlanCard';
 import UnitWeightedRateCard from '@/components/unitMargin/UnitWeightedRateCard';
+import UnitReportHeader from '@/components/unitMargin/UnitReportHeader';
+import UnitConclusionCard from '@/components/unitMargin/UnitConclusionCard';
+import UnitSaveBox from '@/components/unitMargin/UnitSaveBox';
+import UnitReportsHistory from '@/components/unitMargin/UnitReportsHistory';
 import {
   UnitFact, UnitMarginReport as SavedReport, UnitPlanMonth,
   deleteUnitReport, fetchUnitDefaults, fetchUnitFact, fetchUnitPlan,
@@ -18,7 +22,7 @@ import { fetchTeacherRates, type TeacherRate } from '@/lib/teacherRatesApi';
 import { periodLabelForMonth, weightedRate } from '@/lib/unitTeacherRates';
 import {
   DEFAULT_RATES, DEFAULT_TEACHER_RATE, UnitMarginInputs,
-  calcAll, calcMonthTotals, fmtMoney2, fmtPercent, lastClosedMonth, monthLabel,
+  calcAll, calcMonthTotals, lastClosedMonth, monthLabel,
 } from '@/lib/unitMarginModel';
 
 /**
@@ -279,23 +283,7 @@ export default function UnitMarginReport() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Шапка */}
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-400 hover:text-gray-700 transition-colors"
-          >
-            <Icon name="ArrowLeft" size={20} />
-          </button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Маржинальность урока
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Юнит — одно проведённое занятие целиком. Индивидуальные и групповые
-              считаем отдельно, по факту месяца из CRM
-            </p>
-          </div>
-        </div>
+        <UnitReportHeader onBack={() => navigate(-1)} />
 
         <div className="space-y-4">
           <UnitMonthPicker
@@ -386,33 +374,12 @@ export default function UnitMarginReport() {
               />
 
               {/* Вывод */}
-              <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="Lightbulb" size={18} className="text-amber-600" />
-                  <h3 className="font-semibold text-gray-900">
-                    Вывод за {monthLabel(inputs.periodMonth)}
-                  </h3>
-                </div>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Индивидуальное занятие: выручка{' '}
-                  {fmtMoney2(result.individual.revenue)}, маржа{' '}
-                  <b>{fmtMoney2(result.individual.margin)}</b> (
-                  {fmtPercent(result.individual.marginPercent)}). Групповое занятие
-                  при наполняемости {result.group.clientsPerLesson} чел.: выручка{' '}
-                  {fmtMoney2(result.group.revenue)}, маржа{' '}
-                  <b>{fmtMoney2(result.group.margin)}</b> (
-                  {fmtPercent(result.group.marginPercent)}). Выгоднее{' '}
-                  <b>{better}</b> занятия — разрыв {diff} п.п.
-                </p>
-                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                  Юнит — одно проведённое занятие целиком. Выручка группового
-                  занятия складывается из оплат всех пришедших детей, а ставка
-                  педагога платится один раз независимо от их числа. Маржинальность
-                  — доля выручки, остающаяся после переменных расходов: зарплаты
-                  с взносами и отпускными и комиссии эквайринга. Постоянные расходы
-                  школы сюда не входят — они покрываются уже из этой маржи.
-                </p>
-              </div>
+              <UnitConclusionCard
+                result={result}
+                month={inputs.periodMonth}
+                better={better}
+                diff={diff}
+              />
 
               {/* Педагоги: у каждого своя ставка, если считаем по реальным */}
               {fact && (
@@ -424,73 +391,19 @@ export default function UnitMarginReport() {
               )}
 
               {/* Сохранение */}
-              <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                <label className="block text-xs text-gray-500 mb-1">Комментарий</label>
-                <input
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="что проверяли, какие допущения"
-                  className="w-full border border-gray-300 rounded-md px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-                <button
-                  onClick={onSave}
-                  disabled={saving}
-                  className="mt-3 inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors"
-                >
-                  <Icon
-                    name={saving ? 'Loader2' : 'Save'}
-                    size={17}
-                    className={saving ? 'animate-spin' : ''}
-                  />
-                  Сохранить расчёт месяца
-                </button>
-                <p className="text-xs text-gray-400 mt-2">
-                  Сохранённый расчёт фиксирует цифры этого месяца — по ним потом
-                  строится динамика.
-                </p>
-              </div>
+              <UnitSaveBox
+                note={note}
+                onNoteChange={setNote}
+                onSave={onSave}
+                saving={saving}
+              />
 
               {/* История */}
-              {reports.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                  <div className="px-5 py-4 border-b border-gray-100 font-semibold text-gray-900">
-                    Сохранённые расчёты ({reports.length})
-                  </div>
-                  <div className="divide-y divide-gray-100">
-                    {reports.map((r) => (
-                      <div
-                        key={r.id}
-                        className="px-5 py-3 flex items-center justify-between gap-3"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-gray-900">
-                            {monthLabel(r.period_month)}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            инд. {fmtPercent(r.result?.individual?.marginPercent ?? 0)} ·
-                            гр. {fmtPercent(r.result?.group?.marginPercent ?? 0)}
-                            {r.note ? ` · ${r.note}` : ''}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            onClick={() => patch({ periodMonth: r.period_month })}
-                            className="text-xs px-2.5 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
-                          >
-                            Открыть месяц
-                          </button>
-                          <button
-                            onClick={() => onDelete(r)}
-                            className="text-gray-300 hover:text-red-500 transition-colors"
-                          >
-                            <Icon name="Trash2" size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <UnitReportsHistory
+                reports={reports}
+                onOpenMonth={(m) => patch({ periodMonth: m })}
+                onDelete={onDelete}
+              />
             </>
           )}
         </div>
