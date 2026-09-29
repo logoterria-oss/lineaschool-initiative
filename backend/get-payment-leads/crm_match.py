@@ -9,9 +9,19 @@
 """
 import os
 import re
+import urllib.request
 from difflib import SequenceMatcher
 
 import psycopg2
+
+# Обновление кэша имён CRM. Кэш наполняет отдельная функция crm-sync-cache;
+# раньше её дёргали только руками, поэтому карточки, заведённые после
+# последнего запуска, для сопоставления просто не существовали.
+CRM_SYNC_URL = 'https://functions.poehali.dev/b28dd882-aa87-49a7-aa89-849ffeceb94b'
+CACHE_TTL_MINUTES = 60
+# Ждём ответ недолго: синк идёт своим процессом и дойдёт до конца, даже если
+# мы отвалимся по таймауту — результат подхватит следующий запрос списка.
+CRM_SYNC_TIMEOUT = 8
 
 # Уменьшительные формы: первая в группе — та, к которой приводим остальные.
 NAME_GROUPS = [
@@ -168,6 +178,41 @@ def load_cached_names(conn=None) -> list:
 
 def _schema() -> str:
     return os.environ.get('MAIN_DB_SCHEMA', 'public')
+
+
+def refresh_crm_cache_if_stale(conn) -> bool:
+    """Просит crm-sync-cache перезалить имена, если кэш старше часа.
+
+    Возвращает True, если синк отработал и в кэше есть свежие данные.
+    Любая ошибка молча игнорируется: сопоставим по тому, что уже лежит.
+    """
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT COUNT(*), "
+            f"COALESCE(MAX(updated_at), TIMESTAMP '2000-01-01') "
+            f"FROM {_schema()}.crm_customers_cache"
+        )
+        total, updated = cur.fetchone()
+        cur.close()
+        if total and updated:
+            cur2 = conn.cursor()
+            cur2.execute(
+                f"SELECT NOW() - MAX(updated_at) < INTERVAL '{CACHE_TTL_MINUTES} minutes' "
+                f"FROM {_schema()}.crm_customers_cache"
+            )
+            fresh = cur2.fetchone()[0]
+            cur2.close()
+            if fresh:
+                return False
+
+        req = urllib.request.Request(CRM_SYNC_URL, method='GET')
+        with urllib.request.urlopen(req, timeout=CRM_SYNC_TIMEOUT) as resp:
+            print(f'CRM cache refresh: {resp.status}')
+        return True
+    except Exception as e:
+        print(f'CRM cache refresh skipped: {e}')
+        return False
 
 
 # Старое имя функции — оставлено, чтобы не ломать существующие вызовы

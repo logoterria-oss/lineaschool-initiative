@@ -14,6 +14,11 @@ from typing import Dict, Any
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
 
+# AlfaCRM отдаёт максимум 200 записей на страницу; предел страниц — страховка
+# от бесконечного цикла, если API вдруг перестанет отдавать корректный total.
+PAGE_SIZE = 200
+MAX_PAGES = 50
+
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if event.get('httpMethod') == 'OPTIONS':
@@ -94,17 +99,37 @@ def _get_token():
 
 
 def _fetch_customers(token):
+    """Все карточки CRM: действующие ученики, лиды и архив.
+
+    Пагинацию считаем ОТДЕЛЬНО по каждой категории. Раньше остаток страниц
+    сверялся с общим накопленным списком (`len(items) >= total`), поэтому
+    после первой категории счётчик уже перекрывал total следующих — лиды и
+    архив обрывались на первой странице, и свежие карточки (например
+    новый лид) в кэш не попадали. Отсюда и «нет карточки в CRM» у заявок,
+    у которых карточка на самом деле есть.
+    """
     headers = {"X-APP-KEY": os.environ["S20_X_APP_KEY"], "X-ALFACRM-TOKEN": token}
     items = []
-    for is_study, removed in ((1, 0), (0, 0), (1, 1)):
+    seen = set()
+    for is_study, removed in ((1, 0), (0, 0), (1, 1), (0, 1)):
         page = 0
-        while True:
+        loaded = 0
+        while page < MAX_PAGES:
             data = _post(f"{S20_HOST}/v2api/1/customer/index",
-                         {"page": page, "pageSize": 200, "is_study": is_study, "removed": removed},
+                         {"page": page, "pageSize": PAGE_SIZE, "is_study": is_study, "removed": removed},
                          headers)
             chunk = data.get("items", [])
-            items.extend(chunk)
-            if len(items) >= data.get("total", 0) or not chunk:
+            if not chunk:
+                break
+            loaded += len(chunk)
+            for c in chunk:
+                cid = c.get('id')
+                if cid is None or cid in seen:
+                    continue
+                seen.add(cid)
+                items.append(c)
+            if loaded >= int(data.get("total") or 0) or len(chunk) < PAGE_SIZE:
                 break
             page += 1
+    print(f'CRM cache: загружено {len(items)} карточек')
     return items

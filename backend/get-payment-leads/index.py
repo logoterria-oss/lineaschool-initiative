@@ -10,7 +10,7 @@ import psycopg2
 from typing import Dict, Any
 from datetime import datetime
 from payment_hook import payment_payload
-from crm_match import find_customer, load_cached_names
+from crm_match import find_customer, load_cached_names, refresh_crm_cache_if_stale
 
 # Сколько заявок без карточки CRM досчитываем за один запрос списка.
 # Сопоставление идёт в памяти по готовому кэшу имён, поэтому даже пара
@@ -154,6 +154,12 @@ def _backfill_crm_names(conn) -> None:
         if not pending:
             cur.close()
             return
+
+        # Карточки в CRM заводят каждый день, а кэш имён обновлялся только
+        # вручную — из-за этого свежая оплата показывалась как «нет карточки
+        # в CRM», хотя карточка есть. Освежаем кэш сами, но не чаще раза
+        # в час и только когда есть что досчитывать.
+        refresh_crm_cache_if_stale(conn)
 
         names = load_cached_names(conn)
         if not names:
