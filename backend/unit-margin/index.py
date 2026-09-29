@@ -31,8 +31,21 @@ from concurrent.futures import ThreadPoolExecutor
 Постоянные (косвенные) расходы школы здесь НЕ участвуют — маржинальность
 по определению считается только на переменных затратах.
 
+Средняя маржинальность месяца. Индивидуальные и групповые занятия живут
+по разной экономике, но руководителю нужна одна цифра «как сработала школа
+за месяц». Считаем её как СРЕДНЕВЗВЕШЕННУЮ: складываем выручку и переменные
+расходы обеих форм за весь месяц и делим. Простое среднее двух процентов
+здесь врёт — форм занятий разное количество.
+
+План на будущие месяцы. В CRM занятия стоят в расписании заранее
+(status=1 — запланировано). Берём их количество по формам и переносим на
+них экономику последнего закрытого месяца: среднюю цену места, оплаченную
+наполняемость и ставки педагога. Это ожидание «если всё пойдёт как сейчас»,
+а не обещание: часть занятий отменят или перенесут.
+
 Маршруты:
   GET  ?action=fact&month=YYYY-MM   — факт месяца (&refresh=1 — мимо кэша)
+  GET  ?action=plan&months=3        — план по запланированным урокам CRM
   GET  ?action=defaults             — сохранённые ставки и проценты
   GET  ?action=reports              — сохранённые расчёты
   POST {action: save|delete|save_defaults}
@@ -369,6 +382,79 @@ def _build_month(token, month, test_ids=frozenset()):
     }
 
 
+# ---------- план на будущие месяцы ----------
+
+def _next_months(count):
+    """Ближайшие месяцы, начиная с текущего: ['2026-09', '2026-10', ...]."""
+    today = date.today()
+    y, m = today.year, today.month
+    out = []
+    for _ in range(count):
+        out.append(f"{y:04d}-{m:02d}")
+        m += 1
+        if m > 12:
+            m, y = 1, y + 1
+    return out
+
+
+def _count_planned(token, month, test_ids=frozenset()):
+    """Сколько занятий СТОИТ В РАСПИСАНИИ на месяц, по формам.
+
+    status=1 — «запланировано»: занятие в сетке, но ещё не проведено.
+    Списаний по нему нет, поэтому выручку считать не из чего — берём
+    только количество, а деньги подставляем из экономики факта.
+
+    Для текущего месяца план дополняем уже проведёнными занятиями
+    (status=3): иначе в середине месяца план выглядел бы вдвое меньше
+    реального объёма.
+    """
+    d_from, d_to = _month_bounds(month)
+    today = date.today()
+    if d_to < today:
+        return None
+
+    start, end = d_from.isoformat(), d_to.isoformat()
+    planned = _fetch_lessons(token, start, end, status=1)
+    # В текущем месяце часть занятий уже проведена — без них план выглядел бы
+    # вдвое меньше реального объёма.
+    done = _fetch_lessons(token, start, end, status=3) if d_from <= today <= d_to else []
+
+    counts = {"individual": 0, "group": 0, "diag": 0}
+    seats = {"individual": 0, "group": 0}
+    for ls in planned + done:
+        details = [d for d in (ls.get("details") or []) if isinstance(d, dict)]
+        if "диагност" in (ls.get("lesson_type_name") or "").lower():
+            counts["diag"] += 1
+            continue
+        real = [d for d in details if d.get("customer_id") not in test_ids]
+        # Занятие целиком из тестовых карточек — не работа школы.
+        if details and not real:
+            continue
+        form = "individual" if ls.get("lesson_type_id") == 1 else "group"
+        counts[form] += 1
+        seats[form] += len(real)
+
+    return {
+        "month": month,
+        "individual_lessons": counts["individual"],
+        "group_lessons": counts["group"],
+        "diag_lessons": counts["diag"],
+        # Сколько детей уже записано на эти занятия — справочно: показывает,
+        # опирается план на реальные записи или на среднюю наполняемость.
+        "individual_seats": seats["individual"],
+        "group_seats": seats["group"],
+        "planned_lessons": len(planned),
+        "done_lessons": len(done),
+    }
+
+
+def plan_months(count):
+    """Список месяцев плана — его же использует фронт, чтобы опросить их
+    параллельно: один запрос к CRM на месяц укладывается в таймаут, три
+    подряд — уже нет."""
+    return _next_months(count)
+
+
 # ---------- БД ----------
 
 def _conn():
@@ -418,6 +504,39 @@ def handler(event: dict, context) -> dict:
                                           "cached": True, "computed_at": cached[1]})
                     data = _build_month(_token(), month, _test_customer_ids(conn))
                     _cache_write(conn, month, data)
+                    return _json({"success": True, "data": data, "cached": False})
+                finally:
+                    conn.close()
+
+            # Список месяцев плана: фронт сначала спрашивает его, а потом
+            # опрашивает месяцы параллельно — по одному запросу на месяц.
+            if action == "plan_months":
+                try:
+                    count = max(1, min(6, int(params.get("months") or 3)))
+                except (TypeError, ValueError):
+                    count = 3
+                return _json({"success": True, "months": plan_months(count)})
+
+            # Объём занятий, запланированных в CRM на ОДИН месяц.
+            # Деньги не считаем: экономику фронт берёт из факта и применяет
+            # ту же формулу, что и к факту, — так план и факт сопоставимы.
+            if action == "plan":
+                month = (params.get("month") or "").strip()
+                if not re.fullmatch(r"\d{4}-\d{2}", month):
+                    return _json({"success": False, "error": "month=YYYY-MM обязателен"}, 400)
+                conn = _conn()
+                try:
+                    key = f"plan:{month}"
+                    if params.get("refresh") != "1":
+                        cached = _cache_read(conn, key)
+                        if cached:
+                            return _json({"success": True, "data": cached[0],
+                                          "cached": True, "computed_at": cached[1]})
+                    data = _count_planned(_token(), month, _test_customer_ids(conn))
+                    if data is None:
+                        # Месяц уже закрыт — планировать нечего, есть факт.
+                        return _json({"success": True, "data": None, "cached": False})
+                    _cache_write(conn, key, data)
                     return _json({"success": True, "data": data, "cached": False})
                 finally:
                     conn.close()

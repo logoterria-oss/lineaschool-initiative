@@ -29,6 +29,20 @@
       "expectedStatus": 400
     },
     {
+      "name": "План без месяца",
+      "method": "GET",
+      "path": "/?action=plan",
+      "expectedStatus": 400
+    },
+    {
+      "name": "Список месяцев плана",
+      "method": "GET",
+      "path": "/?action=plan_months&months=3",
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Неизвестное действие",
       "method": "GET",
       "path": "/?action=nope",

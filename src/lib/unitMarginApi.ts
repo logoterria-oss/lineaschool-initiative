@@ -106,6 +106,45 @@ export const fetchUnitFact = async (
 ): Promise<UnitFact> =>
   (await get(`?action=fact&month=${month}${refresh ? '&refresh=1' : ''}`)).data;
 
+/** Объём занятий, запланированных в CRM на один будущий месяц. */
+export interface UnitPlanMonth {
+  month: string;
+  individual_lessons: number;
+  group_lessons: number;
+  diag_lessons: number;
+  /** Сколько мест уже занято записями — показывает опору плана. */
+  individual_seats: number;
+  group_seats: number;
+  /** Занятий именно в статусе «запланировано». */
+  planned_lessons: number;
+  /** Уже проведённых в этом месяце (для текущего месяца). */
+  done_lessons: number;
+}
+
+export const fetchPlanMonths = async (months = 3): Promise<string[]> =>
+  (await get(`?action=plan_months&months=${months}`)).months || [];
+
+export const fetchUnitPlanMonth = async (
+  month: string,
+  refresh = false,
+): Promise<UnitPlanMonth | null> =>
+  (await get(`?action=plan&month=${month}${refresh ? '&refresh=1' : ''}`)).data;
+
+/**
+ * План на ближайшие месяцы. Месяцы грузим ПАРАЛЛЕЛЬНО: один запрос к CRM
+ * на месяц укладывается в лимит времени функции, а три подряд — уже нет.
+ */
+export const fetchUnitPlan = async (
+  months = 3,
+  refresh = false,
+): Promise<UnitPlanMonth[]> => {
+  const list = await fetchPlanMonths(months);
+  const rows = await Promise.all(
+    list.map((m) => fetchUnitPlanMonth(m, refresh).catch(() => null)),
+  );
+  return rows.filter((r): r is UnitPlanMonth => !!r);
+};
+
 export const fetchUnitDefaults = async (): Promise<Partial<UnitMarginInputs> | null> =>
   (await get('?action=defaults')).defaults;
 

@@ -231,6 +231,68 @@ export function calcUnit(
   };
 }
 
+/**
+ * Итог месяца целиком: сколько занятий каждой формы и что они принесли.
+ * Нужен и для факта, и для плана — формула одна и та же, меняется только
+ * источник количества занятий (проведённые из CRM либо запланированные).
+ */
+export interface UnitMonthTotals {
+  individualLessons: number;
+  groupLessons: number;
+  lessons: number;
+  revenue: number;
+  costTotal: number;
+  margin: number;
+  /** СРЕДНЕВЗВЕШЕННАЯ маржинальность по всем урокам месяца, %. */
+  marginPercent: number;
+  tax: number;
+  profit: number;
+  profitPercent: number;
+  /** Вклад каждой формы в общую маржу месяца — видно, кто зарабатывает. */
+  individualMargin: number;
+  groupMargin: number;
+}
+
+/**
+ * Складывает экономику месяца из двух форм занятий.
+ *
+ * Среднюю маржинальность считаем СРЕДНЕВЗВЕШЕННОЙ: суммируем выручку и
+ * расходы всех уроков и делим одно на другое. Простое среднее двух
+ * процентов здесь дало бы неверную цифру — занятий разного типа разное
+ * количество, и редкая форма тянула бы среднее на себя наравне с массовой.
+ */
+export function calcMonthTotals(
+  res: UnitMarginResults,
+  individualLessons: number,
+  groupLessons: number,
+): UnitMonthTotals {
+  const ind = Math.max(0, safe(individualLessons));
+  const grp = Math.max(0, safe(groupLessons));
+
+  const revenue = res.individual.revenue * ind + res.group.revenue * grp;
+  const costTotal = res.individual.costTotal * ind + res.group.costTotal * grp;
+  const tax = res.individual.tax * ind + res.group.tax * grp;
+  const individualMargin = res.individual.margin * ind;
+  const groupMargin = res.group.margin * grp;
+  const margin = individualMargin + groupMargin;
+  const profit = margin - tax;
+
+  return {
+    individualLessons: ind,
+    groupLessons: grp,
+    lessons: ind + grp,
+    revenue: round2(revenue),
+    costTotal: round2(costTotal),
+    margin: round2(margin),
+    marginPercent: revenue > 0 ? round2((margin / revenue) * 100) : 0,
+    tax: round2(tax),
+    profit: round2(profit),
+    profitPercent: revenue > 0 ? round2((profit / revenue) * 100) : 0,
+    individualMargin: round2(individualMargin),
+    groupMargin: round2(groupMargin),
+  };
+}
+
 export interface UnitMarginResults {
   individual: UnitMarginResult;
   group: UnitMarginResult;

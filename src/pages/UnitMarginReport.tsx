@@ -5,14 +5,16 @@ import UnitMonthPicker from '@/components/unitMargin/UnitMonthPicker';
 import UnitRatesForm from '@/components/unitMargin/UnitRatesForm';
 import UnitResultCard from '@/components/unitMargin/UnitResultCard';
 import UnitTeachersTable from '@/components/unitMargin/UnitTeachersTable';
+import UnitMonthTotalCard from '@/components/unitMargin/UnitMonthTotalCard';
+import UnitPlanCard from '@/components/unitMargin/UnitPlanCard';
 import {
-  UnitFact, UnitMarginReport as SavedReport,
-  deleteUnitReport, fetchUnitDefaults, fetchUnitFact, fetchUnitReports,
-  saveUnitDefaults, saveUnitReport,
+  UnitFact, UnitMarginReport as SavedReport, UnitPlanMonth,
+  deleteUnitReport, fetchUnitDefaults, fetchUnitFact, fetchUnitPlan,
+  fetchUnitReports, saveUnitDefaults, saveUnitReport,
 } from '@/lib/unitMarginApi';
 import {
   DEFAULT_RATES, DEFAULT_TEACHER_RATE, UnitMarginInputs,
-  calcAll, fmtMoney2, fmtPercent, lastClosedMonth, monthLabel,
+  calcAll, calcMonthTotals, fmtMoney2, fmtPercent, lastClosedMonth, monthLabel,
 } from '@/lib/unitMarginModel';
 
 /**
@@ -48,6 +50,10 @@ export default function UnitMarginReport() {
 
   /** Пресет ставок: их руководитель задаёт один раз, дальше они переносятся. */
   const [preset, setPreset] = useState<Partial<UnitMarginInputs> | null>(null);
+
+  /** План по занятиям, уже стоящим в расписании CRM на будущие месяцы. */
+  const [plan, setPlan] = useState<UnitPlanMonth[]>([]);
+  const [planLoading, setPlanLoading] = useState(false);
 
   const flash = (msg: string) => {
     setToast(msg);
@@ -126,6 +132,34 @@ export default function UnitMarginReport() {
   }, [inputs.periodMonth]);
 
   const result = useMemo(() => calcAll(inputs), [inputs]);
+
+  /**
+   * Итог выбранного месяца: экономику одного занятия умножаем на реальное
+   * число проведённых занятий каждой формы. Диагностики в факте уже
+   * исключены, поэтому берём lessons как есть.
+   */
+  const monthTotals = useMemo(
+    () =>
+      fact
+        ? calcMonthTotals(result, fact.individual.lessons, fact.group.lessons)
+        : null,
+    [result, fact],
+  );
+
+  const loadPlan = useCallback(async (refresh = false) => {
+    setPlanLoading(true);
+    try {
+      setPlan(await fetchUnitPlan(3, refresh));
+    } catch {
+      setPlan([]);
+    } finally {
+      setPlanLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPlan();
+  }, [loadPlan]);
 
   const onSaveDefaults = async () => {
     setSavingDefaults(true);
@@ -255,6 +289,23 @@ export default function UnitMarginReport() {
                   showFormula={showFormula}
                 />
               </div>
+
+              {/* Средняя маржинальность по всем урокам месяца */}
+              {monthTotals && (
+                <UnitMonthTotalCard
+                  totals={monthTotals}
+                  month={inputs.periodMonth}
+                />
+              )}
+
+              {/* План на будущие месяцы по расписанию CRM */}
+              <UnitPlanCard
+                plan={plan}
+                result={result}
+                baseMonth={inputs.periodMonth}
+                loading={planLoading}
+                onRefresh={() => loadPlan(true)}
+              />
 
               {/* Вывод */}
               <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
