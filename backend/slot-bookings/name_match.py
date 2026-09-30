@@ -199,6 +199,18 @@ def parse_name(raw: Optional[str]) -> Tuple[str, str]:
     return _canon_surname(surname), _canon_first(first)
 
 
+def _word_set(raw: Optional[str]) -> set:
+    '''Слова имени в одном виде, без учёта порядка и рода.
+
+    Нужно там, где разобрать, где фамилия, а где имя, невозможно: в
+    «Мартин Горбовицкий» оба слова выглядят как фамилия, и разбор зависит
+    от порядка. Приводим все слова одинаково — тогда перестановка не мешает.
+    '''
+    words = [w for w in _clean(raw).split() if len(w) > 1]
+    words = [w for w in words if not PATRONYMIC_RE.search(w)] or words
+    return {_canon_surname(_canon_first(w)) for w in words}
+
+
 def same_child(a: Optional[str], b: Optional[str]) -> bool:
     '''Один ли это ребёнок.
 
@@ -207,11 +219,14 @@ def same_child(a: Optional[str], b: Optional[str]) -> bool:
     '''
     sa, fa = parse_name(a)
     sb, fb = parse_name(b)
-    if not fa or not fb:
-        return False
-    if not _close(fa, fb):
-        return False
-    if sa and sb:
+    if fa and fb and _close(fa, fb) and sa and sb:
         return _close(sa, sb)
-    # Фамилию указали не везде — по одному имени связывать рискованно
+
+    # Запасной путь: разбор мог перепутать фамилию с именем («Мартин
+    # Горбовицкий» — оба слова с фамильным окончанием). Тогда сравниваем
+    # наборы слов целиком: совпасть должны оба, так что брат с сестрой
+    # по общей фамилии не склеятся.
+    wa, wb = _word_set(a), _word_set(b)
+    if len(wa) >= 2 and wa == wb:
+        return True
     return False
