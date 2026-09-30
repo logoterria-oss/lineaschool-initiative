@@ -63,9 +63,10 @@ const FactIncomeReport = () => {
     data.rows.forEach((r, i) => {
       const cells: string[] = [String(i + 1), r.name];
       r.cells.forEach((c) => {
+        const diag = c.diag_price > 0 ? c.diag_count : 0;
         const prices = c.prices.map((p) => String(p.price));
-        if (c.diag_count) prices.unshift(String(c.diag_price));
-        cells.push(String(c.lessons + c.diag_count), prices.join(' | '), String(c.amount));
+        if (diag) prices.unshift(String(c.diag_price));
+        cells.push(String(c.lessons + diag), prices.join(' | '), String(c.amount));
       });
       lines.push(cells.join(';'));
     });

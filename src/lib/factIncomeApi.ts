@@ -53,7 +53,13 @@ export const fetchFactIncome = async (
   const url = `${FACT_INCOME_URL}?year=${year}${refresh ? '&refresh=1' : ''}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Не удалось загрузить отчёт');
-  return res.json();
+  const data = await res.json();
+  // При таймауте облако отдаёт 200 с текстом ошибки вместо отчёта —
+  // без этой проверки страница падала в белый экран.
+  if (!data || !Array.isArray(data.rows) || !Array.isArray(data.totals)) {
+    throw new Error(data?.errorMessage || 'Отчёт не собрался');
+  }
+  return data;
 };
 
 const MONTH_SHORT: Record<string, string> = {
@@ -67,18 +73,21 @@ export const monthLabel = (month: string) => MONTH_SHORT[month.slice(5)] || mont
 export const formatMoney = (n: number) =>
   n ? n.toLocaleString('ru-RU') : '';
 
+/** До февраля 2026 диагностика была бесплатной — в столбцах дохода её нет. */
+const paidDiag = (cell: FactCell) => (cell.diag_price > 0 ? cell.diag_count : 0);
+
 /** «8 × 1370» или «1 × 1290 + 12 × 1180», если цена в месяце менялась. */
 export const priceLabel = (cell: FactCell) => {
   const parts: string[] = [];
-  if (cell.diag_count) parts.push(String(cell.diag_price));
-  cell.prices.forEach((p) => parts.push(String(p.price)));
+  if (paidDiag(cell)) parts.push(String(cell.diag_price));
+  (cell.prices || []).forEach((p) => parts.push(String(p.price)));
   return parts.join(' · ');
 };
 
 export const countLabel = (cell: FactCell) => {
   const parts: string[] = [];
-  if (cell.diag_count) parts.push(String(cell.diag_count));
-  cell.prices.forEach((p) => parts.push(String(p.count)));
+  if (paidDiag(cell)) parts.push(String(cell.diag_count));
+  (cell.prices || []).forEach((p) => parts.push(String(p.count)));
   return parts.join(' · ');
 };
 

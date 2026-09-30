@@ -223,15 +223,13 @@ def _first_paid_months():
     try:
         conn = psycopg2.connect(os.environ["DATABASE_URL"])
         with conn.cursor() as cur:
-            cur.execute(f"SELECT month, payload FROM {schema}.fact_income_cache "
-                        f"ORDER BY month")
-            for month, payload in cur.fetchall():
-                for cid, item in ((payload or {}).get("agg") or {}).items():
-                    if not (item or {}).get("prices"):
-                        continue
-                    cid = int(cid)
-                    if month < out.get(cid, "9999-99"):
-                        out[cid] = month
+            # Разбор json делаем в базе: тянуть все месяцы кэша в функцию
+            # долго, а нужен из них только первый платный месяц ученика.
+            cur.execute(
+                f"SELECT (s.cid)::int, min(c.month) FROM {schema}.fact_income_cache c, "
+                f"LATERAL jsonb_each(c.payload->'agg') AS s(cid, item) "
+                f"WHERE s.item->'prices' <> '{{}}'::jsonb GROUP BY 1")
+            out = {cid: month for cid, month in cur.fetchall()}
         conn.close()
     except Exception as e:
         print(f"first paid months failed: {e}")
