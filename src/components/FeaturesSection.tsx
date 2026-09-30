@@ -39,6 +39,43 @@ const FEATURES = [
   },
 ];
 
+/**
+ * Выгоды про деньги. На широком экране они живут отдельными карточками под фото
+ * команды, а на телефоне встают последними строками общего списка — там это
+ * такие же преимущества, как остальные.
+ */
+const MONEY_FEATURES = [
+  {
+    icon: "ReceiptText",
+    title: "Налоговый вычет",
+    text: "Вернём 13% от стоимости занятий — подготовим документы",
+    color: "from-green-400 to-emerald-600",
+  },
+  {
+    icon: "Award",
+    title: "Гарантия результатов",
+    text: "Возврат средств, если не будет улучшений",
+    color: "from-green-400 to-emerald-600",
+  },
+];
+
+type Feature = (typeof FEATURES)[number];
+
+/** Карточка преимущества: на телефоне — строка «значок + заголовок»,
+ *  на широком экране — значок сверху, заголовок и пояснение под ним. */
+const FeatureCard = ({ feature }: { feature: Feature }) => (
+  <div className="group flex sm:block items-center gap-3 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
+    <div
+      className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0 sm:mb-3 shadow-md group-hover:scale-110 transition-transform duration-300`}
+    >
+      <Icon name={feature.icon} size={18} className="text-white sm:hidden" />
+      <Icon name={feature.icon} size={22} className="text-white hidden sm:block" />
+    </div>
+    <h3 className="text-base sm:text-lg font-bold text-gray-900 sm:mb-1.5">{feature.title}</h3>
+    <p className="hidden sm:block text-sm text-gray-600 leading-relaxed">{feature.text}</p>
+  </div>
+);
+
 export default function FeaturesSection() {
   return (
     <section className="py-20 bg-gradient-to-b from-white to-green-50/30 overflow-hidden">
@@ -69,46 +106,33 @@ export default function FeaturesSection() {
               </div>
             </div>
 
-            <div className="group relative flex items-center gap-3 sm:gap-4 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <Icon name="ReceiptText" size={18} className="text-white sm:hidden" />
-                <Icon name="ReceiptText" size={22} className="text-white hidden sm:block" />
+            {/* На телефоне эти две выгоды уходят в конец общего списка ниже */}
+            {MONEY_FEATURES.map((f) => (
+              <div
+                key={f.title}
+                className="group relative hidden sm:flex items-center gap-4 bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300"
+              >
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300`}
+                >
+                  <Icon name={f.icon} size={22} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1.5">{f.title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{f.text}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 sm:mb-1.5">Налоговый вычет</h3>
-                <p className="hidden sm:block text-sm text-gray-600 leading-relaxed">
-                  Вернём 13% от стоимости занятий — подготовим документы
-                </p>
-              </div>
-            </div>
-
-            <div className="group relative flex items-center gap-3 sm:gap-4 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <Icon name="Award" size={18} className="text-white sm:hidden" />
-                <Icon name="Award" size={22} className="text-white hidden sm:block" />
-              </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 sm:mb-1.5">Гарантия результатов</h3>
-                <p className="hidden sm:block text-sm text-gray-600 leading-relaxed">Возврат средств, если не будет улучшений</p>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Преимущества */}
           <div className="grid sm:grid-cols-2 gap-2.5 sm:gap-4 lg:gap-5">
             {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="group flex sm:block items-center gap-3 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300"
-              >
-                <div
-                  className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center flex-shrink-0 sm:mb-3 shadow-md group-hover:scale-110 transition-transform duration-300`}
-                >
-                  <Icon name={f.icon} size={18} className="text-white sm:hidden" />
-                  <Icon name={f.icon} size={22} className="text-white hidden sm:block" />
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 sm:mb-1.5">{f.title}</h3>
-                <p className="hidden sm:block text-sm text-gray-600 leading-relaxed">{f.text}</p>
+              <FeatureCard key={f.title} feature={f} />
+            ))}
+            {MONEY_FEATURES.map((f) => (
+              <div key={f.title} className="sm:hidden">
+                <FeatureCard feature={f} />
               </div>
             ))}
           </div>
