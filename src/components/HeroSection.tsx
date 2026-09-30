@@ -52,7 +52,7 @@ export default function HeroSection() {
                       80–120 минут
                     </span>
                     <span className="text-[12px] xs:text-[14px] sm:text-base md:text-lg font-bold">
-                      ВСЕГО 1490₽ <span className="line-through ml-1 font-normal opacity-75">4500₽</span>
+                      ВСЕГО 1890₽ <span className="line-through ml-1 font-normal opacity-75">4500₽</span>
                     </span>
                   </span>
                 </Button>
