@@ -17,11 +17,15 @@ from concurrent.futures import ThreadPoolExecutor
 именно списание, а не присутствие: прогул по неуважительной причине CRM
 списывает (урок оплачен и сгорел), по уважительной — нет.
 
-Диагностика в CRM стоит 0 ₽, поэтому её цену доводим из оплат
-(payment_leads): с февраля 2026 диагностика платная, и её цена со временем
-менялась (1290 → 1490 → 2190 ₽ с 01.10.2026). Именно поэтому в отчёт идёт
-фактически уплаченная сумма, а не константа. Промежуточные диагностики бывают
-бесплатными — тогда в оплатах их просто нет.
+Диагностика в CRM стоит 0 ₽, поэтому её цену берём из прайса на дату
+занятия (_diag_price). Раньше сумма бралась из оплат (payment_leads), но это
+занижало факт: часть диагностик оплачена наличными, переводом или вовсе не
+попала в payment_leads, и проведённая работа уходила в ноль. Считаем так же,
+как занятия: провели — заработали.
+
+Первичная диагностика (первая в жизни ученика) и промежуточная (у того, кто
+уже занимался платно) стоят по-разному, поэтому диагностику относим к одной
+из них по истории: были ли у ученика платные уроки в предыдущих месяцах.
 
 Учебный год: сентябрь → август (как в рабочей таблице «Факт»).
 
@@ -183,234 +187,55 @@ def _norm(name):
     return " ".join(sorted(w for w in s.split() if len(w) > 1))
 
 
-# Уменьшительные имена: в оплате родитель пишет «Паша», в CRM записан «Павел».
-# Ключ — полное имя, значения — как его ещё пишут.
-_SHORT_NAMES = {
-    "александр": ["саша", "сашка", "шура"],
-    "александра": ["саша", "сашенька"],
-    "алексей": ["леша", "алеша", "леха"],
-    "анастасия": ["настя", "ася"],
-    "андрей": ["андрюша"],
-    "анна": ["аня", "анюта"],
-    "антон": ["тоша"],
-    "арина": ["ариша"],
-    "артем": ["тема", "артемий"],
-    "богдан": ["богдаша"],
-    "борис": ["боря"],
-    "вадим": ["вадик"],
-    "валерия": ["лера"],
-    "варвара": ["варя"],
-    "василий": ["вася"],
-    "василиса": ["вася", "васелиса"],
-    "вениамин": ["веня"],
-    "вера": ["верочка"],
-    "вероника": ["ника"],
-    "виктор": ["витя"],
-    "виктория": ["вика"],
-    "владимир": ["вова", "володя"],
-    "владислав": ["влад", "владик"],
-    "вячеслав": ["слава"],
-    "георгий": ["гоша", "жора"],
-    "григорий": ["гриша"],
-    "даниил": ["даня", "данил", "данила"],
-    "дарья": ["даша"],
-    "денис": ["дениска"],
-    "дмитрий": ["дима", "митя"],
-    "евгений": ["женя"],
-    "евгения": ["женя"],
-    "егор": ["егорка"],
-    "екатерина": ["катя", "катерина"],
-    "елена": ["лена", "аленa", "алена"],
-    "елизавета": ["лиза"],
-    "иван": ["ваня"],
-    "игорь": ["игорек"],
-    "илья": ["ильюша"],
-    "ирина": ["ира"],
-    "кирилл": ["киря"],
-    "константин": ["костя"],
-    "ксения": ["ксюша"],
-    "лев": ["лева"],
-    "леонид": ["леня"],
-    "макар": ["макарка"],
-    "маргарита": ["рита"],
-    "марина": ["мариша"],
-    "мария": ["маша", "маруся"],
-    "матвей": ["мотя"],
-    "михаил": ["миша"],
-    "надежда": ["надя"],
-    "наталия": ["наташа", "наталья"],
-    "никита": ["ника"],
-    "николай": ["коля"],
-    "олег": ["олежа"],
-    "ольга": ["оля"],
-    "павел": ["паша"],
-    "петр": ["петя"],
-    "полина": ["поля"],
-    "роман": ["рома"],
-    "ростислав": ["ростик"],
-    "светлана": ["света"],
-    "семен": ["сема", "сеня", "семён"],
-    "сергей": ["сережа", "серега"],
-    "софия": ["соня", "софья"],
-    "станислав": ["стас"],
-    "степан": ["степа"],
-    "тимофей": ["тима"],
-    "федор": ["федя"],
-    "юлия": ["юля"],
-    "яна": ["яночка"],
-    "ярослав": ["ярик"],
-    "ярослава": ["яся"],
-}
+# ---------- цена диагностики ----------
 
-# Обратный словарь: форма имени → все полные имена, которыми она может быть.
-# «Саша» — и Александр, и Александра, «Вася» — и Василий, и Василиса,
-# поэтому у формы бывает несколько вариантов, и совпадением считаем
-# пересечение вариантов.
-_NAME_FORMS = {}
-for full, shorts in _SHORT_NAMES.items():
-    _NAME_FORMS.setdefault(full, set()).add(full)
-    for sh in shorts:
-        _NAME_FORMS.setdefault(sh, set()).add(full)
+# Прайс диагностик по месяцам: с какого месяца сколько стоит.
+# Первичная — первая диагностика ученика, промежуточная — контроль динамики
+# у того, кто уже занимается. До февраля 2026 диагностика была бесплатной,
+# промежуточная появилась в прайсе вместе с новыми тарифами в сентябре 2026.
+_PRIMARY_DIAG_PRICES = [("2026-02", 1290), ("2026-09", 1490), ("2026-10", 2190)]
+_INTERIM_DIAG_PRICES = [("2026-09", 2000)]
 
 
-def _canon_word(w):
-    """Слово к сравнимому виду: у фамилии отбрасываем изменяемое окончание.
+def _price_at(schedule, month):
+    price = 0
+    for since, value in schedule:
+        if month >= since:
+            price = value
+    return price
 
-    Фамилии в CRM и в оплате различаются родом и падежом («Карцев» /
-    «Карцевы»), поэтому у длинных слов отбрасываем хвост.
+
+def _diag_price(month, is_interim):
+    """Сколько стоит проведённая в этом месяце диагностика."""
+    return _price_at(_INTERIM_DIAG_PRICES if is_interim
+                     else _PRIMARY_DIAG_PRICES, month)
+
+
+def _first_paid_months():
+    """Первый месяц платных занятий по каждому ученику: {cid: 'YYYY-MM'}.
+
+    Нужен, чтобы отличить первичную диагностику от промежуточной: если
+    платные уроки шли раньше — значит это контроль динамики, а не знакомство.
+    Историю берём из кэша: там лежат все посчитанные ранее месяцы.
     """
-    # Известное имя не трогаем: «Василий» должен остаться собой, иначе
-    # он перестанет узнаваться как форма «Вася».
-    if w in _NAME_FORMS:
-        return w
-    if len(w) > 5:
-        for tail in ("ыми", "ими", "ова", "ева", "ина", "ой", "ая", "ые", "ый",
-                     "ий", "ы", "а", "я", "и"):
-            if w.endswith(tail) and len(w) - len(tail) >= 4:
-                return w[: -len(tail)]
-    return w
-
-
-def _tokens(name):
-    """Набор сравнимых слов имени (без отчества — оно есть не везде)."""
-    s = _clean(name).lower().replace("ё", "е")
-    s = re.sub(r"[^а-яa-z ]", " ", s)
-    out = set()
-    for w in s.split():
-        if len(w) < 2:
-            continue
-        # Отчество для сверки бесполезно: в карточке ребёнка его обычно нет.
-        if w.endswith(("ович", "евич", "овна", "евна", "ична", "инична")):
-            continue
-        out.add(_canon_word(w))
-    return out
-
-
-def _similar(a, b):
-    """Похожи ли слова: «Кегерманов» и «Кагерманов» — одна фамилия с опечаткой."""
-    if a == b:
-        return True
-    # Имя в полной и уменьшительной форме: «Вася» и «Василий».
-    fa, fb = _NAME_FORMS.get(a), _NAME_FORMS.get(b)
-    if fa and fb and (fa & fb):
-        return True
-    if abs(len(a) - len(b)) > 1 or min(len(a), len(b)) < 4:
-        return False
-    # Расстояние Левенштейна ≤ 1 — одна опечатка.
-    if len(a) == len(b):
-        return sum(x != y for x, y in zip(a, b)) <= 1
-    short, long = (a, b) if len(a) < len(b) else (b, a)
-    for i in range(len(long)):
-        if long[:i] + long[i + 1:] == short:
-            return True
-    return False
-
-
-def _match_score(pay_tokens, crm_tokens):
-    """Сколько слов имени совпало (с поправкой на опечатки)."""
-    used = set()
-    score = 0
-    for w in pay_tokens:
-        for c in crm_tokens:
-            if c in used:
-                continue
-            if _similar(w, c):
-                used.add(c)
-                score += 1
-                break
-    return score
-
-
-# ---------- диагностики из оплат ----------
-
-def _diag_payments(months):
-    """Платные диагностики по месяцам: {месяц: {ключ_имени: сумма}}.
-
-    В CRM диагностика бесплатная, деньги за неё приходят отдельным платежом.
-    Промежуточные диагностики часто бесплатные — в оплатах их нет,
-    и в факт они не попадут, что верно.
-    """
-    if not months:
-        return {}
     schema = os.environ.get("MAIN_DB_SCHEMA", "public")
-    lo, hi = min(months), max(months)
-    out = {m: {} for m in months}
+    out = {}
     try:
         conn = psycopg2.connect(os.environ["DATABASE_URL"])
         with conn.cursor() as cur:
-            cur.execute(
-                f"SELECT name, amount, to_char(paid_at + interval '3 hours','YYYY-MM') "
-                f"FROM {schema}.payment_leads "
-                f"WHERE paid_at IS NOT NULL AND plan ILIKE '%диагност%' "
-                f"AND to_char(paid_at + interval '3 hours','YYYY-MM') BETWEEN '{lo}' AND '{hi}'"
-            )
-            for name, amount, mon in cur.fetchall():
-                if mon not in out:
-                    continue
-                key = (name or "").strip()
-                out[mon][key] = out[mon].get(key, 0) + round(float(amount or 0))
+            cur.execute(f"SELECT month, payload FROM {schema}.fact_income_cache "
+                        f"ORDER BY month")
+            for month, payload in cur.fetchall():
+                for cid, item in ((payload or {}).get("agg") or {}).items():
+                    if not (item or {}).get("prices"):
+                        continue
+                    cid = int(cid)
+                    if month < out.get(cid, "9999-99"):
+                        out[cid] = month
         conn.close()
     except Exception as e:
-        print(f"diag payments failed: {e}")
+        print(f"first paid months failed: {e}")
     return out
-
-
-def _match_customer(pay_name, candidates):
-    """Ищем ученика CRM по ФИО из оплаты.
-
-    Совпадение бывает неточным сразу по трём причинам:
-      - в оплате уменьшительное имя («Паша»), в CRM полное («Павел»);
-      - в CRM попадаются опечатки в фамилии («Кагерманов» / «Кегерманов»);
-      - платит родитель и пишет своё ФИО с отчеством.
-    Поэтому сравниваем наборы слов с поправкой на форму имени и опечатки.
-    Из нескольких кандидатов берём того, у кого совпало больше слов; при
-    равенстве предпочитаем действующего ученика, а не карточку лида.
-    """
-    pay_tokens = _tokens(pay_name)
-    if not pay_tokens:
-        return None
-
-    best = None
-    best_score = 0
-    ties = 0
-    for cid, tokens, is_study in candidates:
-        score = _match_score(pay_tokens, tokens)
-        if score < 2:
-            continue
-        # Карточка ученика приоритетнее карточки лида при равном совпадении.
-        rank = (score, 1 if is_study else 0)
-        if best is None or rank > best:
-            best = rank
-            best_score = score
-            best_cid = cid
-            ties = 1
-        elif rank == best:
-            ties += 1
-
-    if best is None:
-        return None
-    # Несколько одинаково подходящих карточек — угадывать нельзя.
-    return best_cid if ties == 1 or best_score >= 2 else None
 
 
 # ---------- сборка ----------
@@ -508,8 +333,11 @@ def _merge_duplicates(rows):
             base["name"] = r["name"]
         for a, b in zip(base["cells"], r["cells"]):
             a["lessons"] += b["lessons"]
+            # Карточка лида и карточка ученика — один ребёнок, диагностика
+            # у них одна. Цену показываем ту, что не нулевая.
             a["diag_count"] += b["diag_count"]
             a["diag_amount"] += b["diag_amount"]
+            a["diag_price"] = a["diag_price"] or b["diag_price"]
             a["amount"] += b["amount"]
             merged = {p["price"]: p["count"] for p in a["prices"]}
             for p in b["prices"]:
@@ -590,62 +418,17 @@ def _build_year(token, months, refresh=False):
         for m in months:
             monthly.get(m, {}).pop(cid, None)
 
-    diag_pay = _diag_payments(months)
+    # Первый платный месяц ученика — по нему отличаем первичную диагностику
+    # от промежуточной. Берём историю из кэша и дополняем текущей выборкой:
+    # для ученика, начавшего заниматься в запрошенном году, кэш ещё пуст.
+    first_paid = _first_paid_months()
+    for m in sorted(months):
+        for cid, item in (monthly.get(m) or {}).items():
+            if item.get("prices") and m < first_paid.get(cid, "9999-99"):
+                first_paid[cid] = m
 
-    # Оплаченные диагностики разносим по ученикам CRM: платит родитель своим
-    # именем, а заниматься приходит ребёнок — сопоставляем их по ФИО.
-    # Один ребёнок нередко заведён дважды: сначала лидом (is_study=0),
-    # потом учеником. Диагностику вешаем на карточку ученика — иначе
-    # в таблице появятся две строки на одного человека.
-    candidates = [
-        (cid, _tokens(info.get("name")), bool(info.get("is_study")))
-        for cid, info in customers.items()
-        if info.get("name")
-    ]
-    diag_by_cid = {}
-    orphan = []
-    for m in months:
-        # Кому в этом месяце CRM провела диагностику и кто ещё не сопоставлен —
-        # по ним подбираем оставшиеся оплаты даже при опечатке в фамилии.
-        month_diag = {cid for cid, item in (monthly.get(m) or {}).items()
-                      if item.get("diag")}
-        taken = set()
-        pending = []
-        for pay_key, amount in (diag_pay.get(m) or {}).items():
-            cid = _match_customer(pay_key, candidates)
-            if cid is None:
-                pending.append((pay_key, amount))
-                continue
-            taken.add(cid)
-            slot = diag_by_cid.setdefault(cid, {})
-            slot[m] = slot.get(m, 0) + amount
-
-        # Осталась одна неопознанная оплата и ровно один ребёнок с
-        # диагностикой без оплаты — это одна и та же диагностика.
-        free = [cid for cid in month_diag
-                if cid not in taken and m not in diag_by_cid.get(cid, {})]
-        for pay_key, amount in pending:
-            match = None
-            if len(free) == 1 and len(pending) == 1:
-                match = free[0]
-            else:
-                # Иначе ищем среди тех, у кого в этом месяце была диагностика:
-                # хватает совпадения одного слова (имени или фамилии).
-                pay_tokens = _tokens(pay_key)
-                hits = [cid for cid in free
-                        if _match_score(pay_tokens, _tokens(
-                            (customers.get(cid) or {}).get("name"))) >= 1]
-                if len(hits) == 1:
-                    match = hits[0]
-            if match is None:
-                orphan.append({"month": m, "name": pay_key, "amount": amount})
-                continue
-            free.remove(match)
-            slot = diag_by_cid.setdefault(match, {})
-            slot[m] = slot.get(m, 0) + amount
-
-    # Список учеников: все, у кого в году был урок или оплаченная диагностика.
-    cids = set(diag_by_cid.keys())
+    # Список учеников: все, у кого в году был урок или диагностика.
+    cids = set()
     for m in months:
         cids.update(monthly[m].keys())
 
@@ -654,7 +437,7 @@ def _build_year(token, months, refresh=False):
         info = customers.get(cid) or {}
         raw_name = info.get("name") or f"#{cid}"
         display = surname_first(raw_name)
-        diag_money = diag_by_cid.get(cid, {})
+        started = first_paid.get(cid)
 
         cells = []
         for m in months:
@@ -663,13 +446,18 @@ def _build_year(token, months, refresh=False):
             lessons_total = sum(q for _, q in parts)
             amount = sum(p * q for p, q in parts)
 
+            # Диагностика у того, кто начал заниматься в прошлые месяцы, —
+            # промежуточная: смотрим динамику, а не знакомимся.
             diag_count = item["diag"]
-            diag_amount = diag_money.get(m, 0)
+            is_interim = bool(started) and started < m
+            diag_price = _diag_price(m, is_interim)
+            diag_amount = diag_count * diag_price
             cells.append({
                 "month": m,
                 "lessons": lessons_total,
                 "prices": [{"price": p, "count": q} for p, q in parts],
                 "diag_count": diag_count,
+                "diag_price": diag_price,
                 "diag_amount": diag_amount,
                 "amount": amount + diag_amount,
             })
@@ -707,7 +495,7 @@ def _build_year(token, months, refresh=False):
             "lessons": lessons_count.get(m, 0),
         })
 
-    return rows, totals, orphan
+    return rows, totals
 
 
 def handler(event: dict, context) -> dict:
@@ -758,11 +546,10 @@ def handler(event: dict, context) -> dict:
         months = _year_months(year)
 
     refresh = params.get("refresh") == "1"
-    rows, totals, orphan = _build_year(token, months, refresh=refresh)
+    rows, totals = _build_year(token, months, refresh=refresh)
     return _json(200, {
         "year": year,
         "months": months,
         "rows": rows,
         "totals": totals,
-        "unmatched_diag": orphan,
     })

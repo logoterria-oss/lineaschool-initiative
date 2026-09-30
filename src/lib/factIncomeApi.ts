@@ -13,6 +13,8 @@ export interface FactCell {
   lessons: number;
   prices: PriceItem[];
   diag_count: number;
+  /** Цена одной диагностики в этом месяце: 1490 первичная, 2000 промежуточная. */
+  diag_price: number;
   diag_amount: number;
   amount: number;
   mark: CellMark;
@@ -37,18 +39,11 @@ export interface FactTotal {
   lessons: number;
 }
 
-export interface UnmatchedDiag {
-  month: string;
-  name: string;
-  amount: number;
-}
-
 export interface FactIncomeData {
   year: number;
   months: string[];
   rows: FactRow[];
   totals: FactTotal[];
-  unmatched_diag: UnmatchedDiag[];
 }
 
 export const fetchFactIncome = async (
@@ -75,14 +70,14 @@ export const formatMoney = (n: number) =>
 /** «8 × 1370» или «1 × 1290 + 12 × 1180», если цена в месяце менялась. */
 export const priceLabel = (cell: FactCell) => {
   const parts: string[] = [];
-  if (cell.diag_amount) parts.push(String(cell.diag_amount));
+  if (cell.diag_count) parts.push(String(cell.diag_price));
   cell.prices.forEach((p) => parts.push(String(p.price)));
   return parts.join(' · ');
 };
 
 export const countLabel = (cell: FactCell) => {
   const parts: string[] = [];
-  if (cell.diag_amount) parts.push(String(cell.diag_count || 1));
+  if (cell.diag_count) parts.push(String(cell.diag_count));
   cell.prices.forEach((p) => parts.push(String(p.count)));
   return parts.join(' · ');
 };

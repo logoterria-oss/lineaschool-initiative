@@ -63,11 +63,9 @@ const FactIncomeReport = () => {
     data.rows.forEach((r, i) => {
       const cells: string[] = [String(i + 1), r.name];
       r.cells.forEach((c) => {
-        cells.push(
-          String(c.lessons + (c.diag_amount ? c.diag_count : 0)),
-          c.prices.map((p) => p.price).join(' | '),
-          String(c.amount),
-        );
+        const prices = c.prices.map((p) => String(p.price));
+        if (c.diag_count) prices.unshift(String(c.diag_price));
+        cells.push(String(c.lessons + c.diag_count), prices.join(' | '), String(c.amount));
       });
       lines.push(cells.join(';'));
     });
@@ -193,25 +191,6 @@ const FactIncomeReport = () => {
             </div>
 
             <FactIncomeTable rows={rows} totals={data.totals} months={data.months} />
-
-            {data.unmatched_diag.length > 0 && (
-              <div className="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <div className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
-                  <Icon name="TriangleAlert" size={18} />
-                  Оплаченные диагностики без ученика в CRM ({data.unmatched_diag.length})
-                </div>
-                <div className="text-sm text-amber-800 space-y-1">
-                  {data.unmatched_diag.map((d) => (
-                    <div key={`${d.month}-${d.name}`}>
-                      {d.month} · {d.name} · {formatMoney(d.amount)} ₽
-                    </div>
-                  ))}
-                </div>
-                <div className="text-xs text-amber-700 mt-2">
-                  Эти суммы в таблицу не попали: в оплате указано имя, которого нет в карточках CRM.
-                </div>
-              </div>
-            )}
           </>
         ) : null}
       </div>
