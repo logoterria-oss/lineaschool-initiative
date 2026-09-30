@@ -352,6 +352,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         date = body_data.get('date', '')
         time = body_data.get('time', '')
         custom_note = body_data.get('note', '')
+        # Режим «только CRM»: заявка уже есть в базе и в Telegram, но карточка
+        # в CRM не создалась. Досылаем её, не плодя дубль лида и уведомление.
+        crm_only = bool(body_data.get('crmOnly'))
         
         # Проверяем обязательные поля
         if not phone:
@@ -407,41 +410,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             parent_name=parent_name
         )
         
-        # Сохранение в таблицу лидов (раздел 'Список лидов' у руководителя)
-        save_lead_to_db(
-            parent_name=parent_name,
-            student_name=child_name,
-            contact=phone,
-            messengers=messengers,
-            telegram=telegram_username,
-            marketing_consent=marketing_consent,
-        )
+        # Сохранение в таблицу лидов (раздел 'Список лидов' у руководителя).
+        # В режиме «только CRM» пропускаем: лид в базе уже есть.
+        if not crm_only:
+            save_lead_to_db(
+                parent_name=parent_name,
+                student_name=child_name,
+                contact=phone,
+                messengers=messengers,
+                telegram=telegram_username,
+                marketing_consent=marketing_consent,
+            )
 
         # Отправка в Telegram. Никогда не роняем запрос из-за проблем с Telegram:
         # заявка уже сохранена в CRM и в БД, поэтому уведомление — best effort.
-        print(f'📨 Отправка уведомления в Telegram')
-        try:
-            send_telegram_notification(
-                child_name=child_name,
-                parent_name=parent_name,
-                child_birth_date=child_birth_date,
-                telegram=telegram_username,
-                phone=phone,
-                email=email,
-                date=date,
-                time=time,
-                messengers=messengers,
-                marketing_consent=marketing_consent
-            )
-        except Exception as tg_err:
-            print(f'Telegram notification skipped due to error: {str(tg_err)}')
+        # В режиме «только CRM» не шлём: администратор уже видел эту заявку.
+        if crm_only:
+            print('📨 Telegram пропущен: режим «только CRM»')
+        else:
+            print('📨 Отправка уведомления в Telegram')
+            try:
+                send_telegram_notification(
+                    child_name=child_name,
+                    parent_name=parent_name,
+                    child_birth_date=child_birth_date,
+                    telegram=telegram_username,
+                    phone=phone,
+                    email=email,
+                    date=date,
+                    time=time,
+                    messengers=messengers,
+                    marketing_consent=marketing_consent
+                )
+            except Exception as tg_err:
+                print(f'Telegram notification skipped due to error: {str(tg_err)}')
         
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
                 'success': True,
-                'crm_status': 'created' if crm_result else 'skipped'
+                'crm_status': 'created' if crm_result else 'skipped',
+                # Номер карточки в CRM — по нему видно, что она реально создана
+                'crm_id': (crm_result or {}).get('id')
             }),
             'isBase64Encoded': False
         }
