@@ -22,7 +22,7 @@ export const formatPrice = (value: number) =>
   `${value.toLocaleString('ru-RU')} \u20BD`;
 
 /** Первичная диагностика — по акции до последнего числа текущего месяца. */
-export const DIAGNOSTIC_PRIMARY = { price: 1890, oldPrice: 4500 };
+export const DIAGNOSTIC_PRIMARY = { price: 1490, oldPrice: 4500 };
 
 /** Промежуточная диагностика — контроль динамики в процессе обучения. */
 export const DIAGNOSTIC_INTERIM = { price: 2000 };
