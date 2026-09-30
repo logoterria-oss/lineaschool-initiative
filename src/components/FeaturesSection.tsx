@@ -69,43 +69,46 @@ export default function FeaturesSection() {
               </div>
             </div>
 
-            <div className="group relative flex items-center gap-4 bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <Icon name="ReceiptText" size={22} className="text-white" />
+            <div className="group relative flex items-center gap-3 sm:gap-4 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+                <Icon name="ReceiptText" size={18} className="text-white sm:hidden" />
+                <Icon name="ReceiptText" size={22} className="text-white hidden sm:block" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1.5">Налоговый вычет</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 sm:mb-1.5">Налоговый вычет</h3>
+                <p className="hidden sm:block text-sm text-gray-600 leading-relaxed">
                   Вернём 13% от стоимости занятий — подготовим документы
                 </p>
               </div>
             </div>
 
-            <div className="group relative flex items-center gap-4 bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <Icon name="Award" size={22} className="text-white" />
+            <div className="group relative flex items-center gap-3 sm:gap-4 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+                <Icon name="Award" size={18} className="text-white sm:hidden" />
+                <Icon name="Award" size={22} className="text-white hidden sm:block" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1.5">Гарантия результатов</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">Возврат средств, если не будет улучшений</p>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 sm:mb-1.5">Гарантия результатов</h3>
+                <p className="hidden sm:block text-sm text-gray-600 leading-relaxed">Возврат средств, если не будет улучшений</p>
               </div>
             </div>
           </div>
 
           {/* Преимущества */}
-          <div className="grid sm:grid-cols-2 gap-4 lg:gap-5">
+          <div className="grid sm:grid-cols-2 gap-2.5 sm:gap-4 lg:gap-5">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="group bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300"
+                className="group flex sm:block items-center gap-3 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300"
               >
                 <div
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-3 shadow-md group-hover:scale-110 transition-transform duration-300`}
+                  className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center flex-shrink-0 sm:mb-3 shadow-md group-hover:scale-110 transition-transform duration-300`}
                 >
-                  <Icon name={f.icon} size={22} className="text-white" />
+                  <Icon name={f.icon} size={18} className="text-white sm:hidden" />
+                  <Icon name={f.icon} size={22} className="text-white hidden sm:block" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1.5">{f.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{f.text}</p>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 sm:mb-1.5">{f.title}</h3>
+                <p className="hidden sm:block text-sm text-gray-600 leading-relaxed">{f.text}</p>
               </div>
             ))}
           </div>
