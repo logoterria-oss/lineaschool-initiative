@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { getPrimaryDiagnosticPrice } from '@/lib/diagnosticPrice';
 
 const ADD_MANUAL_URL = 'https://functions.poehali.dev/975b62cd-bb6b-4608-8d61-f15b29e93b89';
 
 const OTHER = '__other__';
 
-// Названия совпадают с тарифами из PricingSection, чтобы аналитика в отчётах строилась корректно
-const PLAN_OPTIONS: { value: string; amount: number }[] = [
-  { value: 'Диагностика - Диагностика + консультация', amount: 1490 },
+/**
+ * Названия совпадают с тарифами из PricingSection, чтобы аналитика в отчётах
+ * строилась корректно. Список собираем при открытии окна, а не при загрузке
+ * модуля: цена диагностики живёт по расписанию, и открытая с вечера админка
+ * не должна подставлять устаревшую сумму.
+ */
+const getPlanOptions = (): { value: string; amount: number }[] => [
+  {
+    value: 'Диагностика - Диагностика + консультация',
+    amount: getPrimaryDiagnosticPrice().price,
+  },
   { value: '2 урока в неделю - 1 месяц', amount: 10960 },
   { value: '2 урока в неделю - 3 месяца', amount: 30000 },
   { value: '2 урока в неделю - 6 месяцев', amount: 55200 },
@@ -33,11 +42,13 @@ export default function ManualPaymentModal({ onClose, onSaved }: ManualPaymentMo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const planOptions = useMemo(() => getPlanOptions(), []);
+
   const isOther = planSelect === OTHER;
 
   const handlePlanChange = (value: string) => {
     setPlanSelect(value);
-    const opt = PLAN_OPTIONS.find((p) => p.value === value);
+    const opt = planOptions.find((p) => p.value === value);
     if (opt) setAmount(String(opt.amount));
   };
 
@@ -112,7 +123,7 @@ export default function ManualPaymentModal({ onClose, onSaved }: ManualPaymentMo
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-300"
             >
               <option value="" disabled>Выберите тариф</option>
-              {PLAN_OPTIONS.map((opt) => (
+              {planOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.value} — {opt.amount.toLocaleString('ru-RU')} ₽
                 </option>

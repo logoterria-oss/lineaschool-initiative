@@ -1,14 +1,15 @@
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import { useDiagnosticPrice } from '@/hooks/useDiagnosticPrice';
 import {
   DIAGNOSTIC_INTERIM,
-  DIAGNOSTIC_PRIMARY,
   formatPrice,
   getPromoDeadline,
 } from './data';
 
 export default function DiagnosticsSection() {
   const promoDeadline = getPromoDeadline();
+  const primary = useDiagnosticPrice();
 
   return (
     <section className="mb-24">
@@ -34,10 +35,10 @@ export default function DiagnosticsSection() {
             </div>
             <div className="flex items-center justify-center gap-3">
               <span className="text-3xl font-bold text-green-600">
-                {formatPrice(DIAGNOSTIC_PRIMARY.price)}
+                {formatPrice(primary.price)}
               </span>
               <span className="text-xl text-gray-400 line-through">
-                {formatPrice(DIAGNOSTIC_PRIMARY.oldPrice)}
+                {formatPrice(primary.oldPrice)}
               </span>
             </div>
           </div>

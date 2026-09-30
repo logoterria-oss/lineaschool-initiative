@@ -1,4 +1,5 @@
 import SEOHead from "@/components/SEOHead";
+import { getPrimaryDiagnosticPrice } from "@/lib/diagnosticPrice";
 import YandexMetaTags from "@/components/YandexMetaTags";
 import { organizationSchema, serviceSchema, faqSchema, webPageSchema } from "@/utils/structuredData";
 import Navigation from "@/components/Navigation";
@@ -31,7 +32,7 @@ export default function Index() {
     <>
       <SEOHead
         title="Онлайн коррекция дислексии и дисграфии для детей 8-18 лет | ЛинэяСкул"
-        description="Эффективная онлайн-коррекция дислексии и дисграфии для детей 8-18 лет. Нейрологопедический подход, 200+ довольных семей, от 970₽ за урок. Бесплатная диагностика."
+        description={`Эффективная онлайн-коррекция дислексии и дисграфии для детей 8-18 лет. Нейрологопедический подход, 200+ довольных семей, от 970₽ за урок. Первичная диагностика — ${getPrimaryDiagnosticPrice().price}₽.`}
         keywords="дислексия, дисграфия, коррекция, логопед онлайн, нейрологопед, дети, обучение, дефектолог, нарушения чтения, нарушения письма"
         ogImage="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png"
         canonicalUrl="https://lineaschool.ru"

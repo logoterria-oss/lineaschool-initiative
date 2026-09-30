@@ -1,4 +1,5 @@
 // Структурированные данные для Google Rich Snippets
+import { getPrimaryDiagnosticPrice } from '@/lib/diagnosticPrice';
 
 export const organizationSchema = {
   "@context": "https://schema.org",
@@ -92,7 +93,7 @@ export const faqSchema = {
       "name": "Сколько стоят занятия?",
       "acceptedAnswer": {
         "@type": "Answer", 
-        "text": "Стоимость индивидуального урока от 970 рублей за 40 минут. Первая диагностика проводится бесплатно."
+        "text": `Стоимость индивидуального урока от 970 рублей за 40 минут. Первичная диагностика — ${getPrimaryDiagnosticPrice().price} рублей.`
       }
     }
   ]

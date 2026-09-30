@@ -1,10 +1,10 @@
 import {
   DIAGNOSTIC_INTERIM,
-  DIAGNOSTIC_PRIMARY,
   individualIndications,
   individualPlans,
   pricingSections,
 } from '@/components/pricing2026/data';
+import { getPrimaryDiagnosticPrice } from '@/lib/diagnosticPrice';
 
 /** Один вариант оплаты внутри страницы: срок абонемента или разовая услуга. */
 export type PayOption = {
@@ -152,23 +152,31 @@ const individualOffer: PayOffer = {
   })),
 };
 
-const diagnosticPrimary: PayOffer = {
-  slug: 'diagnostika',
-  title: 'Первичная диагностика',
-  description:
-    'Полное обследование чтения и письма, определение механизмов нарушения, консультация и индивидуальный план коррекции дислексии, дисграфии и дизорфографии',
-  options: [
-    {
-      title: 'Первичная диагностика',
-      totalPrice: DIAGNOSTIC_PRIMARY.price,
-      oldPrice: DIAGNOSTIC_PRIMARY.oldPrice,
-      details: [
-        { icon: 'Clock', color: 'text-gray-400', text: '90–120 минут' },
-        { icon: 'Video', color: 'text-blue-500', text: 'Онлайн, с логопедом-нейропсихологом' },
-        { icon: 'FileText', color: 'text-green-500', text: 'Заключение и план коррекции' },
-      ],
-    },
-  ],
+/**
+ * Первичная диагностика. Цену берём в момент обращения, а не при импорте
+ * модуля: иначе вкладка, открытая до смены цены, продолжала бы вести на оплату
+ * по старому тарифу.
+ */
+const buildDiagnosticPrimary = (): PayOffer => {
+  const primary = getPrimaryDiagnosticPrice();
+  return {
+    slug: 'diagnostika',
+    title: 'Первичная диагностика',
+    description:
+      'Полное обследование чтения и письма, определение механизмов нарушения, консультация и индивидуальный план коррекции дислексии, дисграфии и дизорфографии',
+    options: [
+      {
+        title: 'Первичная диагностика',
+        totalPrice: primary.price,
+        oldPrice: primary.oldPrice,
+        details: [
+          { icon: 'Clock', color: 'text-gray-400', text: '90–120 минут' },
+          { icon: 'Video', color: 'text-blue-500', text: 'Онлайн, с логопедом-нейропсихологом' },
+          { icon: 'FileText', color: 'text-green-500', text: 'Заключение и план коррекции' },
+        ],
+      },
+    ],
+  };
 };
 
 const diagnosticInterim: PayOffer = {
@@ -189,8 +197,8 @@ const diagnosticInterim: PayOffer = {
   ],
 };
 
-export const payOffers: PayOffer[] = [
-  diagnosticPrimary,
+export const getPayOffers = (): PayOffer[] => [
+  buildDiagnosticPrimary(),
   diagnosticInterim,
   ...subscriptionOffers,
   individualOffer,
@@ -198,4 +206,4 @@ export const payOffers: PayOffer[] = [
 ];
 
 export const getPayOffer = (slug?: string) =>
-  payOffers.find((offer) => offer.slug === slug);
+  getPayOffers().find((offer) => offer.slug === slug);

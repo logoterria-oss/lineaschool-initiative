@@ -1,3 +1,8 @@
+import {
+  INTERIM_DIAGNOSTIC_PRICE,
+  getPrimaryDiagnosticPrice,
+} from '@/lib/diagnosticPrice';
+
 export type Plan = {
   title: string;
   totalLessons: number;
@@ -21,11 +26,15 @@ export type PricingSection = {
 export const formatPrice = (value: number) =>
   `${value.toLocaleString('ru-RU')} \u20BD`;
 
-/** Первичная диагностика — по акции до последнего числа текущего месяца. */
-export const DIAGNOSTIC_PRIMARY = { price: 1490, oldPrice: 4500 };
+/**
+ * Первичная диагностика — по акции до последнего числа текущего месяца.
+ * Цена приходит из расписания (src/lib/diagnosticPrice.ts): она меняется сама
+ * в назначенный момент по Москве, руками её тут править не нужно.
+ */
+export const DIAGNOSTIC_PRIMARY = getPrimaryDiagnosticPrice();
 
 /** Промежуточная диагностика — контроль динамики в процессе обучения. */
-export const DIAGNOSTIC_INTERIM = { price: 2000 };
+export const DIAGNOSTIC_INTERIM = { price: INTERIM_DIAGNOSTIC_PRICE };
 
 export const getPromoDeadline = () => {
   const now = new Date();
