@@ -237,9 +237,14 @@ def _group_booked(cur) -> Dict[tuple, list]:
     Ключ — день недели: ребёнок ходит в группу каждую неделю, поэтому место
     занято и на следующих неделях.
     '''
+    # Подтверждённая заявка, чьи занятия уже начались, должна быть в CRM.
+    # Если ребёнка там нет — значит, его не завели или он ушёл из группы,
+    # и держать за ним место по старой заявке нельзя: CRM — источник правды.
     cur.execute(
         "SELECT DISTINCT slot_date, time_from, teacher_id, child_name FROM slot_bookings "
-        "WHERE status IN ('new', 'confirmed') AND lesson_type = 'groups'"
+        "WHERE lesson_type = 'groups' AND ("
+        "  status = 'new' OR (status = 'confirmed' AND slot_date >= CURRENT_DATE)"
+        ")"
     )
     out: Dict[tuple, list] = {}
     for r in cur.fetchall():
