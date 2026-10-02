@@ -11,16 +11,33 @@
       "method": "GET",
       "path": "/?action=avans",
       "expectedStatus": 401,
-      "expectedBody": {"error": "string"},
+      "expectedBody": {
+        "error": "string"
+      },
       "bodyMatcher": "partial"
     },
     {
       "name": "Смена сценария без входа закрыта",
       "method": "POST",
       "path": "/",
-      "body": {"action": "set_scenario", "scenario": "base"},
+      "body": {
+        "action": "set_scenario",
+        "scenario": "base"
+      },
       "expectedStatus": 401,
-      "expectedBody": {"error": "string"},
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Факт без входа закрыт",
+      "method": "GET",
+      "path": "/?action=fact",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
       "bodyMatcher": "partial"
     }
   ]

@@ -3,13 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import AvansForecastTable from '@/components/finmodel/AvansForecastTable';
 import AvansHistoryTable from '@/components/finmodel/AvansHistoryTable';
+import FactForecastTable from '@/components/finmodel/FactForecastTable';
+import FactCharts from '@/components/finmodel/FactCharts';
 import {
-  AvansData, SCENARIOS, SCENARIO_LABEL, Scenario, fetchAvans, fmMoney, setActiveScenario,
+  AvansData, FactData, SCENARIOS, SCENARIO_LABEL, Scenario, fetchAvans, fetchFact, fmMoney, setActiveScenario,
 } from '@/lib/finmodelApi';
+
+type Tab = 'avans' | 'fact';
 
 const FinModelPage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<AvansData | null>(null);
+  const [fact, setFact] = useState<FactData | null>(null);
+  const [tab, setTab] = useState<Tab>('avans');
   const [active, setActive] = useState<Scenario>('base');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,7 +25,9 @@ const FinModelPage = () => {
     setError('');
     try {
       const d = await fetchAvans();
+      const f = await fetchFact();
       setData(d);
+      setFact(f);
       setActive(d.active_scenario);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить');
@@ -42,6 +50,7 @@ const FinModelPage = () => {
   };
 
   const annual = data ? data.forecast.reduce((s, r) => s + (r[active]?.forecast_final || 0), 0) : 0;
+  const annualFact = fact ? fact.forecast.reduce((s, r) => s + (r[active]?.fact_final || 0), 0) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -52,14 +61,14 @@ const FinModelPage = () => {
           </button>
           <div className="flex-1">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Финансовая модель</h1>
-            <p className="text-gray-500 text-sm mt-1">Модуль «Доходы»: авансовые доходы</p>
+            <p className="text-gray-500 text-sm mt-1">Модуль «Доходы»: авансовые и фактические доходы</p>
           </div>
         </div>
 
         {loading && (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
             <Icon name="Loader2" size={26} className="animate-spin mx-auto mb-2" />
-            Загружаем авансы и прогноз…
+            Загружаем авансы, факт и прогноз…
           </div>
         )}
 
@@ -71,14 +80,18 @@ const FinModelPage = () => {
           </div>
         )}
 
-        {data && !loading && (
+        {data && fact && !loading && (
           <>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-wrap items-center gap-4">
-              <div className="flex-1 min-w-[220px]">
-                <div className="text-xs text-gray-500">Прогноз авансов на 12 месяцев · {SCENARIO_LABEL[active]}</div>
+              <div className="min-w-[200px]">
+                <div className="text-xs text-gray-500">Авансы на 12 мес · {SCENARIO_LABEL[active]}</div>
                 <div className="text-3xl font-bold text-emerald-700">{fmMoney(annual)}</div>
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <div className="text-xs text-gray-500">Факт на 12 мес · {SCENARIO_LABEL[active]}</div>
+                <div className="text-3xl font-bold text-indigo-700">{fmMoney(annualFact)}</div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Обновлено: {data.updated_at ? new Date(data.updated_at).toLocaleString('ru-RU') : '—'}
+                  Обновлено: {fact.updated_at ? new Date(fact.updated_at).toLocaleString('ru-RU') : '—'}
                 </div>
               </div>
               <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
@@ -96,8 +109,31 @@ const FinModelPage = () => {
               </div>
             </div>
 
-            <AvansForecastTable data={data} active={active} />
-            <AvansHistoryTable data={data} />
+            <div className="flex gap-1 border-b border-gray-200">
+              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы']] as [Tab, string][]).map(([t, label]) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`px-4 py-2 text-sm -mb-px border-b-2 transition-colors ${
+                    tab === t ? 'border-gray-900 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {tab === 'avans' ? (
+              <>
+                <AvansForecastTable data={data} active={active} />
+                <AvansHistoryTable data={data} />
+              </>
+            ) : (
+              <>
+                <FactForecastTable data={fact} active={active} />
+                <FactCharts fact={fact} avans={data} active={active} />
+              </>
+            )}
           </>
         )}
       </div>

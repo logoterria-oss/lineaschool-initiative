@@ -1,4 +1,4 @@
-"""Финансовая модель: авансовые доходы — история, сезонность, прогноз по трём сценариям."""
+"""Финансовая модель: авансовые и фактические доходы — история, сезонность, прогноз по трём сценариям."""
 import os
 import json
 import datetime
@@ -221,7 +221,9 @@ def close_month(cur, conn, body):
         "ON CONFLICT (month_id) DO NOTHING",
         (month, avans),
     )
-    recalc(cur, constants(cur))
+    c = constants(cur)
+    recalc(cur, c)
+    recalc_fact(cur, c)
     conn.commit()
     return resp(200, {"ok": True, "month": month, "avans": avans})
 
@@ -238,8 +240,158 @@ def set_scenario(cur, conn, body):
     return resp(200, {"ok": True, "active_scenario": sc})
 
 
+# ---------------- ФАКТИЧЕСКИЕ ДОХОДЫ ----------------
+# Факт — заработанное (проведённые уроки), аванс — пришедшие деньги. Хранятся в разных
+# таблицах и никогда не смешиваются. Прогноз факта = прогноз аванса × коэф. факт/аванс.
+
+
+def fact_history(cur):
+    cur.execute(
+        f"SELECT month_id, fact, source, closed, closed_at, exclude_from_seasonality, note "
+        f"FROM {S}.fm_fact_monthly ORDER BY month_id"
+    )
+    return [dict(r) for r in cur.fetchall()]
+
+
+def recalc_fact(cur, c):
+    """Сезонность факта и коэф. факт/аванс (окно 12 закрытых месяцев), затем прогноз по 3 сценариям."""
+    facts = [h for h in fact_history(cur) if h["closed"] and not h["exclude_from_seasonality"]]
+    avans = {h["month_id"]: float(h["avans"]) for h in history(cur) if h["closed"]}
+    # В окно берём только месяцы, где закрыты и факт, и аванс — иначе коэффициент не посчитать.
+    window = [h for h in facts if h["month_id"] in avans][-12:]
+    if len(window) < 12:
+        return
+    annual = sum(float(h["fact"]) for h in window)
+    period = f"{month_label(window[0]['month_id'])} – {month_label(window[-1]['month_id'])}"
+    shares, coefs = {}, {}
+    for h in window:
+        num, f = int(h["month_id"][5:7]), float(h["fact"])
+        a = avans[h["month_id"]]
+        shares[num] = f / annual * 100
+        coefs[num] = f / a if a else 0
+        cur.execute(
+            f"INSERT INTO {S}.fm_seasonality_fact (month_num, share_pct, fact, updated_at, source_period) "
+            "VALUES (%s,%s,%s,now(),%s) ON CONFLICT (month_num) DO UPDATE SET share_pct=EXCLUDED.share_pct, "
+            "fact=EXCLUDED.fact, updated_at=now(), source_period=EXCLUDED.source_period",
+            (num, round(shares[num], 6), f, period),
+        )
+        cur.execute(
+            f"INSERT INTO {S}.fm_fact_coefs (month_num, coef, fact, avans, updated_at, source_period) "
+            "VALUES (%s,%s,%s,%s,now(),%s) ON CONFLICT (month_num) DO UPDATE SET coef=EXCLUDED.coef, "
+            "fact=EXCLUDED.fact, avans=EXCLUDED.avans, updated_at=now(), source_period=EXCLUDED.source_period",
+            (num, round(coefs[num], 6), f, a, period),
+        )
+
+    fact_by_month = {h["month_id"]: float(h["fact"]) for h in fact_history(cur) if h["closed"]}
+    threshold = float(c.get("avans_seasonal_threshold_pct") or 15) / 100
+    cur.execute(f"SELECT month_id, scenario, forecast_final FROM {S}.fm_avans_forecast")
+    av_fc = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"DELETE FROM {S}.fm_fact_forecast")
+    for r in av_fc:
+        m, sc = r["month_id"], r["scenario"]
+        num = int(m[5:7])
+        av = float(r["forecast_final"])
+        coef = coefs[num]
+        direct = av * coef
+        seasonal = annual * float(c[f"avans_coef_{sc}"]) * shares[num] / 100
+        diff = abs(direct - seasonal) / direct if direct else 0
+        final = (direct + seasonal) / 2 if diff > threshold else direct
+        cur.execute(
+            f"INSERT INTO {S}.fm_fact_forecast (month_id, scenario, fact_prev_year, avans_forecast, coef, "
+            "fact_direct, fact_seasonal, diff_pct, fact_final, calculated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+            (m, sc, fact_by_month.get(add_months(m, -12)), round(av), round(coef, 6),
+             round(direct), round(seasonal), round(diff * 100, 4), round(final)),
+        )
+
+
+def fact_stale(cur):
+    cur.execute(
+        f"SELECT (SELECT max(closed_at) FROM {S}.fm_fact_monthly) AS last_close, "
+        f"(SELECT max(calculated_at) FROM {S}.fm_avans_forecast) AS avans_calc, "
+        f"(SELECT min(calculated_at) FROM {S}.fm_fact_forecast) AS calc, "
+        f"(SELECT count(*) FROM {S}.fm_fact_forecast) AS n"
+    )
+    r = cur.fetchone()
+    if r["n"] == 0 or not r["calc"]:
+        return True
+    return any(t and t > r["calc"] for t in (r["last_close"], r["avans_calc"]))
+
+
+def get_fact(cur, conn):
+    c = constants(cur)
+    if forecast_stale(cur):
+        recalc(cur, c)
+        conn.commit()
+    if fact_stale(cur):
+        recalc_fact(cur, c)
+        conn.commit()
+    hist = fact_history(cur)
+    cur.execute(f"SELECT * FROM {S}.fm_seasonality_fact ORDER BY month_num")
+    seas = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT month_num, share_pct FROM {S}.fm_seasonality ORDER BY month_num")
+    seas_avans = {r["month_num"]: r["share_pct"] for r in cur.fetchall()}
+    cur.execute(f"SELECT * FROM {S}.fm_fact_coefs ORDER BY month_num")
+    coefs = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT * FROM {S}.fm_fact_forecast ORDER BY month_id, scenario")
+    rows = [dict(r) for r in cur.fetchall()]
+    forecast = {}
+    for r in rows:
+        f = forecast.setdefault(r["month_id"], {"month_id": r["month_id"], "fact_prev_year": r["fact_prev_year"], "coef": r["coef"]})
+        f[r["scenario"]] = r
+    avans = {h["month_id"]: h["avans"] for h in history(cur)}
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "history": [{**h, "avans": avans.get(h["month_id"])} for h in hist],
+        "seasonality": [{**s, "avans_share_pct": seas_avans.get(s["month_num"])} for s in seas],
+        "seasonality_total_pct": round(sum(float(s["share_pct"]) for s in seas), 4),
+        "coefs": coefs,
+        "forecast": list(forecast.values()),
+        "active_scenario": c.get("avans_scenario_active") or "base",
+        "growth_coefs": {sc: c[f"avans_coef_{sc}"] for sc in SCENARIOS},
+        "threshold_pct": c.get("avans_seasonal_threshold_pct"),
+        "to_close": fact_months_to_close(hist),
+        "updated_at": max((r["calculated_at"] for r in rows), default=None),
+    }
+
+
+def fact_months_to_close(hist):
+    closed = {h["month_id"] for h in hist if h["closed"]}
+    last_closed = max(closed) if closed else "2026-08"
+    prev = add_months(current_month(), -1)
+    out, m = [], add_months(last_closed, 1)
+    while m <= prev:
+        if m not in closed:
+            out.append(m)
+        m = add_months(m, 1)
+    return out
+
+
+def close_fact_month(cur, conn, body):
+    month = str(body.get("month") or "")
+    if month not in fact_months_to_close(fact_history(cur)):
+        return resp(400, {"error": f"Месяц {month} нельзя закрыть: он не завершён или уже закрыт"})
+    try:
+        fact = round(float(body.get("fact")), 2)
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Нужна сумма факта"})
+    if fact <= 0:
+        return resp(400, {"error": "Отчёт вернул нулевой факт — месяц не закрыт"})
+    cur.execute(
+        f"INSERT INTO {S}.fm_fact_monthly (month_id, fact, source, closed, closed_at, note) "
+        "VALUES (%s, %s, 'report', true, now(), 'Отчёт «Фактические доходы», закрыт автоматически') "
+        "ON CONFLICT (month_id) DO NOTHING",
+        (month, fact),
+    )
+    c = constants(cur)
+    recalc(cur, c)
+    recalc_fact(cur, c)
+    conn.commit()
+    return resp(200, {"ok": True, "month": month, "fact": fact})
+
+
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans — авансы, сезонность, прогноз; POST avans_close / set_scenario / recalc."""
+    """Финмодель: GET ?action=avans|fact — история, сезонность, прогноз; POST avans_close / fact_close / set_scenario / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -254,6 +406,8 @@ def handler(event: dict, context) -> dict:
             action = (event.get("queryStringParameters") or {}).get("action") or "avans"
             if action == "avans":
                 return resp(200, get_avans(cur, conn))
+            if action == "fact":
+                return resp(200, get_fact(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -261,10 +415,14 @@ def handler(event: dict, context) -> dict:
             action = body.get("action")
             if action == "avans_close":
                 return close_month(cur, conn, body)
+            if action == "fact_close":
+                return close_fact_month(cur, conn, body)
             if action == "set_scenario":
                 return set_scenario(cur, conn, body)
             if action == "recalc":
-                recalc(cur, constants(cur))
+                c = constants(cur)
+                recalc(cur, c)
+                recalc_fact(cur, c)
                 conn.commit()
                 return resp(200, {"ok": True})
             return resp(400, {"error": "Неизвестное действие"})

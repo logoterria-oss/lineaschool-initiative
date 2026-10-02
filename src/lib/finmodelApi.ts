@@ -116,3 +116,100 @@ export const fmMoney = (v: number | null | undefined) =>
   v == null ? '—' : `${Math.round(v).toLocaleString('ru-RU')} ₽`;
 export const fmPct = (v: number | null | undefined, d = 2) =>
   v == null ? '—' : `${Number(v).toFixed(d).replace('.', ',')}%`;
+
+// ---------------- Фактические доходы ----------------
+const FACT_INCOME = (func2url as Record<string, string>)['fact-income'];
+
+export interface FactHistoryRow {
+  month_id: string;
+  fact: number;
+  avans: number | null;
+  source: 'report' | 'manual';
+  closed: boolean;
+  closed_at: string | null;
+  exclude_from_seasonality: boolean;
+  note: string;
+}
+
+export interface FactSeasonalityRow {
+  month_num: number;
+  share_pct: number;
+  avans_share_pct: number | null;
+  fact: number;
+  source_period: string;
+}
+
+export interface FactCoefRow {
+  month_num: number;
+  coef: number;
+  fact: number;
+  avans: number;
+  source_period: string;
+}
+
+export interface FactForecastCell {
+  avans_forecast: number;
+  coef: number;
+  fact_direct: number;
+  fact_seasonal: number;
+  diff_pct: number;
+  fact_final: number;
+}
+
+export interface FactForecastRow {
+  month_id: string;
+  fact_prev_year: number | null;
+  coef: number;
+  min: FactForecastCell;
+  base: FactForecastCell;
+  opt: FactForecastCell;
+}
+
+export interface FactData {
+  current_month: string;
+  history: FactHistoryRow[];
+  seasonality: FactSeasonalityRow[];
+  seasonality_total_pct: number;
+  coefs: FactCoefRow[];
+  forecast: FactForecastRow[];
+  active_scenario: Scenario;
+  growth_coefs: Record<Scenario, number>;
+  threshold_pct: number;
+  to_close: string[];
+  updated_at: string | null;
+}
+
+export const fetchFactRaw = async (): Promise<FactData> => {
+  const r = await fetch(`${API}?action=fact`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+/** Факт за месяц — из существующего отчёта «Фактические доходы». */
+const fetchFactFromReport = async (month: string): Promise<number> => {
+  const r = await fetch(`${FACT_INCOME}?month=${month}`);
+  const data = await r.json();
+  const v = data?.totals?.[0]?.total;
+  if (typeof v !== 'number') throw new Error('Отчёт «Фактические доходы» не ответил');
+  return v;
+};
+
+/**
+ * Загрузка модуля факта. Вызывать после fetchAvans: прогноз факта строится
+ * от прогноза авансов. Незакрытые прошедшие месяцы забираем из отчёта
+ * «Фактические доходы» и закрываем — после этого пересчёт идёт на сервере.
+ */
+export const fetchFact = async (): Promise<FactData> => {
+  const data = await fetchFactRaw();
+  if (data.to_close.length === 0) return data;
+  for (const month of data.to_close) {
+    const fact = await fetchFactFromReport(month);
+    await post({ action: 'fact_close', month, fact });
+  }
+  return fetchFactRaw();
+};
+
+export const MONTH_NUM_LABEL = MONTHS;
+export const fmCoef = (v: number | null | undefined, d = 2) =>
+  v == null ? '—' : Number(v).toFixed(d).replace('.', ',');
