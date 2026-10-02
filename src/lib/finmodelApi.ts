@@ -558,3 +558,48 @@ export const fetchPayouts = async (): Promise<PayoutData> => {
 /** Процент и/или ручная сумма выплаты за месяц; null — по умолчанию. */
 export const setPayout = (month: string, v: { payout_pct?: number | null; payout_manual?: number | null }) =>
   post({ action: 'set_payout', month, ...v });
+
+// ---------------- РАЗОВЫЕ РАСХОДЫ ----------------
+export interface OneTimeCategory {
+  id: string;
+  label: string;
+}
+
+export interface OneTimeItem {
+  id: number;
+  month_id: string;
+  name: string;
+  amount: number;
+  category: string;
+  comment: string;
+  source: 'manual';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OneTimeData {
+  current_month: string;
+  categories: OneTimeCategory[];
+  items: OneTimeItem[];
+  months: string[];
+  by_month: Record<string, number>;
+}
+
+export interface OneTimeInput {
+  id?: number;
+  month_id: string;
+  name: string;
+  amount: number;
+  category: string;
+  comment: string;
+}
+
+export const fetchOneTime = async (): Promise<OneTimeData> => {
+  const r = await fetch(`${API}?action=one_time`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+export const saveOneTime = (v: OneTimeInput) => post({ action: 'save_one_time', ...v });
+export const deleteOneTime = (id: number) => post({ action: 'delete_one_time', id });

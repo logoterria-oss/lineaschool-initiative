@@ -1432,9 +1432,88 @@ def set_payout(cur, conn, body):
     conn.commit()
     return resp(200, {"ok": True})
 
+# ---------------- РАЗОВЫЕ РАСХОДЫ ----------------
+# Нерегулярные траты, только ручной ввод, по умолчанию 0. Учитываются в месяце возникновения:
+# уменьшают EBITDA (P&L) и чистый поток (Cash Flow). На авансы, налоги, кредит, выплату не влияют.
+
+
+def one_time_totals(cur):
+    cur.execute(f"SELECT month_id, sum(amount) AS total FROM {S}.fm_one_time_expenses GROUP BY month_id")
+    return {r["month_id"]: round(float(r["total"]), 2) for r in cur.fetchall()}
+
+
+def get_one_time(cur):
+    cur.execute(f"SELECT id, label FROM {S}.fm_one_time_categories ORDER BY sort")
+    cats = [dict(r) for r in cur.fetchall()]
+    cur.execute(
+        f"SELECT id, month_id, name, amount, category, comment, source, created_at, updated_at "
+        f"FROM {S}.fm_one_time_expenses ORDER BY month_id DESC, id"
+    )
+    items = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT id FROM {S}.fm_months ORDER BY id")
+    months = [r["id"] for r in cur.fetchall()]
+    return {"ok": True, "current_month": current_month(), "categories": cats, "items": items,
+            "months": months, "by_month": one_time_totals(cur)}
+
+
+def _one_time_fields(cur, body):
+    month = str(body.get("month_id") or "")
+    cur.execute(f"SELECT 1 FROM {S}.fm_months WHERE id = %s", (month,))
+    if not cur.fetchone():
+        raise ValueError("Нет такого месяца")
+    name = str(body.get("name") or "").strip()[:255]
+    if not name:
+        raise ValueError("Укажите название")
+    try:
+        amount = round(float(body.get("amount")), 2)
+    except (TypeError, ValueError):
+        raise ValueError("Сумма должна быть числом")
+    if amount <= 0:
+        raise ValueError("Сумма должна быть больше нуля")
+    cat = str(body.get("category") or "other")
+    cur.execute(f"SELECT 1 FROM {S}.fm_one_time_categories WHERE id = %s", (cat,))
+    if not cur.fetchone():
+        raise ValueError("Нет такой категории")
+    return month, name, amount, cat, str(body.get("comment") or "").strip()[:1000]
+
+
+def save_one_time(cur, conn, body):
+    try:
+        f = _one_time_fields(cur, body)
+    except ValueError as e:
+        return resp(400, {"error": str(e)})
+    item_id = body.get("id")
+    if item_id:
+        cur.execute(
+            f"UPDATE {S}.fm_one_time_expenses SET month_id=%s, name=%s, amount=%s, category=%s, comment=%s, "
+            "updated_at=now() WHERE id=%s RETURNING id",
+            (*f, int(item_id)),
+        )
+        if not cur.fetchone():
+            return resp(404, {"error": "Расход не найден"})
+    else:
+        cur.execute(
+            f"INSERT INTO {S}.fm_one_time_expenses (month_id, name, amount, category, comment) "
+            "VALUES (%s,%s,%s,%s,%s) RETURNING id",
+            f,
+        )
+        item_id = cur.fetchone()["id"]
+    conn.commit()
+    return resp(200, {"ok": True, "id": int(item_id)})
+
+
+def delete_one_time(cur, conn, body):
+    try:
+        item_id = int(body.get("id"))
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Нужен id"})
+    cur.execute(f"DELETE FROM {S}.fm_one_time_expenses WHERE id = %s", (item_id,))
+    conn.commit()
+    return resp(200, {"ok": True})
+
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1465,6 +1544,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_taxes(cur, conn))
             if action == "payouts":
                 return resp(200, calc_payouts(cur, conn))
+            if action == "one_time":
+                return resp(200, get_one_time(cur))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -1478,6 +1559,10 @@ def handler(event: dict, context) -> dict:
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":
                 return set_scenario(cur, conn, body)
+            if action == "save_one_time":
+                return save_one_time(cur, conn, body)
+            if action == "delete_one_time":
+                return delete_one_time(cur, conn, body)
             if action == "set_payout":
                 return set_payout(cur, conn, body)
             if action == "set_tax_regime":

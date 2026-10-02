@@ -113,6 +113,16 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Разовые расходы без входа закрыты",
+      "method": "GET",
+      "path": "/?action=one_time",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }
