@@ -251,7 +251,8 @@ export default function UnitMarginReport() {
         // Сохраняем ПРИМЕНЁННЫЕ ставки: иначе по сохранённому расчёту нельзя
         // было бы понять, из каких цифр получился результат
         inputs: effectiveInputs,
-        result,
+        // Итог месяца кладём в результат — финмодель берёт отсюда готовую маржинальность
+        result: monthTotals ? { ...result, monthTotals } : result,
         note,
       });
       setReports(await fetchUnitReports());

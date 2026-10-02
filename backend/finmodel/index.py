@@ -396,6 +396,41 @@ def close_fact_month(cur, conn, body):
 # Переменный % = 100 − средняя маржинальность урока (уже включает зарплату, СФР, отпускные, эквайринг).
 
 
+MARGIN_FIRST_MONTH = "2026-09"  # раньше чётких данных по маржинальности урока нет
+
+
+def sync_margin_from_report(cur):
+    """Маржинальность берём из сохранённых расчётов «Маржинальности урока» — последний расчёт месяца.
+    Ничего не пересчитываем: только переносим готовый процент. Возвращает True, если что-то изменилось."""
+    cur.execute(
+        f"SELECT DISTINCT ON (period_month) period_month, "
+        f"(result->'monthTotals'->>'marginPercent')::numeric AS margin "
+        f"FROM {S}.unit_margin_reports "
+        f"WHERE period_month >= %s AND result->'monthTotals'->>'marginPercent' IS NOT NULL "
+        f"ORDER BY period_month, created_at DESC",
+        (MARGIN_FIRST_MONTH,),
+    )
+    changed = False
+    for r in cur.fetchall():
+        margin = round(float(r["margin"]), 4)
+        cur.execute(
+            f"SELECT margin_pct, source FROM {S}.fm_variable_pct_monthly WHERE month_id = %s",
+            (r["period_month"],),
+        )
+        old = cur.fetchone()
+        if old and old["source"] == "report" and old["margin_pct"] is not None and float(old["margin_pct"]) == margin:
+            continue
+        cur.execute(
+            f"INSERT INTO {S}.fm_variable_pct_monthly (month_id, variable_pct, margin_pct, source, note, updated_at) "
+            "VALUES (%s,%s,%s,'report','Отчёт «Маржинальность урока» → «Средняя маржинальность за месяц»',now()) "
+            "ON CONFLICT (month_id) DO UPDATE SET variable_pct = EXCLUDED.variable_pct, margin_pct = EXCLUDED.margin_pct, "
+            "source = 'report', note = EXCLUDED.note, updated_at = now()",
+            (r["period_month"], round(100 - margin, 4), margin),
+        )
+        changed = True
+    return changed
+
+
 def variable_pcts(cur):
     cur.execute(f"SELECT * FROM {S}.fm_variable_pct_monthly ORDER BY month_id")
     return [dict(r) for r in cur.fetchall()]
@@ -456,6 +491,8 @@ def revenue_stale(cur):
 
 def get_revenue(cur, conn):
     c = constants(cur)
+    if sync_margin_from_report(cur):
+        conn.commit()
     if forecast_stale(cur):
         recalc(cur, c)
         conn.commit()
@@ -490,7 +527,9 @@ def set_variable_pct(cur, conn, body):
     cur.execute(f"SELECT source FROM {S}.fm_variable_pct_monthly WHERE month_id = %s", (month,))
     existing = cur.fetchone()
     if existing and existing["source"] == "report":
-        return resp(400, {"error": "Процент этого месяца взят из отчёта — его не меняем"})
+        return resp(400, {"error": "Маржинальность этого месяца взята из отчёта — её не меняем"})
+    if month < MARGIN_FIRST_MONTH:
+        return resp(400, {"error": "До сентября 2026 данных по маржинальности нет"})
     raw = body.get("variable_pct")
     if raw is None or raw == "":
         cur.execute(f"DELETE FROM {S}.fm_variable_pct_monthly WHERE month_id = %s AND source = 'override'", (month,))

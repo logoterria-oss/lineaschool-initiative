@@ -11,9 +11,9 @@ interface Props {
 }
 
 const SOURCE_LABEL: Record<VariablePctSource, string> = {
-  report: 'отчёт',
+  report: 'из отчёта',
   override: 'вручную',
-  last: 'последнее известное',
+  last: 'прогноз',
 };
 
 const SOURCE_STYLE: Record<VariablePctSource, string> = {
@@ -35,7 +35,7 @@ function PctCell({ month, pct, source, onSave }: {
   const save = async (v: number | null) => {
     setBusy(true);
     try {
-      await onSave(month, v);
+      await onSave(month, v == null ? null : 100 - v);
       setEditing(false);
     } finally {
       setBusy(false);
@@ -92,7 +92,7 @@ function PctCell({ month, pct, source, onSave }: {
             setEditing(true);
           }}
           className="text-gray-300 hover:text-gray-700"
-          title="Задать процент для месяца"
+          title="Задать маржинальность для месяца"
         >
           <Icon name="Pencil" size={13} />
         </button>
@@ -102,18 +102,18 @@ function PctCell({ month, pct, source, onSave }: {
 }
 
 export default function RevenueTable({ data, active, onSetPct }: Props) {
-  const sum = (sc: Scenario, k: 'avans' | 'fact' | 'revenue' | 'variable_amount' | 'margin_amount') =>
+  const sum = (sc: Scenario, k: 'avans' | 'fact' | 'revenue' | 'variable_amount') =>
     data.forecast.reduce((s, r) => s + (Number(r[sc]?.[k]) || 0), 0);
 
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900">Поступления и переменные · {SCENARIO_LABEL[active]}</h3>
+          <h3 className="font-semibold text-gray-900">Поступления и переменные расходы · {SCENARIO_LABEL[active]}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Поступления = аванс × (1 − {fmPct(data.acquiring_pct)} эквайринг) — для движения денег и выплаты собственнику.
-            Маржинальная прибыль = факт − переменные; переменные = факт × переменный % (100% − средняя маржинальность
-            урока, для будущих месяцев — последнее известное или ваше значение).
+            Поступления = аванс − {fmPct(data.acquiring_pct)} эквайринга: деньги на карте и база для 10% собственнику.
+            Маржинальность берётся из отчёта «Маржинальность урока» (с сентября 2026); для будущих месяцев — последняя
+            из отчёта или ваше значение. Переменные расходы = факт × (100% − маржинальность)
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -124,9 +124,8 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
                 <th className="text-right px-4 py-2 font-medium">Аванс</th>
                 <th className="text-right px-4 py-2 font-medium">Факт</th>
                 <th className="text-right px-4 py-2 font-medium text-emerald-700">Поступления</th>
-                <th className="text-right px-4 py-2 font-medium">Переменный, %</th>
+                <th className="text-right px-4 py-2 font-medium">Маржинальность урока</th>
                 <th className="text-right px-4 py-2 font-medium text-rose-700">Переменные</th>
-                <th className="text-right px-4 py-2 font-medium text-gray-900">Марж. прибыль</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -141,15 +140,12 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
                     <td className="px-4 py-2 text-right">
                       <PctCell
                         month={r.month_id}
-                        pct={Number(r.variable_pct)}
+                        pct={100 - Number(r.variable_pct)}
                         source={r.variable_pct_source}
                         onSave={onSetPct}
                       />
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums text-rose-700">{fmMoney(c?.variable_amount)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums font-semibold text-gray-900">
-                      {fmMoney(c?.margin_amount)}
-                    </td>
                   </tr>
                 );
               })}
@@ -162,7 +158,6 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
                 <td className="px-4 py-2 text-right tabular-nums text-emerald-800">{fmMoney(sum(active, 'revenue'))}</td>
                 <td />
                 <td className="px-4 py-2 text-right tabular-nums text-rose-700">{fmMoney(sum(active, 'variable_amount'))}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(active, 'margin_amount'))}</td>
               </tr>
             </tfoot>
           </table>
@@ -179,7 +174,6 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
               <th className="text-left px-4 py-2 font-medium">Сценарий</th>
               <th className="text-right px-4 py-2 font-medium">Поступления</th>
               <th className="text-right px-4 py-2 font-medium">Переменные</th>
-              <th className="text-right px-4 py-2 font-medium">Марж. прибыль</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -188,7 +182,6 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
                 <td className="px-4 py-2">{SCENARIO_LABEL[sc]}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(sc, 'revenue'))}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(sc, 'variable_amount'))}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(sc, 'margin_amount'))}</td>
               </tr>
             ))}
           </tbody>

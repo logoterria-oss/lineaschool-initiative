@@ -1,5 +1,5 @@
 import func2url from '../../backend/func2url.json';
-import type { UnitMarginInputs, UnitMarginResults } from './unitMarginModel';
+import type { UnitMarginInputs, UnitMarginResults, UnitMonthTotals } from './unitMarginModel';
 
 const API = (func2url as Record<string, string>)['unit-margin'];
 
@@ -155,7 +155,8 @@ export interface SaveUnitPayload {
   period_month: string;
   title: string;
   inputs: UnitMarginInputs;
-  result: UnitMarginResults;
+  /** monthTotals — итог месяца; финмодель берёт из него маржинальность. */
+  result: UnitMarginResults & { monthTotals?: UnitMonthTotals };
   note: string;
 }
 
