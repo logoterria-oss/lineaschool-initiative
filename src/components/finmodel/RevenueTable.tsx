@@ -111,9 +111,9 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
         <div className="px-5 py-3.5 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">Поступления и переменные · {SCENARIO_LABEL[active]}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Поступления = аванс × (1 − {fmPct(data.acquiring_pct)} эквайринг) — база для выплаты собственнику.
-            Переменные = факт × переменный %, где переменный % = 100% − средняя маржинальность урока (с эквайрингом);
-            для будущих месяцев — последнее известное или ваше значение.
+            Поступления = аванс × (1 − {fmPct(data.acquiring_pct)} эквайринг) — для движения денег и выплаты собственнику.
+            Маржинальная прибыль = факт − переменные; переменные = факт × переменный % (100% − средняя маржинальность
+            урока, для будущих месяцев — последнее известное или ваше значение).
           </p>
         </div>
         <div className="overflow-x-auto">

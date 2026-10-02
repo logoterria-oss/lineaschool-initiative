@@ -391,7 +391,8 @@ def close_fact_month(cur, conn, body):
 
 
 # ---------------- ПОСТУПЛЕНИЯ И ПЕРЕМЕННЫЕ ----------------
-# Поступления = прогноз АВАНСА × (1 − эквайринг). Переменные = прогноз ФАКТА × переменный %.
+# Поступления = прогноз АВАНСА × (1 − эквайринг) — для Cash Flow и выплаты собственнику.
+# Переменные = прогноз ФАКТА × переменный %. Марж. прибыль = ФАКТ − переменные (не от поступлений).
 # Переменный % = 100 − средняя маржинальность урока (уже включает зарплату, СФР, отпускные, эквайринг).
 
 
@@ -434,7 +435,7 @@ def recalc_revenue(cur, c):
             "variable_pct, variable_pct_net, variable_pct_source, variable_amount, margin_amount, calculated_at) "
             "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
             (m, sc, round(av), round(fact[key]), acq, round(revenue), vp, None, src,
-             round(var_amount), round(revenue) - round(var_amount)),
+             round(var_amount), round(fact[key]) - round(var_amount)),
         )
 
 
@@ -442,7 +443,7 @@ def revenue_stale(cur):
     cur.execute(
         f"SELECT (SELECT min(calculated_at) FROM {S}.fm_revenue_monthly) AS calc, "
         f"(SELECT count(*) FROM {S}.fm_revenue_monthly) AS n, "
-        f"(SELECT count(*) FROM {S}.fm_revenue_monthly WHERE variable_pct_net IS NOT NULL) AS n_old, "
+        f"(SELECT count(*) FROM {S}.fm_revenue_monthly WHERE margin_amount <> fact - variable_amount) AS n_old, "
         f"(SELECT max(calculated_at) FROM {S}.fm_fact_forecast) AS fact_calc, "
         f"(SELECT max(updated_at) FROM {S}.fm_variable_pct_monthly) AS pct_upd, "
         f"(SELECT updated_at FROM {S}.fm_constants WHERE key = 'acquiring_pct') AS acq_upd"
