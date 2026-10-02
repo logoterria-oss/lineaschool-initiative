@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Авансы без входа закрыты",
+      "method": "GET",
+      "path": "/?action=avans",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Смена сценария без входа закрыта",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "set_scenario", "scenario": "base"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

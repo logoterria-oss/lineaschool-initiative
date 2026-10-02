@@ -54,6 +54,15 @@ const REPORTS = [
     iconColor: 'text-rose-600',
   },
   {
+    id: 'finmodel',
+    label: 'Финансовая модель',
+    description: 'P&L, движение денег и прогноз на 12 месяцев',
+    icon: 'LineChart' as const,
+    color: 'border-teal-200 hover:border-teal-400',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-600',
+  },
+  {
     id: 'letterhead',
     label: 'Официальный бланк организации',
     description: 'Запросы, соглашения и письма на фирменном бланке — PDF',
@@ -78,6 +87,7 @@ const PAGE_REPORTS: Record<string, string> = {
   'student-dynamics': '/admin/report/student-dynamics',
   'fact-income': '/admin/report/fact-income',
   'unit-margin': '/admin/report/unit-margin',
+  finmodel: '/admin/report/finmodel',
 };
 
 const ReportsFinView = () => {
