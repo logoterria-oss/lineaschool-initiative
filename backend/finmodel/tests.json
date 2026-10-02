@@ -59,6 +59,30 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Кредит без входа закрыт",
+      "method": "GET",
+      "path": "/?action=credit",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Смена варианта кредита без входа закрыта",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "set_credit_option",
+        "option": "12m"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

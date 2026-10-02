@@ -377,3 +377,52 @@ export const setStaffRate = (staff_id: string, rate: number) => post({ action: '
 /** Разовая ставка сотрудника на месяц; null — по справочнику. */
 export const setStaffMonthRate = (staff_id: string, month: string, rate: number | null) =>
   post({ action: 'set_staff_month_rate', staff_id, month, rate });
+
+// ---------------- КРЕДИТ ----------------
+export type CreditOption = '6m' | '12m';
+
+export interface CreditRow {
+  month_id: string;
+  interest: number;
+  body: number;
+  total: number;
+  balance_after: number;
+  status: 'active' | 'closed';
+  is_last: boolean;
+}
+
+export interface CreditSummary {
+  interest: number;
+  body: number;
+  total: number;
+  monthly: number;
+  months: number;
+  close_month: string | null;
+}
+
+export interface CreditData {
+  current_month: string;
+  option: CreditOption;
+  params: {
+    total: number;
+    interest_monthly: number;
+    rate_pct: number;
+    body_6m: number;
+    body_12m: number;
+    start_month: string;
+    contract: string;
+  };
+  penalty_risk: { amount: number; fee: number; pct_part: number; period_days: number };
+  schedules: Record<CreditOption, CreditRow[]>;
+  summary: Record<CreditOption, CreditSummary>;
+  diff: { interest: number; total: number; monthly: number };
+}
+
+export const fetchCredit = async (): Promise<CreditData> => {
+  const r = await fetch(`${API}?action=credit`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+export const setCreditOption = (option: CreditOption) => post({ action: 'set_credit_option', option });

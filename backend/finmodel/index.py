@@ -1028,9 +1028,112 @@ def set_staff_month_rate(cur, conn, body):
     conn.commit()
     return resp(200, {"ok": True})
 
+# ---------------- КРЕДИТ ----------------
+# Проценты фиксированные (1,99 % от первоначальной суммы) и не уменьшаются при погашении тела.
+# Платятся, пока тело не закрыто. Последний платёж тела — остаток, чтобы сумма тела = сумме кредита.
+# Штраф за просрочку — только справочно, в расчёт не входит.
+
+CREDIT_OPTIONS = {"6m": ("credit_body_6m", 6), "12m": ("credit_body_12m", 12)}
+CREDIT_HORIZON_END = "2027-12"
+
+
+def credit_schedule_calc(c, option):
+    total = round(float(c.get("credit_total") or 910000))
+    interest = round(float(c.get("credit_interest_monthly") or 18109))
+    body_key, n = CREDIT_OPTIONS[option]
+    body_pm = round(float(c.get(body_key) or 0))
+    start = c.get("credit_start_month") or "2026-10"
+    rows, left, m, i = [], total, start, 0
+    while m <= CREDIT_HORIZON_END:
+        if left > 0 and i < n:
+            body = left if i == n - 1 else min(body_pm, left)
+            left -= body
+            rows.append({"month_id": m, "interest": interest, "body": body, "total": interest + body,
+                         "balance_after": left, "status": "active", "is_last": left == 0})
+        else:
+            rows.append({"month_id": m, "interest": 0, "body": 0, "total": 0,
+                         "balance_after": 0, "status": "closed", "is_last": False})
+        i += 1
+        m = add_months(m, 1)
+    return rows
+
+
+def credit_summary(rows):
+    paid = [r for r in rows if r["status"] == "active"]
+    return {
+        "interest": sum(r["interest"] for r in paid),
+        "body": sum(r["body"] for r in paid),
+        "total": sum(r["total"] for r in paid),
+        "monthly": paid[0]["total"] if paid else 0,
+        "months": len(paid),
+        "close_month": paid[-1]["month_id"] if paid else None,
+    }
+
+
+def recalc_credit(cur, c):
+    data = []
+    for opt in CREDIT_OPTIONS:
+        for r in credit_schedule_calc(c, opt):
+            data.append((r["month_id"], opt, r["interest"], r["body"], r["total"], r["balance_after"], r["status"]))
+    cur.execute(f"DELETE FROM {S}.fm_credit_schedule")
+    execute_values(
+        cur,
+        f"INSERT INTO {S}.fm_credit_schedule (month_id, option, interest, body, total, balance_after, status) VALUES %s",
+        data,
+    )
+
+
+def get_credit(cur, conn):
+    c = constants(cur)
+    recalc_credit(cur, c)
+    conn.commit()
+    option = c.get("credit_option_default") if c.get("credit_option_default") in CREDIT_OPTIONS else "6m"
+    schedules, summary = {}, {}
+    for opt in CREDIT_OPTIONS:
+        rows = credit_schedule_calc(c, opt)
+        schedules[opt] = rows
+        summary[opt] = credit_summary(rows)
+    penalty_fee = 990
+    penalty_pct = round(float(c.get("credit_total") or 910000) * 0.01)
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "option": option,
+        "params": {
+            "total": round(float(c.get("credit_total") or 0)),
+            "interest_monthly": round(float(c.get("credit_interest_monthly") or 0)),
+            "rate_pct": 1.99,
+            "body_6m": round(float(c.get("credit_body_6m") or 0)),
+            "body_12m": round(float(c.get("credit_body_12m") or 0)),
+            "start_month": c.get("credit_start_month") or "2026-10",
+            "contract": c.get("credit_contract") or "",
+        },
+        "penalty_risk": {"amount": round(float(c.get("credit_penalty_risk") or 0)),
+                         "fee": penalty_fee, "pct_part": penalty_pct, "period_days": 7},
+        "schedules": schedules,
+        "summary": summary,
+        "diff": {
+            "interest": summary["12m"]["interest"] - summary["6m"]["interest"],
+            "total": summary["12m"]["total"] - summary["6m"]["total"],
+            "monthly": summary["12m"]["monthly"] - summary["6m"]["monthly"],
+        },
+    }
+
+
+def set_credit_option(cur, conn, body):
+    opt = body.get("option")
+    if opt not in CREDIT_OPTIONS:
+        return resp(400, {"error": "Вариант погашения: 6m / 12m"})
+    cur.execute(
+        f"UPDATE {S}.fm_constants SET value_text = %s, updated_at = now() WHERE key = 'credit_option_default'",
+        (opt,),
+    )
+    conn.commit()
+    return resp(200, {"ok": True, "option": opt})
+
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1053,6 +1156,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_students(cur, conn))
             if action == "fixed":
                 return resp(200, get_fixed(cur, conn))
+            if action == "credit":
+                return resp(200, get_credit(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -1066,6 +1171,8 @@ def handler(event: dict, context) -> dict:
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":
                 return set_scenario(cur, conn, body)
+            if action == "set_credit_option":
+                return set_credit_option(cur, conn, body)
             if action == "set_students":
                 return set_students(cur, conn, body)
             if action == "close_students":

@@ -8,12 +8,13 @@ import FactCharts from '@/components/finmodel/FactCharts';
 import RevenueTable from '@/components/finmodel/RevenueTable';
 import StudentsTable from '@/components/finmodel/StudentsTable';
 import FixedExpensesTable from '@/components/finmodel/FixedExpensesTable';
+import CreditTable from '@/components/finmodel/CreditTable';
 import {
-  AvansData, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
+  AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
   fetchRevenue, fetchStudents, fmMoney, setActiveScenario, setStudents, setVariablePct,
 } from '@/lib/finmodelApi';
 
-type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed';
+type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit';
 
 const FinModelPage = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const FinModelPage = () => {
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
   const [students, setStudentsData] = useState<StudentsData | null>(null);
   const [fixed, setFixed] = useState<FixedData | null>(null);
+  const [credit, setCredit] = useState<CreditData | null>(null);
   const [tab, setTab] = useState<Tab>('avans');
   const [active, setActive] = useState<Scenario>('base');
   const [loading, setLoading] = useState(true);
@@ -36,11 +38,13 @@ const FinModelPage = () => {
       const r = await fetchRevenue();
       const st = await fetchStudents();
       const fx = await fetchFixed();
+      const cr = await fetchCredit();
       setData(d);
       setFact(f);
       setRevenue(r);
       setStudentsData(st);
       setFixed(fx);
+      setCredit(cr);
       setActive(d.active_scenario);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить');
@@ -99,6 +103,15 @@ const FinModelPage = () => {
     }
   };
 
+  const onCreditOption = async (opt: CreditOption) => {
+    try {
+      await setCreditOption(opt);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить вариант');
+      throw e;
+    }
+  };
+
   const annual = data ? data.forecast.reduce((s, r) => s + (r[active]?.forecast_final || 0), 0) : 0;
   const annualFact = fact ? fact.forecast.reduce((s, r) => s + (r[active]?.fact_final || 0), 0) : 0;
 
@@ -130,7 +143,7 @@ const FinModelPage = () => {
           </div>
         )}
 
-        {data && fact && revenue && students && fixed && !loading && (
+        {data && fact && revenue && students && fixed && credit && !loading && (
           <>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-wrap items-center gap-4">
               <div className="min-w-[200px]">
@@ -160,7 +173,7 @@ const FinModelPage = () => {
             </div>
 
             <div className="flex gap-1 border-b border-gray-200">
-              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы']] as [Tab, string][]).map(([t, label]) => (
+              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['credit', 'Кредит']] as [Tab, string][]).map(([t, label]) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -173,7 +186,9 @@ const FinModelPage = () => {
               ))}
             </div>
 
-            {tab === 'fixed' ? (
+            {tab === 'credit' ? (
+              <CreditTable data={credit} onOption={onCreditOption} />
+            ) : tab === 'fixed' ? (
               <FixedExpensesTable
                 data={fixed}
                 active={active}
