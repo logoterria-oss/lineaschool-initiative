@@ -66,6 +66,25 @@ def save_lead_to_db(parent_name: str, student_name: str, contact: str,
     except Exception as e:
         print(f'Failed to save lead to db: {str(e)}')
 
+def normalize_dob(raw: str) -> str:
+    """Дата рождения ребёнка в DD.MM.YYYY. «07.08.13» → «07.08.2013». Непонятную дату не отправляем."""
+    import re
+    from datetime import date
+    m = re.match(r'^\s*(\d{1,2})[.,/\- ](\d{1,2})[.,/\- ](\d{2}|\d{4})\s*$', raw or '')
+    if not m:
+        return ''
+    d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if y < 100:
+        y += 2000 if 2000 + y <= date.today().year else 1900
+    try:
+        dt = date(y, mo, d)
+    except ValueError:
+        return ''
+    if not (1920 <= dt.year <= date.today().year):
+        return ''
+    return dt.strftime('%d.%m.%Y')
+
+
 def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '', 
                     dob: str = '', telegram: str = '', parent_name: str = '') -> Optional[Dict]:
     """Отправка лида в AlfaCRM через API"""
@@ -125,9 +144,10 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '',
             'legal_type': 1  # 1 = физическое лицо
         }
         
-        # Дата рождения ребенка (оставляем формат DD.MM.YYYY)
-        if dob:
-            lead_data['dob'] = dob
+        # Дата рождения ребенка в DD.MM.YYYY; кривую дату не шлём — она валит весь лид
+        dob_norm = normalize_dob(dob)
+        if dob_norm:
+            lead_data['dob'] = dob_norm
         
         # Email родителя
         if email:
@@ -152,6 +172,17 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '',
         
         lead_response = requests.post(lead_url, json=lead_data, headers=headers, timeout=10)
         print(f'Lead creation response: {lead_response.status_code}')
+        # CRM отклонила только дату рождения — повторяем без неё, чтобы лид не потерялся (дата остаётся в примечании)
+        try:
+            errs = (lead_response.json() or {}).get('errors') or {}
+        except Exception:
+            errs = {}
+        if lead_response.status_code not in [200, 201] or not (lead_response.json() or {}).get('success'):
+            if 'dob' in errs and 'dob' in lead_data:
+                print(f'⚠️ CRM отклонила дату рождения {lead_data["dob"]} — отправляем лид без неё')
+                lead_data.pop('dob')
+                lead_response = requests.post(lead_url, json=lead_data, headers=headers, timeout=10)
+                print(f'Lead retry response: {lead_response.status_code}')
         
         try:
             response_json = lead_response.json()
