@@ -29,6 +29,7 @@ const CELL_HINT: Partial<Record<FixedCellSource, { label: string; cls: string }>
   default: { label: 'по умолч.', cls: 'text-gray-400' },
   fact: { label: 'факт аванса', cls: 'text-blue-500' },
   forecast: { label: 'прогноз', cls: 'text-gray-400' },
+  adapted: { label: 'адаптация', cls: 'text-violet-600' },
 };
 
 const STAFF_BY_ROW: Record<string, string> = {

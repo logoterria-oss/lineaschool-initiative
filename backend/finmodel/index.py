@@ -133,6 +133,7 @@ def recalc(cur, c):
     threshold = float(c.get("avans_seasonal_threshold_pct") or 15) / 100
     first = add_months(hist[-1]["month_id"], 1)
     cur.execute(f"DELETE FROM {S}.fm_avans_forecast WHERE month_id <= %s", (hist[-1]["month_id"],))
+    corr = adapt_corrections(cur, "avans")
 
     for sc in SCENARIOS:
         coef = float(c[f"avans_coef_{sc}"])
@@ -148,21 +149,27 @@ def recalc(cur, c):
                 direct = prev_y * coef
                 diff = abs(direct - seasonal) / direct if direct else 0
                 final = (direct + seasonal) / 2 if diff > threshold else direct
+            # Адаптация (Промт 13): к модельному прогнозу прибавляем накопленные корректировки по факту.
+            c_m = corr.get((m, ""), 0.0)
+            final = max(round(final) + c_m, 0)
             cur.execute(
                 f"INSERT INTO {S}.fm_avans_forecast (month_id, scenario, avans_prev_year, coef, "
-                "forecast_direct, forecast_seasonal, diff_pct, forecast_final, calculated_at) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,now()) ON CONFLICT (month_id, scenario) DO UPDATE SET "
+                "forecast_direct, forecast_seasonal, diff_pct, forecast_final, correction, calculated_at) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,now()) ON CONFLICT (month_id, scenario) DO UPDATE SET "
                 "avans_prev_year=EXCLUDED.avans_prev_year, coef=EXCLUDED.coef, "
                 "forecast_direct=EXCLUDED.forecast_direct, forecast_seasonal=EXCLUDED.forecast_seasonal, "
-                "diff_pct=EXCLUDED.diff_pct, forecast_final=EXCLUDED.forecast_final, calculated_at=now()",
+                "diff_pct=EXCLUDED.diff_pct, forecast_final=EXCLUDED.forecast_final, "
+                "correction=EXCLUDED.correction, calculated_at=now()",
                 (
                     m, sc, prev_y, coef,
                     round(direct) if direct is not None else None,
                     round(seasonal),
                     round(diff * 100, 4) if diff is not None else None,
                     round(final),
+                    c_m,
                 ),
             )
+    snapshot_forecasts(cur)
 
 
 def forecast_stale(cur):
@@ -224,7 +231,7 @@ def close_month(cur, conn, body):
     c = constants(cur)
     recalc(cur, c)
     recalc_fact(cur, c)
-    conn.commit()
+    ensure_adaptation(cur, conn, c)
     return resp(200, {"ok": True, "month": month, "avans": avans})
 
 
@@ -284,24 +291,31 @@ def recalc_fact(cur, c):
 
     fact_by_month = {h["month_id"]: float(h["fact"]) for h in fact_history(cur) if h["closed"]}
     threshold = float(c.get("avans_seasonal_threshold_pct") or 15) / 100
-    cur.execute(f"SELECT month_id, scenario, forecast_final FROM {S}.fm_avans_forecast")
+    # Факт строим от МОДЕЛЬНОГО аванса (без адаптационной поправки аванса): у факта своя обратная связь,
+    # иначе одно и то же отклонение аванса учлось бы в факте дважды.
+    cur.execute(f"SELECT month_id, scenario, forecast_final, correction FROM {S}.fm_avans_forecast")
     av_fc = [dict(r) for r in cur.fetchall()]
+    corr = adapt_corrections(cur, "fact")
     cur.execute(f"DELETE FROM {S}.fm_fact_forecast")
     for r in av_fc:
         m, sc = r["month_id"], r["scenario"]
         num = int(m[5:7])
-        av = float(r["forecast_final"])
+        av = float(r["forecast_final"]) - float(r["correction"] or 0)
         coef = coefs[num]
         direct = av * coef
         seasonal = annual * float(c[f"avans_coef_{sc}"]) * shares[num] / 100
         diff = abs(direct - seasonal) / direct if direct else 0
         final = (direct + seasonal) / 2 if diff > threshold else direct
+        c_m = corr.get((m, ""), 0.0)
+        final = max(round(final) + c_m, 0)
         cur.execute(
             f"INSERT INTO {S}.fm_fact_forecast (month_id, scenario, fact_prev_year, avans_forecast, coef, "
-            "fact_direct, fact_seasonal, diff_pct, fact_final, calculated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+            "fact_direct, fact_seasonal, diff_pct, fact_final, correction, calculated_at) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
             (m, sc, fact_by_month.get(add_months(m, -12)), round(av), round(coef, 6),
-             round(direct), round(seasonal), round(diff * 100, 4), round(final)),
+             round(direct), round(seasonal), round(diff * 100, 4), round(final), c_m),
         )
+    snapshot_forecasts(cur)
 
 
 def fact_stale(cur):
@@ -386,7 +400,7 @@ def close_fact_month(cur, conn, body):
     c = constants(cur)
     recalc(cur, c)
     recalc_fact(cur, c)
-    conn.commit()
+    ensure_adaptation(cur, conn, c)
     return resp(200, {"ok": True, "month": month, "fact": fact})
 
 
@@ -436,20 +450,35 @@ def variable_pcts(cur):
     return [dict(r) for r in cur.fetchall()]
 
 
-def resolve_variable_pct(rows, month):
-    """Свой процент месяца (отчёт или override), иначе — последнее известное значение до этого месяца."""
+def resolve_variable_pct(rows, month, corr_rows=()):
+    """Свой процент месяца (отчёт или override). Иначе прогноз = опорное значение + адаптационные поправки.
+    Опора — первый месяц из отчёта (или более поздний ручной override); последующие отчёты
+    влияют на прогноз только через адаптацию: прогноз + (факт − прогноз) × K (Промт 13).
+    Возвращает (процент, источник, поправка)."""
     own = next((r for r in rows if r["month_id"] == month), None)
     if own:
-        return float(own["variable_pct"]), own["source"]
+        return float(own["variable_pct"]), own["source"], 0.0
     prev = [r for r in rows if r["month_id"] < month]
-    if prev:
-        return float(prev[-1]["variable_pct"]), "last"
-    return None, None
+    if not prev:
+        return None, None, 0.0
+    reports = [r for r in prev if r["source"] == "report"]
+    overrides = [r for r in prev if r["source"] == "override"]
+    anchor = reports[0] if reports else prev[0]
+    if overrides and overrides[-1]["month_id"] > anchor["month_id"]:
+        anchor = overrides[-1]
+    corr = sum(cv for (t, lm, cv) in corr_rows if t == month and lm >= anchor["month_id"])
+    vp = min(max(float(anchor["variable_pct"]) + corr, 0.0), 100.0)
+    return round(vp, 4), "last", round(corr, 4)
 
 
 def recalc_revenue(cur, c):
     acq = float(c.get("acquiring_pct") or 0)
     pcts = variable_pcts(cur)
+    cur.execute(
+        f"SELECT ac.month_id, l.month_id AS log_month, ac.correction FROM {S}.fm_adaptation_corrections ac "
+        f"JOIN {S}.fm_adaptation_log l ON l.id = ac.source_log_id WHERE ac.metric = 'variable_pct'"
+    )
+    vp_corr = [(r["month_id"], r["log_month"], float(r["correction"])) for r in cur.fetchall()]
     cur.execute(f"SELECT month_id, scenario, forecast_final FROM {S}.fm_avans_forecast")
     avans = {(r["month_id"], r["scenario"]): float(r["forecast_final"]) for r in cur.fetchall()}
     cur.execute(f"SELECT month_id, scenario, fact_final FROM {S}.fm_fact_forecast")
@@ -459,7 +488,7 @@ def recalc_revenue(cur, c):
         if key not in fact:
             continue
         m, sc = key
-        vp, src = resolve_variable_pct(pcts, m)
+        vp, src, vp_c = resolve_variable_pct(pcts, m, vp_corr)
         if vp is None:
             continue
         revenue = av * (1 - acq / 100)
@@ -467,10 +496,10 @@ def recalc_revenue(cur, c):
         var_amount = fact[key] * vp / 100
         cur.execute(
             f"INSERT INTO {S}.fm_revenue_monthly (month_id, scenario, avans, fact, acquiring_pct, revenue, "
-            "variable_pct, variable_pct_net, variable_pct_source, variable_amount, margin_amount, calculated_at) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+            "variable_pct, variable_pct_net, variable_pct_source, variable_amount, margin_amount, "
+            "variable_pct_correction, calculated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
             (m, sc, round(av), round(fact[key]), acq, round(revenue), vp, None, src,
-             round(var_amount), round(fact[key]) - round(var_amount)),
+             round(var_amount), round(fact[key]) - round(var_amount), vp_c),
         )
 
 
@@ -657,6 +686,7 @@ def get_revenue(cur, conn):
     if revenue_stale(cur):
         recalc_revenue(cur, c)
         conn.commit()
+    ensure_adaptation(cur, conn, c)  # отчёт маржинальности за прошедший месяц → адаптация переменного %
     cur.execute(f"SELECT * FROM {S}.fm_revenue_monthly ORDER BY month_id, scenario")
     rows = [dict(r) for r in cur.fetchall()]
     out = {}
@@ -762,6 +792,8 @@ def calc_fixed(cur):
     cur.execute(f"SELECT * FROM {S}.fm_monthly_inputs")
     inputs = {r["month_id"]: dict(r) for r in cur.fetchall()}
     ano = {r["month_id"]: r["total"] for r in ano_rows(cur)}
+    fx_corr = adapt_corrections(cur, "fixed_expense", "new_item")
+    fx_snaps, cur_m = [], current_month()
 
     admins = [s for s in staff.values() if s["role"] == "admin"]
     admin_rate_default = float(admins[0]["rate"]) if admins else 700
@@ -860,9 +892,21 @@ def calc_fixed(cur):
                 amount = amount / 12
             src = "fixed" if it["is_fixed"] else "default"
             o = ovr.get((m, iid))
+            note = (o or {}).get("note") or None
             if o and not it["is_fixed"]:
                 amount, src = float(o["amount"]), "manual"
-            put(iid, m, amount, src, (o or {}).get("note") or None)
+            elif not it["is_fixed"]:
+                # Адаптация (Промт 13): к значению по умолчанию — поправка по факту; ручной ввод месяца важнее.
+                a_c = fx_corr.get((m, iid), 0.0)
+                if a_c:
+                    amount, src = max(amount + a_c, 0), "adapted"
+                    note = f"адаптация {'+' if a_c > 0 else '−'}{_r(abs(a_c)):,} ₽".replace(",", " ")
+                if it.get("new_since") and it["new_since"] <= m and src != "adapted":
+                    note = note or "новая статья, по аналогии"
+            # Снимок прогноза: будущие месяцы, а текущий — пока в него не ввели факт.
+            if not it["is_fixed"] and (m > cur_m or (m == cur_m and not o)):
+                fx_snaps.append((m, iid, amount))
+            put(iid, m, amount, src, note)
 
         tot = {sc: sum(r["values"][m][sc] for r in rows.values() if m in r["values"]) for sc in SCENARIOS}
         designers = rows.get("designers", {}).get("values", {}).get(m, {}).get("base", 0)
@@ -872,6 +916,10 @@ def calc_fixed(cur):
             "ano": _r(ano.get(m, 0)),
             "total_with_ano": {sc: tot[sc] + _r(ano.get(m, 0)) for sc in SCENARIOS},
         }
+
+    # Прогноз ручных статей запоминаем, пока месяц в будущем: в текущем месяце туда уже вводят факт.
+    for m, iid, amount in fx_snaps:
+        save_snapshot(cur, m, "fixed_expense", iid, "base", amount)
 
     cur.execute(f"DELETE FROM {S}.fm_staff_monthly_payments")
     if payments:
@@ -1569,6 +1617,464 @@ def calc_pnl(cur, conn):
         "annual": annual,
     }
 
+# ---------------- АДАПТИВНОЕ ПРОГНОЗИРОВАНИЕ (Промт 13) ----------------
+# История не пересчитывается — корректируется только будущее:
+#   скорр. прогноз = прогноз + (факт − прогноз) × K.
+# Пока месяц в будущем, его прогноз запоминается (fm_forecast_snapshots). После закрытия месяца
+# снимок замораживается и сравнивается с фактом; поправка (отклонение × K) записывается
+# в fm_adaptation_corrections на каждый будущий месяц и прибавляется при расчёте прогноза.
+# Адаптируются: авансы, факт, переменный %, постоянные статьи с ручным вводом (только систематическое
+# отклонение N мес подряд) и новые неопределённости (первые 3 месяца — помесячно).
+# НЕ адаптируются: кредит, налоги, АНО, выплата собственнику, фиксированные статьи справочника.
+
+ADAPT_FIRST_MONTH = "2026-09"
+ADAPT_METRICS = ("avans", "fact", "variable_pct", "fixed_expense", "new_item")
+NEW_ITEM_MONTHS = 3
+
+
+def adapt_corrections(cur, *metrics):
+    cur.execute(
+        f"SELECT month_id, item_id, sum(correction) AS s FROM {S}.fm_adaptation_corrections "
+        "WHERE metric = ANY(%s) GROUP BY 1, 2",
+        (list(metrics),),
+    )
+    return {(r["month_id"], r["item_id"]): float(r["s"]) for r in cur.fetchall()}
+
+
+def save_snapshot(cur, month, metric, item, scenario, value):
+    cur.execute(
+        f"INSERT INTO {S}.fm_forecast_snapshots (month_id, metric, item_id, scenario, value, updated_at) "
+        "VALUES (%s,%s,%s,%s,%s,now()) ON CONFLICT (month_id, metric, item_id, scenario) DO UPDATE SET "
+        "value = EXCLUDED.value, updated_at = now() WHERE fm_forecast_snapshots.value <> EXCLUDED.value",
+        (month, metric, item, scenario, round(float(value), 4)),
+    )
+
+
+def snapshot_forecasts(cur):
+    """Запоминаем текущий прогноз по ещё не наступившим/идущим месяцам. Прошедшие месяцы не трогаем."""
+    cm = current_month()
+    for metric, table, col in (("avans", "fm_avans_forecast", "forecast_final"), ("fact", "fm_fact_forecast", "fact_final")):
+        cur.execute(
+            f"INSERT INTO {S}.fm_forecast_snapshots (month_id, metric, item_id, scenario, value, updated_at) "
+            f"SELECT month_id, %s, '', scenario, {col}, now() FROM {S}.{table} WHERE month_id >= %s "
+            "ON CONFLICT (month_id, metric, item_id, scenario) DO UPDATE SET value = EXCLUDED.value, updated_at = now() "
+            "WHERE fm_forecast_snapshots.value <> EXCLUDED.value",
+            (metric, cm),
+        )
+    cur.execute(
+        f"INSERT INTO {S}.fm_forecast_snapshots (month_id, metric, item_id, scenario, value, updated_at) "
+        f"SELECT month_id, 'variable_pct', '', 'base', variable_pct, now() FROM {S}.fm_revenue_monthly "
+        "WHERE month_id >= %s AND scenario = 'base' AND variable_pct_source = 'last' "
+        "ON CONFLICT (month_id, metric, item_id, scenario) DO UPDATE SET value = EXCLUDED.value, updated_at = now() "
+        "WHERE fm_forecast_snapshots.value <> EXCLUDED.value",
+        (cm,),
+    )
+
+
+def _future_months(cur, after):
+    cur.execute(f"SELECT id FROM {S}.fm_months WHERE id > %s ORDER BY id", (after,))
+    return [r["id"] for r in cur.fetchall()]
+
+
+def adapt_decide(c, metric, forecast, actual, force=False):
+    """Чистая формула: (отклонение, отклонение %, поправка, статус)."""
+    k = float(c.get("adapt_k") if c.get("adapt_k") is not None else 0.5)
+    dev = actual - forecast
+    dev_pct = abs(dev) / abs(forecast) * 100 if forecast else None
+    if metric == "variable_pct":
+        small = abs(dev) < float(c.get("adapt_min_deviation_pp") or 0)
+    else:
+        small = dev_pct is not None and dev_pct < float(c.get("adapt_min_deviation_pct") or 0)
+    if (small and not force) or k == 0 or dev == 0:
+        return dev, dev_pct, 0.0, "skipped"
+    return dev, dev_pct, dev * k, "applied"
+
+
+def adapt_log(cur, c, month, metric, item, scenario, forecast, actual, source="auto", note="", force=False):
+    k = float(c.get("adapt_k") if c.get("adapt_k") is not None else 0.5)
+    dev, dev_pct, corr, status = adapt_decide(c, metric, forecast, actual, force)
+    future = _future_months(cur, month)
+    applied_to = f"{future[0]} – {future[-1]}" if future and status == "applied" else ""
+    if status == "skipped" and not note:
+        note = "K = 0" if k == 0 else "Отклонение меньше порога — прогноз не меняем"
+    sql = (
+        f"INSERT INTO {S}.fm_adaptation_log (month_id, metric, item_id, scenario, forecast, actual, deviation, "
+        "deviation_pct, correction, applied_to, k_coef, status, source, note) "
+        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
+    )
+    if source == "auto":
+        sql += "ON CONFLICT (month_id, metric, item_id) WHERE source = 'auto' DO NOTHING "
+    cur.execute(sql + "RETURNING id", (
+        month, metric, item, scenario, round(forecast, 4), round(actual, 4), round(dev, 4),
+        round(dev_pct, 4) if dev_pct is not None else None, round(corr, 4), applied_to, k, status, source, note,
+    ))
+    row = cur.fetchone()
+    if not row or status != "applied":
+        return False
+    execute_values(
+        cur,
+        f"INSERT INTO {S}.fm_adaptation_corrections (month_id, metric, item_id, correction, source_log_id) VALUES %s",
+        [(m, metric, item, round(corr, 4), row["id"]) for m in future],
+    )
+    return True
+
+
+def _snapshots(cur, metric, scenario):
+    cur.execute(
+        f"SELECT month_id, item_id, value FROM {S}.fm_forecast_snapshots WHERE metric = %s AND scenario = %s",
+        (metric, scenario),
+    )
+    return {(r["month_id"], r["item_id"]): float(r["value"]) for r in cur.fetchall()}
+
+
+def _logged(cur):
+    cur.execute(f"SELECT month_id, metric, item_id FROM {S}.fm_adaptation_log WHERE source = 'auto'")
+    return {(r["month_id"], r["metric"], r["item_id"]) for r in cur.fetchall()}
+
+
+def fixed_actuals(cur, items, snaps, passed):
+    """Факт ручной статьи за прошедший месяц: введённая сумма, иначе — прогноз (значит, отклонения нет)."""
+    cur.execute(f"SELECT month_id, expense_id, amount FROM {S}.fm_expense_monthly")
+    ovr = {(r["month_id"], r["expense_id"]): float(r["amount"]) for r in cur.fetchall()}
+    out = {}
+    for iid in items:
+        for m in passed:
+            if (m, iid) in snaps:
+                out[(m, iid)] = (snaps[(m, iid)], ovr.get((m, iid), snaps[(m, iid)]))
+    return out
+
+
+def run_pending_adaptation(cur, c):
+    """Сравнить закрытые месяцы с запомненным прогнозом и записать поправки. Возвращает изменённые метрики."""
+    sc = c.get("avans_scenario_active") or "base"
+    cm = current_month()
+    logged = _logged(cur)
+    changed = set()
+
+    # 1–2. Авансы и факт
+    for metric, table, col in (("avans", "fm_avans_monthly", "avans"), ("fact", "fm_fact_monthly", "fact")):
+        snaps = _snapshots(cur, metric, sc)
+        cur.execute(f"SELECT month_id, {col} AS v FROM {S}.{table} WHERE closed AND month_id >= %s ORDER BY month_id",
+                    (ADAPT_FIRST_MONTH,))
+        for r in cur.fetchall():
+            m = r["month_id"]
+            if (m, metric, "") in logged or (m, "") not in snaps:
+                continue
+            if adapt_log(cur, c, m, metric, "", sc, snaps[(m, "")], float(r["v"])):
+                changed.add(metric)
+
+    # 3. Переменный % (факт — отчёт «Маржинальность урока» за прошедший месяц)
+    snaps = _snapshots(cur, "variable_pct", "base")
+    for r in variable_pcts(cur):
+        m = r["month_id"]
+        if r["source"] != "report" or m >= cm or (m, "variable_pct", "") in logged or (m, "") not in snaps:
+            continue
+        if adapt_log(cur, c, m, "variable_pct", "", "base", snaps[(m, "")], float(r["variable_pct"])):
+            changed.add("variable_pct")
+
+    # 4–5. Постоянные статьи с ручным вводом и новые неопределённости
+    cur.execute(f"SELECT id, new_since FROM {S}.fm_expense_items WHERE category = 'fixed' AND NOT is_fixed")
+    items = {r["id"]: r["new_since"] for r in cur.fetchall()}
+    snaps = _snapshots(cur, "fixed_expense", "base")
+    cur.execute(f"SELECT id FROM {S}.fm_months WHERE id >= %s AND id < %s ORDER BY id", (FIXED_FIRST_MONTH, cm))
+    passed = [r["id"] for r in cur.fetchall()]
+    acts = fixed_actuals(cur, items, snaps, passed)
+    n_sys = int(c.get("adapt_systematic_months") or 3)
+    min_pct = float(c.get("adapt_min_deviation_pct") or 0)
+    cur.execute(f"SELECT item_id, max(month_id) AS m FROM {S}.fm_adaptation_log "
+                "WHERE metric IN ('fixed_expense','new_item') GROUP BY 1")
+    last_log = {r["item_id"]: r["m"] for r in cur.fetchall()}
+    for iid, new_since in items.items():
+        months = [m for m in passed if (m, iid) in acts]
+        new_end = add_months(new_since, NEW_ITEM_MONTHS) if new_since else None
+        for m in months:
+            if new_since and new_since <= m < new_end:
+                if (m, "new_item", iid) in logged:
+                    continue
+                f, a = acts[(m, iid)]
+                if adapt_log(cur, c, m, "new_item", iid, "base", f, a, note="Новая статья: прогноз по аналогии"):
+                    changed.add("fixed")
+                last_log[iid] = m
+                continue
+            lim = max(last_log.get(iid) or "", add_months(new_end, -1) if new_end else "")
+            win = [add_months(m, -i) for i in range(n_sys)]
+            if (m, "fixed_expense", iid) in logged or any(w <= lim or (w, iid) not in acts for w in win):
+                continue
+            devs = [acts[(w, iid)][1] - acts[(w, iid)][0] for w in win]
+            pcts = [abs(d) / acts[(w, iid)][0] * 100 if acts[(w, iid)][0] else 100 for d, w in zip(devs, win)]
+            if not (all(d > 0 for d in devs) or all(d < 0 for d in devs)) or min(pcts) < min_pct:
+                continue
+            f = sum(acts[(w, iid)][0] for w in win) / n_sys
+            a = sum(acts[(w, iid)][1] for w in win) / n_sys
+            if adapt_log(cur, c, m, "fixed_expense", iid, "base", f, a,
+                         note=f"Систематическое отклонение {n_sys} мес подряд: {win[-1]} – {win[0]}"):
+                changed.add("fixed")
+            last_log[iid] = m
+    return changed
+
+
+def recalc_chain(cur, c):
+    recalc(cur, c)
+    recalc_fact(cur, c)
+    recalc_revenue(cur, c)
+
+
+def ensure_adaptation(cur, conn, c=None):
+    c = c or constants(cur)
+    snapshot_forecasts(cur)
+    changed = run_pending_adaptation(cur, c)
+    if changed & {"avans", "fact", "variable_pct"}:
+        recalc_chain(cur, c)
+    conn.commit()
+    return changed
+
+
+def get_adaptation(cur, conn):
+    c = constants(cur)
+    get_revenue(cur, conn)  # гарантирует свежие прогнозы и прогон адаптации
+    calc_fixed(cur)  # снимки ручных статей
+    ensure_adaptation(cur, conn, c)
+    sc = c.get("avans_scenario_active") or "base"
+    cm = current_month()
+    cur.execute(f"SELECT id, name, amount, new_since FROM {S}.fm_expense_items WHERE category = 'fixed' AND NOT is_fixed ORDER BY sort")
+    items = [dict(r) for r in cur.fetchall()]
+    names = {i["id"]: i["name"] for i in items}
+    cur.execute(f"SELECT * FROM {S}.fm_adaptation_log ORDER BY month_id DESC, id DESC")
+    log = [{**dict(r), "item_name": names.get(r["item_id"], "")} for r in cur.fetchall()]
+
+    # Графики: прогноз (снимок) vs факт по прошедшим месяцам + модельный и скорректированный прогноз впереди.
+    series = {}
+    for metric, hist_t, hist_c, fc_t, fc_c, fc_sc in (
+        ("avans", "fm_avans_monthly", "avans", "fm_avans_forecast", "forecast_final", sc),
+        ("fact", "fm_fact_monthly", "fact", "fm_fact_forecast", "fact_final", sc),
+    ):
+        snaps = _snapshots(cur, metric, sc)
+        cur.execute(f"SELECT month_id, {hist_c} AS v FROM {S}.{hist_t} WHERE closed AND month_id >= %s ORDER BY month_id",
+                    (ADAPT_FIRST_MONTH,))
+        pts = []
+        for r in cur.fetchall():
+            f = snaps.get((r["month_id"], ""))
+            a = float(r["v"])
+            pts.append({"month_id": r["month_id"], "forecast": f, "actual": a,
+                        "deviation_pct": round((a - f) / f * 100, 2) if f else None})
+        cur.execute(f"SELECT month_id, {fc_c} AS v, correction FROM {S}.{fc_t} WHERE scenario = %s ORDER BY month_id", (fc_sc,))
+        for r in cur.fetchall():
+            v, corr = float(r["v"]), float(r["correction"] or 0)
+            pts.append({"month_id": r["month_id"], "model": round(v - corr), "corrected": v, "correction": corr})
+        series[metric] = pts
+    snaps = _snapshots(cur, "variable_pct", "base")
+    pts = []
+    for r in variable_pcts(cur):
+        if r["source"] == "report" and r["month_id"] < cm:
+            f = snaps.get((r["month_id"], ""))
+            pts.append({"month_id": r["month_id"], "forecast": f, "actual": float(r["variable_pct"]),
+                        "deviation_pct": round(float(r["variable_pct"]) - f, 2) if f is not None else None})
+    cur.execute(f"SELECT month_id, variable_pct, variable_pct_source, variable_pct_correction FROM {S}.fm_revenue_monthly "
+                "WHERE scenario = 'base' ORDER BY month_id")
+    for r in cur.fetchall():
+        if r["month_id"] < cm and r["variable_pct_source"] == "report":
+            continue
+        v, corr = float(r["variable_pct"]), float(r["variable_pct_correction"] or 0)
+        pts.append({"month_id": r["month_id"], "model": round(v - corr, 4), "corrected": v, "correction": corr,
+                    "own": r["variable_pct_source"] != "last"})
+    series["variable_pct"] = pts
+
+    # Уведомления
+    alert_pct = float(c.get("adapt_alert_pct") or 20)
+    n_sys = int(c.get("adapt_systematic_months") or 3)
+    alerts = []
+    for l in log:
+        if l["status"] == "cancelled":
+            continue
+        dp = float(l["deviation_pct"]) if l["deviation_pct"] is not None else None
+        big = dp is not None and dp > alert_pct
+        if big and l["month_id"] >= add_months(cm, -2):
+            alerts.append({"type": "big_deviation", "log_id": l["id"], "month_id": l["month_id"], "metric": l["metric"],
+                           "item_id": l["item_id"], "deviation": l["deviation"], "deviation_pct": l["deviation_pct"]})
+        if l["metric"] == "fixed_expense" and l["status"] == "applied":
+            alerts.append({"type": "systematic", "log_id": l["id"], "month_id": l["month_id"], "item_id": l["item_id"],
+                           "item_name": l["item_name"], "suggested": round(float(l["actual"]))})
+    cur.execute(f"SELECT month_id, expense_id, amount FROM {S}.fm_expense_monthly WHERE month_id < %s", (cm,))
+    ovr = {(r["month_id"], r["expense_id"]): float(r["amount"]) for r in cur.fetchall()}
+    fsnaps = _snapshots(cur, "fixed_expense", "base")
+    for it in items:
+        if not it["new_since"]:
+            continue
+        done = [m for m in (add_months(it["new_since"], i) for i in range(NEW_ITEM_MONTHS)) if m < cm]
+        vals = [ovr.get((m, it["id"]), fsnaps.get((m, it["id"]))) for m in done]
+        vals = [v for v in vals if v is not None]
+        if len(done) >= NEW_ITEM_MONTHS and vals:
+            alerts.append({"type": "new_item_average", "item_id": it["id"], "item_name": it["name"],
+                           "suggested": round(sum(vals) / len(vals)), "months": len(vals)})
+        else:
+            alerts.append({"type": "new_item", "item_id": it["id"], "item_name": it["name"],
+                           "months_done": len(done), "amount": it["amount"]})
+    return {
+        "ok": True,
+        "current_month": cm,
+        "active_scenario": sc,
+        "params": {
+            "k": float(c.get("adapt_k") if c.get("adapt_k") is not None else 0.5),
+            "systematic_months": n_sys,
+            "min_deviation_pct": float(c.get("adapt_min_deviation_pct") or 0),
+            "min_deviation_pp": float(c.get("adapt_min_deviation_pp") or 0),
+            "alert_pct": alert_pct,
+        },
+        "log": log,
+        "series": series,
+        "alerts": alerts,
+        "items": items,
+    }
+
+
+def set_adapt_params(cur, conn, body):
+    """Параметры адаптации. reapply=true — пересчитать уже применённые поправки с новым K."""
+    keys = {"k": ("adapt_k", 0, 1), "systematic_months": ("adapt_systematic_months", 1, 12),
+            "min_deviation_pct": ("adapt_min_deviation_pct", 0, 100), "min_deviation_pp": ("adapt_min_deviation_pp", 0, 100),
+            "alert_pct": ("adapt_alert_pct", 0, 1000)}
+    upd = {}
+    for k, (key, lo, hi) in keys.items():
+        if k not in body or body[k] is None or body[k] == "":
+            continue
+        try:
+            v = float(body[k])
+        except (TypeError, ValueError):
+            return resp(400, {"error": "Значение должно быть числом"})
+        if not lo <= v <= hi:
+            return resp(400, {"error": f"Допустимо от {lo} до {hi}"})
+        upd[key] = v
+    if not upd:
+        return resp(400, {"error": "Нечего сохранять"})
+    for key, v in upd.items():
+        cur.execute(f"UPDATE {S}.fm_constants SET value_num = %s, updated_at = now() WHERE key = %s", (v, key))
+    if body.get("reapply") and "adapt_k" in upd:
+        k = upd["adapt_k"]
+        cur.execute(
+            f"UPDATE {S}.fm_adaptation_log SET k_coef = %s, correction = deviation * %s WHERE status = 'applied'", (k, k))
+        cur.execute(
+            f"UPDATE {S}.fm_adaptation_corrections ac SET correction = l.correction "
+            f"FROM {S}.fm_adaptation_log l WHERE l.id = ac.source_log_id")
+    c = constants(cur)
+    recalc_chain(cur, c)
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
+def cancel_adaptation(cur, conn, body):
+    try:
+        log_id = int(body.get("id"))
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Нужен id"})
+    restore = bool(body.get("restore"))
+    cur.execute(f"SELECT status FROM {S}.fm_adaptation_log WHERE id = %s", (log_id,))
+    row = cur.fetchone()
+    if not row:
+        return resp(404, {"error": "Запись не найдена"})
+    if restore:
+        if row["status"] != "cancelled":
+            return resp(400, {"error": "Адаптация не отменена"})
+        cur.execute(f"SELECT * FROM {S}.fm_adaptation_log WHERE id = %s", (log_id,))
+        l = cur.fetchone()
+        if float(l["correction"]) == 0:
+            return resp(400, {"error": "У записи нет поправки"})
+        future = _future_months(cur, l["month_id"])
+        cur.execute(f"UPDATE {S}.fm_adaptation_log SET status = 'applied', cancelled_at = NULL WHERE id = %s", (log_id,))
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_adaptation_corrections (month_id, metric, item_id, correction, source_log_id) VALUES %s",
+            [(m, l["metric"], l["item_id"], l["correction"], log_id) for m in future],
+        )
+    else:
+        if row["status"] == "cancelled":
+            return resp(400, {"error": "Уже отменена"})
+        cur.execute(f"DELETE FROM {S}.fm_adaptation_corrections WHERE source_log_id = %s", (log_id,))
+        cur.execute(f"UPDATE {S}.fm_adaptation_log SET status = 'cancelled', cancelled_at = now() WHERE id = %s", (log_id,))
+    recalc_chain(cur, constants(cur))
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
+def adapt_manual(cur, conn, body):
+    """Ручная адаптация: прогноз и факт вводит руководитель (например, за месяц без сохранённого прогноза)."""
+    month, metric = str(body.get("month") or ""), str(body.get("metric") or "")
+    if metric not in ("avans", "fact", "variable_pct"):
+        return resp(400, {"error": "Метрика: avans / fact / variable_pct"})
+    cur.execute(f"SELECT 1 FROM {S}.fm_months WHERE id = %s", (month,))
+    if not cur.fetchone():
+        return resp(400, {"error": "Нет такого месяца"})
+    try:
+        f, a = float(body.get("forecast")), float(body.get("actual"))
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Прогноз и факт — числа"})
+    c = constants(cur)
+    adapt_log(cur, c, month, metric, "", c.get("avans_scenario_active") or "base", f, a, source="manual",
+              note="Введено вручную", force=bool(body.get("force")))
+    recalc_chain(cur, c)
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
+def adapt_new_item(cur, conn, body):
+    """Новая неопределённость: новая статья (или существующая ручная) с прогнозом по аналогии."""
+    month = str(body.get("month") or "")
+    if not _month_ok(cur, month):
+        return resp(400, {"error": "Нет такого месяца"})
+    try:
+        amount = round(float(body.get("amount")), 2)
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Прогноз по аналогии — число"})
+    if amount < 0:
+        return resp(400, {"error": "Сумма не может быть отрицательной"})
+    iid = str(body.get("item_id") or "")
+    if iid:
+        cur.execute(f"UPDATE {S}.fm_expense_items SET new_since = %s, amount = %s "
+                    "WHERE id = %s AND category = 'fixed' AND NOT is_fixed RETURNING id", (month, amount, iid))
+        if not cur.fetchone():
+            return resp(400, {"error": "Статья не найдена или фиксированная"})
+    else:
+        name = str(body.get("name") or "").strip()[:120]
+        if not name:
+            return resp(400, {"error": "Укажите название статьи"})
+        cur.execute(f"SELECT coalesce(max(sort), 0) + 1 AS s FROM {S}.fm_expense_items WHERE category = 'fixed' AND sort < 200")
+        sort = cur.fetchone()["s"]
+        iid = f"new_{int(datetime.datetime.utcnow().timestamp())}"
+        cur.execute(
+            f"INSERT INTO {S}.fm_expense_items (id, name, category, input_mode, amount, amount_unit, sort, is_fixed, new_since) "
+            "VALUES (%s,%s,'fixed','manual',%s,'rub_month',%s,false,%s)",
+            (iid, name, amount, sort, month),
+        )
+    # Прогноз по аналогии на уже идущий месяц тоже запоминаем — через месяц сравним с фактом.
+    m, cm = month, current_month()
+    while m <= cm:
+        cur.execute(f"SELECT 1 FROM {S}.fm_expense_monthly WHERE month_id = %s AND expense_id = %s", (m, iid))
+        if not cur.fetchone():
+            save_snapshot(cur, m, "fixed_expense", iid, "base", amount)
+        m = add_months(m, 1)
+    conn.commit()
+    return resp(200, {"ok": True, "item_id": iid})
+
+
+def adapt_set_base(cur, conn, body):
+    """Принять предложение: новая база статьи (систематическое отклонение или среднее по новой статье).
+    Накопленные поправки статьи гасятся — они уже вошли в новую базу."""
+    iid = str(body.get("item_id") or "")
+    try:
+        amount = round(float(body.get("amount")), 2)
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Сумма — число"})
+    cur.execute(f"UPDATE {S}.fm_expense_items SET amount = %s, new_since = NULL "
+                "WHERE id = %s AND category = 'fixed' AND NOT is_fixed RETURNING id", (amount, iid))
+    if not cur.fetchone():
+        return resp(400, {"error": "Статья не найдена или фиксированная"})
+    cur.execute(f"DELETE FROM {S}.fm_adaptation_corrections WHERE item_id = %s AND metric IN ('fixed_expense','new_item')", (iid,))
+    cur.execute(
+        f"UPDATE {S}.fm_adaptation_log SET status = 'cancelled', cancelled_at = now(), "
+        "note = note || ' · вошло в новую базу' WHERE item_id = %s AND metric IN ('fixed_expense','new_item') AND status = 'applied'",
+        (iid,),
+    )
+    conn.commit()
+    return resp(200, {"ok": True})
+
 # ---------------- CASH FLOW ----------------
 # Кассовый метод: поступления = аванс − эквайринг (не факт). Оттоки: переменные (от факта), постоянные, АНО,
 # разовые, налог, проценты + ТЕЛО кредита, выплата собственнику. Остаток копится от стартового 1 100 204,78 ₽.
@@ -1646,7 +2152,7 @@ def calc_cashflow(cur, conn):
 
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow|adaptation — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / set_adapt_params / cancel_adaptation / adapt_manual / adapt_new_item / adapt_set_base / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1683,6 +2189,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, calc_pnl(cur, conn))
             if action == "cashflow":
                 return resp(200, calc_cashflow(cur, conn))
+            if action == "adaptation":
+                return resp(200, get_adaptation(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -1720,6 +2228,16 @@ def handler(event: dict, context) -> dict:
                 return set_staff_rate(cur, conn, body)
             if action == "set_staff_month_rate":
                 return set_staff_month_rate(cur, conn, body)
+            if action == "set_adapt_params":
+                return set_adapt_params(cur, conn, body)
+            if action == "cancel_adaptation":
+                return cancel_adaptation(cur, conn, body)
+            if action == "adapt_manual":
+                return adapt_manual(cur, conn, body)
+            if action == "adapt_new_item":
+                return adapt_new_item(cur, conn, body)
+            if action == "adapt_set_base":
+                return adapt_set_base(cur, conn, body)
             if action == "recalc":
                 c = constants(cur)
                 recalc(cur, c)

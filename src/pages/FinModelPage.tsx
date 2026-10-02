@@ -15,12 +15,13 @@ import PayoutsTable from '@/components/finmodel/PayoutsTable';
 import OneTimeExpensesTable from '@/components/finmodel/OneTimeExpensesTable';
 import PnlTable from '@/components/finmodel/PnlTable';
 import CashflowTable from '@/components/finmodel/CashflowTable';
+import AdaptationPanel from '@/components/finmodel/AdaptationPanel';
 import {
-  CashflowData, fetchCashflow, PnlData, fetchPnl, OneTimeData, fetchOneTime, saveOneTime, deleteOneTime, PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
+  AdaptationData, fetchAdaptation, CashflowData, fetchCashflow, PnlData, fetchPnl, OneTimeData, fetchOneTime, saveOneTime, deleteOneTime, PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
   fetchRevenue, fetchStudents, fmMoney, setActiveScenario, setStudents, setVariablePct,
 } from '@/lib/finmodelApi';
 
-type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes' | 'payouts' | 'one_time' | 'pnl' | 'cashflow';
+type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes' | 'payouts' | 'one_time' | 'pnl' | 'cashflow' | 'adaptation';
 
 const FinModelPage = () => {
   const navigate = useNavigate();
@@ -38,6 +39,8 @@ const FinModelPage = () => {
   const [pnlLoading, setPnlLoading] = useState(false);
   const [cashflow, setCashflow] = useState<CashflowData | null>(null);
   const [cfLoading, setCfLoading] = useState(false);
+  const [adaptation, setAdaptation] = useState<AdaptationData | null>(null);
+  const [adLoading, setAdLoading] = useState(false);
   const [tab, setTab] = useState<Tab>('avans');
   const [active, setActive] = useState<Scenario>('base');
   const [loading, setLoading] = useState(true);
@@ -104,6 +107,34 @@ const FinModelPage = () => {
       cancelled = true;
     };
   }, [tab, loading]);
+
+  useEffect(() => {
+    if (tab !== 'adaptation' || loading) return;
+    let cancelled = false;
+    setAdLoading(true);
+    fetchAdaptation()
+      .then((a) => !cancelled && setAdaptation(a))
+      .catch((e) => !cancelled && setError(e instanceof Error ? e.message : 'Не удалось загрузить адаптацию'))
+      .finally(() => !cancelled && setAdLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, loading]);
+
+  // После изменения K / отмены адаптации прогнозы пересчитаны на сервере — обновляем всё, что от них зависит.
+  const onAdaptChanged = async () => {
+    const a = await fetchAdaptation();
+    setAdaptation(a);
+    const [d, f, r, fx, tx, po] = await Promise.all([
+      fetchAvans(), fetchFact(), fetchRevenue(), fetchFixed(), fetchTaxes(), fetchPayouts(),
+    ]);
+    setData(d);
+    setFact(f);
+    setRevenue(r);
+    setFixed(fx);
+    setTaxes(tx);
+    setPayouts(po);
+  };
 
   const onCfCredit = async (opt: CreditOption) => {
     await onCreditOption(opt);
@@ -285,7 +316,7 @@ const FinModelPage = () => {
             </div>
 
             <div className="flex flex-wrap gap-x-1 border-b border-gray-200">
-              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['one_time', 'Разовые расходы'], ['credit', 'Кредит'], ['ano', 'АНО'], ['taxes', 'Налоги'], ['payouts', 'Выплата собственнику'], ['pnl', 'P&L'], ['cashflow', 'Cash Flow']] as [Tab, string][]).map(([t, label]) => (
+              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['one_time', 'Разовые расходы'], ['credit', 'Кредит'], ['ano', 'АНО'], ['taxes', 'Налоги'], ['payouts', 'Выплата собственнику'], ['pnl', 'P&L'], ['cashflow', 'Cash Flow'], ['adaptation', 'Адаптация']] as [Tab, string][]).map(([t, label]) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -298,7 +329,16 @@ const FinModelPage = () => {
               ))}
             </div>
 
-            {tab === 'cashflow' ? (
+            {tab === 'adaptation' ? (
+              adaptation && !adLoading ? (
+                <AdaptationPanel data={adaptation} onChanged={onAdaptChanged} />
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+                  <Icon name="Loader2" size={26} className="animate-spin mx-auto mb-2" />
+                  Сравниваем факт с прогнозом…
+                </div>
+              )
+            ) : tab === 'cashflow' ? (
               cashflow && !cfLoading ? (
                 <CashflowTable data={cashflow} active={active} onCreditOption={onCfCredit} onPayoutPct={onCfPayoutPct} />
               ) : (

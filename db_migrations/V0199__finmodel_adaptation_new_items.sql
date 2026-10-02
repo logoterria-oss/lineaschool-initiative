@@ -1,0 +1,2 @@
+-- Новая неопределённость: статья с прогнозом «по аналогии» — первые 3 месяца адаптируется помесячно.
+ALTER TABLE t_p93118852_lineaschool_initiati.fm_expense_items ADD COLUMN IF NOT EXISTS new_since VARCHAR(7) NULL;

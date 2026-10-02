@@ -305,7 +305,7 @@ export const setStudents = (
 
 // ---------------- Постоянные расходы ----------------
 export type FixedSource = 'staff' | 'calc' | 'fixed' | 'manual';
-export type FixedCellSource = 'staff' | 'override' | 'fact' | 'forecast' | 'manual' | 'default' | 'fixed';
+export type FixedCellSource = 'staff' | 'override' | 'fact' | 'forecast' | 'manual' | 'default' | 'fixed' | 'adapted';
 
 export interface FixedRow {
   key: string;
@@ -678,3 +678,85 @@ export const fetchCashflow = async (): Promise<CashflowData> => {
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
 };
+
+// ---------------- АДАПТАЦИЯ (Промт 13) ----------------
+export type AdaptMetric = 'avans' | 'fact' | 'variable_pct' | 'fixed_expense' | 'new_item';
+export const ADAPT_METRIC_LABEL: Record<AdaptMetric, string> = {
+  avans: 'Аванс',
+  fact: 'Факт',
+  variable_pct: 'Переменный %',
+  fixed_expense: 'Постоянная статья',
+  new_item: 'Новая статья',
+};
+
+export interface AdaptLogRow {
+  id: number;
+  month_id: string;
+  metric: AdaptMetric;
+  item_id: string;
+  item_name: string;
+  scenario: Scenario;
+  forecast: number;
+  actual: number;
+  deviation: number;
+  deviation_pct: number | null;
+  correction: number;
+  applied_to: string;
+  k_coef: number;
+  status: 'applied' | 'skipped' | 'cancelled';
+  source: 'auto' | 'manual';
+  note: string;
+  created_at: string;
+  cancelled_at: string | null;
+}
+
+export interface AdaptPoint {
+  month_id: string;
+  forecast?: number | null;
+  actual?: number;
+  deviation_pct?: number | null;
+  model?: number;
+  corrected?: number;
+  correction?: number;
+  own?: boolean;
+}
+
+export type AdaptAlert =
+  | { type: 'big_deviation'; log_id: number; month_id: string; metric: AdaptMetric; item_id: string; deviation: number; deviation_pct: number }
+  | { type: 'systematic'; log_id: number; month_id: string; item_id: string; item_name: string; suggested: number }
+  | { type: 'new_item'; item_id: string; item_name: string; months_done: number; amount: number }
+  | { type: 'new_item_average'; item_id: string; item_name: string; suggested: number; months: number };
+
+export interface AdaptParams {
+  k: number;
+  systematic_months: number;
+  min_deviation_pct: number;
+  min_deviation_pp: number;
+  alert_pct: number;
+}
+
+export interface AdaptationData {
+  current_month: string;
+  active_scenario: Scenario;
+  params: AdaptParams;
+  log: AdaptLogRow[];
+  series: Record<'avans' | 'fact' | 'variable_pct', AdaptPoint[]>;
+  alerts: AdaptAlert[];
+  items: { id: string; name: string; amount: number; new_since: string | null }[];
+}
+
+export const fetchAdaptation = async (): Promise<AdaptationData> => {
+  const r = await fetch(`${API}?action=adaptation`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+export const setAdaptParams = (v: Partial<AdaptParams> & { reapply?: boolean }) =>
+  post({ action: 'set_adapt_params', ...v });
+export const cancelAdaptation = (id: number, restore = false) => post({ action: 'cancel_adaptation', id, restore });
+export const adaptManual = (v: { month: string; metric: 'avans' | 'fact' | 'variable_pct'; forecast: number; actual: number; force?: boolean }) =>
+  post({ action: 'adapt_manual', ...v });
+export const adaptNewItem = (v: { month: string; amount: number; name?: string; item_id?: string }) =>
+  post({ action: 'adapt_new_item', ...v });
+export const adaptSetBase = (item_id: string, amount: number) => post({ action: 'adapt_set_base', item_id, amount });
