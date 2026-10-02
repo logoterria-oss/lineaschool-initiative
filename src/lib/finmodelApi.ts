@@ -603,3 +603,32 @@ export const fetchOneTime = async (): Promise<OneTimeData> => {
 
 export const saveOneTime = (v: OneTimeInput) => post({ action: 'save_one_time', ...v });
 export const deleteOneTime = (id: number) => post({ action: 'delete_one_time', id });
+
+// ---------------- P&L ----------------
+export const PNL_KEYS = [
+  'revenue', 'variable', 'gross_profit', 'fixed', 'ano', 'one_time', 'ebitda', 'interest', 'tax', 'net_profit',
+] as const;
+export type PnlKey = (typeof PNL_KEYS)[number];
+export type PnlValues = Record<PnlKey, number>;
+
+export interface PnlRow {
+  month_id: string;
+  variable_pct: number;
+  tax_regime: TaxRegime | null;
+  values: Record<Scenario, PnlValues>;
+}
+
+export interface PnlData {
+  current_month: string;
+  active_scenario: Scenario;
+  credit_option: CreditOption;
+  rows: PnlRow[];
+  annual: Record<Scenario, PnlValues>;
+}
+
+export const fetchPnl = async (): Promise<PnlData> => {
+  const r = await fetch(`${API}?action=pnl`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};

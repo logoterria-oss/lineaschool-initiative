@@ -1511,9 +1511,66 @@ def delete_one_time(cur, conn, body):
     conn.commit()
     return resp(200, {"ok": True})
 
+# ---------------- P&L ----------------
+# Accrual: выручка = ФАКТ (не авансы). Переменные = факт × переменный %.
+# EBITDA = валовая − постоянные − АНО − разовые. Чистая = EBITDA − проценты по кредиту − налог.
+# Тело кредита и выплата собственнику в P&L НЕ входят (только в Cash Flow).
+
+PNL_FIELDS = ("revenue", "variable", "gross_profit", "fixed", "ano", "one_time", "ebitda", "interest", "tax", "net_profit")
+
+
+def calc_pnl(cur, conn):
+    get_revenue(cur, conn)
+    c = constants(cur)
+    fixed = calc_fixed(cur)
+    taxes = calc_taxes(cur)
+    tax = {(r["month_id"], sc): r["values"][sc]["tax_net"] for r in taxes["rows"] for sc in SCENARIOS}
+    regime = {r["month_id"]: r["regime"] for r in taxes["rows"]}
+    ano = {r["month_id"]: r["total"] for r in ano_rows(cur)}
+    one_time = one_time_totals(cur)
+    option = c.get("credit_option_default") if c.get("credit_option_default") in CREDIT_OPTIONS else "6m"
+    interest = {r["month_id"]: r["interest"] for r in credit_schedule_calc(c, option)}
+
+    cur.execute(f"SELECT month_id, scenario, fact, variable_pct, variable_amount FROM {S}.fm_revenue_monthly ORDER BY month_id")
+    rows, db = {}, []
+    for r in cur.fetchall():
+        m, sc = r["month_id"], r["scenario"]
+        rev, var = float(r["fact"]), float(r["variable_amount"])
+        gross = rev - var
+        fx = float(((fixed["totals"].get(m) or {}).get("total") or {}).get(sc) or 0)
+        an, ot = float(ano.get(m, 0)), float(one_time.get(m, 0))
+        ebitda = gross - fx - an - ot
+        it, tx = float(interest.get(m, 0)), float(tax.get((m, sc), 0))
+        v = {"revenue": rev, "variable": var, "gross_profit": gross, "fixed": fx, "ano": an, "one_time": ot,
+             "ebitda": ebitda, "interest": it, "tax": tx, "net_profit": ebitda - it - tx}
+        v = {k: round(x, 2) for k, x in v.items()}
+        row = rows.setdefault(m, {"month_id": m, "variable_pct": float(r["variable_pct"]), "tax_regime": regime.get(m), "values": {}})
+        row["values"][sc] = v
+        db.append((m, sc, *[v[k] for k in PNL_FIELDS]))
+
+    cur.execute(f"DELETE FROM {S}.fm_pnl_monthly")
+    if db:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_pnl_monthly (month_id, scenario, {', '.join(PNL_FIELDS)}) VALUES %s",
+            db,
+        )
+    conn.commit()
+    out_rows = [rows[m] for m in sorted(rows)]
+    annual = {sc: {k: round(sum(r["values"][sc][k] for r in out_rows if sc in r["values"]), 2) for k in PNL_FIELDS}
+              for sc in SCENARIOS}
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "active_scenario": c.get("avans_scenario_active") or "base",
+        "credit_option": option,
+        "rows": out_rows,
+        "annual": annual,
+    }
+
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1546,6 +1603,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, calc_payouts(cur, conn))
             if action == "one_time":
                 return resp(200, get_one_time(cur))
+            if action == "pnl":
+                return resp(200, calc_pnl(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
