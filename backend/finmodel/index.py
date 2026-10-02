@@ -1335,8 +1335,9 @@ def set_tax_regime(cur, conn, body):
 # Ручная сумма > % × поступления. Это отток в Cash Flow, но НЕ расход в P&L и не влияет на налоги.
 
 
-def calc_payouts(cur, conn):
-    get_revenue(cur, conn)  # гарантирует свежие поступления
+def calc_payouts(cur, conn, fresh=False):
+    if not fresh:
+        get_revenue(cur, conn)  # гарантирует свежие поступления
     c = constants(cur)
     default_pct = float(c.get("payout_pct_default") or 10)
     target = float(c.get("payout_target_monthly") or 250000)
@@ -1568,9 +1569,84 @@ def calc_pnl(cur, conn):
         "annual": annual,
     }
 
+# ---------------- CASH FLOW ----------------
+# Кассовый метод: поступления = аванс − эквайринг (не факт). Оттоки: переменные (от факта), постоянные, АНО,
+# разовые, налог, проценты + ТЕЛО кредита, выплата собственнику. Остаток копится от стартового 1 100 204,78 ₽.
+
+CF_OUT = ("variable", "fixed", "ano", "one_time", "tax", "interest", "body", "payout")
+
+
+def calc_cashflow(cur, conn):
+    pnl = calc_pnl(cur, conn)
+    payouts = calc_payouts(cur, conn, fresh=True)
+    c = constants(cur)
+    option = pnl["credit_option"]
+    body = {r["month_id"]: r["body"] for r in credit_schedule_calc(c, option)}
+    pay = {(r["month_id"], sc): v["payout_final"] for r in payouts["rows"] for sc, v in r["values"].items()}
+    cur.execute(f"SELECT month_id, scenario, revenue FROM {S}.fm_revenue_monthly")
+    inflow = {(r["month_id"], r["scenario"]): float(r["revenue"]) for r in cur.fetchall()}
+    start = float(c.get("start_balance_total") or 0)
+
+    pnl_by_month = {r["month_id"]: r for r in pnl["rows"]}
+    rows = {r["month_id"]: {"month_id": r["month_id"], "tax_regime": r["tax_regime"], "values": {}} for r in pnl["rows"]}
+    db, summary = [], {}
+    for sc in SCENARIOS:
+        bal, total_out, worst, gap = start, 0.0, None, []
+        for m in sorted(rows):
+            p = pnl_by_month[m]["values"].get(sc)
+            if not p:
+                continue
+            v = {"start_balance": bal, "revenue": inflow.get((m, sc), 0.0),
+                 "variable": p["variable"], "fixed": p["fixed"], "ano": p["ano"], "one_time": p["one_time"],
+                 "tax": p["tax"], "interest": p["interest"], "body": float(body.get(m, 0)),
+                 "payout": float(pay.get((m, sc), 0))}
+            out = sum(v[k] for k in CF_OUT)
+            v["outflow"] = out
+            v["net_flow"] = v["revenue"] - out
+            v["end_balance"] = bal + v["net_flow"]
+            v = {k: round(x, 2) for k, x in v.items()}
+            rows[m]["values"][sc] = v
+            db.append((m, sc, v["start_balance"], v["revenue"], *[v[k] for k in CF_OUT], v["net_flow"], v["end_balance"]))
+            bal = v["end_balance"]
+            total_out += out
+            if worst is None or bal < worst[1]:
+                worst = (m, bal)
+            if bal < 0:
+                gap.append(m)
+        vals = [rows[m]["values"][sc] for m in sorted(rows) if sc in rows[m]["values"]]
+        summary[sc] = {
+            "start_balance": round(start, 2),
+            "end_balance": round(bal, 2),
+            "min_balance": round(worst[1], 2) if worst else None,
+            "min_month": worst[0] if worst else None,
+            "gap_months": gap,
+            "first_gap_month": gap[0] if gap else None,
+            "total_outflow": round(total_out, 2),
+            **{k: round(sum(v[k] for v in vals), 2) for k in ("revenue", *CF_OUT, "net_flow")},
+        }
+
+    cur.execute(f"DELETE FROM {S}.fm_cashflow_monthly")
+    if db:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_cashflow_monthly (month_id, scenario, start_balance, revenue, {', '.join(CF_OUT)}, net_flow, end_balance) VALUES %s",
+            db,
+        )
+    conn.commit()
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "active_scenario": pnl["active_scenario"],
+        "credit_option": option,
+        "start_balance": {"total": round(start, 2), "tbank": c.get("start_balance_tbank"),
+                          "lokobank": c.get("start_balance_lokobank"), "date": c.get("start_balance_date")},
+        "rows": [rows[m] for m in sorted(rows)],
+        "summary": summary,
+    }
+
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1605,6 +1681,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_one_time(cur))
             if action == "pnl":
                 return resp(200, calc_pnl(cur, conn))
+            if action == "cashflow":
+                return resp(200, calc_cashflow(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":

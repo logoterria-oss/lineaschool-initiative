@@ -133,6 +133,16 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Cash Flow без входа закрыт",
+      "method": "GET",
+      "path": "/?action=cashflow",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

@@ -632,3 +632,49 @@ export const fetchPnl = async (): Promise<PnlData> => {
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
 };
+
+// ---------------- CASH FLOW ----------------
+export const CF_OUT_KEYS = ['variable', 'fixed', 'ano', 'one_time', 'tax', 'interest', 'body', 'payout'] as const;
+export type CfOutKey = (typeof CF_OUT_KEYS)[number];
+
+export type CfValues = Record<CfOutKey, number> & {
+  start_balance: number;
+  revenue: number;
+  outflow: number;
+  net_flow: number;
+  end_balance: number;
+};
+
+export interface CfRow {
+  month_id: string;
+  tax_regime: TaxRegime | null;
+  values: Record<Scenario, CfValues>;
+}
+
+export type CfSummary = Record<CfOutKey, number> & {
+  start_balance: number;
+  end_balance: number;
+  min_balance: number | null;
+  min_month: string | null;
+  gap_months: string[];
+  first_gap_month: string | null;
+  total_outflow: number;
+  revenue: number;
+  net_flow: number;
+};
+
+export interface CashflowData {
+  current_month: string;
+  active_scenario: Scenario;
+  credit_option: CreditOption;
+  start_balance: { total: number; tbank: number; lokobank: number; date: string | null };
+  rows: CfRow[];
+  summary: Record<Scenario, CfSummary>;
+}
+
+export const fetchCashflow = async (): Promise<CashflowData> => {
+  const r = await fetch(`${API}?action=cashflow`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
