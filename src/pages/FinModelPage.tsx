@@ -6,18 +6,20 @@ import AvansHistoryTable from '@/components/finmodel/AvansHistoryTable';
 import FactForecastTable from '@/components/finmodel/FactForecastTable';
 import FactCharts from '@/components/finmodel/FactCharts';
 import RevenueTable from '@/components/finmodel/RevenueTable';
+import StudentsTable from '@/components/finmodel/StudentsTable';
 import {
-  AvansData, FactData, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, fetchAvans, fetchFact, fetchRevenue,
-  fmMoney, setActiveScenario, setVariablePct,
+  AvansData, FactData, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
+  fetchRevenue, fetchStudents, fmMoney, setActiveScenario, setStudents, setVariablePct,
 } from '@/lib/finmodelApi';
 
-type Tab = 'avans' | 'fact' | 'revenue';
+type Tab = 'avans' | 'fact' | 'revenue' | 'students';
 
 const FinModelPage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<AvansData | null>(null);
   const [fact, setFact] = useState<FactData | null>(null);
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
+  const [students, setStudentsData] = useState<StudentsData | null>(null);
   const [tab, setTab] = useState<Tab>('avans');
   const [active, setActive] = useState<Scenario>('base');
   const [loading, setLoading] = useState(true);
@@ -30,9 +32,11 @@ const FinModelPage = () => {
       const d = await fetchAvans();
       const f = await fetchFact();
       const r = await fetchRevenue();
+      const st = await fetchStudents();
       setData(d);
       setFact(f);
       setRevenue(r);
+      setStudentsData(st);
       setActive(d.active_scenario);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить');
@@ -63,6 +67,24 @@ const FinModelPage = () => {
     }
   };
 
+  const onCloseStudents = async (month: string) => {
+    try {
+      await closeStudents(month);
+      setStudentsData(await fetchStudents());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось закрыть месяц');
+    }
+  };
+
+  const onManualStudents: Parameters<typeof StudentsTable>[0]['onManual'] = async (month, v) => {
+    try {
+      await setStudents(month, v);
+      setStudentsData(await fetchStudents());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+    }
+  };
+
   const annual = data ? data.forecast.reduce((s, r) => s + (r[active]?.forecast_final || 0), 0) : 0;
   const annualFact = fact ? fact.forecast.reduce((s, r) => s + (r[active]?.fact_final || 0), 0) : 0;
 
@@ -75,7 +97,7 @@ const FinModelPage = () => {
           </button>
           <div className="flex-1">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Финансовая модель</h1>
-            <p className="text-gray-500 text-sm mt-1">Модуль «Доходы»: авансы, факт, поступления и переменные</p>
+            <p className="text-gray-500 text-sm mt-1">Модуль «Доходы»: авансы, факт, поступления и переменные, ученики и занятия</p>
           </div>
         </div>
 
@@ -94,7 +116,7 @@ const FinModelPage = () => {
           </div>
         )}
 
-        {data && fact && revenue && !loading && (
+        {data && fact && revenue && students && !loading && (
           <>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-wrap items-center gap-4">
               <div className="min-w-[200px]">
@@ -124,7 +146,7 @@ const FinModelPage = () => {
             </div>
 
             <div className="flex gap-1 border-b border-gray-200">
-              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные']] as [Tab, string][]).map(([t, label]) => (
+              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия']] as [Tab, string][]).map(([t, label]) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -137,7 +159,9 @@ const FinModelPage = () => {
               ))}
             </div>
 
-            {tab === 'revenue' ? (
+            {tab === 'students' ? (
+              <StudentsTable data={students} onClose={onCloseStudents} onManual={onManualStudents} />
+            ) : tab === 'revenue' ? (
               <RevenueTable data={revenue} active={active} onSetPct={onSetPct} />
             ) : tab === 'avans' ? (
               <>

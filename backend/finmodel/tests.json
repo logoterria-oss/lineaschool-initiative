@@ -49,6 +49,16 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Ученики и занятия без входа закрыты",
+      "method": "GET",
+      "path": "/?action=students",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

@@ -261,3 +261,44 @@ export const fetchRevenue = async (): Promise<RevenueData> => {
 /** Переменный % месяца вручную; null — убрать ручное значение и вернуться к последнему известному. */
 export const setVariablePct = (month: string, variable_pct: number | null) =>
   post({ action: 'set_variable_pct', month, variable_pct });
+// ---------------- Ученики и занятия (справочно) ----------------
+
+export type StudentsSource = 'alfa' | 'report' | 'manual';
+
+export interface StudentsRow {
+  month_id: string;
+  active_students: number | null;
+  total_lessons: number | null;
+  avg_lessons_per_student: number | null;
+  avg_group_fill: number | null;
+  source: StudentsSource;
+  lessons_source: 'report' | 'manual';
+  closed: boolean;
+  note: string;
+  updated_at: string | null;
+  state: 'closed' | 'open' | 'current';
+  report_complete: boolean;
+  has_report?: boolean;
+}
+
+export interface StudentsData {
+  current_month: string;
+  rows: StudentsRow[];
+  alfa_connection: 'not_needed' | 'connected';
+}
+
+export const fetchStudents = async (): Promise<StudentsData> => {
+  const r = await fetch(`${API}?action=students`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+/** Закрыть прошедший месяц цифрами отчётов. */
+export const closeStudents = (month: string) => post({ action: 'close_students', month });
+
+/** Ввести месяц вручную (сразу закрывается). */
+export const setStudents = (
+  month: string,
+  v: { active_students: number; total_lessons: number; avg_group_fill: number | null },
+) => post({ action: 'set_students', month, ...v });

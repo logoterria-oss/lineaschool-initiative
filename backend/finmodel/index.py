@@ -489,6 +489,161 @@ def revenue_stale(cur):
     return any(t and t > r["calc"] for t in (r["fact_calc"], r["pct_upd"], r["acq_upd"]))
 
 
+# ---------------- УЧЕНИКИ И ЗАНЯТИЯ (справочно) ----------------
+# Все три показателя уже есть в отчётах админки (вариант А): отдельное подключение AlfaCRM не нужно.
+#  • активные ученики — «Динамика учеников» (student_count_weekly, последняя неделя месяца);
+#  • всего занятий и наполняемость групп — «Маржинальность урока» (margin_unit_cache);
+#  • уроков на ученика = всего занятий / активные ученики.
+# В расчёт переменных расходов не входят. Прошедший месяц закрывается руководителем после сверки
+# (данными отчётов или вручную); закрытый месяц больше не меняется.
+
+STUDENTS_FIRST_MONTH = "2025-09"
+
+
+def _lessons_per_student(total, active):
+    return round(total / active, 2) if total is not None and active else None
+
+
+def students_from_reports(cur, months):
+    cur.execute(
+        f"SELECT DISTINCT ON (to_char(week_start,'YYYY-MM')) to_char(week_start,'YYYY-MM') AS m, active_count "
+        f"FROM {S}.student_count_weekly WHERE to_char(week_start,'YYYY-MM') = ANY(%s) "
+        f"ORDER BY to_char(week_start,'YYYY-MM'), week_start DESC",
+        (months,),
+    )
+    active = {r["m"]: r["active_count"] for r in cur.fetchall()}
+    cur.execute(
+        f"SELECT month, computed_at, "
+        f"(payload->'individual'->>'lessons')::int + (payload->'group'->>'lessons')::int AS lessons, "
+        f"(payload->'group'->>'avg_group_size')::numeric AS fill "
+        f"FROM {S}.margin_unit_cache WHERE month = ANY(%s) AND payload ? 'group'",
+        (months,),
+    )
+    margin = {r["month"]: r for r in cur.fetchall()}
+    out = {}
+    for m in months:
+        mr = margin.get(m)
+        # Снято до конца месяца — значит неполное.
+        complete = bool(mr) and mr["computed_at"].strftime("%Y-%m") > m
+        out[m] = {
+            "active_students": active.get(m),
+            "total_lessons": mr["lessons"] if mr else None,
+            "avg_group_fill": float(mr["fill"]) if mr and mr["fill"] is not None else None,
+            "report_complete": complete,
+            "report_at": mr["computed_at"] if mr else None,
+        }
+    return out
+
+
+def get_students(cur, conn):
+    cur_m = current_month()
+    months, m = [], STUDENTS_FIRST_MONTH
+    while m <= cur_m:
+        months.append(m)
+        m = add_months(m, 1)
+    cur.execute(f"SELECT * FROM {S}.fm_students_monthly")
+    stored = {r["month_id"]: dict(r) for r in cur.fetchall()}
+    live = students_from_reports(cur, months)
+
+    rows = []
+    for m in reversed(months):
+        s, rep = stored.get(m), live[m]
+        if s and s["closed"]:
+            rows.append({**s, "state": "closed", "report_complete": True})
+            continue
+        # Открытый месяц: ручные значения приоритетнее, пустые — из отчётов «на сейчас».
+        s = s or {}
+        active = s.get("active_students") if s.get("active_students") is not None else rep["active_students"]
+        lessons = s.get("total_lessons") if s.get("total_lessons") is not None else rep["total_lessons"]
+        fill = s.get("avg_group_fill") if s.get("avg_group_fill") is not None else rep["avg_group_fill"]
+        rows.append({
+            "month_id": m,
+            "active_students": active,
+            "total_lessons": lessons,
+            "avg_lessons_per_student": _lessons_per_student(lessons, active),
+            "avg_group_fill": float(fill) if fill is not None else None,
+            "source": s.get("source") or "report",
+            "lessons_source": s.get("lessons_source") or "report",
+            "closed": False,
+            "note": s.get("note") or "",
+            "updated_at": s.get("updated_at") or rep["report_at"],
+            "state": "current" if m == cur_m else "open",
+            "report_complete": rep["report_complete"],
+            "has_report": rep["total_lessons"] is not None,
+        })
+    return {"ok": True, "current_month": cur_m, "rows": rows, "alfa_connection": "not_needed"}
+
+
+def close_students(cur, conn, body):
+    """Закрыть прошедший месяц цифрами отчётов (снятыми после окончания месяца)."""
+    month = str(body.get("month") or "")
+    if not (STUDENTS_FIRST_MONTH <= month < current_month()):
+        return resp(400, {"error": "Закрыть можно только прошедший месяц"})
+    cur.execute(f"SELECT closed FROM {S}.fm_students_monthly WHERE month_id = %s", (month,))
+    row = cur.fetchone()
+    if row and row["closed"]:
+        return resp(400, {"error": "Месяц уже закрыт"})
+    rep = students_from_reports(cur, [month])[month]
+    if not rep["report_complete"] or not rep["active_students"] or rep["total_lessons"] is None:
+        return resp(400, {"error": "В отчётах нет полных данных за месяц — обновите «Маржинальность урока» или введите вручную"})
+    cur.execute(
+        f"INSERT INTO {S}.fm_students_monthly (month_id, active_students, total_lessons, "
+        "avg_lessons_per_student, avg_group_fill, source, lessons_source, closed, note, updated_at) "
+        "VALUES (%s,%s,%s,%s,%s,'report','report',true,'Закрыт по отчётам',now()) "
+        "ON CONFLICT (month_id) DO UPDATE SET active_students=EXCLUDED.active_students, "
+        "total_lessons=EXCLUDED.total_lessons, avg_lessons_per_student=EXCLUDED.avg_lessons_per_student, "
+        "avg_group_fill=EXCLUDED.avg_group_fill, source='report', lessons_source='report', closed=true, "
+        "note=EXCLUDED.note, updated_at=now()",
+        (month, rep["active_students"], rep["total_lessons"],
+         _lessons_per_student(rep["total_lessons"], rep["active_students"]), rep["avg_group_fill"]),
+    )
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
+def set_students(cur, conn, body):
+    month = str(body.get("month") or "")
+    if not (STUDENTS_FIRST_MONTH <= month < current_month()):
+        return resp(400, {"error": "Вручную вводятся только прошедшие месяцы"})
+    cur.execute(f"SELECT closed FROM {S}.fm_students_monthly WHERE month_id = %s", (month,))
+    row = cur.fetchone()
+    if row and row["closed"]:
+        return resp(400, {"error": "Месяц закрыт — данные больше не меняются"})
+
+    def num(key, cast):
+        v = body.get(key)
+        if v is None or v == "":
+            return None
+        try:
+            v = cast(float(v))
+        except (TypeError, ValueError):
+            raise ValueError(key)
+        if v < 0:
+            raise ValueError(key)
+        return v
+
+    try:
+        active = num("active_students", int)
+        lessons = num("total_lessons", int)
+        fill = num("avg_group_fill", lambda x: round(x, 2))
+    except ValueError:
+        return resp(400, {"error": "Значения должны быть неотрицательными числами"})
+    if not active or lessons is None:
+        return resp(400, {"error": "Нужны активные ученики (> 0) и всего занятий"})
+    cur.execute(
+        f"INSERT INTO {S}.fm_students_monthly (month_id, active_students, total_lessons, avg_lessons_per_student, "
+        "avg_group_fill, source, lessons_source, closed, note, updated_at) "
+        "VALUES (%s,%s,%s,%s,%s,'manual','manual',true,'Введено вручную',now()) "
+        "ON CONFLICT (month_id) DO UPDATE SET active_students=EXCLUDED.active_students, "
+        "total_lessons=EXCLUDED.total_lessons, avg_lessons_per_student=EXCLUDED.avg_lessons_per_student, "
+        "avg_group_fill=EXCLUDED.avg_group_fill, source='manual', lessons_source='manual', closed=true, "
+        "note=EXCLUDED.note, updated_at=now()",
+        (month, active, lessons, _lessons_per_student(lessons, active), fill),
+    )
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
 def get_revenue(cur, conn):
     c = constants(cur)
     if sync_margin_from_report(cur):
@@ -552,7 +707,7 @@ def set_variable_pct(cur, conn, body):
 
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_scenario / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_scenario / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -571,6 +726,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_fact(cur, conn))
             if action == "revenue":
                 return resp(200, get_revenue(cur, conn))
+            if action == "students":
+                return resp(200, get_students(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -584,6 +741,10 @@ def handler(event: dict, context) -> dict:
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":
                 return set_scenario(cur, conn, body)
+            if action == "set_students":
+                return set_students(cur, conn, body)
+            if action == "close_students":
+                return close_students(cur, conn, body)
             if action == "recalc":
                 c = constants(cur)
                 recalc(cur, c)
