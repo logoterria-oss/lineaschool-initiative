@@ -213,3 +213,51 @@ export const fetchFact = async (): Promise<FactData> => {
 export const MONTH_NUM_LABEL = MONTHS;
 export const fmCoef = (v: number | null | undefined, d = 2) =>
   v == null ? '—' : Number(v).toFixed(d).replace('.', ',');
+
+// ---------------- Поступления и переменные ----------------
+export type VariablePctSource = 'report' | 'override' | 'last';
+
+export interface RevenueCell {
+  avans: number;
+  fact: number;
+  revenue: number;
+  variable_pct: number;
+  variable_amount: number;
+  margin_amount: number;
+}
+
+export interface RevenueRow {
+  month_id: string;
+  variable_pct: number;
+  variable_pct_source: VariablePctSource;
+  min: RevenueCell;
+  base: RevenueCell;
+  opt: RevenueCell;
+}
+
+export interface VariablePctRow {
+  month_id: string;
+  variable_pct: number;
+  margin_pct: number | null;
+  source: 'report' | 'override';
+  note: string;
+}
+
+export interface RevenueData {
+  acquiring_pct: number;
+  active_scenario: Scenario;
+  variable_pcts: VariablePctRow[];
+  forecast: RevenueRow[];
+  updated_at: string | null;
+}
+
+export const fetchRevenue = async (): Promise<RevenueData> => {
+  const r = await fetch(`${API}?action=revenue`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+/** Переменный % месяца вручную; null — убрать ручное значение и вернуться к последнему известному. */
+export const setVariablePct = (month: string, variable_pct: number | null) =>
+  post({ action: 'set_variable_pct', month, variable_pct });

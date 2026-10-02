@@ -390,8 +390,127 @@ def close_fact_month(cur, conn, body):
     return resp(200, {"ok": True, "month": month, "fact": fact})
 
 
+# ---------------- ПОСТУПЛЕНИЯ И ПЕРЕМЕННЫЕ ----------------
+# Поступления = прогноз АВАНСА × (1 − эквайринг). Переменные = прогноз ФАКТА × переменный %.
+# Переменный % = 100 − средняя маржинальность урока (уже включает зарплату, СФР, отпускные, эквайринг).
+
+
+def variable_pcts(cur):
+    cur.execute(f"SELECT * FROM {S}.fm_variable_pct_monthly ORDER BY month_id")
+    return [dict(r) for r in cur.fetchall()]
+
+
+def resolve_variable_pct(rows, month):
+    """Свой процент месяца (отчёт или override), иначе — последнее известное значение до этого месяца."""
+    own = next((r for r in rows if r["month_id"] == month), None)
+    if own:
+        return float(own["variable_pct"]), own["source"]
+    prev = [r for r in rows if r["month_id"] < month]
+    if prev:
+        return float(prev[-1]["variable_pct"]), "last"
+    return None, None
+
+
+def recalc_revenue(cur, c):
+    acq = float(c.get("acquiring_pct") or 0)
+    pcts = variable_pcts(cur)
+    cur.execute(f"SELECT month_id, scenario, forecast_final FROM {S}.fm_avans_forecast")
+    avans = {(r["month_id"], r["scenario"]): float(r["forecast_final"]) for r in cur.fetchall()}
+    cur.execute(f"SELECT month_id, scenario, fact_final FROM {S}.fm_fact_forecast")
+    fact = {(r["month_id"], r["scenario"]): float(r["fact_final"]) for r in cur.fetchall()}
+    cur.execute(f"DELETE FROM {S}.fm_revenue_monthly")
+    for key, av in avans.items():
+        if key not in fact:
+            continue
+        m, sc = key
+        vp, src = resolve_variable_pct(pcts, m)
+        if vp is None:
+            continue
+        revenue = av * (1 - acq / 100)
+        var_amount = fact[key] * vp / 100
+        cur.execute(
+            f"INSERT INTO {S}.fm_revenue_monthly (month_id, scenario, avans, fact, acquiring_pct, revenue, "
+            "variable_pct, variable_pct_source, variable_amount, margin_amount, calculated_at) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+            (m, sc, round(av), round(fact[key]), acq, round(revenue), vp, src,
+             round(var_amount), round(revenue) - round(var_amount)),
+        )
+
+
+def revenue_stale(cur):
+    cur.execute(
+        f"SELECT (SELECT min(calculated_at) FROM {S}.fm_revenue_monthly) AS calc, "
+        f"(SELECT count(*) FROM {S}.fm_revenue_monthly) AS n, "
+        f"(SELECT max(calculated_at) FROM {S}.fm_fact_forecast) AS fact_calc, "
+        f"(SELECT max(updated_at) FROM {S}.fm_variable_pct_monthly) AS pct_upd, "
+        f"(SELECT updated_at FROM {S}.fm_constants WHERE key = 'acquiring_pct') AS acq_upd"
+    )
+    r = cur.fetchone()
+    if r["n"] == 0 or not r["calc"]:
+        return True
+    return any(t and t > r["calc"] for t in (r["fact_calc"], r["pct_upd"], r["acq_upd"]))
+
+
+def get_revenue(cur, conn):
+    c = constants(cur)
+    if forecast_stale(cur):
+        recalc(cur, c)
+        conn.commit()
+    if fact_stale(cur):
+        recalc_fact(cur, c)
+        conn.commit()
+    if revenue_stale(cur):
+        recalc_revenue(cur, c)
+        conn.commit()
+    cur.execute(f"SELECT * FROM {S}.fm_revenue_monthly ORDER BY month_id, scenario")
+    rows = [dict(r) for r in cur.fetchall()]
+    out = {}
+    for r in rows:
+        f = out.setdefault(r["month_id"], {"month_id": r["month_id"], "variable_pct": r["variable_pct"],
+                                            "variable_pct_source": r["variable_pct_source"]})
+        f[r["scenario"]] = r
+    return {
+        "ok": True,
+        "acquiring_pct": c.get("acquiring_pct"),
+        "active_scenario": c.get("avans_scenario_active") or "base",
+        "variable_pcts": variable_pcts(cur),
+        "forecast": list(out.values()),
+        "updated_at": max((r["calculated_at"] for r in rows), default=None),
+    }
+
+
+def set_variable_pct(cur, conn, body):
+    month = str(body.get("month") or "")
+    cur.execute(f"SELECT 1 FROM {S}.fm_months WHERE id = %s", (month,))
+    if not cur.fetchone():
+        return resp(400, {"error": "Нет такого месяца"})
+    cur.execute(f"SELECT source FROM {S}.fm_variable_pct_monthly WHERE month_id = %s", (month,))
+    existing = cur.fetchone()
+    if existing and existing["source"] == "report":
+        return resp(400, {"error": "Процент этого месяца взят из отчёта — его не меняем"})
+    raw = body.get("variable_pct")
+    if raw is None or raw == "":
+        cur.execute(f"DELETE FROM {S}.fm_variable_pct_monthly WHERE month_id = %s AND source = 'override'", (month,))
+    else:
+        try:
+            vp = round(float(raw), 4)
+        except (TypeError, ValueError):
+            return resp(400, {"error": "Процент должен быть числом"})
+        if not 0 <= vp <= 100:
+            return resp(400, {"error": "Процент от 0 до 100"})
+        cur.execute(
+            f"INSERT INTO {S}.fm_variable_pct_monthly (month_id, variable_pct, margin_pct, source, updated_at) "
+            "VALUES (%s,%s,%s,'override',now()) ON CONFLICT (month_id) DO UPDATE SET "
+            "variable_pct = EXCLUDED.variable_pct, margin_pct = EXCLUDED.margin_pct, updated_at = now()",
+            (month, vp, round(100 - vp, 4)),
+        )
+    recalc_revenue(cur, constants(cur))
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact — история, сезонность, прогноз; POST avans_close / fact_close / set_scenario / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_scenario / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -408,6 +527,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_avans(cur, conn))
             if action == "fact":
                 return resp(200, get_fact(cur, conn))
+            if action == "revenue":
+                return resp(200, get_revenue(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -415,6 +536,8 @@ def handler(event: dict, context) -> dict:
             action = body.get("action")
             if action == "avans_close":
                 return close_month(cur, conn, body)
+            if action == "set_variable_pct":
+                return set_variable_pct(cur, conn, body)
             if action == "fact_close":
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":
@@ -423,6 +546,7 @@ def handler(event: dict, context) -> dict:
                 c = constants(cur)
                 recalc(cur, c)
                 recalc_fact(cur, c)
+                recalc_revenue(cur, c)
                 conn.commit()
                 return resp(200, {"ok": True})
             return resp(400, {"error": "Неизвестное действие"})
