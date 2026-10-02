@@ -761,8 +761,7 @@ def calc_fixed(cur):
     ovr = {(r["month_id"], r["expense_id"]): dict(r) for r in cur.fetchall()}
     cur.execute(f"SELECT * FROM {S}.fm_monthly_inputs")
     inputs = {r["month_id"]: dict(r) for r in cur.fetchall()}
-    cur.execute(f"SELECT * FROM {S}.fm_ano")
-    ano = {r["month_id"]: float(r["one_time"]) + float(r["monthly"]) for r in cur.fetchall()}
+    ano = {r["month_id"]: r["total"] for r in ano_rows(cur)}
 
     admins = [s for s in staff.values() if s["role"] == "admin"]
     admin_rate_default = float(admins[0]["rate"]) if admins else 700
@@ -1131,9 +1130,99 @@ def set_credit_option(cur, conn, body):
     conn.commit()
     return resp(200, {"ok": True, "option": opt})
 
+# ---------------- АНО ----------------
+# Отдельная сущность, но расходы включаются в модель школы отдельной строкой (P&L, Cash Flow).
+# В переменные расходы не входит. Ежемесячный платёж и доп. разовые суммы можно поправить вручную.
+
+ANO_FIRST_MONTH = "2026-09"
+
+
+def ano_rows(cur):
+    cur.execute(f"SELECT * FROM {S}.fm_ano ORDER BY month_id")
+    out = []
+    for r in cur.fetchall():
+        one = float(r["one_time"]) + float(r["extra_one_time"] or 0)
+        monthly = float(r["monthly_override"]) if r["monthly_override"] is not None else float(r["monthly"])
+        manual = r["monthly_override"] is not None or float(r["extra_one_time"] or 0) != 0
+        out.append({
+            "month_id": r["month_id"],
+            "one_time": round(one),
+            "one_time_schedule": round(float(r["one_time"])),
+            "extra_one_time": round(float(r["extra_one_time"] or 0)),
+            "monthly": round(monthly),
+            "monthly_schedule": round(float(r["monthly"])),
+            "total": round(one + monthly),
+            "source": "manual" if manual else "schedule",
+            "note": r["note"] or "",
+        })
+    return out
+
+
+def get_ano(cur):
+    c = constants(cur)
+    rows = ano_rows(cur)
+    year_from = add_months(c.get("credit_start_month") or "2026-10", -1)
+    year = [r for r in rows if r["month_id"] <= add_months(year_from, 12)]
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "include_in_model": (c.get("ano_include_in_model") or "true") == "true",
+        "params": {
+            "one_time_total": round(float(c.get("ano_one_time_total") or 0)),
+            "one_time_sep": round(float(c.get("ano_one_time_sep") or 0)),
+            "one_time_oct": round(float(c.get("ano_one_time_oct") or 0)),
+            "monthly": round(float(c.get("ano_monthly") or 0)),
+            "start_monthly": c.get("ano_start_monthly") or "2026-11",
+        },
+        "rows": rows,
+        "summary": {
+            "period": [year[0]["month_id"], year[-1]["month_id"]] if year else None,
+            "one_time": sum(r["one_time"] for r in year),
+            "monthly": sum(r["monthly"] for r in year),
+            "total": sum(r["total"] for r in year),
+            "monthly_count": sum(1 for r in year if r["monthly"] > 0),
+        },
+    }
+
+
+def set_ano(cur, conn, body):
+    """Ручная правка месяца АНО: monthly — ежемесячный платёж (null — по графику), extra — доп. разовая сумма."""
+    month = str(body.get("month") or "")
+    cur.execute(f"SELECT 1 FROM {S}.fm_ano WHERE month_id = %s", (month,))
+    if not cur.fetchone():
+        if month < ANO_FIRST_MONTH:
+            return resp(400, {"error": "АНО учитывается с сентября 2026"})
+        cur.execute(f"SELECT 1 FROM {S}.fm_months WHERE id = %s", (month,))
+        if not cur.fetchone():
+            return resp(400, {"error": "Нет такого месяца"})
+        cur.execute(f"INSERT INTO {S}.fm_ano (month_id) VALUES (%s)", (month,))
+
+    def num(v):
+        if v is None or v == "":
+            return None
+        try:
+            v = round(float(v), 2)
+        except (TypeError, ValueError):
+            raise ValueError
+        if v < 0:
+            raise ValueError
+        return v
+
+    try:
+        if "monthly" in body:
+            cur.execute(f"UPDATE {S}.fm_ano SET monthly_override = %s WHERE month_id = %s", (num(body["monthly"]), month))
+        if "extra" in body:
+            cur.execute(f"UPDATE {S}.fm_ano SET extra_one_time = %s WHERE month_id = %s", (num(body["extra"]) or 0, month))
+    except ValueError:
+        return resp(400, {"error": "Сумма должна быть неотрицательным числом"})
+    if "note" in body:
+        cur.execute(f"UPDATE {S}.fm_ano SET note = %s WHERE month_id = %s", (str(body["note"] or "")[:200], month))
+    conn.commit()
+    return resp(200, {"ok": True})
+
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1158,6 +1247,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_fixed(cur, conn))
             if action == "credit":
                 return resp(200, get_credit(cur, conn))
+            if action == "ano":
+                return resp(200, get_ano(cur))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -1171,6 +1262,8 @@ def handler(event: dict, context) -> dict:
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":
                 return set_scenario(cur, conn, body)
+            if action == "set_ano":
+                return set_ano(cur, conn, body)
             if action == "set_credit_option":
                 return set_credit_option(cur, conn, body)
             if action == "set_students":

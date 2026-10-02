@@ -426,3 +426,35 @@ export const fetchCredit = async (): Promise<CreditData> => {
 };
 
 export const setCreditOption = (option: CreditOption) => post({ action: 'set_credit_option', option });
+
+// ---------------- АНО ----------------
+export interface AnoRow {
+  month_id: string;
+  one_time: number;
+  one_time_schedule: number;
+  extra_one_time: number;
+  monthly: number;
+  monthly_schedule: number;
+  total: number;
+  source: 'schedule' | 'manual';
+  note: string;
+}
+
+export interface AnoData {
+  current_month: string;
+  include_in_model: boolean;
+  params: { one_time_total: number; one_time_sep: number; one_time_oct: number; monthly: number; start_monthly: string };
+  rows: AnoRow[];
+  summary: { period: [string, string] | null; one_time: number; monthly: number; total: number; monthly_count: number };
+}
+
+export const fetchAno = async (): Promise<AnoData> => {
+  const r = await fetch(`${API}?action=ano`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+/** monthly: null — вернуть по графику; extra: доп. разовая сумма (0 — убрать). */
+export const setAno = (month: string, v: { monthly?: number | null; extra?: number | null; note?: string }) =>
+  post({ action: 'set_ano', month, ...v });
