@@ -103,6 +103,16 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Выплаты без входа закрыты",
+      "method": "GET",
+      "path": "/?action=payouts",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

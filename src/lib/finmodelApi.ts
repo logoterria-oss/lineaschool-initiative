@@ -509,3 +509,52 @@ export const fetchTaxes = async (): Promise<TaxData> => {
 /** Режим налога на месяц; null — по умолчанию (УСН до перехода, патент после). */
 export const setTaxRegime = (month: string, regime: TaxRegime | null) =>
   post({ action: 'set_tax_regime', month, regime });
+
+// ---------------- ВЫПЛАТА СОБСТВЕННИКУ ----------------
+export interface PayoutCell {
+  avans: number;
+  revenue: number;
+  payout_amount: number;
+  payout_final: number;
+}
+
+export interface PayoutRow {
+  month_id: string;
+  payout_pct: number;
+  pct_source: 'default' | 'manual';
+  payout_manual: number | null;
+  values: Record<Scenario, PayoutCell>;
+}
+
+export interface PayoutSummary {
+  avans: number;
+  revenue: number;
+  payout: number;
+  avg: number;
+  max: { month_id: string; amount: number };
+  min: { month_id: string; amount: number };
+  gap_monthly: number;
+  gap_year: number;
+  pct_needed: number | null;
+  revenue_needed_monthly: number | null;
+}
+
+export interface PayoutData {
+  current_month: string;
+  acquiring_pct: number;
+  default_pct: number;
+  target_monthly: number;
+  rows: PayoutRow[];
+  summary: Record<Scenario, PayoutSummary>;
+}
+
+export const fetchPayouts = async (): Promise<PayoutData> => {
+  const r = await fetch(`${API}?action=payouts`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+/** Процент и/или ручная сумма выплаты за месяц; null — по умолчанию. */
+export const setPayout = (month: string, v: { payout_pct?: number | null; payout_manual?: number | null }) =>
+  post({ action: 'set_payout', month, ...v });

@@ -11,12 +11,13 @@ import FixedExpensesTable from '@/components/finmodel/FixedExpensesTable';
 import CreditTable from '@/components/finmodel/CreditTable';
 import AnoTable from '@/components/finmodel/AnoTable';
 import TaxesTable from '@/components/finmodel/TaxesTable';
+import PayoutsTable from '@/components/finmodel/PayoutsTable';
 import {
-  AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
+  PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
   fetchRevenue, fetchStudents, fmMoney, setActiveScenario, setStudents, setVariablePct,
 } from '@/lib/finmodelApi';
 
-type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes';
+type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes' | 'payouts';
 
 const FinModelPage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const FinModelPage = () => {
   const [credit, setCredit] = useState<CreditData | null>(null);
   const [ano, setAnoData] = useState<AnoData | null>(null);
   const [taxes, setTaxes] = useState<TaxData | null>(null);
+  const [payouts, setPayouts] = useState<PayoutData | null>(null);
   const [tab, setTab] = useState<Tab>('avans');
   const [active, setActive] = useState<Scenario>('base');
   const [loading, setLoading] = useState(true);
@@ -45,6 +47,7 @@ const FinModelPage = () => {
       const cr = await fetchCredit();
       const an = await fetchAno();
       const tx = await fetchTaxes();
+      const po = await fetchPayouts();
       setData(d);
       setFact(f);
       setRevenue(r);
@@ -53,6 +56,7 @@ const FinModelPage = () => {
       setCredit(cr);
       setAnoData(an);
       setTaxes(tx);
+      setPayouts(po);
       setActive(d.active_scenario);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить');
@@ -78,6 +82,7 @@ const FinModelPage = () => {
     try {
       await setVariablePct(month, pct);
       setRevenue(await fetchRevenue());
+      setPayouts(await fetchPayouts());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить процент');
     }
@@ -117,6 +122,16 @@ const FinModelPage = () => {
       await setAno(month, v);
       setAnoData(await fetchAno());
       setFixed(await fetchFixed());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+      throw e;
+    }
+  };
+
+  const onPayoutSave: Parameters<typeof PayoutsTable>[0]['onSave'] = async (month, v) => {
+    try {
+      await setPayout(month, v);
+      setPayouts(await fetchPayouts());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
       throw e;
@@ -172,7 +187,7 @@ const FinModelPage = () => {
           </div>
         )}
 
-        {data && fact && revenue && students && fixed && credit && ano && taxes && !loading && (
+        {data && fact && revenue && students && fixed && credit && ano && taxes && payouts && !loading && (
           <>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-wrap items-center gap-4">
               <div className="min-w-[200px]">
@@ -201,8 +216,8 @@ const FinModelPage = () => {
               </div>
             </div>
 
-            <div className="flex gap-1 border-b border-gray-200">
-              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['credit', 'Кредит'], ['ano', 'АНО'], ['taxes', 'Налоги']] as [Tab, string][]).map(([t, label]) => (
+            <div className="flex flex-wrap gap-x-1 border-b border-gray-200">
+              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['credit', 'Кредит'], ['ano', 'АНО'], ['taxes', 'Налоги'], ['payouts', 'Выплата собственнику']] as [Tab, string][]).map(([t, label]) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -215,7 +230,9 @@ const FinModelPage = () => {
               ))}
             </div>
 
-            {tab === 'taxes' ? (
+            {tab === 'payouts' ? (
+              <PayoutsTable data={payouts} active={active} onSave={onPayoutSave} />
+            ) : tab === 'taxes' ? (
               <TaxesTable data={taxes} active={active} onRegime={onTaxRegime} />
             ) : tab === 'ano' ? (
               <AnoTable data={ano} onSave={onAnoSave} />

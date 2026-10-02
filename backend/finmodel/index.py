@@ -1330,9 +1330,111 @@ def set_tax_regime(cur, conn, body):
     conn.commit()
     return resp(200, {"ok": True})
 
+# ---------------- ВЫПЛАТА СОБСТВЕННИКУ ----------------
+# От ПОСТУПЛЕНИЙ (аванс − эквайринг), 10 % по умолчанию. % и ручная сумма — помесячно.
+# Ручная сумма > % × поступления. Это отток в Cash Flow, но НЕ расход в P&L и не влияет на налоги.
+
+
+def calc_payouts(cur, conn):
+    get_revenue(cur, conn)  # гарантирует свежие поступления
+    c = constants(cur)
+    default_pct = float(c.get("payout_pct_default") or 10)
+    target = float(c.get("payout_target_monthly") or 250000)
+    cur.execute(f"SELECT month_id, scenario, avans, revenue FROM {S}.fm_revenue_monthly ORDER BY month_id")
+    rev = {}
+    for r in cur.fetchall():
+        rev.setdefault(r["month_id"], {})[r["scenario"]] = (float(r["avans"]), float(r["revenue"]))
+    cur.execute(f"SELECT month_id, payout_pct_override, payout_manual FROM {S}.fm_monthly_inputs")
+    inp = {r["month_id"]: r for r in cur.fetchall()}
+
+    rows, db = [], []
+    for m in sorted(rev):
+        i = inp.get(m) or {}
+        pct = float(i["payout_pct_override"]) if i.get("payout_pct_override") is not None else default_pct
+        manual = float(i["payout_manual"]) if i.get("payout_manual") is not None else None
+        row = {"month_id": m, "payout_pct": pct, "pct_source": "manual" if i.get("payout_pct_override") is not None else "default",
+               "payout_manual": manual, "values": {}}
+        for sc in SCENARIOS:
+            if sc not in rev[m]:
+                continue
+            av, revenue = rev[m][sc]
+            calc = round(revenue * pct / 100)
+            final = round(manual) if manual is not None else calc
+            row["values"][sc] = {"avans": round(av), "revenue": round(revenue), "payout_amount": calc, "payout_final": final}
+            db.append((m, sc, revenue, pct, calc, manual, final, "manual" if manual is not None else "calculated"))
+        rows.append(row)
+
+    cur.execute(f"DELETE FROM {S}.fm_payouts_monthly")
+    if db:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_payouts_monthly (month_id, scenario, revenue, payout_pct, payout_amount, payout_manual, payout_final, source) VALUES %s",
+            db,
+        )
+    conn.commit()
+
+    summary = {}
+    for sc in SCENARIOS:
+        vals = [(r["month_id"], r["values"][sc]) for r in rows if sc in r["values"]]
+        if not vals:
+            continue
+        finals = [v["payout_final"] for _, v in vals]
+        total = sum(finals)
+        avg = total / len(finals)
+        mx = max(vals, key=lambda x: x[1]["payout_final"])
+        mn = min(vals, key=lambda x: x[1]["payout_final"])
+        rev_total = sum(v["revenue"] for _, v in vals)
+        summary[sc] = {
+            "avans": sum(v["avans"] for _, v in vals), "revenue": rev_total, "payout": total,
+            "avg": round(avg), "max": {"month_id": mx[0], "amount": mx[1]["payout_final"]},
+            "min": {"month_id": mn[0], "amount": mn[1]["payout_final"]},
+            "gap_monthly": round(avg - target), "gap_year": round(total - target * len(finals)),
+            "pct_needed": round(target * len(finals) / rev_total * 100, 1) if rev_total else None,
+            "revenue_needed_monthly": round(target / (default_pct / 100)) if default_pct else None,
+        }
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "active_scenario": c.get("avans_scenario_active") or "base",
+        "acquiring_pct": c.get("acquiring_pct"),
+        "default_pct": default_pct,
+        "target_monthly": target,
+        "rows": rows,
+        "summary": summary,
+    }
+
+
+def set_payout(cur, conn, body):
+    """Процент выплаты (payout_pct) и/или ручная сумма (payout_manual) на месяц; null — по умолчанию."""
+    month = str(body.get("month") or "")
+    if not _month_ok(cur, month):
+        return resp(400, {"error": "Нет такого месяца"})
+    sets = {}
+    for key, col, hi in (("payout_pct", "payout_pct_override", 100), ("payout_manual", "payout_manual", None)):
+        if key not in body:
+            continue
+        v = body[key]
+        if v is None or v == "":
+            sets[col] = None
+            continue
+        try:
+            v = round(float(v), 4 if hi else 2)
+        except (TypeError, ValueError):
+            return resp(400, {"error": "Значение должно быть числом"})
+        if v < 0 or (hi and v > hi):
+            return resp(400, {"error": "Процент от 0 до 100, сумма не меньше 0"})
+        sets[col] = v
+    if not sets:
+        return resp(400, {"error": "Нечего сохранять"})
+    cur.execute(f"INSERT INTO {S}.fm_monthly_inputs (month_id) VALUES (%s) ON CONFLICT (month_id) DO NOTHING", (month,))
+    for col, v in sets.items():
+        cur.execute(f"UPDATE {S}.fm_monthly_inputs SET {col} = %s, updated_at = now() WHERE month_id = %s", (v, month))
+    conn.commit()
+    return resp(200, {"ok": True})
+
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1361,6 +1463,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_ano(cur))
             if action == "taxes":
                 return resp(200, get_taxes(cur, conn))
+            if action == "payouts":
+                return resp(200, calc_payouts(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -1374,6 +1478,8 @@ def handler(event: dict, context) -> dict:
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":
                 return set_scenario(cur, conn, body)
+            if action == "set_payout":
+                return set_payout(cur, conn, body)
             if action == "set_tax_regime":
                 return set_tax_regime(cur, conn, body)
             if action == "set_ano":
