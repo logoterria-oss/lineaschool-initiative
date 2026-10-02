@@ -427,12 +427,14 @@ def recalc_revenue(cur, c):
         if vp is None:
             continue
         revenue = av * (1 - acq / 100)
-        var_amount = fact[key] * vp / 100
+        # Эквайринг уже вычтен из поступлений — из переменного % его убираем, чтобы не считать дважды.
+        vp_net = max(vp - acq, 0)
+        var_amount = fact[key] * vp_net / 100
         cur.execute(
             f"INSERT INTO {S}.fm_revenue_monthly (month_id, scenario, avans, fact, acquiring_pct, revenue, "
-            "variable_pct, variable_pct_source, variable_amount, margin_amount, calculated_at) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
-            (m, sc, round(av), round(fact[key]), acq, round(revenue), vp, src,
+            "variable_pct, variable_pct_net, variable_pct_source, variable_amount, margin_amount, calculated_at) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+            (m, sc, round(av), round(fact[key]), acq, round(revenue), vp, round(vp_net, 4), src,
              round(var_amount), round(revenue) - round(var_amount)),
         )
 
@@ -441,12 +443,13 @@ def revenue_stale(cur):
     cur.execute(
         f"SELECT (SELECT min(calculated_at) FROM {S}.fm_revenue_monthly) AS calc, "
         f"(SELECT count(*) FROM {S}.fm_revenue_monthly) AS n, "
+        f"(SELECT count(*) FROM {S}.fm_revenue_monthly WHERE variable_pct_net IS NULL) AS n_old, "
         f"(SELECT max(calculated_at) FROM {S}.fm_fact_forecast) AS fact_calc, "
         f"(SELECT max(updated_at) FROM {S}.fm_variable_pct_monthly) AS pct_upd, "
         f"(SELECT updated_at FROM {S}.fm_constants WHERE key = 'acquiring_pct') AS acq_upd"
     )
     r = cur.fetchone()
-    if r["n"] == 0 or not r["calc"]:
+    if r["n"] == 0 or not r["calc"] or r["n_old"] > 0:
         return True
     return any(t and t > r["calc"] for t in (r["fact_calc"], r["pct_upd"], r["acq_upd"]))
 
@@ -467,6 +470,7 @@ def get_revenue(cur, conn):
     out = {}
     for r in rows:
         f = out.setdefault(r["month_id"], {"month_id": r["month_id"], "variable_pct": r["variable_pct"],
+                                            "variable_pct_net": r["variable_pct_net"],
                                             "variable_pct_source": r["variable_pct_source"]})
         f[r["scenario"]] = r
     return {

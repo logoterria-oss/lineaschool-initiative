@@ -111,8 +111,9 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
         <div className="px-5 py-3.5 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">Поступления и переменные · {SCENARIO_LABEL[active]}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Поступления = аванс × (1 − {fmPct(data.acquiring_pct)} эквайринг). Переменные = факт × переменный %.
-            Переменный % = 100% − средняя маржинальность урока; для будущих месяцев — последнее известное или ваше значение
+            Поступления = аванс × (1 − {fmPct(data.acquiring_pct)} эквайринг) — база для выплаты собственнику.
+            Переменный % = 100% − средняя маржинальность урока; для будущих месяцев — последнее известное или ваше значение.
+            Эквайринг уже вычтен из поступлений, поэтому переменные = факт × (переменный % − {fmPct(data.acquiring_pct)})
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -124,6 +125,7 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
                 <th className="text-right px-4 py-2 font-medium">Факт</th>
                 <th className="text-right px-4 py-2 font-medium text-emerald-700">Поступления</th>
                 <th className="text-right px-4 py-2 font-medium">Переменный, %</th>
+                <th className="text-right px-4 py-2 font-medium">Без эквайринга</th>
                 <th className="text-right px-4 py-2 font-medium text-rose-700">Переменные</th>
                 <th className="text-right px-4 py-2 font-medium text-gray-900">Марж. прибыль</th>
               </tr>
@@ -145,6 +147,7 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
                         onSave={onSetPct}
                       />
                     </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-gray-600">{fmPct(r.variable_pct_net)}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-rose-700">{fmMoney(c?.variable_amount)}</td>
                     <td className="px-4 py-2 text-right tabular-nums font-semibold text-gray-900">
                       {fmMoney(c?.margin_amount)}
@@ -159,6 +162,7 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
                 <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(active, 'avans'))}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(active, 'fact'))}</td>
                 <td className="px-4 py-2 text-right tabular-nums text-emerald-800">{fmMoney(sum(active, 'revenue'))}</td>
+                <td />
                 <td />
                 <td className="px-4 py-2 text-right tabular-nums text-rose-700">{fmMoney(sum(active, 'variable_amount'))}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(active, 'margin_amount'))}</td>

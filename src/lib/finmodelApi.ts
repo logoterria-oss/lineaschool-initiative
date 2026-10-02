@@ -229,6 +229,8 @@ export interface RevenueCell {
 export interface RevenueRow {
   month_id: string;
   variable_pct: number;
+  /** Переменный % без эквайринга — именно он применяется к факту. */
+  variable_pct_net: number;
   variable_pct_source: VariablePctSource;
   min: RevenueCell;
   base: RevenueCell;
