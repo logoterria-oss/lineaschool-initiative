@@ -458,3 +458,54 @@ export const fetchAno = async (): Promise<AnoData> => {
 /** monthly: null — вернуть по графику; extra: доп. разовая сумма (0 — убрать). */
 export const setAno = (month: string, v: { monthly?: number | null; extra?: number | null; note?: string }) =>
   post({ action: 'set_ano', month, ...v });
+
+// ---------------- НАЛОГИ ----------------
+export type TaxRegime = 'usn' | 'patent';
+
+export interface TaxCell {
+  base: number;
+  tax_gross: number;
+  tax_net: number;
+  reduction: number;
+  limited: boolean;
+  social_fund: number;
+  sf_employees: number;
+  sf_self: number;
+}
+
+export interface TaxRow {
+  month_id: string;
+  regime: TaxRegime;
+  regime_default: TaxRegime;
+  source: 'calculated' | 'override';
+  avans_source: 'fact' | 'forecast';
+  values: Record<Scenario, TaxCell>;
+}
+
+export interface TaxData {
+  current_month: string;
+  rows: TaxRow[];
+  params: {
+    usn_pct: number;
+    patent_year: number;
+    patent_monthly: number;
+    self_year: number;
+    self_monthly: number;
+    max_deduction_pct: number;
+    start_patent_month: string;
+    patent_schedule: string;
+  };
+  compare: Record<Scenario, { usn: number; patent: number }>;
+  compare_months: [string, string] | null;
+}
+
+export const fetchTaxes = async (): Promise<TaxData> => {
+  const r = await fetch(`${API}?action=taxes`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+/** Режим налога на месяц; null — по умолчанию (УСН до перехода, патент после). */
+export const setTaxRegime = (month: string, regime: TaxRegime | null) =>
+  post({ action: 'set_tax_regime', month, regime });

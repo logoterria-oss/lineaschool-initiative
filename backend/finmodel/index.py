@@ -1220,9 +1220,119 @@ def set_ano(cur, conn, body):
     conn.commit()
     return resp(200, {"ok": True})
 
+# ---------------- НАЛОГИ ----------------
+# УСН 6 % от аванса до перехода, затем патент (78 300 ₽/год = 6 525 ₽/мес, равномерно).
+# Налог уменьшается на взносы в СФ (страховые за наёмных + фикс. взносы ИП за себя / 12),
+# но не более чем на 50 %: Налог = max(исходный − СФ, исходный × 50 %). Режим месяца можно переопределить.
+
+TAX_FIRST_MONTH = "2026-09"
+
+
+def _c2(v):
+    return round(float(v) + 1e-9, 2)
+
+
+def tax_regime_default(c, m):
+    start = c.get("start_patent_month") or "2026-12"
+    return (c.get("tax_regime_default_after") or "patent") if m >= start else (c.get("tax_regime_default_before") or "usn")
+
+
+def calc_taxes(cur):
+    c = constants(cur)
+    calc_fixed(cur)  # обновляет fm_staff_monthly_payments — страховые за сотрудников
+    months = [m for m in fixed_months(cur) if m >= TAX_FIRST_MONTH]
+    avans, closed = avans_by_month(cur)
+    cur.execute(f"SELECT month_id, scenario, sum(insurance) AS ins FROM {S}.fm_staff_monthly_payments GROUP BY 1, 2")
+    ins = {(r["month_id"], r["scenario"]): float(r["ins"]) for r in cur.fetchall()}
+    cur.execute(f"SELECT month_id, tax_regime_override FROM {S}.fm_monthly_inputs WHERE tax_regime_override IS NOT NULL")
+    ovr = {r["month_id"]: r["tax_regime_override"] for r in cur.fetchall()}
+
+    usn_pct = float(c.get("tax_usn_pct") or 6) / 100
+    patent_year = float(c.get("patent_cost_year") or 78300)
+    patent_m = patent_year / 12
+    self_year = float(c.get("fixed_self_contributions_2026") or 0)
+    self_m = self_year / 12
+    max_ded = float(c.get("max_deduction_pct") or 50) / 100
+
+    def one(regime, av, sf):
+        base = av if regime == "usn" else patent_m
+        gross = base * usn_pct if regime == "usn" else patent_m
+        net = max(gross - sf, gross * (1 - max_ded))
+        return {"base": _c2(base), "tax_gross": _c2(gross), "tax_net": _c2(net),
+                "reduction": _c2(gross - net), "limited": gross - sf < gross * (1 - max_ded)}
+
+    rows, db, compare = [], [], {sc: {"usn": 0.0, "patent": 0.0} for sc in SCENARIOS}
+    for m in months:
+        regime = ovr.get(m) or tax_regime_default(c, m)
+        row = {"month_id": m, "regime": regime, "regime_default": tax_regime_default(c, m),
+               "source": "override" if m in ovr else "calculated",
+               "avans_source": "fact" if m in closed else "forecast", "values": {}}
+        for sc in SCENARIOS:
+            av = (avans.get(m) or {}).get(sc) or 0
+            emp = ins.get((m, sc), 0)
+            sf = emp + self_m
+            v = one(regime, av, sf)
+            v.update({"social_fund": _c2(sf), "sf_employees": _c2(emp), "sf_self": _c2(self_m)})
+            row["values"][sc] = v
+            db.append((m, sc, regime, v["base"], v["tax_gross"], v["social_fund"], v["tax_net"], row["source"]))
+            for rg in ("usn", "patent"):
+                compare[sc][rg] += one(rg, av, sf)["tax_net"]
+        rows.append(row)
+
+    cur.execute(f"DELETE FROM {S}.fm_taxes_monthly")
+    if db:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_taxes_monthly (month_id, scenario, regime, base, tax_gross, social_fund, tax_net, source) VALUES %s",
+            db,
+        )
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "active_scenario": c.get("avans_scenario_active") or "base",
+        "rows": rows,
+        "params": {
+            "usn_pct": usn_pct * 100,
+            "patent_year": _c2(patent_year),
+            "patent_monthly": _c2(patent_m),
+            "self_year": _c2(self_year),
+            "self_monthly": _c2(self_m),
+            "max_deduction_pct": max_ded * 100,
+            "start_patent_month": c.get("start_patent_month") or "2026-12",
+            "patent_schedule": c.get("patent_payment_schedule") or "",
+        },
+        "compare": {sc: {k: _c2(v) for k, v in compare[sc].items()} for sc in SCENARIOS},
+        "compare_months": [months[0], months[-1]] if months else None,
+    }
+
+
+def get_taxes(cur, conn):
+    c = constants(cur)
+    if forecast_stale(cur):
+        recalc(cur, c)
+    out = calc_taxes(cur)
+    conn.commit()
+    return out
+
+
+def set_tax_regime(cur, conn, body):
+    month = str(body.get("month") or "")
+    regime = body.get("regime")
+    if month < TAX_FIRST_MONTH or not _month_ok(cur, month):
+        return resp(400, {"error": "Нет такого месяца"})
+    if regime not in ("usn", "patent", None, ""):
+        return resp(400, {"error": "Режим: usn / patent"})
+    cur.execute(f"INSERT INTO {S}.fm_monthly_inputs (month_id) VALUES (%s) ON CONFLICT (month_id) DO NOTHING", (month,))
+    cur.execute(
+        f"UPDATE {S}.fm_monthly_inputs SET tax_regime_override = %s, updated_at = now() WHERE month_id = %s",
+        (regime or None, month),
+    )
+    conn.commit()
+    return resp(200, {"ok": True})
+
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -1249,6 +1359,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_credit(cur, conn))
             if action == "ano":
                 return resp(200, get_ano(cur))
+            if action == "taxes":
+                return resp(200, get_taxes(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -1262,6 +1374,8 @@ def handler(event: dict, context) -> dict:
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":
                 return set_scenario(cur, conn, body)
+            if action == "set_tax_regime":
+                return set_tax_regime(cur, conn, body)
             if action == "set_ano":
                 return set_ano(cur, conn, body)
             if action == "set_credit_option":

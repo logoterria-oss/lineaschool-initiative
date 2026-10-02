@@ -10,12 +10,13 @@ import StudentsTable from '@/components/finmodel/StudentsTable';
 import FixedExpensesTable from '@/components/finmodel/FixedExpensesTable';
 import CreditTable from '@/components/finmodel/CreditTable';
 import AnoTable from '@/components/finmodel/AnoTable';
+import TaxesTable from '@/components/finmodel/TaxesTable';
 import {
-  AnoData, fetchAno, setAno, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
+  AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate, RevenueData, SCENARIOS, SCENARIO_LABEL, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
   fetchRevenue, fetchStudents, fmMoney, setActiveScenario, setStudents, setVariablePct,
 } from '@/lib/finmodelApi';
 
-type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano';
+type Tab = 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes';
 
 const FinModelPage = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const FinModelPage = () => {
   const [fixed, setFixed] = useState<FixedData | null>(null);
   const [credit, setCredit] = useState<CreditData | null>(null);
   const [ano, setAnoData] = useState<AnoData | null>(null);
+  const [taxes, setTaxes] = useState<TaxData | null>(null);
   const [tab, setTab] = useState<Tab>('avans');
   const [active, setActive] = useState<Scenario>('base');
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,7 @@ const FinModelPage = () => {
       const fx = await fetchFixed();
       const cr = await fetchCredit();
       const an = await fetchAno();
+      const tx = await fetchTaxes();
       setData(d);
       setFact(f);
       setRevenue(r);
@@ -49,6 +52,7 @@ const FinModelPage = () => {
       setFixed(fx);
       setCredit(cr);
       setAnoData(an);
+      setTaxes(tx);
       setActive(d.active_scenario);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить');
@@ -101,6 +105,7 @@ const FinModelPage = () => {
     try {
       await fn();
       setFixed(await fetchFixed());
+      setTaxes(await fetchTaxes());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
       throw e;
@@ -115,6 +120,15 @@ const FinModelPage = () => {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
       throw e;
+    }
+  };
+
+  const onTaxRegime = async (month: string, regime: TaxRegime | null) => {
+    try {
+      await setTaxRegime(month, regime);
+      setTaxes(await fetchTaxes());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось переключить режим');
     }
   };
 
@@ -158,7 +172,7 @@ const FinModelPage = () => {
           </div>
         )}
 
-        {data && fact && revenue && students && fixed && credit && ano && !loading && (
+        {data && fact && revenue && students && fixed && credit && ano && taxes && !loading && (
           <>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-wrap items-center gap-4">
               <div className="min-w-[200px]">
@@ -188,7 +202,7 @@ const FinModelPage = () => {
             </div>
 
             <div className="flex gap-1 border-b border-gray-200">
-              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['credit', 'Кредит'], ['ano', 'АНО']] as [Tab, string][]).map(([t, label]) => (
+              {([['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['credit', 'Кредит'], ['ano', 'АНО'], ['taxes', 'Налоги']] as [Tab, string][]).map(([t, label]) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -201,7 +215,9 @@ const FinModelPage = () => {
               ))}
             </div>
 
-            {tab === 'ano' ? (
+            {tab === 'taxes' ? (
+              <TaxesTable data={taxes} active={active} onRegime={onTaxRegime} />
+            ) : tab === 'ano' ? (
               <AnoTable data={ano} onSave={onAnoSave} />
             ) : tab === 'credit' ? (
               <CreditTable data={credit} onOption={onCreditOption} />
