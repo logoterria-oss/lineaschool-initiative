@@ -760,3 +760,85 @@ export const adaptManual = (v: { month: string; metric: 'avans' | 'fact' | 'vari
 export const adaptNewItem = (v: { month: string; amount: number; name?: string; item_id?: string }) =>
   post({ action: 'adapt_new_item', ...v });
 export const adaptSetBase = (item_id: string, amount: number) => post({ action: 'adapt_set_base', item_id, amount });
+
+// ---------------- СЦЕНАРИИ И ЧУВСТВИТЕЛЬНОСТЬ (Промт 14) ----------------
+export interface ScenarioDef {
+  id: string;
+  name: string;
+  growth_coef: number;
+  price_change_pct: number;
+  students_override: number | null;
+  advertising_override: number | null;
+  staff_changes: { teachers?: number };
+  credit_option: CreditOption | null;
+  payout_pct: number | null;
+  is_default: boolean;
+  is_builtin: boolean;
+  note: string;
+}
+
+export interface ScenarioMonth {
+  month_id: string;
+  avans: number;
+  fact: number;
+  revenue: number;
+  variable: number;
+  gross_profit: number;
+  fixed: number;
+  ano: number;
+  one_time: number;
+  ebitda: number;
+  interest: number;
+  tax: number;
+  net_profit: number;
+  payout: number;
+  body: number;
+  net_flow: number;
+  end_balance: number;
+}
+
+export type ScenarioAnnual = Omit<ScenarioMonth, 'month_id'> & {
+  min_balance: number | null;
+  min_month: string | null;
+  gap_months: string[];
+  credit_option: CreditOption;
+};
+
+export type SensParam = 'price' | 'students' | 'advertising' | 'staff';
+export interface SensPoint {
+  value: number;
+  net_profit: number;
+  end_balance: number;
+  ebitda: number;
+  min_balance: number | null;
+}
+
+export interface ScenariosData {
+  current_month: string;
+  active_scenario: Scenario;
+  months: string[];
+  scenarios: ScenarioDef[];
+  results: Record<string, { annual: ScenarioAnnual; monthly: ScenarioMonth[] }>;
+  sensitivity: Record<SensParam, { values: number[]; results: Record<Scenario, SensPoint[]> }>;
+  base_params: {
+    price: number;
+    students: number;
+    teacher_cost: number;
+    advertising: number;
+    credit_option: CreditOption;
+    payout_pct: number;
+    near_zero: number;
+  };
+  check: Record<Scenario, { cashflow_end_balance: number; model_end_balance: number; diff: number }>;
+}
+
+export const fetchScenarios = async (): Promise<ScenariosData> => {
+  const r = await fetch(`${API}?action=scenarios`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+export type ScenarioInput = Partial<Omit<ScenarioDef, 'is_default' | 'is_builtin'>> & { name: string };
+export const saveScenario = (v: ScenarioInput) => post({ action: 'save_scenario', ...v });
+export const deleteScenario = (id: string) => post({ action: 'delete_scenario', id });

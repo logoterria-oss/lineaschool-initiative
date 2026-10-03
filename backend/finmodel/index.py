@@ -2151,8 +2151,391 @@ def calc_cashflow(cur, conn):
     }
 
 
+# ---------------- СЦЕНАРИИ И ЧУВСТВИТЕЛЬНОСТЬ (Промт 14) ----------------
+# Сценарии считаются одновременно, а не переключаются. Сначала полная модель обновляет все модули
+# (calc_cashflow), затем из неё собираются «входы» месяца, и лёгкая модель в памяти пересчитывает цепочку
+# аванс → факт → поступления → переменные → бонус РУО → налог → P&L → Cash Flow для любого набора параметров.
+# Без изменений параметров лёгкая модель даёт ровно те же цифры, что вкладки P&L и Cash Flow.
+#
+# Экономика параметров:
+#  • коэф. роста — прогноз аванса строится тем же алгоритмом (прямой × коэф. / сезонный, порог), факт — от него;
+#  • цена ±x % — аванс и факт × (1 + x); уроков столько же, поэтому ЗП педагогов в рублях не меняется,
+#    растёт только эквайринг (3,19 % от прибавки);
+#  • ученики N — аванс, факт и переменные × N / текущее число учеников (больше уроков — больше ЗП);
+#  • реклама — статья «Реклама» заменяется суммой сценария во всех месяцах прогноза;
+#  • педагоги в найм — +60 000 ₽/мес за человека к постоянным (оклад + страховые 30 % + отпускные 12,5 %),
+#    страховые уменьшают налог как взносы в СФ;
+#  • кредит 6/12 мес и % выплаты собственнику — как в модулях «Кредит» и «Выплата».
+
+SC_METRICS = ("avans", "fact", "revenue", "variable", "gross_profit", "fixed", "ano", "one_time", "ebitda",
+              "interest", "tax", "net_profit", "payout", "body", "net_flow", "end_balance")
+SC_MONTHLY_METRICS = ("avans", "net_profit", "ebitda", "net_flow", "end_balance")
+
+
+def _avans_model(c, hist, shares, annual, corr, months, coef):
+    """Прогноз аванса для произвольного коэффициента — тот же алгоритм, что recalc(), но без записи в БД."""
+    fact = {h["month_id"]: float(h["avans"]) for h in hist}
+    threshold = float(c.get("avans_seasonal_threshold_pct") or 15) / 100
+    out = {}
+    for m in months:
+        prev_y = fact.get(add_months(m, -12))
+        seasonal = annual * coef * shares[int(m[5:7])] / 100
+        if prev_y is None:
+            final = seasonal
+        else:
+            direct = prev_y * coef
+            diff = abs(direct - seasonal) / direct if direct else 0
+            final = (direct + seasonal) / 2 if diff > threshold else direct
+        c_m = corr.get((m, ""), 0.0)
+        out[m] = (max(round(final) + c_m, 0), c_m)
+    return out
+
+
+def scenario_inputs(cur, conn):
+    """Собирает помесячные входы, общие для всех сценариев. Полный пересчёт Cash Flow занимает почти весь
+    лимит времени функции, поэтому здесь — только обновление прогнозов (если устарели) и постоянных расходов,
+    остальное читается из таблиц модулей."""
+    get_revenue(cur, conn)
+    c = constants(cur)
+    fixed = calc_fixed(cur)  # заодно обновляет страховые сотрудников (вычет налога)
+    conn.commit()
+    cur.execute(f"SELECT DISTINCT month_id FROM {S}.fm_revenue_monthly ORDER BY month_id")
+    months = [r["month_id"] for r in cur.fetchall()]
+
+    self_m = float(c.get("fixed_self_contributions_2026") or 0) / 12
+    cur.execute(f"SELECT month_id, sum(insurance) AS ins FROM {S}.fm_staff_monthly_payments WHERE scenario = 'base' GROUP BY 1")
+    sf_emp = {r["month_id"]: float(r["ins"]) for r in cur.fetchall()}
+    cur.execute(f"SELECT month_id, tax_regime_override, payout_pct_override, payout_manual FROM {S}.fm_monthly_inputs")
+    m_inputs = {r["month_id"]: r for r in cur.fetchall()}
+    cur.execute(f"SELECT month_id, scenario, end_balance FROM {S}.fm_cashflow_monthly ORDER BY month_id")
+    cf_end = {}
+    for r in cur.fetchall():
+        cf_end[r["scenario"]] = float(r["end_balance"])
+
+    hist = [h for h in history(cur) if h["closed"]]
+    window = [h for h in hist if not h["exclude_from_seasonality"]][-12:]
+    # Доли и коэффициенты — без округления, как их получает recalc()/recalc_fact() в момент расчёта.
+    av_annual = sum(float(h["avans"]) for h in window)
+    if c.get("seasonality_method") == "exp":
+        cur.execute(f"SELECT month_num, share_pct FROM {S}.fm_seasonality")
+        av_shares = {r["month_num"]: float(r["share_pct"]) for r in cur.fetchall()}
+    else:
+        av_shares = {int(h["month_id"][5:7]): float(h["avans"]) / av_annual * 100 for h in window}
+    facts = [h for h in fact_history(cur) if h["closed"] and not h["exclude_from_seasonality"]]
+    av_by_m = {h["month_id"]: float(h["avans"]) for h in hist}
+    f_window = [h for h in facts if h["month_id"] in av_by_m][-12:]
+    f_annual = sum(float(h["fact"]) for h in f_window)
+    f_shares = {int(h["month_id"][5:7]): float(h["fact"]) / f_annual * 100 for h in f_window}
+    f_coefs = {int(h["month_id"][5:7]): (float(h["fact"]) / av_by_m[h["month_id"]] if av_by_m[h["month_id"]] else 0)
+               for h in f_window}
+
+    cur.execute(f"SELECT DISTINCT ON (month_id) month_id, variable_pct FROM {S}.fm_revenue_monthly ORDER BY month_id")
+    vp = {r["month_id"]: float(r["variable_pct"]) for r in cur.fetchall()}
+    cur.execute(f"SELECT bonus_pct FROM {S}.fm_staff WHERE id = 'ruo_zinchenko'")
+    ruo = cur.fetchone() or {}
+    rows_fx = {r["key"]: r for r in fixed["rows"]}
+    ano = {r["month_id"]: r["total"] for r in ano_rows(cur)}
+    one_time = one_time_totals(cur)
+    default_payout = float(c.get("payout_pct_default") or 10)
+
+    month_in = {}
+    for m in months:
+        bonus_base = rows_fx["ruo_bonus"]["values"].get(m, {}).get("base", 0)
+        fx_total = ((fixed["totals"].get(m) or {}).get("total") or {}).get("base", 0)
+        mi = m_inputs.get(m) or {}
+        month_in[m] = {
+            "vp": vp.get(m, 0.0),
+            "fixed_ex_bonus": float(fx_total) - float(bonus_base),
+            "advertising": float(rows_fx.get("advertising", {}).get("values", {}).get(m, {}).get("base", 0)),
+            "regime": mi.get("tax_regime_override") or tax_regime_default(c, m),
+            "sf": sf_emp.get(m, 0.0) + self_m,
+            "ano": float(ano.get(m, 0)),
+            "one_time": float(one_time.get(m, 0)),
+            "payout_pct": float(mi["payout_pct_override"]) if mi.get("payout_pct_override") is not None else default_payout,
+            "payout_manual": float(mi["payout_manual"]) if mi.get("payout_manual") is not None else None,
+        }
+    return {
+        "c": c,
+        "months": months,
+        "hist": hist,
+        "av_shares": av_shares,
+        "av_annual": av_annual,
+        "av_corr": adapt_corrections(cur, "avans"),
+        "f_shares": f_shares,
+        "f_coefs": f_coefs,
+        "f_annual": f_annual,
+        "f_corr": adapt_corrections(cur, "fact"),
+        "bonus_pct": float(ruo.get("bonus_pct") or 0.5) / 100,
+        "month": month_in,
+        "start_balance": float(c.get("start_balance_total") or 0),
+        "credit_default": c.get("credit_option_default") if c.get("credit_option_default") in CREDIT_OPTIONS else "6m",
+        "price": float(c.get("avg_subscription_price") or 15000),
+        "students": int(c.get("students_current") or 42),
+        "teacher_cost": float(c.get("teacher_hire_monthly_cost") or 60000),
+        "cashflow_end": cf_end,
+    }
+
+
+def run_model(inp, p):
+    """Лёгкая модель: один сценарий → помесячные P&L/Cash Flow и годовые итоги. p — параметры сценария."""
+    c = inp["c"]
+    months = inp["months"]
+    coef = float(p.get("growth_coef") or 1.4)
+    k_price = 1 + float(p.get("price_change_pct") or 0) / 100
+    k_stud = (float(p["students"]) / inp["students"]) if p.get("students") else 1.0
+    acq = float(c.get("acquiring_pct") or 0) / 100
+    ads = p.get("advertising")
+    teachers = int((p.get("staff_changes") or {}).get("teachers") or 0)
+    option = p.get("credit_option") if p.get("credit_option") in CREDIT_OPTIONS else inp["credit_default"]
+    payout_pct = p.get("payout_pct")
+    threshold = float(c.get("avans_seasonal_threshold_pct") or 15) / 100
+
+    usn_pct = float(c.get("tax_usn_pct") or 6) / 100
+    patent_m = float(c.get("patent_cost_year") or 78300) / 12
+    max_ded = float(c.get("max_deduction_pct") or 50) / 100
+    ins_pct = float(c.get("insurance_pct") or 30) / 100
+    vac_pct = float(c.get("vacation_reserve_pct") or 12.5) / 100
+    t_cost = inp["teacher_cost"] * teachers
+    t_ins = t_cost / (1 + ins_pct + vac_pct) * ins_pct  # страховые педагогов — в вычет налога
+
+    credit = {r["month_id"]: r for r in credit_schedule_calc(c, option)}
+    av = _avans_model(c, inp["hist"], inp["av_shares"], inp["av_annual"], inp["av_corr"], months, coef)
+
+    bal, monthly, worst = inp["start_balance"], [], None
+    for m in months:
+        mi = inp["month"][m]
+        num = int(m[5:7])
+        avans_raw, av_c = av[m]
+        # Факт — от модельного аванса (без поправки аванса), как в recalc_fact().
+        model_av = avans_raw - av_c
+        direct = model_av * inp["f_coefs"].get(num, 0)
+        seasonal = inp["f_annual"] * coef * inp["f_shares"].get(num, 0) / 100
+        diff = abs(direct - seasonal) / direct if direct else 0
+        fact_raw = (direct + seasonal) / 2 if diff > threshold else direct
+        fact_raw = max(round(fact_raw) + inp["f_corr"].get((m, ""), 0.0), 0)
+
+        k = k_price * k_stud
+        avans = round(avans_raw * k)
+        fact = round(fact_raw * k)
+        var_base = round(fact_raw * k_stud) * mi["vp"] / 100
+        # Цена меняет только выручку: ЗП педагогов за урок та же, эквайринг растёт с суммой.
+        variable = round(var_base + (fact - round(fact_raw * k_stud)) * acq)
+        revenue_in = avans * (1 - acq)
+        gross = fact - variable
+
+        fixed = mi["fixed_ex_bonus"] + _r(avans * inp["bonus_pct"]) + t_cost
+        if ads is not None:
+            fixed += float(ads) - mi["advertising"]
+        ebitda = gross - fixed - mi["ano"] - mi["one_time"]
+
+        cr = credit.get(m) or {"interest": 0, "body": 0}
+        sf = mi["sf"] + t_ins
+        gross_tax = avans * usn_pct if mi["regime"] == "usn" else patent_m
+        tax = _c2(max(gross_tax - sf, gross_tax * (1 - max_ded)))
+        net = ebitda - cr["interest"] - tax
+
+        if payout_pct is not None:
+            payout = round(round(revenue_in) * float(payout_pct) / 100)
+        elif mi["payout_manual"] is not None:
+            payout = round(float(mi["payout_manual"]))
+        else:
+            payout = round(round(revenue_in) * mi["payout_pct"] / 100)
+        outflow = variable + fixed + mi["ano"] + mi["one_time"] + tax + cr["interest"] + cr["body"] + payout
+        net_flow = round(revenue_in) - outflow
+        bal += net_flow
+        if worst is None or bal < worst[1]:
+            worst = (m, bal)
+        monthly.append({
+            "month_id": m, "avans": avans, "fact": fact, "revenue": round(revenue_in), "variable": variable,
+            "gross_profit": gross, "fixed": round(fixed, 2), "ano": mi["ano"], "one_time": mi["one_time"],
+            "ebitda": round(ebitda, 2), "interest": cr["interest"], "tax": tax, "net_profit": round(net, 2),
+            "payout": payout, "body": cr["body"], "net_flow": round(net_flow, 2), "end_balance": round(bal, 2),
+        })
+    annual = {k: round(sum(r[k] for r in monthly), 2) for k in SC_METRICS if k != "end_balance"}
+    annual["end_balance"] = round(bal, 2)
+    annual["min_balance"] = round(worst[1], 2) if worst else None
+    annual["min_month"] = worst[0] if worst else None
+    annual["gap_months"] = [r["month_id"] for r in monthly if r["end_balance"] < 0]
+    annual["credit_option"] = option
+    return {"annual": annual, "monthly": monthly}
+
+
+def scenario_rows(cur):
+    cur.execute(f"SELECT * FROM {S}.fm_scenarios ORDER BY sort, created_at")
+    out = []
+    for r in cur.fetchall():
+        d = dict(r)
+        for k in ("growth_coef", "price_change_pct", "advertising_override", "payout_pct"):
+            if d[k] is not None:
+                d[k] = float(d[k])
+        out.append(d)
+    return out
+
+
+def scenario_params(s):
+    return {"growth_coef": s["growth_coef"], "price_change_pct": s["price_change_pct"],
+            "students": s.get("students_override"), "advertising": s["advertising_override"],
+            "staff_changes": s["staff_changes"] or {}, "credit_option": s["credit_option"],
+            "payout_pct": s["payout_pct"]}
+
+
+def build_sensitivity(inp, base_coefs):
+    """Плотные сетки по 4 параметрам × 3 базовых сценария: слайдер в интерфейсе просто выбирает точку."""
+    price = inp["price"]
+    grids = {
+        "price": [12000 + 500 * i for i in range(13)],
+        "students": list(range(35, 101)),
+        "advertising": [30000 + 5000 * i for i in range(25)],
+        "staff": [0, 1, 2, 3, 4],
+    }
+    tables = {}
+    for param, values in grids.items():
+        res = {}
+        for sc, coef in base_coefs.items():
+            pts = []
+            for v in values:
+                p = {"growth_coef": coef}
+                if param == "price":
+                    p["price_change_pct"] = (v / price - 1) * 100
+                elif param == "students":
+                    p["students"] = v
+                elif param == "advertising":
+                    p["advertising"] = v
+                else:
+                    p["staff_changes"] = {"teachers": v}
+                a = run_model(inp, p)["annual"]
+                pts.append({"value": v, "net_profit": a["net_profit"], "end_balance": a["end_balance"],
+                            "ebitda": a["ebitda"], "min_balance": a["min_balance"]})
+            res[sc] = pts
+        tables[param] = {"values": values, "results": res}
+    return tables
+
+
+def get_scenarios(cur, conn):
+    inp = scenario_inputs(cur, conn)
+    c = inp["c"]
+    scs = scenario_rows(cur)
+    base_coefs = {sc: float(c[f"avans_coef_{sc}"]) for sc in SCENARIOS}
+    # Встроенные сценарии всегда берут коэффициенты из констант модели.
+    for s in scs:
+        if s["is_builtin"] and s["id"] in base_coefs:
+            s["growth_coef"] = base_coefs[s["id"]]
+
+    results, db = {}, []
+    for s in scs:
+        r = run_model(inp, scenario_params(s))
+        results[s["id"]] = r
+        for k in SC_METRICS:
+            db.append((s["id"], k, "annual", r["annual"][k]))
+        for row in r["monthly"]:
+            for k in SC_MONTHLY_METRICS:
+                db.append((s["id"], k, row["month_id"], row[k]))
+    cur.execute(f"DELETE FROM {S}.fm_scenario_results")
+    execute_values(cur, f"INSERT INTO {S}.fm_scenario_results (scenario_id, metric, period, value) VALUES %s",
+                   db, page_size=1000)
+
+    sens = build_sensitivity(inp, base_coefs)
+    for param, t in sens.items():
+        cur.execute(
+            f"INSERT INTO {S}.fm_sensitivity_tables (id, parameter, \"values\", results, calculated_at) "
+            "VALUES (%s,%s,%s,%s,now()) ON CONFLICT (id) DO UPDATE SET \"values\"=EXCLUDED.\"values\", "
+            "results=EXCLUDED.results, calculated_at=now()",
+            (param, param, json.dumps(t["values"]), json.dumps(t["results"])),
+        )
+    conn.commit()
+
+    # Сверка: лёгкая модель без изменений = вкладка Cash Flow (защита от расхождения двух расчётов).
+    # Сравниваем с последним сохранённым расчётом вкладки Cash Flow.
+    cf = inp["cashflow_end"]
+    check = {sc: {"cashflow_end_balance": cf[sc],
+                  "model_end_balance": results[sc]["annual"]["end_balance"],
+                  "diff": round(results[sc]["annual"]["end_balance"] - cf[sc], 2)}
+             for sc in SCENARIOS if sc in cf and sc in results}
+    return {
+        "ok": True,
+        "current_month": current_month(),
+        "active_scenario": c.get("avans_scenario_active") or "base",
+        "months": inp["months"],
+        "scenarios": scs,
+        "results": results,
+        "sensitivity": sens,
+        "base_params": {
+            "price": inp["price"], "students": inp["students"], "teacher_cost": inp["teacher_cost"],
+            "advertising": round(next(iter(inp["month"].values()))["advertising"]) if inp["month"] else 0,
+            "credit_option": inp["credit_default"], "payout_pct": float(c.get("payout_pct_default") or 10),
+            "near_zero": float(c.get("scenario_near_zero_rub") or 100000),
+        },
+        "check": check,
+    }
+
+
+def save_scenario(cur, conn, body):
+    name = str(body.get("name") or "").strip()[:120]
+    if not name:
+        return resp(400, {"error": "Нужно название сценария"})
+    sid = str(body.get("id") or "")
+    cur.execute(f"SELECT is_builtin FROM {S}.fm_scenarios WHERE id = %s", (sid,))
+    ex = cur.fetchone()
+    if ex and ex["is_builtin"]:
+        return resp(400, {"error": "Базовые сценарии меняются через коэффициенты модели"})
+
+    def num(key, lo=None, hi=None, integer=False):
+        v = body.get(key)
+        if v is None or v == "":
+            return None
+        v = int(v) if integer else float(v)
+        if (lo is not None and v < lo) or (hi is not None and v > hi):
+            raise ValueError(key)
+        return v
+
+    try:
+        coef = num("growth_coef", 0.5, 3) or 1.4
+        price = num("price_change_pct", -90, 300) or 0
+        students = num("students_override", 1, 1000, True)
+        ads = num("advertising_override", 0, 10_000_000)
+        payout = num("payout_pct", 0, 100)
+        teachers = int((body.get("staff_changes") or {}).get("teachers") or 0)
+        if teachers < 0 or teachers > 50:
+            raise ValueError("teachers")
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Проверьте значения: коэф. 0,5–3, цена −90…+300 %, выплата 0–100 %, педагогов 0–50"})
+    credit = body.get("credit_option") if body.get("credit_option") in CREDIT_OPTIONS else None
+    note = str(body.get("note") or "")[:300]
+    staff = json.dumps({"teachers": teachers})
+    if ex:
+        cur.execute(
+            f"UPDATE {S}.fm_scenarios SET name=%s, growth_coef=%s, price_change_pct=%s, students_override=%s, "
+            "advertising_override=%s, staff_changes=%s, credit_option=%s, payout_pct=%s, note=%s, updated_at=now() WHERE id=%s",
+            (name, coef, price, students, ads, staff, credit, payout, note, sid),
+        )
+    else:
+        sid = "u_" + datetime.datetime.utcnow().strftime("%y%m%d%H%M%S%f")[:16]
+        cur.execute(
+            f"INSERT INTO {S}.fm_scenarios (id, name, growth_coef, price_change_pct, students_override, "
+            "advertising_override, staff_changes, credit_option, payout_pct, note, sort) "
+            f"VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,(SELECT coalesce(max(sort),10)+1 FROM {S}.fm_scenarios))",
+            (sid, name, coef, price, students, ads, staff, credit, payout, note),
+        )
+    conn.commit()
+    return resp(200, {"ok": True, "id": sid})
+
+
+def delete_scenario(cur, conn, body):
+    sid = str(body.get("id") or "")
+    cur.execute(f"SELECT is_builtin FROM {S}.fm_scenarios WHERE id = %s", (sid,))
+    r = cur.fetchone()
+    if not r:
+        return resp(404, {"error": "Сценарий не найден"})
+    if r["is_builtin"]:
+        return resp(400, {"error": "Базовые сценарии удалить нельзя"})
+    cur.execute(f"DELETE FROM {S}.fm_scenario_results WHERE scenario_id = %s", (sid,))
+    cur.execute(f"DELETE FROM {S}.fm_scenarios WHERE id = %s", (sid,))
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow|adaptation — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / set_adapt_params / cancel_adaptation / adapt_manual / adapt_new_item / adapt_set_base / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow|adaptation|scenarios — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / set_adapt_params / cancel_adaptation / adapt_manual / adapt_new_item / adapt_set_base / save_scenario / delete_scenario / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -2191,6 +2574,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, calc_cashflow(cur, conn))
             if action == "adaptation":
                 return resp(200, get_adaptation(cur, conn))
+            if action == "scenarios":
+                return resp(200, get_scenarios(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -2238,6 +2623,10 @@ def handler(event: dict, context) -> dict:
                 return adapt_new_item(cur, conn, body)
             if action == "adapt_set_base":
                 return adapt_set_base(cur, conn, body)
+            if action == "save_scenario":
+                return save_scenario(cur, conn, body)
+            if action == "delete_scenario":
+                return delete_scenario(cur, conn, body)
             if action == "recalc":
                 c = constants(cur)
                 recalc(cur, c)
