@@ -918,8 +918,14 @@ def calc_fixed(cur):
         }
 
     # Прогноз ручных статей запоминаем, пока месяц в будущем: в текущем месяце туда уже вводят факт.
-    for m, iid, amount in fx_snaps:
-        save_snapshot(cur, m, "fixed_expense", iid, "base", amount)
+    if fx_snaps:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_forecast_snapshots (month_id, metric, item_id, scenario, value, updated_at) VALUES %s "
+            "ON CONFLICT (month_id, metric, item_id, scenario) DO UPDATE SET value = EXCLUDED.value, updated_at = now() "
+            "WHERE fm_forecast_snapshots.value <> EXCLUDED.value",
+            [(m, "fixed_expense", iid, "base", round(float(a), 4), datetime.datetime.utcnow()) for m, iid, a in fx_snaps],
+        )
 
     cur.execute(f"DELETE FROM {S}.fm_staff_monthly_payments")
     if payments:
@@ -1281,13 +1287,18 @@ def _c2(v):
 
 
 def tax_regime_default(c, m):
+    # Переключатель дашборда: принудительный режим для текущего и будущих месяцев (история не трогается).
+    g = c.get("tax_regime_global")
+    if g in ("usn", "patent") and m >= current_month():
+        return g
     start = c.get("start_patent_month") or "2026-12"
     return (c.get("tax_regime_default_after") or "patent") if m >= start else (c.get("tax_regime_default_before") or "usn")
 
 
-def calc_taxes(cur):
+def calc_taxes(cur, fixed_done=False):
     c = constants(cur)
-    calc_fixed(cur)  # обновляет fm_staff_monthly_payments — страховые за сотрудников
+    if not fixed_done:
+        calc_fixed(cur)  # обновляет fm_staff_monthly_payments — страховые за сотрудников
     months = [m for m in fixed_months(cur) if m >= TAX_FIRST_MONTH]
     avans, closed = avans_by_month(cur)
     cur.execute(f"SELECT month_id, scenario, sum(insurance) AS ins FROM {S}.fm_staff_monthly_payments GROUP BY 1, 2")
@@ -1572,7 +1583,7 @@ def calc_pnl(cur, conn):
     get_revenue(cur, conn)
     c = constants(cur)
     fixed = calc_fixed(cur)
-    taxes = calc_taxes(cur)
+    taxes = calc_taxes(cur, fixed_done=True)
     tax = {(r["month_id"], sc): r["values"][sc]["tax_net"] for r in taxes["rows"] for sc in SCENARIOS}
     regime = {r["month_id"]: r["regime"] for r in taxes["rows"]}
     ano = {r["month_id"]: r["total"] for r in ano_rows(cur)}
@@ -2151,6 +2162,345 @@ def calc_cashflow(cur, conn):
     }
 
 
+# ---------------- ДАШБОРД И УВЕДОМЛЕНИЯ (Промт 15) ----------------
+# Дашборд не хранит данные: KPI и графики собираются из уже посчитанных модулей (calc_cashflow обновляет
+# всю цепочку P&L/Cash Flow/налоги/выплаты). Уведомления — только в интерфейсе (без писем и задач);
+# пересоздаются при каждом открытии, а «скрыто» / «отложено» сохраняется по ключу уведомления.
+
+PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+
+
+def _ts(v):
+    return v.isoformat() if v else None
+
+
+def data_sources(cur, c):
+    """Статусы источников: ok — свежие, stale — устарели, missing — нет данных, manual — ручной ввод."""
+    cm = current_month()
+    prev = add_months(cm, -1)
+    out = []
+
+    def add(source, label, provides, last, status, note=""):
+        out.append({"source": source, "label": label, "provides": provides, "last_updated": last,
+                    "status": status, "note": note})
+
+    cur.execute(f"SELECT max(month_id) AS m, max(closed_at) AS t FROM {S}.fm_avans_monthly WHERE closed")
+    r = cur.fetchone()
+    add("report_avans", "Отчёт «Авансовые доходы»", "Авансы", _ts(r["t"]),
+        "ok" if r["m"] and r["m"] >= prev else "stale", f"закрыто по {month_label(r['m'])}" if r["m"] else "")
+    cur.execute(f"SELECT max(month_id) AS m, max(closed_at) AS t FROM {S}.fm_fact_monthly WHERE closed")
+    r = cur.fetchone()
+    add("report_fact", "Отчёт «Фактические доходы»", "Факт", _ts(r["t"]),
+        "ok" if r["m"] and r["m"] >= prev else "stale", f"закрыто по {month_label(r['m'])}" if r["m"] else "")
+    cur.execute(f"SELECT max(period_month) AS m, max(created_at) AS t FROM {S}.unit_margin_reports")
+    r = cur.fetchone()
+    if not r["m"]:
+        add("report_margin", "Отчёт «Маржинальность урока»", "Маржинальность (переменный %)", None, "missing",
+            "расчёт не сохранён — в прогнозе последний известный процент")
+    else:
+        add("report_margin", "Отчёт «Маржинальность урока»", "Маржинальность (переменный %)", _ts(r["t"]),
+            "ok" if r["m"] >= prev else "stale", f"последний месяц — {month_label(r['m'])}")
+    cur.execute(f"SELECT max(week_start) AS w FROM {S}.student_count_weekly")
+    w = cur.fetchone()["w"]
+    fresh = w and (msk_today() - w).days <= 10
+    add("students", "AlfaCRM → «Динамика учеников»", "Активные ученики", w.isoformat() if w else None,
+        "ok" if fresh else ("stale" if w else "missing"), f"последняя неделя с {w.strftime('%d.%m.%Y')}" if w else "")
+    cur.execute(f"SELECT count(*) AS n FROM {S}.fm_expense_monthly WHERE source = 'manual'")
+    n = cur.fetchone()["n"]
+    cur.execute(f"SELECT max(updated_at) AS t FROM {S}.fm_monthly_inputs")
+    t = cur.fetchone()["t"]
+    add("manual", "Ручной ввод", "Реклама, нейронка, дизайнеры, KPI админов, override", _ts(t), "manual",
+        f"{n} ручных сумм по статьям")
+
+    execute_values(
+        cur,
+        f"INSERT INTO {S}.fm_data_sources (source, label, provides, last_updated, status, note, checked_at) VALUES %s "
+        "ON CONFLICT (source) DO UPDATE SET label=EXCLUDED.label, provides=EXCLUDED.provides, "
+        "last_updated=EXCLUDED.last_updated, status=EXCLUDED.status, note=EXCLUDED.note, checked_at=now()",
+        [(d["source"], d["label"], d["provides"], d["last_updated"], d["status"], d["note"], datetime.datetime.utcnow())
+         for d in out],
+    )
+    return out
+
+
+def build_notifications(cur, c, cf, sources):
+    """Собирает актуальные уведомления по условиям Промта 15."""
+    cm = current_month()
+    prev = add_months(cm, -1)
+    today = msk_today()
+    sc = c.get("avans_scenario_active") or "base"
+    items = []
+
+    def add(key, type_, priority, message, action):
+        items.append({"key": key, "type": type_, "priority": priority, "message": message, "action_url": action})
+
+    # 1. Месяц не закрыт (3+ дня с начала месяца)
+    after_day = int(c.get("notify_close_after_day") or 3)
+    if today.day >= after_day:
+        cur.execute(f"SELECT 1 FROM {S}.fm_avans_monthly WHERE month_id = %s AND closed", (prev,))
+        av_ok = bool(cur.fetchone())
+        cur.execute(f"SELECT 1 FROM {S}.fm_fact_monthly WHERE month_id = %s AND closed", (prev,))
+        f_ok = bool(cur.fetchone())
+        cur.execute(f"SELECT closed FROM {S}.fm_students_monthly WHERE month_id = %s", (prev,))
+        st = cur.fetchone()
+        missing = [n for n, ok in (("авансы", av_ok), ("факт", f_ok), ("ученики", bool(st and st["closed"]))) if not ok]
+        if missing:
+            add(f"month_not_closed:{prev}", "month_not_closed", "high",
+                f"{month_full(prev)} не закрыт: {', '.join(missing)}. Закрыть?", "close_month")
+
+    # 2. Отклонение факта от прогноза > порога и 6. систематическое отклонение — из журнала адаптации
+    alert_pct = float(c.get("adapt_alert_pct") or 20)
+    cur.execute(
+        f"SELECT l.*, coalesce(i.name, '') AS item_name FROM {S}.fm_adaptation_log l "
+        f"LEFT JOIN {S}.fm_expense_items i ON i.id = l.item_id WHERE l.status <> 'cancelled' AND l.month_id >= %s",
+        (add_months(cm, -3),),
+    )
+    labels = {"avans": "авансов", "fact": "факта", "variable_pct": "переменного %", "fixed_expense": "статьи",
+              "new_item": "новой статьи"}
+    for l in cur.fetchall():
+        dp = float(l["deviation_pct"]) if l["deviation_pct"] is not None else None
+        if l["metric"] in ("avans", "fact") and dp is not None and dp > alert_pct:
+            add(f"deviation:{l['month_id']}:{l['metric']}", "deviation", "medium",
+                f"{month_full(l['month_id'])}: отклонение {labels[l['metric']]} от прогноза "
+                f"{'+' if float(l['deviation']) > 0 else '−'}{dp:.1f}% (больше {alert_pct:.0f}%).", "adaptation")
+        if l["metric"] == "fixed_expense" and l["status"] == "applied":
+            add(f"systematic:{l['month_id']}:{l['item_id']}", "systematic", "medium",
+                f"«{l['item_name']}»: систематическое отклонение {int(c.get('adapt_systematic_months') or 3)} мес подряд — "
+                "стоит изменить базовый прогноз.", "adaptation")
+
+    # 3. Изменение переменного процента > 5 п.п. (месяц к месяцу по данным отчёта/ручным)
+    pp = float(c.get("notify_variable_pp") or 5)
+    vps = variable_pcts(cur)
+    for a, b in zip(vps, vps[1:]):
+        d = float(b["variable_pct"]) - float(a["variable_pct"])
+        if abs(d) > pp:
+            add(f"variable_pct:{b['month_id']}", "variable_pct", "medium",
+                f"Переменный % за {month_label(b['month_id'])} изменился на {'+' if d > 0 else '−'}{abs(d):.2f} п.п. "
+                f"({float(a['variable_pct']):.2f}% → {float(b['variable_pct']):.2f}%).", "revenue")
+
+    # 4. Кассовый разрыв (активный сценарий)
+    s = cf["summary"].get(sc) or {}
+    if s.get("gap_months"):
+        g = s["gap_months"]
+        add(f"cash_gap:{sc}:{g[0]}", "cash_gap", "high",
+            f"Кассовый разрыв ({SC_LABEL_RU.get(sc, sc)} сценарий): остаток в минусе {month_full(g[0]).lower()} – "
+            f"{month_full(g[-1]).lower()}, дно {_rub(s['min_balance'])} ({month_full(s['min_month']).lower()}).", "cashflow")
+
+    # 5. Кредит: риск просрочки — платёж месяца есть, а остатка на начало месяца не хватает на него,
+    #    либо подходит дата платежа.
+    option = c.get("credit_option_default") if c.get("credit_option_default") in CREDIT_OPTIONS else "6m"
+    sched = {r["month_id"]: r for r in credit_schedule_calc(c, option)}
+    pay = sched.get(cm)
+    if pay and pay["status"] == "active":
+        day = int(c.get("credit_payment_day") or 17)
+        row = next((r for r in cf["rows"] if r["month_id"] == cm), None)
+        start_bal = ((row or {}).get("values", {}).get(sc) or {}).get("start_balance")
+        risk = round(float(c.get("credit_penalty_risk") or 0))
+        if start_bal is not None and start_bal < pay["total"]:
+            add(f"credit_risk:{cm}", "credit_overdue", "high",
+                f"Риск просрочки кредита: платёж {_rub(pay['total'])} до {day:02d}.{cm[5:]} больше остатка на начало месяца "
+                f"({_rub(start_bal)}). Штраф ~{_rub(risk)}.", "credit")
+        elif 0 <= day - today.day <= 3:
+            add(f"credit_due:{cm}", "credit_overdue", "high",
+                f"Платёж по кредиту {_rub(pay['total'])} — до {day:02d}.{cm[5:]}. При просрочке штраф ~{_rub(risk)}.", "credit")
+
+    # 7. Маржинальность не сохранена
+    m = next((x for x in sources if x["source"] == "report_margin"), None)
+    if m and m["status"] != "ok":
+        add(f"margin_missing:{prev}", "margin_missing", "low",
+            f"Отчёт «Маржинальность урока» за {month_label(prev)} не сохранён — переменный % взят из последнего известного месяца.",
+            "revenue")
+
+    # 8. Новая неопределённость
+    cur.execute(f"SELECT id, name, new_since FROM {S}.fm_expense_items WHERE new_since IS NOT NULL")
+    for r in cur.fetchall():
+        add(f"new_item:{r['id']}", "new_item", "low",
+            f"«{r['name']}» — новая статья без истории (с {month_label(r['new_since'])}), прогноз по аналогии.", "adaptation")
+    return items
+
+
+SC_LABEL_RU = {"min": "минимальный", "base": "базовый", "opt": "оптимистичный"}
+MONTHS_FULL = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь",
+               "Ноябрь", "Декабрь"]
+
+
+def month_full(m):
+    return f"{MONTHS_FULL[int(m[5:7]) - 1]} {m[:4]}"
+
+
+def _rub(v):
+    v = round(float(v))
+    return ("−" if v < 0 else "") + f"{abs(v):,}".replace(",", " ") + " ₽"
+
+
+def sync_notifications(cur, items):
+    keys = [i["key"] for i in items]
+    if items:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_notifications (key, type, priority, message, action_url) VALUES %s "
+            "ON CONFLICT (key) DO UPDATE SET type=EXCLUDED.type, priority=EXCLUDED.priority, message=EXCLUDED.message, "
+            "action_url=EXCLUDED.action_url, active=true, updated_at=now()",
+            [(i["key"], i["type"], i["priority"], i["message"], i["action_url"]) for i in items],
+        )
+    cur.execute(f"UPDATE {S}.fm_notifications SET active = false WHERE active AND NOT (key = ANY(%s))", (keys,))
+    cur.execute(
+        f"SELECT * FROM {S}.fm_notifications WHERE active AND dismissed_at IS NULL "
+        "AND (snoozed_until IS NULL OR snoozed_until < now())"
+    )
+    rows = [dict(r) for r in cur.fetchall()]
+    rows.sort(key=lambda r: (PRIORITY_ORDER.get(r["priority"], 3), r["created_at"]))
+    cur.execute(f"SELECT count(*) AS n FROM {S}.fm_notifications WHERE active AND (dismissed_at IS NOT NULL OR snoozed_until >= now())")
+    return rows, cur.fetchone()["n"]
+
+
+def get_dashboard(cur, conn):
+    cf = calc_cashflow(cur, conn)  # пересчёт всей цепочки: прогнозы → P&L → Cash Flow
+    c = constants(cur)
+    sc = c.get("avans_scenario_active") or "base"
+    cm = current_month()
+    option = cf["credit_option"]
+
+    cur.execute(f"SELECT month_id, scenario, avans, fact, revenue, variable_amount, margin_amount FROM {S}.fm_revenue_monthly")
+    rev = {(r["month_id"], r["scenario"]): r for r in cur.fetchall()}
+    cur.execute(f"SELECT * FROM {S}.fm_pnl_monthly")
+    pnl = {(r["month_id"], r["scenario"]): r for r in cur.fetchall()}
+    months = [r["month_id"] for r in cf["rows"]]
+
+    kpi = {}
+    for s in SCENARIOS:
+        f = lambda k, src: round(sum(float((src.get((m, s)) or {}).get(k) or 0) for m in months))
+        sm = cf["summary"].get(s) or {}
+        kpi[s] = {
+            "avans": f("avans", rev), "fact": f("fact", rev), "revenue": f("revenue", rev),
+            "margin": f("margin_amount", rev), "net_profit": f("net_profit", pnl), "payout": round(sm.get("payout") or 0),
+            "end_balance": round(sm.get("end_balance") or 0), "min_balance": round(sm.get("min_balance") or 0),
+            "min_month": sm.get("min_month"), "gap_months": sm.get("gap_months") or [],
+        }
+    credit = credit_summary(credit_schedule_calc(c, option))
+
+    series = []
+    for i, m in enumerate(months):
+        cfr = cf["rows"][i]["values"]
+        row = {"month_id": m}
+        for s in SCENARIOS:
+            r, p = rev.get((m, s)) or {}, pnl.get((m, s)) or {}
+            row[s] = {
+                "avans": float(r.get("avans") or 0), "fact": float(r.get("fact") or 0),
+                "margin": float(r.get("margin_amount") or 0), "end_balance": (cfr.get(s) or {}).get("end_balance"),
+                "revenue_pnl": float(p.get("revenue") or 0), "gross_profit": float(p.get("gross_profit") or 0),
+                "ebitda": float(p.get("ebitda") or 0), "net_profit": float(p.get("net_profit") or 0),
+            }
+        series.append(row)
+
+    # Расходы по категориям (оттоки Cash Flow за период, активный сценарий)
+    s = cf["summary"].get(sc) or {}
+    expenses = [{"key": k, "value": round(s.get(k) or 0)} for k in CF_OUT]
+
+    # Ручные вводы: что переопределено руками
+    cur.execute(
+        f"SELECT e.month_id, e.expense_id, e.amount, i.name FROM {S}.fm_expense_monthly e "
+        f"JOIN {S}.fm_expense_items i ON i.id = e.expense_id WHERE e.source = 'manual' ORDER BY e.month_id"
+    )
+    manual_expenses = [dict(r) for r in cur.fetchall()]
+    cur.execute(
+        f"SELECT * FROM {S}.fm_monthly_inputs WHERE ruo_replacements IS NOT NULL OR admin_shifts_override IS NOT NULL "
+        "OR admin_rate_override IS NOT NULL OR payout_pct_override IS NOT NULL OR payout_manual IS NOT NULL "
+        "OR tax_regime_override IS NOT NULL ORDER BY month_id"
+    )
+    manual_inputs = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT month_id, variable_pct FROM {S}.fm_variable_pct_monthly WHERE source = 'override' ORDER BY month_id")
+    manual_vp = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT s.staff_id, s.month_id, s.rate_override, f.name FROM {S}.fm_staff_monthly s "
+                f"JOIN {S}.fm_staff f ON f.id = s.staff_id WHERE s.rate_override IS NOT NULL ORDER BY s.month_id")
+    manual_staff = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT id, name, amount, is_fixed FROM {S}.fm_expense_items WHERE category = 'fixed' AND NOT is_fixed ORDER BY sort")
+    editable_items = [dict(r) for r in cur.fetchall()]
+
+    sources = data_sources(cur, c)
+    notif, hidden = sync_notifications(cur, build_notifications(cur, c, cf, sources))
+
+    to_close = {
+        "avans": months_to_close(history(cur)),
+        "fact": fact_months_to_close(fact_history(cur)),
+    }
+    cur.execute(f"SELECT max(calculated_at) AS t FROM {S}.fm_cashflow_monthly")
+    last = cur.fetchone()["t"]
+    tg = c.get("tax_regime_global") if c.get("tax_regime_global") in ("usn", "patent") else "auto"
+    cur.execute(
+        f"UPDATE {S}.fm_dashboard_state SET last_updated=%s, current_month=%s, active_scenario=%s, "
+        "active_tax_regime=%s, active_credit_option=%s WHERE id = 1",
+        (last, cm, sc, tg, option),
+    )
+    conn.commit()
+    return {
+        "ok": True,
+        "last_updated": last,
+        "current_month": cm,
+        "prev_month": add_months(cm, -1),
+        "active_scenario": sc,
+        "tax_regime": tg,
+        "tax_regime_now": tax_regime_default(c, cm),
+        "start_patent_month": c.get("start_patent_month") or "2026-12",
+        "credit_option": option,
+        "credit": {**credit, "option": option},
+        "months": months,
+        "kpi": kpi,
+        "series": series,
+        "expenses": expenses,
+        "start_balance": cf["start_balance"],
+        "manual": {"expenses": manual_expenses, "inputs": manual_inputs, "variable_pct": manual_vp,
+                   "staff": manual_staff, "items": editable_items},
+        "sources": sources,
+        "notifications": notif,
+        "hidden_notifications": hidden,
+        "to_close": to_close,
+        "near_zero": float(c.get("scenario_near_zero_rub") or 100000),
+    }
+
+
+def notification_action(cur, conn, body):
+    """dismiss — скрыть, snooze — отложить на 3 дня, read — прочитано, restore — вернуть все скрытые."""
+    act = body.get("op")
+    if act == "restore":
+        cur.execute(f"UPDATE {S}.fm_notifications SET dismissed_at = NULL, snoozed_until = NULL WHERE active")
+        conn.commit()
+        return resp(200, {"ok": True})
+    try:
+        nid = int(body.get("id"))
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Нужен id уведомления"})
+    sql = {
+        "dismiss": "dismissed_at = now()",
+        "snooze": "snoozed_until = now() + interval '3 days'",
+        "read": "read_at = coalesce(read_at, now())",
+    }.get(act)
+    if not sql:
+        return resp(400, {"error": "Действие: dismiss / snooze / read / restore"})
+    cur.execute(f"UPDATE {S}.fm_notifications SET {sql} WHERE id = %s", (nid,))
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
+def set_tax_regime_global(cur, conn, body):
+    v = body.get("regime")
+    if v not in ("auto", "usn", "patent"):
+        return resp(400, {"error": "Режим: auto / usn / patent"})
+    cur.execute(f"UPDATE {S}.fm_constants SET value_text = %s, updated_at = now() WHERE key = 'tax_regime_global'", (v,))
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
+def close_students_prev(cur, conn):
+    """Для кнопки «Закрыть месяц»: ученики за прошлый месяц по отчётам (если ещё не закрыт)."""
+    prev = add_months(current_month(), -1)
+    cur.execute(f"SELECT closed FROM {S}.fm_students_monthly WHERE month_id = %s", (prev,))
+    r = cur.fetchone()
+    if r and r["closed"]:
+        return resp(200, {"ok": True, "already": True})
+    return close_students(cur, conn, {"month": prev})
+
+
 # ---------------- СЦЕНАРИИ И ЧУВСТВИТЕЛЬНОСТЬ (Промт 14) ----------------
 # Сценарии считаются одновременно, а не переключаются. Сначала полная модель обновляет все модули
 # (calc_cashflow), затем из неё собираются «входы» месяца, и лёгкая модель в памяти пересчитывает цепочку
@@ -2535,7 +2885,7 @@ def delete_scenario(cur, conn, body):
 
 
 def handler(event: dict, context) -> dict:
-    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow|adaptation|scenarios — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / set_adapt_params / cancel_adaptation / adapt_manual / adapt_new_item / adapt_set_base / save_scenario / delete_scenario / recalc."""
+    """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow|adaptation|scenarios|dashboard — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / set_adapt_params / cancel_adaptation / adapt_manual / adapt_new_item / adapt_set_base / save_scenario / delete_scenario / notification / set_tax_regime_global / close_students_prev / recalc."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -2576,6 +2926,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_adaptation(cur, conn))
             if action == "scenarios":
                 return resp(200, get_scenarios(cur, conn))
+            if action == "dashboard":
+                return resp(200, get_dashboard(cur, conn))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
@@ -2623,6 +2975,12 @@ def handler(event: dict, context) -> dict:
                 return adapt_new_item(cur, conn, body)
             if action == "adapt_set_base":
                 return adapt_set_base(cur, conn, body)
+            if action == "notification":
+                return notification_action(cur, conn, body)
+            if action == "set_tax_regime_global":
+                return set_tax_regime_global(cur, conn, body)
+            if action == "close_students_prev":
+                return close_students_prev(cur, conn)
             if action == "save_scenario":
                 return save_scenario(cur, conn, body)
             if action == "delete_scenario":

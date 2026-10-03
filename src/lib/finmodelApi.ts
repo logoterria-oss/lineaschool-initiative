@@ -842,3 +842,103 @@ export const fetchScenarios = async (): Promise<ScenariosData> => {
 export type ScenarioInput = Partial<Omit<ScenarioDef, 'is_default' | 'is_builtin'>> & { name: string };
 export const saveScenario = (v: ScenarioInput) => post({ action: 'save_scenario', ...v });
 export const deleteScenario = (id: string) => post({ action: 'delete_scenario', id });
+
+// ---------------- ДАШБОРД И УВЕДОМЛЕНИЯ (Промт 15) ----------------
+export type TaxRegimeGlobal = 'auto' | TaxRegime;
+export type NotifPriority = 'high' | 'medium' | 'low';
+
+export interface FmNotification {
+  id: number;
+  key: string;
+  type: string;
+  priority: NotifPriority;
+  message: string;
+  action_url: string;
+  created_at: string;
+  updated_at: string;
+  read_at: string | null;
+  snoozed_until: string | null;
+}
+
+export interface DataSource {
+  source: string;
+  label: string;
+  provides: string;
+  last_updated: string | null;
+  status: 'ok' | 'stale' | 'missing' | 'manual';
+  note: string;
+}
+
+export interface DashKpi {
+  avans: number;
+  fact: number;
+  revenue: number;
+  margin: number;
+  net_profit: number;
+  payout: number;
+  end_balance: number;
+  min_balance: number;
+  min_month: string | null;
+  gap_months: string[];
+}
+
+export interface DashPoint {
+  avans: number;
+  fact: number;
+  margin: number;
+  end_balance: number | null;
+  revenue_pnl: number;
+  gross_profit: number;
+  ebitda: number;
+  net_profit: number;
+}
+
+export interface DashboardData {
+  last_updated: string | null;
+  current_month: string;
+  prev_month: string;
+  active_scenario: Scenario;
+  tax_regime: TaxRegimeGlobal;
+  tax_regime_now: TaxRegime;
+  start_patent_month: string;
+  credit_option: CreditOption;
+  credit: CreditSummary & { option: CreditOption };
+  months: string[];
+  kpi: Record<Scenario, DashKpi>;
+  series: ({ month_id: string } & Record<Scenario, DashPoint>)[];
+  expenses: { key: CfOutKey; value: number }[];
+  start_balance: { total: number; tbank: number; lokobank: number; date: string | null };
+  manual: {
+    expenses: { month_id: string; expense_id: string; amount: number; name: string }[];
+    inputs: {
+      month_id: string;
+      ruo_replacements: number | null;
+      admin_shifts_override: number | null;
+      admin_rate_override: number | null;
+      payout_pct_override: number | null;
+      payout_manual: number | null;
+      tax_regime_override: TaxRegime | null;
+    }[];
+    variable_pct: { month_id: string; variable_pct: number }[];
+    staff: { staff_id: string; month_id: string; rate_override: number; name: string }[];
+    items: { id: string; name: string; amount: number }[];
+  };
+  sources: DataSource[];
+  notifications: FmNotification[];
+  hidden_notifications: number;
+  to_close: { avans: string[]; fact: string[] };
+  near_zero: number;
+}
+
+export const fetchDashboard = async (): Promise<DashboardData> => {
+  const r = await fetch(`${API}?action=dashboard`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};
+
+export const notificationAction = (op: 'dismiss' | 'snooze' | 'read' | 'restore', id?: number) =>
+  post({ action: 'notification', op, id });
+export const setTaxRegimeGlobal = (regime: TaxRegimeGlobal) => post({ action: 'set_tax_regime_global', regime });
+export const closeStudentsPrev = () => post({ action: 'close_students_prev' });
+export const recalcModel = () => post({ action: 'recalc' });

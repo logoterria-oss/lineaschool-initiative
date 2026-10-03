@@ -14,9 +14,10 @@ interface Props {
   active: Scenario;
   onActive: (sc: Scenario) => void;
   onChanged: () => Promise<void>;
+  initialView?: View;
 }
 
-type View = 'compare' | 'sensitivity' | 'manager';
+export type View = 'compare' | 'sensitivity' | 'manager';
 
 const describe = (s: ScenarioDef, bp: ScenariosData['base_params']) => {
   const parts = [`коэф. ${String(s.growth_coef).replace('.', ',')}`];
@@ -103,8 +104,8 @@ const ScenarioForm = ({ initial, onCancel, onSave }: {
   );
 };
 
-const ScenariosPanel = ({ data, active, onActive, onChanged }: Props) => {
-  const [view, setView] = useState<View>('compare');
+const ScenariosPanel = ({ data, active, onActive, onChanged, initialView = 'compare' }: Props) => {
+  const [view, setView] = useState<View>(initialView);
   const [selected, setSelected] = useState<string[]>(['min', 'base', 'opt']);
   const [editing, setEditing] = useState<ScenarioInput | null>(null);
   const bp = data.base_params;
