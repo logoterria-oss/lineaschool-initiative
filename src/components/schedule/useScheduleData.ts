@@ -15,7 +15,7 @@ import {
   shouldForceManualAge,
   findAgeGroupRule,
 } from './types';
-import { Booking, fetchBookings } from '@/lib/bookingsApi';
+import { Booking, bookingHoldsSlot, fetchBookings } from '@/lib/bookingsApi';
 import {
   ScheduleType,
   IndDay,
@@ -128,8 +128,8 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
         const { bookings: bk } = await fetchBookings('all', true);
         const flat: Booking[] = [];
         for (const b of bk) {
-          if (b.status !== 'new' && b.status !== 'confirmed') continue;
           for (const l of b.lessons?.length ? b.lessons : [b]) {
+            if (!bookingHoldsSlot({ status: b.status, date: l.date })) continue;
             flat.push({ ...l, childName: l.childName || b.childName, status: b.status });
           }
         }

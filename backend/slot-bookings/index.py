@@ -165,12 +165,17 @@ def _booked_keys(cur) -> set:
     Ключ — ДЕНЬ НЕДЕЛИ, а не дата: ребёнок ходит к педагогу каждую неделю,
     поэтому «понедельник в 15:00» занят и на следующих неделях тоже.
 
+    Подтверждённая заявка с прошедшим занятием окно не держит: ребёнок уже
+    должен быть в CRM, и если его там нет (бросил, болеет) — окно свободно.
+
     Групповые заявки окно не закрывают: в группе несколько мест, и записаться
     туда может ещё не одна семья.
     '''
     cur.execute(
         "SELECT slot_date, time_from, teacher_id FROM slot_bookings "
-        "WHERE status IN ('new', 'confirmed') AND lesson_type = 'individual'"
+        "WHERE lesson_type = 'individual' AND ("
+        "  status = 'new' OR (status = 'confirmed' AND slot_date >= CURRENT_DATE)"
+        ")"
     )
     return {
         (r['slot_date'].weekday(), r['time_from'], int(r['teacher_id']))

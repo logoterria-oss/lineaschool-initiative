@@ -276,3 +276,15 @@ export const deleteBookingLink = async (id: number): Promise<boolean> => {
 
 export const bookingPageUrl = (token: string) =>
   `${window.location.origin}/booking/${token}`;
+/**
+ * Держит ли заявка место в расписании.
+ * Новая — да, ждёт обработки. Подтверждённая — только пока её занятие не прошло:
+ * после этого ребёнок уже должен быть в CRM. Если его там нет (бросил, болеет,
+ * не завели) — CRM источник правды, бронь места не занимает.
+ */
+export const bookingHoldsSlot = (b: Pick<Booking, 'status' | 'date'>, today = new Date()): boolean => {
+  if (b.status === 'new') return true;
+  if (b.status !== 'confirmed') return false;
+  const t = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  return (b.date || '') >= t;
+};

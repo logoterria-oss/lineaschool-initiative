@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { S20_URL, TEACHER_SHORT, TEACHER_COLOR, getMonday, addDays, fmtDate, fmtRu, WEEKDAY_SHORT } from './types';
-import { Booking, fetchBookings } from '@/lib/bookingsApi';
+import { Booking, bookingHoldsSlot, fetchBookings } from '@/lib/bookingsApi';
 
 interface IndSlot {
   time_from: string;
@@ -44,9 +44,9 @@ const IndividualTab = () => {
         // иначе видно только первое окно из отправки
         const flat: Booking[] = [];
         for (const b of bk.bookings) {
-          if (b.status === 'rejected') continue;
           for (const l of b.lessons?.length ? b.lessons : [b]) {
             if (l.lessonType && l.lessonType !== 'individual') continue;
+            if (!bookingHoldsSlot({ status: b.status, date: l.date })) continue;
             flat.push({ ...l, childName: l.childName || b.childName, status: b.status });
           }
         }

@@ -21,7 +21,7 @@ import {
   findAgeGroupRule,
   ageRangeLabel,
 } from './types';
-import { Booking, fetchBookings } from '@/lib/bookingsApi';
+import { Booking, bookingHoldsSlot, fetchBookings } from '@/lib/bookingsApi';
 
 const GroupsTab = () => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
@@ -123,7 +123,7 @@ const GroupsTab = () => {
       const flat: Booking[] = [];
       for (const b of bookings) {
         for (const l of b.lessons?.length ? b.lessons : [b]) {
-          const active = b.status === 'new' || b.status === 'confirmed';
+          const active = bookingHoldsSlot({ status: b.status, date: l.date });
           // inCrm — ребёнка уже завели в группу, он и так есть в списке
           if (l.lessonType === 'groups' && active && !l.inCrm) {
             flat.push({ ...l, childName: l.childName || b.childName });
