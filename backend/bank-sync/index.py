@@ -9,10 +9,19 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import uuid
+import io
+import ssl
+import zipfile
+import imaplib
+import email
+import email.utils
+from email.header import decode_header
 from decimal import Decimal
 
 import psycopg2
 from psycopg2.extras import RealDictCursor, execute_values
+
+from certs import RUSSIAN_TRUSTED_CA
 
 S = "t_p93118852_lineaschool_initiati"
 CORS = {
@@ -148,24 +157,38 @@ def parse_1c(text):
     return accounts, docs
 
 
+def decode_1c(data):
+    """Байты файла → текст выписки 1С или None."""
+    for enc in ("utf-8", "cp1251"):
+        try:
+            text = data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+        return text if "1CClientBankExchange" in text[:300] else None
+    return None
+
+
 def import_1c(cur, conn, body):
     raw = body.get("file") or ""
     if not raw:
         return resp(400, {"error": "Нет файла выписки"})
-    data = base64.b64decode(raw.split(",", 1)[-1])
-    text = None
-    for enc in ("utf-8", "cp1251"):
-        try:
-            text = data.decode(enc)
-            break
-        except UnicodeDecodeError:
-            continue
-    if not text or "1CClientBankExchange" not in text[:200]:
+    text = decode_1c(base64.b64decode(raw.split(",", 1)[-1]))
+    if not text:
         return resp(400, {"error": "Это не выписка в формате 1С (1CClientBankExchange). В интернет-банке выберите формат «1С»."})
+    try:
+        res = import_1c_text(cur, text)
+    except ValueError as e:
+        return resp(400, {"error": str(e)})
+    conn.commit()
+    return resp(200, {"ok": True, **res})
+
+
+def import_1c_text(cur, text):
+    """Разбирает выписку 1С и сохраняет операции и остатки. Без commit."""
     accounts, docs = parse_1c(text)
     own = {a.get("РасчСчет") for a in accounts if a.get("РасчСчет")}
     if not own:
-        return resp(400, {"error": "В файле не найден расчётный счёт"})
+        raise ValueError("В файле не найден расчётный счёт")
 
     cur.execute(f"SELECT account FROM {S}.fm_bank_accounts")
     known = {r["account"] for r in cur.fetchall()}
@@ -237,10 +260,191 @@ def import_1c(cur, conn, body):
         )
     cur.execute(f"UPDATE {S}.fm_bank_accounts SET last_import_at = now() WHERE account = ANY(%s)", (list(own),))
     apply_rules(cur, only_uncategorized=True)
+    return {"accounts": sorted(own), "total": len(uniq), "inserted": inserted, "skipped": len(uniq) - inserted,
+            "period": [accounts[0].get("ДатаНачала"), accounts[0].get("ДатаКонца")] if accounts else None}
+
+
+# ---------------- Выписки с почты ----------------
+# Банки присылают выписку 1С вложением на abram.viktoriya.00@mail.ru. Раз в сутки (и по кнопке) забираем
+# новые письма от банков за последние дни. Обработанные письма помним по Message-ID — повторно не разбираем.
+MAIL_HOST = "imap.mail.ru"
+MAIL_USER = "abram.viktoriya.00@mail.ru"
+MAIL_FOLDERS = ["INBOX", "INBOX/Receipts"]
+MAIL_DAYS = 10
+MAIL_MAX = 30
+
+
+def _dec(v):
+    out = []
+    for part, enc in decode_header(v or ""):
+        out.append(part.decode(enc or "utf-8", "ignore") if isinstance(part, bytes) else part)
+    return "".join(out)
+
+
+def _files_from_bytes(data, name):
+    """Байты файла (txt или zip) → тексты выписок 1С."""
+    out = []
+    if name.lower().endswith(".zip") or data[:2] == b"PK":
+        try:
+            with zipfile.ZipFile(io.BytesIO(data)) as z:
+                for n in z.namelist():
+                    if n.lower().endswith(".txt"):
+                        t = decode_1c(z.read(n))
+                        if t:
+                            out.append(t)
+        except zipfile.BadZipFile:
+            pass
+        return out
+    t = decode_1c(data)
+    return [t] if t else []
+
+
+ALLOWED_DOWNLOAD = ("business.tbank.ru", "business.tinkoff.ru", "lockobank.ru", "lockobank.com")
+
+
+def _download_links(msg):
+    """Ссылки на скачивание выписки из письма. Трекинг-ссылки рассылки (link.sendsay.ru …?<base64>) раскрываем,
+    качаем только с доменов банков."""
+    text = ""
+    for part in msg.walk():
+        if part.get_content_maintype() == "text":
+            text += (part.get_payload(decode=True) or b"").decode(part.get_content_charset() or "utf-8", "ignore")
+    found = []
+    for url in re.findall(r"https?://[^\s\"'<>\]]+", text):
+        url = url.replace("&amp;", "&")
+        target = url
+        if "sendsay.ru" in url and "?" in url:
+            q = url.split("?", 1)[1]
+            try:
+                target = base64.urlsafe_b64decode(q + "=" * (-len(q) % 4)).decode("utf-8")
+            except (ValueError, UnicodeDecodeError):
+                continue
+        host = urllib.parse.urlparse(target).hostname or ""
+        if any(host == d or host.endswith("." + d) for d in ALLOWED_DOWNLOAD) and \
+                ("download" in target or "statement" in target) and target not in found:
+            found.append(target)
+    return found[:3]
+
+
+def _ssl_ctx():
+    """Стандартные корневые сертификаты + корневой/промежуточный УЦ Минцифры: им подписаны сайты Т-Банка.
+    Проверка сертификата остаётся включённой."""
+    ctx = ssl.create_default_context()
+    ctx.load_verify_locations(cadata=RUSSIAN_TRUSTED_CA)
+    return ctx
+
+
+def _http_get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 LineaSchool-finmodel"})
+    with urllib.request.urlopen(req, timeout=15, context=_ssl_ctx()) as r:
+        return r.read(20 * 1024 * 1024)
+
+
+def _statement_files(msg, seen=None):
+    """Вложения письма, похожие на выписку 1С (в т.ч. внутри zip). seen — список «тип:имя» для диагностики."""
+    files = []
+    for part in msg.walk():
+        if part.get_content_maintype() == "multipart":
+            continue
+        name = _dec(part.get_filename() or part.get_param("name") or "")
+        data = part.get_payload(decode=True)
+        if seen is not None:
+            seen.append(f"{part.get_content_type()}:{name}:{len(data or b'')}:{(data or b'')[:40]!r}")
+        if not data:
+            continue
+        if name or part.get_content_maintype() != "text":
+            files += _files_from_bytes(data, name)
+    return files
+
+
+def check_mail(cur, conn):
+    pwd = os.environ.get("MAIL_PASSWORD")
+    if not pwd:
+        return {"ok": False, "error": "Нет пароля почты (MAIL_PASSWORD)"}
+    cur.execute(f"SELECT value_text FROM {S}.fm_constants WHERE key = 'bank_mail_senders'")
+    senders = [x.strip().lower() for x in ((cur.fetchone() or {}).get("value_text") or "").split(",") if x.strip()]
+    if not senders:
+        return {"ok": False, "error": "Не указаны отправители выписок"}
+    cur.execute(f"SELECT message_id FROM {S}.fm_bank_mail_log")
+    done = {r["message_id"] for r in cur.fetchall()}
+    since = (datetime.datetime.utcnow() - datetime.timedelta(days=MAIL_DAYS)).strftime("%d-%b-%Y")
+
+    imap = imaplib.IMAP4_SSL(MAIL_HOST, timeout=15)
+    imap.login(MAIL_USER, pwd)
+    report, letters, inserted = [], 0, 0
+    try:
+        for folder in MAIL_FOLDERS:
+            if imap.select(f'"{folder}"', readonly=True)[0] != "OK":
+                continue
+            # Один поиск на папку: OR FROM a OR FROM b FROM c
+            crit = f'FROM "{senders[-1]}"'
+            for snd in reversed(senders[:-1]):
+                crit = f'OR FROM "{snd}" {crit}'
+            st, data = imap.search(None, f"({crit}) SINCE {since}")
+            ids = data[0].split() if st == "OK" and data and data[0] else []
+            ids = sorted(set(ids), key=int)[-MAIL_MAX:]
+            if not ids:
+                continue
+            # Сначала только заголовки (дёшево), тело — лишь у новых писем с вложениями.
+            st, hdr = imap.fetch(b",".join(ids).decode(), "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID FROM SUBJECT DATE CONTENT-TYPE)])")
+            fresh = []
+            for part in hdr or []:
+                if not isinstance(part, tuple):
+                    continue
+                num = part[0].split()[0]
+                h = email.message_from_bytes(part[1])
+                mid = (h.get("Message-ID") or f"{folder}:{num.decode()}").strip()[:300]
+                if mid in done or "multipart" not in (h.get("Content-Type") or "").lower():
+                    continue
+                fresh.append((num, mid, h))
+            for num, mid, h in fresh:
+                letters += 1
+                st, body = imap.fetch(num.decode(), "(BODY.PEEK[])")
+                raw = next((p[1] for p in body or [] if isinstance(p, tuple)), None)
+                if not raw:
+                    continue
+                msg = email.message_from_bytes(raw)
+                n_files, n_ins, err, seen = 0, 0, "", []
+                for text in _statement_files(msg, seen):
+                    try:
+                        r = import_1c_text(cur, text)
+                        n_files += 1
+                        n_ins += r["inserted"]
+                    except ValueError as e:
+                        err = str(e)
+                if not n_files and not err:
+                    # Т-Бизнес кладёт не вложение, а ссылку «Скачать» (zip с выпиской 1С, живёт 30 дней).
+                    for url in _download_links(msg):
+                        try:
+                            for text in _files_from_bytes(_http_get(url), "statement.zip"):
+                                r = import_1c_text(cur, text)
+                                n_files += 1
+                                n_ins += r["inserted"]
+                        except (ValueError, urllib.error.URLError, OSError) as e:
+                            err = f"Не удалось скачать выписку по ссылке: {e}"
+                if not n_files and not err:
+                    err = "В письме нет выписки 1С (ни вложения, ни ссылки на скачивание)"
+                try:
+                    when = email.utils.parsedate_to_datetime(h.get("Date")).astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                except (TypeError, ValueError):
+                    when = None
+                cur.execute(
+                    f"INSERT INTO {S}.fm_bank_mail_log (message_id, sender, subject, received_at, files, inserted, error) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (message_id) DO NOTHING",
+                    (mid, _dec(h.get("From"))[:200], _dec(h.get("Subject"))[:300], when, n_files, n_ins, err),
+                )
+                done.add(mid)
+                inserted += n_ins
+                report.append({"subject": _dec(h.get("Subject"))[:120], "files": n_files, "inserted": n_ins})
+    finally:
+        try:
+            imap.logout()
+        except Exception:
+            pass
+    cur.execute(f"UPDATE {S}.fm_constants SET value_text = %s WHERE key = 'bank_mail_checked_at'",
+                (datetime.datetime.utcnow().isoformat(timespec="seconds"),))
     conn.commit()
-    return resp(200, {"ok": True, "accounts": sorted(own), "total": len(uniq), "inserted": inserted,
-                      "skipped": len(uniq) - inserted,
-                      "period": [accounts[0].get("ДатаНачала"), accounts[0].get("ДатаКонца")] if accounts else None})
+    return {"ok": True, "letters": letters, "inserted": inserted, "items": report}
 
 
 # ---------------- T-API (Т-Бизнес) ----------------
@@ -249,7 +453,7 @@ def _tapi_get(token, params):
     url = TAPI_URL + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "X-Request-Id": str(uuid.uuid4()),
                                                "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=20) as r:
+    with urllib.request.urlopen(req, timeout=20, context=_ssl_ctx()) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -378,9 +582,14 @@ def get_bank(cur, params):
     rules = [dict(r) for r in cur.fetchall()]
     cur.execute(f"SELECT * FROM {S}.fm_cashflow_fact_manual ORDER BY month_id, line")
     manual = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT * FROM {S}.fm_bank_mail_log ORDER BY processed_at DESC LIMIT 10")
+    mail_log = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT key, value_text FROM {S}.fm_constants WHERE key IN ('bank_mail_senders', 'bank_mail_checked_at')")
+    mc = {r["key"]: r["value_text"] for r in cur.fetchall()}
     cur.execute(f"SELECT value_text FROM {S}.fm_constants WHERE key = 'bank_fact_from'")
     r = cur.fetchone()
-    return resp(200, {"ok": True, "accounts": accounts, "months": months, "month": month, "operations": ops,
+    return resp(200, {"ok": True, "mail_log": mail_log, "mail_senders": mc.get("bank_mail_senders") or "",
+                      "mail_checked_at": mc.get("bank_mail_checked_at"), "accounts": accounts, "months": months, "month": month, "operations": ops,
                       "rules": rules, "manual": manual, "fact_from": (r or {}).get("value_text") or "2026-10",
                       "tapi_configured": bool(os.environ.get("TBANK_BUSINESS_API_TOKEN")),
                       "today": msk_today().isoformat()})
@@ -480,7 +689,7 @@ def set_manual(cur, conn, body):
 
 def handler(event: dict, context) -> dict:
     """Банк в финмодели: GET ?action=bank[&month=YYYY-MM]; POST import_1c (file base64) / sync_tapi / set_category /
-    save_rule / delete_rule / reapply / set_manual."""
+    save_rule / delete_rule / reapply / set_manual / check_mail / set_mail_senders."""
     method = event.get("httpMethod", "GET")
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": "", "isBase64Encoded": False}
@@ -510,6 +719,26 @@ def handler(event: dict, context) -> dict:
                 return resp(200, {"ok": True, "updated": n})
             if action == "set_manual":
                 return set_manual(cur, conn, body)
+            if action == "check_mail_if_stale":
+                # При открытии финмодели: почту трогаем не чаще раза в 6 часов, иначе ответ мгновенный.
+                cur.execute(f"SELECT value_text FROM {S}.fm_constants WHERE key = 'bank_mail_checked_at'")
+                last = (cur.fetchone() or {}).get("value_text")
+                try:
+                    fresh = last and datetime.datetime.utcnow() - datetime.datetime.fromisoformat(last) < datetime.timedelta(hours=6)
+                except ValueError:
+                    fresh = False
+                if fresh:
+                    return resp(200, {"ok": True, "skipped": True, "inserted": 0})
+                r = check_mail(cur, conn)
+                return resp(200, r)
+            if action == "check_mail":
+                r = check_mail(cur, conn)
+                return resp(200 if r.get("ok") else 400, r)
+            if action == "set_mail_senders":
+                cur.execute(f"UPDATE {S}.fm_constants SET value_text = %s WHERE key = 'bank_mail_senders'",
+                            (str(body.get("senders") or "")[:500],))
+                conn.commit()
+                return resp(200, {"ok": True})
             return resp(400, {"error": "Неизвестное действие"})
         return resp(405, {"error": "Метод не поддерживается"})
     finally:

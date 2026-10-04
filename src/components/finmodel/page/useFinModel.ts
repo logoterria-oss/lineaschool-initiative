@@ -5,6 +5,7 @@ import type PayoutsTable from '@/components/finmodel/PayoutsTable';
 import type OneTimeExpensesTable from '@/components/finmodel/OneTimeExpensesTable';
 import type { View as ScenarioView } from '@/components/finmodel/ScenariosPanel';
 import { exportModelCsv, exportModelXlsx } from '@/components/finmodel/dashboardUtils';
+import { checkBankMailIfStale } from '@/lib/bankApi';
 import {
   DashboardData, fetchDashboard, notificationAction, setTaxRegimeGlobal, closeStudentsPrev, recalcModel, TaxRegimeGlobal,
   AdaptationData, fetchAdaptation, ScenariosData, fetchScenarios, CashflowData, fetchCashflow, PnlData, fetchPnl, OneTimeData, fetchOneTime, saveOneTime, deleteOneTime, PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, RevenueData, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
@@ -77,6 +78,18 @@ export const useFinModel = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Выписки банков с почты: в фоне, не чаще раза в 6 часов. Если пришли новые операции — освежаем дашборд.
+  useEffect(() => {
+    checkBankMailIfStale()
+      .then((r) => {
+        if (!r.skipped && r.inserted > 0) {
+          setCashflow(null);
+          fetchDashboard().then(setDash).catch(() => undefined);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (tab !== 'pnl' || loading) return;

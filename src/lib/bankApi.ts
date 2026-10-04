@@ -72,7 +72,21 @@ export interface ManualFact {
   note: string;
 }
 
+export interface BankMailLog {
+  message_id: string;
+  sender: string;
+  subject: string;
+  received_at: string | null;
+  files: number;
+  inserted: number;
+  error: string;
+  processed_at: string;
+}
+
 export interface BankData {
+  mail_log: BankMailLog[];
+  mail_senders: string;
+  mail_checked_at: string | null;
   accounts: BankAccount[];
   months: { m: string; n: number; unc: number }[];
   month: string;
@@ -117,3 +131,10 @@ export const saveBankRule = (r: Partial<BankRule>) => post({ action: 'save_rule'
 export const deleteBankRule = (id: number) => post({ action: 'delete_rule', id });
 export const setManualFact = (month: string, values: Record<string, number | null>, note = '') =>
   post({ action: 'set_manual', month, values, note });
+
+export const checkBankMail = () =>
+  post({ action: 'check_mail' }) as Promise<{ letters: number; inserted: number; items: { subject: string; files: number; inserted: number }[] }>;
+/** Фоновая проверка почты при открытии финмодели: не чаще раза в 6 часов, иначе мгновенный ответ. */
+export const checkBankMailIfStale = () =>
+  post({ action: 'check_mail_if_stale' }) as Promise<{ skipped?: boolean; inserted: number }>;
+export const setMailSenders = (senders: string) => post({ action: 'set_mail_senders', senders });

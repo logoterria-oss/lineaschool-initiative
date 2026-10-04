@@ -1,0 +1,1 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_bank_mail_log SET message_id = 'retry4:' || message_id WHERE files = 0 AND message_id NOT LIKE 'retry%';

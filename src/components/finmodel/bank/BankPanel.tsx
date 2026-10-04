@@ -5,6 +5,7 @@ import BankSources from './BankSources';
 import BankOperations from './BankOperations';
 import BankRules from './BankRules';
 import BankManualFacts from './BankManualFacts';
+import BankMail from './BankMail';
 
 interface Props {
   onModelChanged: () => void;
@@ -45,6 +46,7 @@ const BankPanel = ({ onModelChanged }: Props) => {
   return (
     <div className="space-y-4">
       <BankSources data={data} onChanged={changed} />
+      <BankMail data={data} onChanged={changed} />
       <BankOperations data={data} onMonth={(m) => load(m)} onChanged={changed} />
       <BankRules data={data} onChanged={changed} />
       <BankManualFacts key={data.manual.length} data={data} onChanged={changed} />
