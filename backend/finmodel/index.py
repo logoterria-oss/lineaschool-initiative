@@ -2093,6 +2093,63 @@ def adapt_set_base(cur, conn, body):
 CF_OUT = ("variable", "fixed", "ano", "one_time", "tax", "interest", "body", "payout")
 
 
+BANK_LINES = ("revenue", *CF_OUT, "other")
+
+
+def bank_facts(cur, c):
+    """Банковский факт для Cash Flow (с месяца bank_fact_from): суммы по строкам из разнесённых операций
+    рабочих счетов. Переводы между своими счетами и «не учитывать» пропускаются. Поступления — со знаком,
+    удержания эквайринга уменьшают их; «прочее» и неразнесённое — сальдо (плюс — приток)."""
+    start = c.get("bank_fact_from") or "2026-10"
+    cur.execute(
+        f"SELECT to_char(o.op_date, 'YYYY-MM') AS m, o.category, o.direction, sum(o.amount) AS s, count(*) AS n "
+        f"FROM {S}.fm_bank_operations o JOIN {S}.fm_bank_accounts a USING (account) "
+        "WHERE a.use_in_cf AND o.category NOT IN ('transfer', 'ignore') AND to_char(o.op_date, 'YYYY-MM') >= %s "
+        "GROUP BY 1, 2, 3",
+        (start,),
+    )
+    facts = {}
+    for r in cur.fetchall():
+        f = facts.setdefault(r["m"], {k: 0.0 for k in BANK_LINES} | {"uncategorized": 0, "ops": 0})
+        v = float(r["s"])
+        cat = r["category"]
+        f["ops"] += int(r["n"])
+        if cat == "uncategorized":
+            f["uncategorized"] += int(r["n"])
+            cat = "other"
+        if cat in ("revenue", "other"):
+            f[cat] += v if r["direction"] == "in" else -v
+        elif cat in CF_OUT:
+            f[cat] += v if r["direction"] == "out" else -v
+    return start, facts
+
+
+def bank_start_balance(cur, c, fact_from):
+    """Остаток на начало первого месяца банковского факта: ручной итог «остаток на конец» предыдущего месяца,
+    иначе остатки по банку на последний день предыдущего месяца, иначе константы модели."""
+    prev = add_months(fact_from, -1)
+    cur.execute(f"SELECT amount FROM {S}.fm_cashflow_fact_manual WHERE month_id = %s AND line = 'end_balance'", (prev,))
+    r = cur.fetchone()
+    tb = float(c.get("start_balance_tbank") or 0)
+    lk = float(c.get("start_balance_lokobank") or 0)
+    if r:
+        return {"total": float(r["amount"]), "tbank": None, "lokobank": None, "source": "manual"}
+    y, m = int(fact_from[:4]), int(fact_from[5:7])
+    day = datetime.date(y, m, 1) - datetime.timedelta(days=1)
+    cur.execute(
+        f"SELECT a.bank, sum(b.balance_end) AS s FROM {S}.fm_bank_balances b JOIN {S}.fm_bank_accounts a USING (account) "
+        "WHERE a.use_in_cf AND b.date = %s GROUP BY a.bank",
+        (day,),
+    )
+    got = {r["bank"]: float(r["s"]) for r in cur.fetchall()}
+    src = "bank" if got else "constants"
+    tb = got.get("tbank", tb)
+    lk = got.get("loko", lk)
+    return {"total": tb + lk, "tbank": tb, "lokobank": lk, "source": src,
+            "tbank_source": "bank" if "tbank" in got else "constants",
+            "lokobank_source": "bank" if "loko" in got else "constants"}
+
+
 def calc_cashflow(cur, conn):
     pnl = calc_pnl(cur, conn)
     payouts = calc_payouts(cur, conn, fresh=True)
@@ -2102,10 +2159,21 @@ def calc_cashflow(cur, conn):
     pay = {(r["month_id"], sc): v["payout_final"] for r in payouts["rows"] for sc, v in r["values"].items()}
     cur.execute(f"SELECT month_id, scenario, revenue FROM {S}.fm_revenue_monthly")
     inflow = {(r["month_id"], r["scenario"]): float(r["revenue"]) for r in cur.fetchall()}
-    start = float(c.get("start_balance_total") or 0)
+    fact_from, facts = bank_facts(cur, c)
+    sb = bank_start_balance(cur, c, fact_from)
+    start = sb["total"]
+    cm = current_month()
+
+    def month_source(m):
+        if m < fact_from or m > cm:
+            return "forecast"
+        if m < cm:
+            return "fact" if m in facts else "forecast"
+        return "partial" if m in facts else "forecast"
 
     pnl_by_month = {r["month_id"]: r for r in pnl["rows"]}
-    rows = {r["month_id"]: {"month_id": r["month_id"], "tax_regime": r["tax_regime"], "values": {}} for r in pnl["rows"]}
+    rows = {r["month_id"]: {"month_id": r["month_id"], "tax_regime": r["tax_regime"], "source": month_source(r["month_id"]),
+                            "bank": facts.get(r["month_id"]), "values": {}} for r in pnl["rows"]}
     db, summary = [], {}
     for sc in SCENARIOS:
         bal, total_out, worst, gap = start, 0.0, None, []
@@ -2116,14 +2184,24 @@ def calc_cashflow(cur, conn):
             v = {"start_balance": bal, "revenue": inflow.get((m, sc), 0.0),
                  "variable": p["variable"], "fixed": p["fixed"], "ano": p["ano"], "one_time": p["one_time"],
                  "tax": p["tax"], "interest": p["interest"], "body": float(body.get(m, 0)),
-                 "payout": float(pay.get((m, sc), 0))}
+                 "payout": float(pay.get((m, sc), 0)), "other": 0.0}
+            src, f = rows[m]["source"], facts.get(m)
+            if src == "fact":
+                # Прошедший месяц — только банк, одинаково для всех сценариев.
+                for k in BANK_LINES:
+                    v[k] = f[k]
+            elif src == "partial":
+                # Текущий месяц: по каждой строке факт, если он уже больше прогноза, иначе прогноз (остаток ещё будет).
+                for k in ("revenue", *CF_OUT):
+                    v[k] = max(f[k], v[k])
+                v["other"] = f["other"]
             out = sum(v[k] for k in CF_OUT)
             v["outflow"] = out
-            v["net_flow"] = v["revenue"] - out
+            v["net_flow"] = v["revenue"] + v["other"] - out
             v["end_balance"] = bal + v["net_flow"]
             v = {k: round(x, 2) for k, x in v.items()}
             rows[m]["values"][sc] = v
-            db.append((m, sc, v["start_balance"], v["revenue"], *[v[k] for k in CF_OUT], v["net_flow"], v["end_balance"]))
+            db.append((m, sc, v["start_balance"], v["revenue"], *[v[k] for k in CF_OUT], v["other"], v["net_flow"], v["end_balance"]))
             bal = v["end_balance"]
             total_out += out
             if worst is None or bal < worst[1]:
@@ -2139,24 +2217,29 @@ def calc_cashflow(cur, conn):
             "gap_months": gap,
             "first_gap_month": gap[0] if gap else None,
             "total_outflow": round(total_out, 2),
-            **{k: round(sum(v[k] for v in vals), 2) for k in ("revenue", *CF_OUT, "net_flow")},
+            **{k: round(sum(v[k] for v in vals), 2) for k in ("revenue", *CF_OUT, "other", "net_flow")},
         }
 
     cur.execute(f"DELETE FROM {S}.fm_cashflow_monthly")
     if db:
         execute_values(
             cur,
-            f"INSERT INTO {S}.fm_cashflow_monthly (month_id, scenario, start_balance, revenue, {', '.join(CF_OUT)}, net_flow, end_balance) VALUES %s",
+            f"INSERT INTO {S}.fm_cashflow_monthly (month_id, scenario, start_balance, revenue, {', '.join(CF_OUT)}, other, net_flow, end_balance) VALUES %s",
             db,
         )
     conn.commit()
     return {
         "ok": True,
-        "current_month": current_month(),
+        "current_month": cm,
         "active_scenario": pnl["active_scenario"],
         "credit_option": option,
-        "start_balance": {"total": round(start, 2), "tbank": c.get("start_balance_tbank"),
-                          "lokobank": c.get("start_balance_lokobank"), "date": c.get("start_balance_date")},
+        "fact_from": fact_from,
+        "start_balance": {"total": round(start, 2),
+                          "tbank": round(sb["tbank"], 2) if sb["tbank"] is not None else None,
+                          "lokobank": round(sb["lokobank"], 2) if sb["lokobank"] is not None else None,
+                          "source": sb["source"], "tbank_source": sb.get("tbank_source"),
+                          "lokobank_source": sb.get("lokobank_source"),
+                          "date": f"{fact_from}-01", "model_total": float(c.get("start_balance_total") or 0)},
         "rows": [rows[m] for m in sorted(rows)],
         "summary": summary,
     }
@@ -2617,7 +2700,7 @@ def scenario_inputs(cur, conn):
         "f_corr": adapt_corrections(cur, "fact"),
         "bonus_pct": float(ruo.get("bonus_pct") or 0.5) / 100,
         "month": month_in,
-        "start_balance": float(c.get("start_balance_total") or 0),
+        "start_balance": bank_start_balance(cur, c, c.get("bank_fact_from") or "2026-10")["total"],
         "credit_default": c.get("credit_option_default") if c.get("credit_option_default") in CREDIT_OPTIONS else "6m",
         "price": float(c.get("avg_subscription_price") or 15000),
         "students": int(c.get("students_current") or 42),

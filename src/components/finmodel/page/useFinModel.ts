@@ -11,7 +11,7 @@ import {
   fetchRevenue, fetchStudents, setActiveScenario, setStudents, setVariablePct,
 } from '@/lib/finmodelApi';
 
-export type Tab = 'dashboard' | 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes' | 'payouts' | 'one_time' | 'pnl' | 'cashflow' | 'adaptation' | 'scenarios';
+export type Tab = 'dashboard' | 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes' | 'payouts' | 'one_time' | 'pnl' | 'cashflow' | 'adaptation' | 'scenarios' | 'bank';
 
 export const useFinModel = () => {
   const [data, setData] = useState<AvansData | null>(null);
@@ -335,6 +335,12 @@ export const useFinModel = () => {
       else exportModelCsv(b);
     });
 
+  // Банк изменил факт Cash Flow: сбрасываем закэшированный Cash Flow и обновляем дашборд.
+  const onBankChanged = () => {
+    setCashflow(null);
+    refreshDash().catch(() => undefined);
+  };
+
   const notifTabs = new Set((dash?.notifications || []).map((n) => (n.action_url === 'close_month' ? 'avans' : n.action_url)));
   const unread = (dash?.notifications || []).filter((n) => !n.read_at).length;
   const monthOpen = !!dash && (dash.notifications.some((n) => n.type === 'month_not_closed') || dash.to_close.avans.length > 0 || dash.to_close.fact.length > 0);
@@ -348,7 +354,7 @@ export const useFinModel = () => {
     tab, setTab, dash, setDash, scView, setScView, busyTop, active, loading, error, load,
     onAdaptChanged, onCfCredit, onCfPayoutPct, switchScenario, onSetPct, onCloseStudents, onManualStudents,
     fixedAction, onAnoSave, onOneTimeSave, onOneTimeDelete, onPayoutSave, onTaxRegime, onCreditOption,
-    goTo, onCloseMonth, onRecalc, onTaxGlobal, onCreditTop, onScenarioTop, onNotif, onExport,
+    goTo, onBankChanged, onCloseMonth, onRecalc, onTaxGlobal, onCreditTop, onScenarioTop, onNotif, onExport,
     notifTabs, unread, monthOpen, annual, annualFact,
   };
 };

@@ -9,7 +9,7 @@ const FinModelTabsNav = ({ fm }: Props) => {
 
   return (
     <div className="flex flex-wrap gap-x-1 border-b border-gray-200 print:hidden">
-      {([['dashboard', 'Дашборд'], ['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['one_time', 'Разовые расходы'], ['credit', 'Кредит'], ['ano', 'АНО'], ['taxes', 'Налоги'], ['payouts', 'Выплата собственнику'], ['pnl', 'P&L'], ['cashflow', 'Cash Flow'], ['scenarios', 'Сценарии'], ['adaptation', 'Адаптация']] as [Tab, string][]).map(([t, label]) => (
+      {([['dashboard', 'Дашборд'], ['avans', 'Авансовые доходы'], ['fact', 'Фактические доходы'], ['revenue', 'Поступления и переменные'], ['students', 'Ученики и занятия'], ['fixed', 'Постоянные расходы'], ['one_time', 'Разовые расходы'], ['credit', 'Кредит'], ['ano', 'АНО'], ['taxes', 'Налоги'], ['payouts', 'Выплата собственнику'], ['pnl', 'P&L'], ['cashflow', 'Cash Flow'], ['bank', 'Банк'], ['scenarios', 'Сценарии'], ['adaptation', 'Адаптация']] as [Tab, string][]).map(([t, label]) => (
         <button
           key={t}
           onClick={() => setTab(t)}

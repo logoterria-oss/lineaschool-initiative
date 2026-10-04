@@ -28,6 +28,7 @@ const LINES: CfLine[] = [
   { key: 'interest', label: 'Кредит: проценты', kind: 'out' },
   { key: 'body', label: 'Кредит: тело', kind: 'out' },
   { key: 'payout', label: 'Выплата собственнику', kind: 'out' },
+  { key: 'other', label: 'Прочее (сальдо)', kind: 'in' },
   { key: 'net_flow', label: 'Чистый поток', kind: 'net' },
   { key: 'end_balance', label: 'Остаток на конец', kind: 'end' },
 ];
@@ -84,8 +85,12 @@ const CashflowTable = ({ data, active, onCreditOption, onPayoutPct }: Props) => 
             <h2 className="text-lg font-semibold text-gray-900">Cash Flow — движение денег</h2>
             <p className="text-sm text-gray-500 mt-0.5 max-w-3xl">
               Поступления — авансы минус эквайринг (не факт). Кредит — проценты и тело, выплата собственнику — отток.
-              Стартовый остаток {fmMoney(data.start_balance.total)} (Т-Банк {fmMoney(data.start_balance.tbank)} + Локо-Банк{' '}
-              {fmMoney(data.start_balance.lokobank)}) на {data.start_balance.date ? new Date(data.start_balance.date).toLocaleDateString('ru-RU') : '01.10.2026'}.
+              С {data.fact_from ? fmMonthLabel(data.fact_from) : 'окт 2026'} прошедшие месяцы — факт по банку, текущий — факт + прогноз остатка месяца.
+              Остаток на начало {fmMoney(data.start_balance.total)}
+              {data.start_balance.source === 'manual'
+                ? ' — ручной итог прошлого месяца'
+                : ` (Т-Банк ${fmMoney(data.start_balance.tbank ?? 0)}${data.start_balance.tbank_source === 'bank' ? ' по выписке' : ''} + Локо-Банк ${fmMoney(data.start_balance.lokobank ?? 0)}${data.start_balance.lokobank_source === 'bank' ? ' по выписке' : ' из настроек'})`}
+              {' '}на {data.start_balance.date ? new Date(data.start_balance.date).toLocaleDateString('ru-RU') : '01.10.2026'}.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -176,6 +181,10 @@ const CashflowTable = ({ data, active, onCreditOption, onPayoutPct }: Props) => 
                 {rows.map((r) => (
                   <th key={r.month_id} className={`text-right px-3 py-2 font-medium whitespace-nowrap ${r.month_id === data.current_month ? 'text-emerald-700' : ''}`}>
                     {fmMonthLabel(r.month_id)}
+                    <div className={`text-[10px] font-normal ${r.source === 'fact' ? 'text-emerald-600' : r.source === 'partial' ? 'text-amber-600' : 'text-gray-400'}`}>
+                      {r.source === 'fact' ? 'банк' : r.source === 'partial' ? 'банк + прогноз' : 'прогноз'}
+                      {r.bank && r.bank.uncategorized > 0 && <span className="text-rose-600" title="Неразнесённые операции — вкладка «Банк»"> · {r.bank.uncategorized} ?</span>}
+                    </div>
                   </th>
                 ))}
                 <th className="text-right px-4 py-2 font-semibold text-gray-700 bg-gray-100">Итого</th>
@@ -195,7 +204,7 @@ const CashflowTable = ({ data, active, onCreditOption, onPayoutPct }: Props) => 
                       {l.label}
                     </td>
                     {rows.map((r) => {
-                      const v = r.values[active][l.key];
+                      const v = r.values[active][l.key] ?? 0;
                       const neg = l.kind === 'end' && v < 0;
                       return (
                         <td key={r.month_id} className={`px-3 py-2 text-right tabular-nums whitespace-nowrap ${neg ? 'bg-rose-100' : ''} ${strong && l.kind !== 'balance' ? signCls(v) : l.kind === 'out' ? 'text-gray-600' : ''}`}>

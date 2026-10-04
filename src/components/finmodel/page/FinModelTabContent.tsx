@@ -16,6 +16,7 @@ import CashflowTable from '@/components/finmodel/CashflowTable';
 import AdaptationPanel from '@/components/finmodel/AdaptationPanel';
 import ScenariosPanel from '@/components/finmodel/ScenariosPanel';
 import DashboardView from '@/components/finmodel/DashboardView';
+import BankPanel from '@/components/finmodel/bank/BankPanel';
 import {
   fetchDashboard, fetchScenarios, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate,
 } from '@/lib/finmodelApi';
@@ -40,7 +41,7 @@ const FinModelTabContent = ({ fm }: Props) => {
     fixed, fixedAction,
     students, onCloseStudents, onManualStudents,
     revenue, onSetPct,
-    data, fact,
+    data, fact, onBankChanged,
   } = fm;
 
   return tab === 'dashboard' ? (
@@ -55,6 +56,8 @@ const FinModelTabContent = ({ fm }: Props) => {
         onChanged={async () => { const [fx, db] = await Promise.all([fetchFixed(), fetchDashboard()]); setFixed(fx); setDash(db); }}
       />
     ) : null
+  ) : tab === 'bank' ? (
+    <BankPanel onModelChanged={onBankChanged} />
   ) : tab === 'scenarios' ? (
     scenarios && !scLoading ? (
       <ScenariosPanel

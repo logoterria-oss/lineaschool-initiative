@@ -640,14 +640,24 @@ export type CfOutKey = (typeof CF_OUT_KEYS)[number];
 export type CfValues = Record<CfOutKey, number> & {
   start_balance: number;
   revenue: number;
+  other: number;
   outflow: number;
   net_flow: number;
   end_balance: number;
 };
 
+export type CfSource = 'fact' | 'partial' | 'forecast';
+
+export interface CfBankFact {
+  ops: number;
+  uncategorized: number;
+}
+
 export interface CfRow {
   month_id: string;
   tax_regime: TaxRegime | null;
+  source?: CfSource;
+  bank?: CfBankFact | null;
   values: Record<Scenario, CfValues>;
 }
 
@@ -660,6 +670,7 @@ export type CfSummary = Record<CfOutKey, number> & {
   first_gap_month: string | null;
   total_outflow: number;
   revenue: number;
+  other: number;
   net_flow: number;
 };
 
@@ -667,7 +678,17 @@ export interface CashflowData {
   current_month: string;
   active_scenario: Scenario;
   credit_option: CreditOption;
-  start_balance: { total: number; tbank: number; lokobank: number; date: string | null };
+  start_balance: {
+    total: number;
+    tbank: number | null;
+    lokobank: number | null;
+    date: string | null;
+    source?: 'bank' | 'manual' | 'constants';
+    tbank_source?: 'bank' | 'constants';
+    lokobank_source?: 'bank' | 'constants';
+    model_total?: number;
+  };
+  fact_from?: string;
   rows: CfRow[];
   summary: Record<Scenario, CfSummary>;
 }
