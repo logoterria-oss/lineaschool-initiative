@@ -21,11 +21,8 @@ const GROUP_TEACHERS = [
 
 const WEEKDAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
-// HH:MM строки для выбора
-const TIME_OPTIONS: string[] = [];
-for (let h = 8; h <= 21; h++) {
-  TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:00`);
-}
+const HOUR_OPTIONS = Array.from({ length: 14 }, (_, i) => String(i + 8).padStart(2, '0'));
+const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
 
 interface ScheduleRow { id?: number; weekday: number; time_from: string; time_to: string; }
 type WeekSchedule = Record<number, string[]>; // weekday -> sorted time_from[]
@@ -201,12 +198,24 @@ const EditModal = ({ teacher, initialWs, onClose, onSave }: EditModalProps) => {
                 {isAdding && (
                   <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-green-50">
                     <select
-                      value={addTime}
-                      onChange={(e) => setAddTime(e.target.value)}
+                      value={addTime.slice(0, 2)}
+                      onChange={(e) => setAddTime(`${e.target.value}:${addTime.slice(3, 5)}`)}
+                      aria-label="Часы"
                       className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
                     >
-                      {TIME_OPTIONS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
+                      {HOUR_OPTIONS.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                    <span className="text-gray-500 font-semibold">:</span>
+                    <select
+                      value={addTime.slice(3, 5)}
+                      onChange={(e) => setAddTime(`${addTime.slice(0, 2)}:${e.target.value}`)}
+                      aria-label="Минуты"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+                    >
+                      {MINUTE_OPTIONS.map((m) => (
+                        <option key={m} value={m}>{m}</option>
                       ))}
                     </select>
                     <button
