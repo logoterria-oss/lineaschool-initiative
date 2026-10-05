@@ -271,8 +271,8 @@ export interface AgeGroupRule {
 }
 
 export const AGE_GROUP_RULES: AgeGroupRule[] = [
-  // ВТ и ЧТ 19:00 — подростковая группа
-  { weekdays: [1, 3], time: '19:00', from: 12, to: 16 },
+  // ВТ и ЧТ 18:00 — подростковая группа
+  { weekdays: [1, 3], time: '18:00', from: 12, to: 16 },
 ];
 
 export const findAgeGroupRule = (weekday: number, time: string): AgeGroupRule | null => {

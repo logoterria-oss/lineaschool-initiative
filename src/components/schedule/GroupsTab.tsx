@@ -226,7 +226,7 @@ const GroupsTab = () => {
             </span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-block px-1 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-semibold">
-                14–18 лет
+                12–16 лет
               </span>
               возрастная группа
             </span>
