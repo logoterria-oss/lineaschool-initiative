@@ -207,7 +207,13 @@ def _mark_in_crm(rows: list) -> None:
 
     # (день недели, время, педагог) → имена учеников группы в CRM
     crm: Dict[tuple, list] = {}
-    for r in week.get('rows') or []:
+    # На длинном периоде `rows` — лишь сводка и теряет часть недель,
+    # поэтому проходим и по каждой неделе из `weeks`.
+    all_rows = list(week.get('rows') or [])
+    for wk in week.get('weeks') or []:
+        if isinstance(wk, list):
+            all_rows.extend(wk)
+    for r in all_rows:
         time = r.get('time') or ''
         teacher = int(r.get('teacher_id') or 0)
         for cell in (r.get('cells') or {}).values():
