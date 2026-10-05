@@ -22,7 +22,7 @@ const GROUP_TEACHERS = [
 const WEEKDAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
 const HOUR_OPTIONS = Array.from({ length: 14 }, (_, i) => String(i + 8).padStart(2, '0'));
-const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+const MINUTE_OPTIONS = ['00', '30'];
 
 interface ScheduleRow { id?: number; weekday: number; time_from: string; time_to: string; }
 type WeekSchedule = Record<number, string[]>; // weekday -> sorted time_from[]
