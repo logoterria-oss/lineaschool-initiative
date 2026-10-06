@@ -547,8 +547,8 @@ def variable_pcts(cur):
 
 def resolve_variable_pct(rows, month, corr_rows=()):
     """Свой процент месяца (отчёт или override). Иначе прогноз = опорное значение + адаптационные поправки.
-    Опора — первый месяц из отчёта (или более поздний ручной override); последующие отчёты
-    влияют на прогноз только через адаптацию: прогноз + (факт − прогноз) × K (Промт 13).
+    Опора — последний известный месяц (отчёт, текущий месяц из отчёта или ручное значение);
+    адаптационные поправки учитываются только сделанные после опорного месяца.
     Возвращает (процент, источник, поправка)."""
     own = next((r for r in rows if r["month_id"] == month), None)
     if own:
@@ -556,11 +556,8 @@ def resolve_variable_pct(rows, month, corr_rows=()):
     prev = [r for r in rows if r["month_id"] < month]
     if not prev:
         return None, None, 0.0
-    reports = [r for r in prev if r["source"] == "report"]
-    overrides = [r for r in prev if r["source"] == "override"]
-    anchor = reports[0] if reports else prev[0]
-    if overrides and overrides[-1]["month_id"] > anchor["month_id"]:
-        anchor = overrides[-1]
+    # Опора — самый свежий месяц с известной маржинальностью: отчёт (в т.ч. идущий месяц) или ручное значение.
+    anchor = prev[-1]
     corr = sum(cv for (t, lm, cv) in corr_rows if t == month and lm >= anchor["month_id"])
     vp = min(max(float(anchor["variable_pct"]) + corr, 0.0), 100.0)
     return round(vp, 4), "last", round(corr, 4)
@@ -603,12 +600,16 @@ def revenue_stale(cur):
         f"SELECT (SELECT min(calculated_at) FROM {S}.fm_revenue_monthly) AS calc, "
         f"(SELECT count(*) FROM {S}.fm_revenue_monthly) AS n, "
         f"(SELECT count(*) FROM {S}.fm_revenue_monthly WHERE margin_amount <> fact - variable_amount) AS n_old, "
+        f"(SELECT count(*) FROM {S}.fm_revenue_monthly r WHERE r.variable_pct_source = 'last' "
+        f"AND abs(r.variable_pct - COALESCE(r.variable_pct_correction, 0) - (SELECT v.variable_pct FROM {S}.fm_variable_pct_monthly v "
+        f"WHERE v.month_id < r.month_id ORDER BY v.month_id DESC LIMIT 1)) > 0.0001 "
+        f"AND r.variable_pct > 0 AND r.variable_pct < 100) AS n_anchor, "
         f"(SELECT max(calculated_at) FROM {S}.fm_fact_forecast) AS fact_calc, "
         f"(SELECT max(updated_at) FROM {S}.fm_variable_pct_monthly) AS pct_upd, "
         f"(SELECT updated_at FROM {S}.fm_constants WHERE key = 'acquiring_pct') AS acq_upd"
     )
     r = cur.fetchone()
-    if r["n"] == 0 or not r["calc"] or r["n_old"] > 0:
+    if r["n"] == 0 or not r["calc"] or r["n_old"] > 0 or r["n_anchor"] > 0:
         return True
     return any(t and t > r["calc"] for t in (r["fact_calc"], r["pct_upd"], r["acq_upd"]))
 
