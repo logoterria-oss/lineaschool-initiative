@@ -407,6 +407,8 @@ def _build_month(token, month, test_ids=frozenset()):
         "individual": pack("individual"),
         "group": pack("group"),
         "teachers": teacher_rows,
+        # Уникальные ученики месяца: хотя бы одно проведённое занятие любой формы.
+        "students_total": len(forms["individual"]["students"] | forms["group"]["students"]),
         "diag_lessons": diag_lessons,
         "lessons_total": len(lessons),
         "skipped_no_details": skipped_no_details,

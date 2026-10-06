@@ -560,9 +560,9 @@ def revenue_stale(cur):
 
 # ---------------- УЧЕНИКИ И ЗАНЯТИЯ (справочно) ----------------
 # Все три показателя уже есть в отчётах админки (вариант А): отдельное подключение AlfaCRM не нужно.
-#  • активные ученики — «Динамика учеников» (student_count_weekly, последняя неделя месяца);
+#  • активные ученики — уникальные ученики с занятиями за месяц (CRM, «Маржинальность урока»);
 #  • всего занятий и наполняемость групп — «Маржинальность урока» (margin_unit_cache);
-#  • уроков на ученика = всего занятий / активные ученики.
+#  • уроков на ученика = посещения (каждый ребёнок на групповом отдельно) / активные ученики.
 # В расчёт переменных расходов не входят. Прошедший месяц закрывается руководителем после сверки
 # (данными отчётов или вручную); закрытый месяц больше не меняется.
 
@@ -584,7 +584,9 @@ def students_from_reports(cur, months):
     cur.execute(
         f"SELECT month, computed_at, "
         f"(payload->'individual'->>'lessons')::int + (payload->'group'->>'lessons')::int AS lessons, "
-        f"(payload->'group'->>'avg_group_size')::numeric AS fill "
+        f"(payload->'group'->>'avg_group_size')::numeric AS fill, "
+        f"COALESCE((payload->'individual'->>'units')::int, 0) + COALESCE((payload->'group'->>'units')::int, 0) AS visits, "
+        f"(payload->>'students_total')::int AS students_total "
         f"FROM {S}.margin_unit_cache WHERE month = ANY(%s) AND payload ? 'group'",
         (months,),
     )
@@ -595,9 +597,13 @@ def students_from_reports(cur, months):
         # Снято до конца месяца — значит неполное.
         complete = bool(mr) and mr["computed_at"].strftime("%Y-%m") > m
         out[m] = {
-            "active_students": active.get(m),
+            # Активные = уникальные ученики хотя бы с одним проведённым занятием за месяц (CRM).
+            # Срез последней недели — только запасной вариант: он проседает на праздниках и каникулах.
+            "active_students": mr["students_total"] if mr and mr["students_total"] else active.get(m),
             "total_lessons": mr["lessons"] if mr else None,
             "avg_group_fill": float(mr["fill"]) if mr and mr["fill"] is not None else None,
+            "visits": mr["visits"] if mr else None,
+            "crm_students": bool(mr and mr["students_total"]),
             "report_complete": complete,
             "report_at": mr["computed_at"] if mr else None,
         }
@@ -618,18 +624,24 @@ def get_students(cur, conn):
     for m in reversed(months):
         s, rep = stored.get(m), live[m]
         if s and s["closed"]:
-            rows.append({**s, "state": "closed", "report_complete": True})
+            # Закрытый месяц берёт учеников и посещения из CRM, если они уже посчитаны.
+            act = rep["active_students"] if rep["crm_students"] else s["active_students"]
+            per = _lessons_per_student(rep["visits"], act) if rep["visits"] else s["avg_lessons_per_student"]
+            rows.append({**s, "active_students": act, "avg_lessons_per_student": per,
+                         "state": "closed", "report_complete": True})
             continue
         # Открытый месяц: ручные значения приоритетнее, пустые — из отчётов «на сейчас».
         s = s or {}
-        active = s.get("active_students") if s.get("active_students") is not None else rep["active_students"]
+        active = rep["active_students"] if rep["crm_students"] else (
+            s.get("active_students") if s.get("active_students") is not None else rep["active_students"])
         lessons = s.get("total_lessons") if s.get("total_lessons") is not None else rep["total_lessons"]
         fill = s.get("avg_group_fill") if s.get("avg_group_fill") is not None else rep["avg_group_fill"]
         rows.append({
             "month_id": m,
             "active_students": active,
             "total_lessons": lessons,
-            "avg_lessons_per_student": _lessons_per_student(lessons, active),
+            "avg_lessons_per_student": _lessons_per_student(rep["visits"], active)
+            if rep["visits"] else _lessons_per_student(lessons, active),
             "avg_group_fill": float(fill) if fill is not None else None,
             "source": s.get("source") or "report",
             "lessons_source": s.get("lessons_source") or "report",
