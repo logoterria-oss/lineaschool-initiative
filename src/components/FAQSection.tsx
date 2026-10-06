@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     question: "Как проходят занятия?",
-    answer: "Логопедические и нейропсихологические занятия проходят на платформе ZOOM индивидуально и в мини-группах до 6 человек. Урок длится 40 минут. Расписание составляется под ваш график. В уроки добавляем игры, чтобы ребёнку было интересно и комфортно."
+    answer: "Логопедические и нейропсихологические занятия проходят на платформе ZOOM индивидуально и в мини-группах до 6 человек. Урок длится 40 минут. Расписание составляется под ваш график. В уроки добавляем игры, чтобы ребёнку было интересно и комфортно.\n*групповые занятия не доступны в приложении IOS"
   },
   {
     question: "Всем ли детям подходит онлайн-формат?",
@@ -41,7 +41,7 @@ export default function FAQSection() {
               <AccordionTrigger className="text-left text-lg font-semibold hover:no-underline">
                 {faq.question}
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-gray-600 leading-relaxed whitespace-pre-line">
                 {faq.answer}
               </AccordionContent>
             </AccordionItem>
