@@ -1,4 +1,3 @@
-import Icon from '@/components/ui/icon';
 import { StudentsData, StudentsSource, fmMonthLabel } from '@/lib/finmodelApi';
 
 interface Props {
@@ -25,8 +24,7 @@ export default function StudentsTable({ data }: Props) {
           РУО; тестовые ученики и диагностики не учитываются. Считаются только оплаченные места: пришёл или пропустил
           без уважительной причины (списание). Активные ученики — у кого за месяц было хотя бы одно такое место.
           Уроков на ученика = оплаченные места ÷ активные ученики. Наполняемость группы = оплаченные места на
-          групповых ÷ число групповых занятий. Прошлый месяц фиксируется автоматически кнопкой
-          «Закрыть месяц» — после закрытия данные не меняются.
+          групповых ÷ число групповых занятий. Все месяцы всегда пересчитываются по CRM.
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -57,12 +55,8 @@ export default function StudentsTable({ data }: Props) {
                   <td className="px-4 py-2 text-right tabular-nums">{num(r.avg_group_fill, 2)}</td>
                   <td className="px-4 py-2 text-xs whitespace-nowrap">
                     {!empty && <span className={`px-2 py-0.5 rounded ${src.cls}`}>{src.label}</span>}
-                    {r.closed ? (
-                      <Icon name="Lock" size={13} className="inline ml-2 text-gray-400" />
-                    ) : (
-                      r.state === 'open' && !r.report_complete && r.total_lessons !== null && (
-                        <span className="ml-2 text-amber-600">отчёт снят до конца месяца</span>
-                      )
+                    {r.state === 'open' && !r.report_complete && r.total_lessons !== null && (
+                      <span className="ml-2 text-amber-600">отчёт снят до конца месяца</span>
                     )}
                   </td>
                 </tr>

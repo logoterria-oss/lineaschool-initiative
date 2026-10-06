@@ -6,7 +6,7 @@ import type { View as ScenarioView } from '@/components/finmodel/ScenariosPanel'
 import { exportModelCsv, exportModelXlsx } from '@/components/finmodel/dashboardUtils';
 import { checkBankMailIfStale } from '@/lib/bankApi';
 import {
-  DashboardData, fetchDashboard, notificationAction, setTaxRegimeGlobal, closeStudentsPrev, recalcModel, TaxRegimeGlobal,
+  DashboardData, fetchDashboard, notificationAction, setTaxRegimeGlobal, recalcModel, TaxRegimeGlobal,
   AdaptationData, fetchAdaptation, ScenariosData, fetchScenarios, CashflowData, fetchCashflow, PnlData, fetchPnl, OneTimeData, fetchOneTime, saveOneTime, deleteOneTime, PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, RevenueData, Scenario, StudentsData, fetchAvans, fetchFact,
   fetchRevenue, fetchStudents, setActiveScenario, setVariablePct,
 } from '@/lib/finmodelApi';
@@ -279,17 +279,12 @@ export const useFinModel = () => {
     }
   };
 
-  // Закрыть месяц: авансы и факт — из отчётов (fetchAvans/fetchFact закрывают сами), ученики — по отчётам,
+  // Закрыть месяц: авансы и факт — из отчётов (fetchAvans/fetchFact закрывают сами),
   // затем адаптация и пересчёт прогнозов на сервере.
   const onCloseMonth = () =>
     top('close', async () => {
       await fetchAvans();
       await fetchFact();
-      try {
-        await closeStudentsPrev();
-      } catch (e) {
-        setError(`Авансы и факт закрыты. Ученики: ${e instanceof Error ? e.message : 'не закрыты'} — вкладка «Ученики и занятия».`);
-      }
       await load();
     });
 

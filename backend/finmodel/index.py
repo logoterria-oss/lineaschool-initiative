@@ -622,31 +622,13 @@ def get_students(cur, conn):
     while m <= cur_m:
         months.append(m)
         m = add_months(m, 1)
-    cur.execute(f"SELECT * FROM {S}.fm_students_monthly")
-    stored = {r["month_id"]: dict(r) for r in cur.fetchall()}
     live = students_from_reports(cur, months)
 
     rows = []
     for m in reversed(months):
-        s, rep = stored.get(m), live[m]
-        if s and s["closed"]:
-            # Закрытый месяц берёт учеников и посещения из CRM, если они уже посчитаны.
-            if rep["crm_students"]:
-                rows.append({**s, "active_students": rep["active_students"],
-                             "total_lessons": rep["total_lessons"], "avg_group_fill": rep["avg_group_fill"],
-                             "avg_lessons_per_student": _lessons_per_student(rep["visits"], rep["active_students"]),
-                             "state": "closed", "report_complete": True})
-            else:
-                rows.append({**s, "state": "closed", "report_complete": True})
-            continue
-        # Открытый месяц: ручные значения приоритетнее, пустые — из отчётов «на сейчас».
-        s = s or {}
-        active = rep["active_students"] if rep["crm_students"] else (
-            s.get("active_students") if s.get("active_students") is not None else rep["active_students"])
-        lessons = rep["total_lessons"] if rep["crm_students"] else (
-            s.get("total_lessons") if s.get("total_lessons") is not None else rep["total_lessons"])
-        fill = rep["avg_group_fill"] if rep["crm_students"] else (
-            s.get("avg_group_fill") if s.get("avg_group_fill") is not None else rep["avg_group_fill"])
+        # Закрытия нет: каждый месяц всегда считается заново из CRM.
+        rep = live[m]
+        active, lessons, fill = rep["active_students"], rep["total_lessons"], rep["avg_group_fill"]
         rows.append({
             "month_id": m,
             "active_students": active,
@@ -654,11 +636,11 @@ def get_students(cur, conn):
             "avg_lessons_per_student": _lessons_per_student(rep["visits"], active)
             if rep["visits"] else _lessons_per_student(lessons, active),
             "avg_group_fill": float(fill) if fill is not None else None,
-            "source": s.get("source") or "report",
-            "lessons_source": s.get("lessons_source") or "report",
+            "source": "report",
+            "lessons_source": "report",
             "closed": False,
-            "note": s.get("note") or "",
-            "updated_at": s.get("updated_at") or rep["report_at"],
+            "note": "",
+            "updated_at": rep["report_at"],
             "state": "current" if m == cur_m else "open",
             "report_complete": rep["report_complete"],
             "has_report": rep["total_lessons"] is not None,
@@ -2387,9 +2369,7 @@ def build_notifications(cur, c, cf, sources):
         av_ok = bool(cur.fetchone())
         cur.execute(f"SELECT 1 FROM {S}.fm_fact_monthly WHERE month_id = %s AND closed", (prev,))
         f_ok = bool(cur.fetchone())
-        cur.execute(f"SELECT closed FROM {S}.fm_students_monthly WHERE month_id = %s", (prev,))
-        st = cur.fetchone()
-        missing = [n for n, ok in (("авансы", av_ok), ("факт", f_ok), ("ученики", bool(st and st["closed"]))) if not ok]
+        missing = [n for n, ok in (("авансы", av_ok), ("факт", f_ok)) if not ok]
         if missing:
             add(f"month_not_closed:{prev}", "month_not_closed", "high",
                 f"{month_full(prev)} не закрыт: {', '.join(missing)}. Закрыть?", "close_month")
