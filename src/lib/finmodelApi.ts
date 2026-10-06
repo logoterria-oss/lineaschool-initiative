@@ -215,7 +215,7 @@ export const fmCoef = (v: number | null | undefined, d = 2) =>
   v == null ? '—' : Number(v).toFixed(d).replace('.', ',');
 
 // ---------------- Поступления и переменные ----------------
-export type VariablePctSource = 'report' | 'override' | 'last';
+export type VariablePctSource = 'report' | 'override' | 'last' | 'current';
 
 export interface RevenueCell {
   avans: number;
@@ -230,6 +230,8 @@ export interface RevenueRow {
   month_id: string;
   variable_pct: number;
   variable_pct_source: VariablePctSource;
+  /** Прошедший месяц: закрытые аванс и факт, а не прогноз. */
+  is_actual?: boolean;
   min: RevenueCell;
   base: RevenueCell;
   opt: RevenueCell;
@@ -239,7 +241,7 @@ export interface VariablePctRow {
   month_id: string;
   variable_pct: number;
   margin_pct: number | null;
-  source: 'report' | 'override';
+  source: 'report' | 'override' | 'current';
   note: string;
 }
 
@@ -247,6 +249,9 @@ export interface RevenueData {
   acquiring_pct: number;
   active_scenario: Scenario;
   variable_pcts: VariablePctRow[];
+  /** Прошедшие месяцы с сентября 2026 — факт. */
+  actuals?: RevenueRow[];
+  current_month?: string;
   forecast: RevenueRow[];
   updated_at: string | null;
 }
@@ -261,6 +266,10 @@ export const fetchRevenue = async (): Promise<RevenueData> => {
 /** Переменный % месяца вручную; null — убрать ручное значение и вернуться к последнему известному. */
 export const setVariablePct = (month: string, variable_pct: number | null) =>
   post({ action: 'set_variable_pct', month, variable_pct });
+
+/** Маржинальность идущего месяца из отчёта «Маржинальность урока» (считается тем же кодом, что и отчёт). */
+export const setCurrentMargin = (month: string, margin_pct: number) =>
+  post({ action: 'set_current_margin', month, margin_pct });
 // ---------------- Ученики и занятия (справочно) ----------------
 
 export type StudentsSource = 'alfa' | 'report' | 'manual';

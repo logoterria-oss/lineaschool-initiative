@@ -485,6 +485,61 @@ def sync_margin_from_report(cur):
     return changed
 
 
+def set_current_margin(cur, conn, body):
+    """Маржинальность ИДУЩЕГО месяца — та же цифра, что показывает отчёт «Маржинальность урока»
+    при выборе текущего месяца (считается на клиенте тем же кодом). Ручное значение не перетираем;
+    когда месяц завершится, его заменит зафиксированный отчёт (source = 'report')."""
+    month = str(body.get("month") or "")
+    if month != current_month() or month < MARGIN_FIRST_MONTH:
+        return resp(400, {"error": "Можно передать только текущий месяц"})
+    try:
+        margin = round(float(body.get("margin_pct")), 4)
+    except (TypeError, ValueError):
+        return resp(400, {"error": "Нужен процент маржинальности"})
+    if not 0 <= margin <= 100:
+        return resp(400, {"error": "Процент от 0 до 100"})
+    cur.execute(f"SELECT 1 FROM {S}.fm_months WHERE id = %s", (month,))
+    if not cur.fetchone():
+        return resp(400, {"error": "Нет такого месяца"})
+    cur.execute(f"SELECT source, margin_pct FROM {S}.fm_variable_pct_monthly WHERE month_id = %s", (month,))
+    old = cur.fetchone()
+    if old and (old["source"] != "current" or (old["margin_pct"] is not None and float(old["margin_pct"]) == margin)):
+        return resp(200, {"ok": True, "changed": False})
+    cur.execute(
+        f"INSERT INTO {S}.fm_variable_pct_monthly (month_id, variable_pct, margin_pct, source, note, updated_at) "
+        "VALUES (%s,%s,%s,'current','Отчёт «Маржинальность урока» за текущий месяц (предварительно)',now()) "
+        "ON CONFLICT (month_id) DO UPDATE SET variable_pct = EXCLUDED.variable_pct, margin_pct = EXCLUDED.margin_pct, "
+        "note = EXCLUDED.note, updated_at = now()",
+        (month, round(100 - margin, 4), margin),
+    )
+    recalc_revenue(cur, constants(cur))
+    conn.commit()
+    return resp(200, {"ok": True, "changed": True})
+
+
+def revenue_actuals(cur, c):
+    """Прошедшие месяцы с маржинальностью (с сентября 2026): закрытые аванс и факт + процент из отчёта."""
+    acq = float(c.get("acquiring_pct") or 0)
+    pcts = variable_pcts(cur)
+    avans = {h["month_id"]: float(h["avans"]) for h in history(cur) if h["closed"]}
+    facts = {h["month_id"]: float(h["fact"]) for h in fact_history(cur) if h["closed"]}
+    cm = current_month()
+    out = []
+    for m in sorted(set(avans) & set(facts)):
+        if m < MARGIN_FIRST_MONTH or m >= cm:
+            continue
+        vp, src, _ = resolve_variable_pct(pcts, m)
+        if vp is None:
+            continue
+        av, fa = avans[m], facts[m]
+        var_amount = round(fa * vp / 100)
+        cell = {"avans": round(av), "fact": round(fa), "revenue": round(av * (1 - acq / 100)),
+                "variable_pct": vp, "variable_amount": var_amount, "margin_amount": round(fa) - var_amount}
+        out.append({"month_id": m, "variable_pct": vp, "variable_pct_source": src, "is_actual": True,
+                    **{sc: cell for sc in SCENARIOS}})
+    return out
+
+
 def variable_pcts(cur):
     cur.execute(f"SELECT * FROM {S}.fm_variable_pct_monthly ORDER BY month_id")
     return [dict(r) for r in cur.fetchall()]
@@ -744,6 +799,8 @@ def get_revenue(cur, conn):
         "acquiring_pct": c.get("acquiring_pct"),
         "active_scenario": c.get("avans_scenario_active") or "base",
         "variable_pcts": variable_pcts(cur),
+        "actuals": revenue_actuals(cur, c),
+        "current_month": current_month(),
         "forecast": list(out.values()),
         "updated_at": max((r["calculated_at"] for r in rows), default=None),
     }
@@ -773,7 +830,7 @@ def set_variable_pct(cur, conn, body):
         cur.execute(
             f"INSERT INTO {S}.fm_variable_pct_monthly (month_id, variable_pct, margin_pct, source, updated_at) "
             "VALUES (%s,%s,%s,'override',now()) ON CONFLICT (month_id) DO UPDATE SET "
-            "variable_pct = EXCLUDED.variable_pct, margin_pct = EXCLUDED.margin_pct, updated_at = now()",
+            "variable_pct = EXCLUDED.variable_pct, margin_pct = EXCLUDED.margin_pct, source = 'override', updated_at = now()",
             (month, vp, round(100 - vp, 4)),
         )
     recalc_revenue(cur, constants(cur))
@@ -2396,7 +2453,7 @@ def build_notifications(cur, c, cf, sources):
 
     # 3. Изменение переменного процента > 5 п.п. (месяц к месяцу по данным отчёта/ручным)
     pp = float(c.get("notify_variable_pp") or 5)
-    vps = variable_pcts(cur)
+    vps = [r for r in variable_pcts(cur) if r["source"] != "current"]
     for a, b in zip(vps, vps[1:]):
         d = float(b["variable_pct"]) - float(a["variable_pct"])
         if abs(d) > pp:
@@ -3063,6 +3120,8 @@ def handler(event: dict, context) -> dict:
                 return close_month(cur, conn, body)
             if action == "set_variable_pct":
                 return set_variable_pct(cur, conn, body)
+            if action == "set_current_margin":
+                return set_current_margin(cur, conn, body)
             if action == "fact_close":
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":

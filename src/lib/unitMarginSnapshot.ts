@@ -67,6 +67,38 @@ const pendingMonths = (reports: UnitMarginReport[]) => {
   return out;
 };
 
+/** Пресет ставок, супервизии и ставки педагогов — всё, что нужно для расчёта месяца как в отчёте. */
+async function loadSnapshotContext() {
+  const [preset, supervisions, teacherRates] = await Promise.all([
+    fetchUnitDefaults().catch(() => null),
+    fetchSupervisions().catch(() => [] as Supervision[]),
+    fetchTeacherRates().catch(() => [] as TeacherRate[]),
+  ]);
+  const base = {
+    rates: { ...DEFAULT_RATES, ...(preset?.rates || {}) },
+    individual: { price: 0, rate: DEFAULT_TEACHER_RATE, groupSize: 1, ...(preset?.individual || {}) },
+    group: { price: 0, rate: DEFAULT_TEACHER_RATE, groupSize: 4, ...(preset?.group || {}) },
+  };
+  return { base, supervisions, teacherRates };
+}
+
+/**
+ * Маржинальность текущего (идущего) месяца — ровно та цифра, что показывает
+ * отчёт «Маржинальность урока» при выборе текущего месяца. null — данных нет.
+ */
+export async function currentMonthMargin(): Promise<{ month: string; marginPercent: number } | null> {
+  const m = currentMonth();
+  if (m < FIRST_REPORT_MONTH) return null;
+  const [{ base, supervisions, teacherRates }, fact] = await Promise.all([
+    loadSnapshotContext(),
+    fetchUnitFact(m),
+  ]);
+  if (!fact || (fact.individual.lessons || 0) + (fact.group.lessons || 0) === 0) return null;
+  const snap = buildMonthSnapshot(m, fact, base, supervisions, teacherRates);
+  const pct = Number(snap.totals.marginPercent);
+  return Number.isFinite(pct) ? { month: m, marginPercent: pct } : null;
+}
+
 /**
  * Автоматическая фиксация: каждый завершённый месяц сохраняется один раз
  * (сервер повторно тот же месяц не перезаписывает). Запускается при открытии
@@ -78,16 +110,7 @@ export async function autoFixClosedMonths(): Promise<UnitMarginReport[]> {
   const pending = pendingMonths(reports);
   if (pending.length === 0) return reports;
 
-  const [preset, supervisions, teacherRates] = await Promise.all([
-    fetchUnitDefaults().catch(() => null),
-    fetchSupervisions().catch(() => [] as Supervision[]),
-    fetchTeacherRates().catch(() => [] as TeacherRate[]),
-  ]);
-  const base = {
-    rates: { ...DEFAULT_RATES, ...(preset?.rates || {}) },
-    individual: { price: 0, rate: DEFAULT_TEACHER_RATE, groupSize: 1, ...(preset?.individual || {}) },
-    group: { price: 0, rate: DEFAULT_TEACHER_RATE, groupSize: 4, ...(preset?.group || {}) },
-  };
+  const { base, supervisions, teacherRates } = await loadSnapshotContext();
 
   for (const m of pending) {
     try {

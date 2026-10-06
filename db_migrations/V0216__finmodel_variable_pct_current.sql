@@ -1,0 +1,2 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.fm_variable_pct_monthly DROP CONSTRAINT IF EXISTS fm_variable_pct_monthly_source_check;
+ALTER TABLE t_p93118852_lineaschool_initiati.fm_variable_pct_monthly ADD CONSTRAINT fm_variable_pct_monthly_source_check CHECK (source IN ('report','override','current'));

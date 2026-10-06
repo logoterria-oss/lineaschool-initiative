@@ -5,11 +5,11 @@ import type OneTimeExpensesTable from '@/components/finmodel/OneTimeExpensesTabl
 import type { View as ScenarioView } from '@/components/finmodel/ScenariosPanel';
 import { exportModelCsv, exportModelXlsx } from '@/components/finmodel/dashboardUtils';
 import { checkBankMailIfStale } from '@/lib/bankApi';
-import { autoFixClosedMonths } from '@/lib/unitMarginSnapshot';
+import { autoFixClosedMonths, currentMonthMargin } from '@/lib/unitMarginSnapshot';
 import {
   DashboardData, fetchDashboard, notificationAction, setTaxRegimeGlobal, recalcModel, TaxRegimeGlobal,
   AdaptationData, fetchAdaptation, ScenariosData, fetchScenarios, CashflowData, fetchCashflow, PnlData, fetchPnl, OneTimeData, fetchOneTime, saveOneTime, deleteOneTime, PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, RevenueData, Scenario, StudentsData, fetchAvans, fetchFact,
-  fetchRevenue, fetchStudents, setActiveScenario, setVariablePct,
+  fetchRevenue, fetchStudents, setActiveScenario, setVariablePct, setCurrentMargin,
 } from '@/lib/finmodelApi';
 
 export type Tab = 'dashboard' | 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes' | 'payouts' | 'one_time' | 'pnl' | 'cashflow' | 'adaptation' | 'scenarios' | 'bank';
@@ -47,6 +47,10 @@ export const useFinModel = () => {
     try {
       // Сначала фиксируем завершённые месяцы маржинальности урока (один раз): финмодель берёт из них переменный %.
       await autoFixClosedMonths().catch(() => null);
+      // Маржинальность текущего месяца — та же цифра, что в отчёте «Маржинальность урока» за этот месяц.
+      await currentMonthMargin()
+        .then((cm) => (cm ? setCurrentMargin(cm.month, cm.marginPercent) : null))
+        .catch(() => null);
       const d = await fetchAvans();
       const f = await fetchFact();
       const r = await fetchRevenue();

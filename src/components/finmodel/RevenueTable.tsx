@@ -14,12 +14,14 @@ const SOURCE_LABEL: Record<VariablePctSource, string> = {
   report: 'из отчёта',
   override: 'вручную',
   last: 'прогноз',
+  current: 'отчёт, текущий',
 };
 
 const SOURCE_STYLE: Record<VariablePctSource, string> = {
   report: 'bg-blue-50 text-blue-700',
   override: 'bg-amber-50 text-amber-700',
   last: 'bg-gray-100 text-gray-600',
+  current: 'bg-sky-50 text-sky-700',
 };
 
 function PctCell({ month, pct, source, onSave }: {
@@ -104,6 +106,7 @@ function PctCell({ month, pct, source, onSave }: {
 export default function RevenueTable({ data, active, onSetPct }: Props) {
   const sum = (sc: Scenario, k: 'avans' | 'fact' | 'revenue' | 'variable_amount') =>
     data.forecast.reduce((s, r) => s + (Number(r[sc]?.[k]) || 0), 0);
+  const actuals = data.actuals ?? [];
 
   return (
     <div className="space-y-4">
@@ -112,8 +115,9 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
           <h3 className="font-semibold text-gray-900">Поступления и переменные расходы · {SCENARIO_LABEL[active]}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
             Поступления = аванс − {fmPct(data.acquiring_pct)} эквайринга: деньги на карте и база для 10% собственнику.
-            Маржинальность берётся из отчёта «Маржинальность урока» (с сентября 2026); для будущих месяцев — последняя
-            из отчёта или ваше значение. Переменные расходы = факт × (100% − маржинальность)
+            Маржинальность берётся из отчёта «Маржинальность урока» (с сентября 2026): прошедшие месяцы — зафиксированный
+            отчёт, текущий месяц — та же цифра, что отчёт показывает сейчас; для будущих — прогноз или ваше значение.
+            Переменные расходы = факт × (100% − маржинальность)
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -129,11 +133,49 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
+              {actuals.length > 0 && (
+                <tr className="bg-gray-50/70">
+                  <td colSpan={6} className="px-4 py-1.5 text-[11px] uppercase tracking-wide text-gray-500">Факт</td>
+                </tr>
+              )}
+              {actuals.map((r) => {
+                const c = r[active];
+                return (
+                  <tr key={`a-${r.month_id}`} className="bg-blue-50/30">
+                    <td className="px-4 py-2 font-medium text-gray-900">
+                      {fmMonthLabel(r.month_id)}
+                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">факт</span>
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-gray-600">{fmMoney(c?.avans)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-gray-600">{fmMoney(c?.fact)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-emerald-800">{fmMoney(c?.revenue)}</td>
+                    <td className="px-4 py-2 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${SOURCE_STYLE[r.variable_pct_source]}`}>
+                          {SOURCE_LABEL[r.variable_pct_source]}
+                        </span>
+                        <span className="tabular-nums">{fmPct(100 - Number(r.variable_pct))}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-rose-700">{fmMoney(c?.variable_amount)}</td>
+                  </tr>
+                );
+              })}
+              {actuals.length > 0 && (
+                <tr className="bg-gray-50/70">
+                  <td colSpan={6} className="px-4 py-1.5 text-[11px] uppercase tracking-wide text-gray-500">Прогноз</td>
+                </tr>
+              )}
               {data.forecast.map((r) => {
                 const c = r[active];
                 return (
                   <tr key={r.month_id} className="hover:bg-gray-50/60">
-                    <td className="px-4 py-2 font-medium text-gray-900">{fmMonthLabel(r.month_id)}</td>
+                    <td className="px-4 py-2 font-medium text-gray-900">
+                      {fmMonthLabel(r.month_id)}
+                      {r.month_id === data.current_month && (
+                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">текущий</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-right tabular-nums text-gray-600">{fmMoney(c?.avans)}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-gray-600">{fmMoney(c?.fact)}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-emerald-800">{fmMoney(c?.revenue)}</td>
@@ -152,7 +194,7 @@ export default function RevenueTable({ data, active, onSetPct }: Props) {
             </tbody>
             <tfoot className="bg-gray-50 font-semibold text-gray-900">
               <tr>
-                <td className="px-4 py-2">Итого</td>
+                <td className="px-4 py-2">Итого прогноз</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(active, 'avans'))}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmMoney(sum(active, 'fact'))}</td>
                 <td className="px-4 py-2 text-right tabular-nums text-emerald-800">{fmMoney(sum(active, 'revenue'))}</td>
