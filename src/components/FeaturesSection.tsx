@@ -39,32 +39,20 @@ const FEATURES = [
   },
 ];
 
-/**
- * Выгоды про деньги. На широком экране они живут отдельными карточками под фото
- * команды, а на телефоне встают последними строками общего списка — там это
- * такие же преимущества, как остальные.
- */
-const MONEY_FEATURES = [
-  {
-    icon: "ReceiptText",
-    title: "Налоговый вычет",
-    text: "Вернём 13% от стоимости занятий — подготовим документы",
-    color: "from-green-400 to-emerald-600",
-  },
-  {
-    icon: "Award",
-    title: "Гарантия результатов",
-    text: "Возврат средств, если не будет улучшений",
-    color: "from-green-400 to-emerald-600",
-  },
-];
+/** Выгода про деньги: на широком экране стоит под фото команды, на телефоне — последней в списке. */
+const TAX_FEATURE = {
+  icon: "ReceiptText",
+  title: "Налоговый вычет",
+  text: "Вернём 13% от стоимости занятий — подготовим документы",
+  color: "from-green-400 to-emerald-600",
+};
 
 type Feature = (typeof FEATURES)[number];
 
 /** Карточка преимущества: на телефоне — строка «значок + заголовок»,
  *  на широком экране — значок сверху, заголовок и пояснение под ним. */
-const FeatureCard = ({ feature }: { feature: Feature }) => (
-  <div className="group flex sm:block items-center gap-3 bg-white rounded-2xl p-3 sm:p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300">
+const FeatureCard = ({ feature, className = "" }: { feature: Feature; className?: string }) => (
+  <div className={`group flex sm:block items-center gap-3 h-full bg-white rounded-2xl p-3 sm:p-5 border ${className} border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300`}>
     <div
       className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0 sm:mb-3 shadow-md group-hover:scale-110 transition-transform duration-300`}
     >
@@ -84,12 +72,14 @@ export default function FeaturesSection() {
           <h2 className="text-4xl font-bold text-green-700">ПОЧЕМУ ВЫБИРАЮТ НАС?</h2>
         </div>
 
-        <div className="grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] gap-10 lg:gap-14 items-stretch">
+        {/* Одна сетка: на широком экране фото занимает две строки слева, под ним — налоговый вычет,
+            справа — шесть карточек 2×3. Все строки одинаковой высоты, поэтому края карточек совпадают. */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] lg:grid-rows-3 lg:auto-rows-fr gap-2.5 sm:gap-4 lg:gap-5">
           {/* Фото команды */}
-          <div className="relative flex flex-col gap-4 lg:gap-5">
+          <div className="relative mb-7 sm:mb-2 lg:mb-0 sm:col-span-2 lg:col-span-1 lg:col-start-1 lg:row-start-1 lg:row-span-2">
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-green-200/50 rounded-full blur-2xl" />
             <div className="absolute -bottom-8 -right-4 w-40 h-40 bg-emerald-200/50 rounded-full blur-3xl" />
-            <div className="relative flex-1 min-h-[320px] rounded-3xl overflow-hidden shadow-2xl ring-1 ring-green-100">
+            <div className="relative h-full min-h-[320px] rounded-3xl overflow-hidden shadow-2xl ring-1 ring-green-100">
               <img
                 src="/why-us.jpg"
                 alt="Команда логопедов и нейропсихологов за работой"
@@ -105,37 +95,16 @@ export default function FeaturesSection() {
                 </div>
               </div>
             </div>
-
-            {/* На телефоне эти две выгоды уходят в конец общего списка ниже */}
-            {MONEY_FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="group relative hidden sm:flex items-center gap-4 bg-white rounded-2xl p-5 border border-green-100 hover:border-green-300 hover:shadow-xl transition-all duration-300"
-              >
-                <div
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300`}
-                >
-                  <Icon name={f.icon} size={22} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1.5">{f.title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{f.text}</p>
-                </div>
-              </div>
-            ))}
           </div>
 
-          {/* Преимущества */}
-          <div className="grid sm:grid-cols-2 gap-2.5 sm:gap-4 lg:gap-5">
-            {FEATURES.map((f) => (
-              <FeatureCard key={f.title} feature={f} />
-            ))}
-            {MONEY_FEATURES.map((f) => (
-              <div key={f.title} className="sm:hidden">
-                <FeatureCard feature={f} />
-              </div>
-            ))}
-          </div>
+          {FEATURES.map((f) => (
+            <FeatureCard key={f.title} feature={f} />
+          ))}
+
+          <FeatureCard
+            feature={TAX_FEATURE}
+            className="relative sm:col-span-2 lg:col-span-1 lg:col-start-1 lg:row-start-3"
+          />
         </div>
       </div>
     </section>
