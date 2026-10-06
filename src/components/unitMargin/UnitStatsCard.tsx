@@ -3,17 +3,19 @@ import {
   CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import Icon from '@/components/ui/icon';
-import { UnitFact, fetchUnitFact } from '@/lib/unitMarginApi';
+import { UnitFact, UnitMarginReport, fetchUnitFact } from '@/lib/unitMarginApi';
 import type { Supervision } from '@/lib/supervisionsApi';
 import type { TeacherRate } from '@/lib/teacherRatesApi';
-import { weightedRate } from '@/lib/unitTeacherRates';
+import { buildMonthSnapshot } from '@/lib/unitMarginSnapshot';
 import {
-  UnitMarginInputs, calcAll, calcMonthTotals, fmtMoney, fmtPercent, monthLabel, recentMonths,
+  UnitMarginInputs, fmtMoney, fmtPercent, monthLabel, recentMonths,
 } from '@/lib/unitMarginModel';
 
 interface Props {
   /** Текущие ставки и проценты из формы — по ним пересчитываем каждый месяц. */
   inputs: UnitMarginInputs;
+  /** Зафиксированные месяцы — показываем их цифры как есть, без пересчёта. */
+  reports: UnitMarginReport[];
   useRealRates: boolean;
   supervisions: Supervision[];
   teacherRates: TeacherRate[];
@@ -23,7 +25,7 @@ interface Props {
 interface Row {
   month: string;
   current: boolean;
-  fact: UnitFact;
+  frozen: boolean;
   indLessons: number;
   grpLessons: number;
   indPrice: number;
@@ -48,65 +50,75 @@ const shortMonth = (m: string) => {
  * что и выбранный: цены и наполняемость — факт CRM месяца, ставки и проценты —
  * текущие из формы (с точными ставками педагогов, если они включены).
  */
-export default function UnitStatsCard({ inputs, useRealRates, supervisions, teacherRates, onOpenMonth }: Props) {
+export default function UnitStatsCard({ inputs, reports, useRealRates, supervisions, teacherRates, onOpenMonth }: Props) {
   const months = useMemo(() => [...recentMonths(36)].reverse(), []);
   const current = months[months.length - 1];
   const [facts, setFacts] = useState<Record<string, UnitFact>>({});
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState<string[]>([]);
 
+  const frozenByMonth = useMemo(() => {
+    const map: Record<string, UnitMarginReport> = {};
+    [...reports].sort((x, y) => x.created_at.localeCompare(y.created_at)).forEach((r) => {
+      if (!map[r.period_month]) map[r.period_month] = r;
+    });
+    return map;
+  }, [reports]);
+
   const load = useCallback(async (refresh = false) => {
     setLoading(true);
+    // Зафиксированные месяцы из CRM не тянем — их цифры уже сохранены.
+    const need = months.filter((m) => !frozenByMonth[m]);
     const res = await Promise.allSettled(
-      months.map((m) => fetchUnitFact(m, refresh).then((f) => [m, f] as const)),
+      need.map((m) => fetchUnitFact(m, refresh).then((f) => [m, f] as const)),
     );
     const next: Record<string, UnitFact> = {};
     const bad: string[] = [];
     res.forEach((r, i) => {
       if (r.status === 'fulfilled') next[r.value[0]] = r.value[1];
-      else bad.push(months[i]);
+      else bad.push(need[i]);
     });
     setFacts(next);
     setFailed(bad);
     setLoading(false);
-  }, [months]);
+  }, [months, frozenByMonth]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const rows = useMemo<Row[]>(() => months.filter((m) => facts[m]).map((m) => {
+  const rows = useMemo<Row[]>(() => months.flatMap((m): Row[] => {
     const f = facts[m];
-    const base: UnitMarginInputs = {
-      ...inputs,
-      periodMonth: m,
-      individual: { ...inputs.individual, price: f.individual.avg_price, groupSize: f.individual.avg_group_size || 1 },
-      group: { ...inputs.group, price: f.group.avg_price, groupSize: f.group.avg_group_size || inputs.group.groupSize },
-    };
-    if (useRealRates) {
-      const wi = weightedRate(f.teachers, 'individual', m, supervisions, teacherRates, inputs.individual.rate);
-      const wg = weightedRate(f.teachers, 'group', m, supervisions, teacherRates, inputs.group.rate);
-      if (wi.lessons > 0) base.individual.rate = wi.rate;
-      if (wg.lessons > 0) base.group.rate = wg.rate;
+    const fr = frozenByMonth[m];
+    if (fr && fr.result?.monthTotals) {
+      const t = fr.result.monthTotals;
+      return [{
+        month: m, current: false, frozen: true,
+        indLessons: t.individualLessons, grpLessons: t.groupLessons,
+        indPrice: fr.inputs.individual.price, grpPrice: fr.inputs.group.price,
+        fill: fr.inputs.group.groupSize,
+        indPct: fr.result.individual.marginPercent, grpPct: fr.result.group.marginPercent,
+        totalPct: t.marginPercent, margin: t.margin, revenue: t.revenue,
+      }];
     }
-    const res = calcAll(base);
-    const t = calcMonthTotals(res, f.individual.lessons, f.group.lessons);
-    return {
+    if (!f) return [];
+    const snap = buildMonthSnapshot(m, f, inputs, supervisions, teacherRates, useRealRates);
+    return [{
       month: m,
       current: m === current,
-      fact: f,
+      frozen: false,
       indLessons: f.individual.lessons,
       grpLessons: f.group.lessons,
       indPrice: f.individual.avg_price,
       grpPrice: f.group.avg_price,
       fill: f.group.avg_group_size,
-      indPct: res.individual.marginPercent,
-      grpPct: res.group.marginPercent,
-      totalPct: t.marginPercent,
-      margin: t.margin,
-      revenue: t.revenue,
-    };
-  }), [months, facts, inputs, useRealRates, supervisions, teacherRates, current]);
+      indPct: snap.result.individual.marginPercent,
+      grpPct: snap.result.group.marginPercent,
+      totalPct: snap.totals.marginPercent,
+      margin: snap.totals.margin,
+      revenue: snap.totals.revenue,
+    }];
+  }), [months, facts, frozenByMonth, inputs, useRealRates, supervisions, teacherRates, current]);
 
   const closed = rows.filter((r) => !r.current);
   const delta = (cur: number, prev?: number, money = false) => {
@@ -133,7 +145,7 @@ export default function UnitStatsCard({ inputs, useRealRates, supervisions, teac
             <h3 className="font-semibold">Статистика и динамика</h3>
           </div>
           <p className="text-xs opacity-70 mt-0.5">
-            по месяцам с сентября 2026 · цены и наполняемость — факт CRM, ставки и проценты — текущие
+            по месяцам с сентября 2026 · завершённые месяцы зафиксированы и не меняются, текущий — считается по CRM
           </p>
         </div>
         <button
@@ -203,6 +215,7 @@ export default function UnitStatsCard({ inputs, useRealRates, supervisions, teac
                       <td className="px-4 py-2 font-medium whitespace-nowrap">
                         {monthLabel(r.month)}
                         {r.current && <span className="ml-2 text-xs font-normal">идёт</span>}
+                        {r.frozen && <Icon name="Lock" size={12} className="inline ml-1.5 text-gray-300" />}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{r.indLessons}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{r.grpLessons}</td>

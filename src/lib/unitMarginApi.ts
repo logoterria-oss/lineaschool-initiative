@@ -75,7 +75,7 @@ export interface UnitMarginReport {
   period_month: string;
   title: string;
   inputs: UnitMarginInputs;
-  result: UnitMarginResults;
+  result: UnitMarginResults & { monthTotals?: UnitMonthTotals };
   note: string;
   author: string;
   created_at: string;
@@ -124,10 +124,6 @@ export interface SaveUnitPayload {
 export const saveUnitReport = async (
   payload: SaveUnitPayload,
 ): Promise<UnitMarginReport> => (await post({ action: 'save', ...payload })).report;
-
-export const deleteUnitReport = async (id: number): Promise<void> => {
-  await post({ action: 'delete', id });
-};
 
 export const saveUnitDefaults = async (
   defaults: Partial<UnitMarginInputs>,

@@ -48,7 +48,7 @@ from concurrent.futures import ThreadPoolExecutor
   GET  ?action=plan&months=3        — план по запланированным урокам CRM
   GET  ?action=defaults             — сохранённые ставки и проценты
   GET  ?action=reports              — сохранённые расчёты
-  POST {action: save|delete|save_defaults}
+  POST {action: save|save_defaults} — save фиксирует завершённый месяц один раз
 """
 
 S20_HOST = "https://11086.s20.online"
@@ -641,7 +641,19 @@ def handler(event: dict, context) -> dict:
             conn = _conn()
             try:
                 if act == "save":
+                    # Месяц фиксируется ОДИН раз (автоматически после его окончания) и больше
+                    # не меняется: повторное сохранение того же месяца ничего не делает.
+                    month = (body.get("period_month") or "").strip()[:7]
+                    if not re.fullmatch(r"\d{4}-\d{2}", month) or month >= date.today().strftime("%Y-%m"):
+                        return _json({"success": False, "error": "Фиксируется только завершённый месяц"}, 400)
                     with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                        cur.execute(
+                            f"SELECT id, period_month, title, inputs, result, note, author, created_at, updated_at "
+                            f"FROM {SCHEMA}.unit_margin_reports WHERE period_month = %s ORDER BY created_at LIMIT 1",
+                            (month,))
+                        existing = cur.fetchone()
+                        if existing:
+                            return _json({"success": True, "report": existing, "already": True})
                         cur.execute(f"""
                             INSERT INTO {SCHEMA}.unit_margin_reports
                                 (period_month, title, inputs, result, note, author)
@@ -659,17 +671,6 @@ def handler(event: dict, context) -> dict:
                         row = cur.fetchone()
                     conn.commit()
                     return _json({"success": True, "report": row})
-
-                if act == "delete":
-                    rid = body.get("id")
-                    if not rid:
-                        return _json({"success": False, "error": "id обязателен"}, 400)
-                    with conn.cursor() as cur:
-                        cur.execute(
-                            f"DELETE FROM {SCHEMA}.unit_margin_reports WHERE id = %s",
-                            (int(rid),))
-                    conn.commit()
-                    return _json({"success": True})
 
                 if act == "save_defaults":
                     with conn.cursor() as cur:

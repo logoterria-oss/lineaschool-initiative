@@ -10,13 +10,12 @@ import UnitStatsCard from '@/components/unitMargin/UnitStatsCard';
 import UnitWeightedRateCard from '@/components/unitMargin/UnitWeightedRateCard';
 import UnitReportHeader from '@/components/unitMargin/UnitReportHeader';
 import UnitConclusionCard from '@/components/unitMargin/UnitConclusionCard';
-import UnitSaveBox from '@/components/unitMargin/UnitSaveBox';
 import UnitReportsHistory from '@/components/unitMargin/UnitReportsHistory';
 import {
   UnitFact, UnitMarginReport as SavedReport,
-  deleteUnitReport, fetchUnitDefaults, fetchUnitFact,
-  fetchUnitReports, saveUnitDefaults, saveUnitReport,
+  fetchUnitDefaults, fetchUnitFact, saveUnitDefaults,
 } from '@/lib/unitMarginApi';
+import { autoFixClosedMonths } from '@/lib/unitMarginSnapshot';
 import { fetchSupervisions, type Supervision } from '@/lib/supervisionsApi';
 import { fetchTeacherRates, type TeacherRate } from '@/lib/teacherRatesApi';
 import { periodLabelForMonth, weightedRate } from '@/lib/unitTeacherRates';
@@ -52,8 +51,6 @@ export default function UnitMarginReport() {
   const [showFormula, setShowFormula] = useState(true);
 
   const [reports, setReports] = useState<SavedReport[]>([]);
-  const [note, setNote] = useState('');
-  const [saving, setSaving] = useState(false);
   const [savingDefaults, setSavingDefaults] = useState(false);
   const [toast, setToast] = useState('');
 
@@ -93,7 +90,8 @@ export default function UnitMarginReport() {
         }));
       })
       .catch(() => {});
-    fetchUnitReports().then(setReports).catch(() => {});
+    // Завершённые месяцы фиксируются автоматически один раз и дальше не меняются
+    autoFixClosedMonths().then(setReports).catch(() => {});
     // Ставки педагогов: без них расчёт просто останется на общей ставке
     fetchSupervisions().then(setSupervisions).catch(() => {});
     fetchTeacherRates().then(setTeacherRates).catch(() => {});
@@ -223,29 +221,6 @@ export default function UnitMarginReport() {
     }
   };
 
-  const onSave = async () => {
-    setSaving(true);
-    try {
-      await saveUnitReport({
-        period_month: inputs.periodMonth,
-        title: monthLabel(inputs.periodMonth),
-        // Сохраняем ПРИМЕНЁННЫЕ ставки: иначе по сохранённому расчёту нельзя
-        // было бы понять, из каких цифр получился результат
-        inputs: effectiveInputs,
-        // Итог месяца кладём в результат — финмодель берёт отсюда готовую маржинальность
-        result: monthTotals ? { ...result, monthTotals } : result,
-        note,
-      });
-      setReports(await fetchUnitReports());
-      setNote('');
-      flash('Расчёт сохранён');
-    } catch (e) {
-      flash(e instanceof Error ? e.message : 'Не удалось сохранить');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const onDownloadPdf = async () => {
     setPdfLoading(true);
     try {
@@ -260,17 +235,6 @@ export default function UnitMarginReport() {
       flash('Не удалось сформировать PDF');
     } finally {
       setPdfLoading(false);
-    }
-  };
-
-  const onDelete = async (r: SavedReport) => {
-    if (!window.confirm(`Удалить расчёт за ${monthLabel(r.period_month)}?`)) return;
-    try {
-      await deleteUnitReport(r.id);
-      setReports((prev) => prev.filter((x) => x.id !== r.id));
-      flash('Расчёт удалён');
-    } catch {
-      flash('Не удалось удалить');
     }
   };
 
@@ -375,6 +339,7 @@ export default function UnitMarginReport() {
               {/* Статистика и динамика по месяцам с сентября 2026 */}
               <UnitStatsCard
                 inputs={inputs}
+                reports={reports}
                 useRealRates={useRealRates}
                 supervisions={supervisions}
                 teacherRates={teacherRates}
@@ -401,19 +366,10 @@ export default function UnitMarginReport() {
                 />
               )}
 
-              {/* Сохранение */}
-              <UnitSaveBox
-                note={note}
-                onNoteChange={setNote}
-                onSave={onSave}
-                saving={saving}
-              />
-
               {/* История */}
               <UnitReportsHistory
                 reports={reports}
                 onOpenMonth={(m) => patch({ periodMonth: m })}
-                onDelete={onDelete}
               />
             </>
           )}
