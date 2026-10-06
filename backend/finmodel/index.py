@@ -134,6 +134,7 @@ def recalc(cur, c):
     first = add_months(hist[-1]["month_id"], 1)
     cur.execute(f"DELETE FROM {S}.fm_avans_forecast WHERE month_id <= %s", (hist[-1]["month_id"],))
     corr = adapt_corrections(cur, "avans")
+    batch = []
 
     for sc in SCENARIOS:
         coef = float(c[f"avans_coef_{sc}"])
@@ -159,23 +160,26 @@ def recalc(cur, c):
             # Адаптация (Промт 13): к модельному прогнозу прибавляем накопленные корректировки по факту.
             c_m = corr.get((m, ""), 0.0)
             final = max(round(final) + c_m, 0)
-            cur.execute(
-                f"INSERT INTO {S}.fm_avans_forecast (month_id, scenario, avans_prev_year, coef, "
-                "forecast_direct, forecast_seasonal, diff_pct, forecast_final, correction, calculated_at) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,now()) ON CONFLICT (month_id, scenario) DO UPDATE SET "
-                "avans_prev_year=EXCLUDED.avans_prev_year, coef=EXCLUDED.coef, "
-                "forecast_direct=EXCLUDED.forecast_direct, forecast_seasonal=EXCLUDED.forecast_seasonal, "
-                "diff_pct=EXCLUDED.diff_pct, forecast_final=EXCLUDED.forecast_final, "
-                "correction=EXCLUDED.correction, calculated_at=now()",
-                (
-                    m, sc, prev_y, coef,
-                    round(direct) if direct is not None else None,
-                    round(seasonal),
-                    round(diff * 100, 4) if diff is not None else None,
-                    round(final),
-                    c_m,
-                ),
-            )
+            batch.append((
+                m, sc, prev_y, coef,
+                round(direct) if direct is not None else None,
+                round(seasonal),
+                round(diff * 100, 4) if diff is not None else None,
+                round(final),
+                c_m,
+            ))
+    if batch:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_avans_forecast (month_id, scenario, avans_prev_year, coef, "
+            "forecast_direct, forecast_seasonal, diff_pct, forecast_final, correction, calculated_at) "
+            "VALUES %s ON CONFLICT (month_id, scenario) DO UPDATE SET "
+            "avans_prev_year=EXCLUDED.avans_prev_year, coef=EXCLUDED.coef, "
+            "forecast_direct=EXCLUDED.forecast_direct, forecast_seasonal=EXCLUDED.forecast_seasonal, "
+            "diff_pct=EXCLUDED.diff_pct, forecast_final=EXCLUDED.forecast_final, "
+            "correction=EXCLUDED.correction, calculated_at=now()",
+            batch, template="(%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+        )
     snapshot_forecasts(cur)
 
 
@@ -327,7 +331,7 @@ def recalc_fact(cur, c):
     cur.execute(f"DELETE FROM {S}.fm_fact_forecast")
     closed_facts = [h for h in fact_history(cur) if h["closed"]]
     last_fact = closed_facts[-1] if closed_facts else None
-    calc = {}
+    calc, batch = {}, []
     for r in av_fc:
         m, sc = r["month_id"], r["scenario"]
         num = int(m[5:7])
@@ -348,13 +352,15 @@ def recalc_fact(cur, c):
             direct, seasonal, final = direct * ki, seasonal * ki, final * ki
             c_m = corr.get((m, ""), 0.0)
             final = max(round(final) + c_m, 0)
-            cur.execute(
-                f"INSERT INTO {S}.fm_fact_forecast (month_id, scenario, fact_prev_year, avans_forecast, coef, "
-                "fact_direct, fact_seasonal, diff_pct, fact_final, correction, calculated_at) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
-                (m, sc, fact_by_month.get(add_months(m, -12)), round(av), round(coef, 6),
-                 round(direct), round(seasonal), round(diff * 100, 4), round(final), c_m),
-            )
+            batch.append((m, sc, fact_by_month.get(add_months(m, -12)), round(av), round(coef, 6),
+                          round(direct), round(seasonal), round(diff * 100, 4), round(final), c_m))
+    if batch:
+        execute_values(
+            cur,
+            f"INSERT INTO {S}.fm_fact_forecast (month_id, scenario, fact_prev_year, avans_forecast, coef, "
+            "fact_direct, fact_seasonal, diff_pct, fact_final, correction, calculated_at) VALUES %s",
+            batch, template="(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+        )
     snapshot_forecasts(cur)
 
 
@@ -576,6 +582,7 @@ def recalc_revenue(cur, c):
     cur.execute(f"SELECT month_id, scenario, fact_final FROM {S}.fm_fact_forecast")
     fact = {(r["month_id"], r["scenario"]): float(r["fact_final"]) for r in cur.fetchall()}
     cur.execute(f"DELETE FROM {S}.fm_revenue_monthly")
+    batch = []
     for key, av in avans.items():
         if key not in fact:
             continue
@@ -586,12 +593,15 @@ def recalc_revenue(cur, c):
         revenue = av * (1 - acq / 100)
         # Переменный % берём целиком — как в отчёте маржинальности (с эквайрингом).
         var_amount = fact[key] * vp / 100
-        cur.execute(
+        batch.append((m, sc, round(av), round(fact[key]), acq, round(revenue), vp, None, src,
+                      round(var_amount), round(fact[key]) - round(var_amount), vp_c))
+    if batch:
+        execute_values(
+            cur,
             f"INSERT INTO {S}.fm_revenue_monthly (month_id, scenario, avans, fact, acquiring_pct, revenue, "
             "variable_pct, variable_pct_net, variable_pct_source, variable_amount, margin_amount, "
-            "variable_pct_correction, calculated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
-            (m, sc, round(av), round(fact[key]), acq, round(revenue), vp, None, src,
-             round(var_amount), round(fact[key]) - round(var_amount), vp_c),
+            "variable_pct_correction, calculated_at) VALUES %s",
+            batch, template="(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
         )
 
 
@@ -1066,7 +1076,7 @@ def calc_fixed(cur):
             [(m, "fixed_expense", iid, "base", round(float(a), 4), datetime.datetime.utcnow()) for m, iid, a in fx_snaps],
         )
 
-    actuals = fixed_actuals(cur, rows, months)
+    actuals = fixed_actuals_table(cur, rows, months)
     # Прошедшие месяцы в модели — по таблице факта постоянных расходов (её ведёт руководитель).
     for m in months:
         if m >= cur_m or m not in actuals["totals"]:
@@ -1120,7 +1130,7 @@ def calc_fixed(cur):
 TYPE_RU = {"hired": "найм", "informal": "в чёрную", "contractor": "подрядчик", "self_employed": "самозанятый"}
 
 
-def fixed_actuals(cur, rows, model_months):
+def fixed_actuals_table(cur, rows, model_months):
     """Факт постоянных расходов за прошедшие месяцы — отдельная таблица, которую руководитель правит вручную.
     Когда месяц заканчивается, он один раз заполняется значениями модели; дальше меняется только вручную."""
     cm = current_month()
@@ -3348,6 +3358,28 @@ def delete_scenario(cur, conn, body):
     cur.execute(f"DELETE FROM {S}.fm_scenarios WHERE id = %s", (sid,))
     conn.commit()
     return resp(200, {"ok": True})
+
+
+import time as _time
+import functools as _ft
+
+
+def _timed(fn):
+    @_ft.wraps(fn)
+    def w(*a, **k):
+        t = _time.time()
+        try:
+            return fn(*a, **k)
+        finally:
+            print(f"[timing] {fn.__name__} {int((_time.time() - t) * 1000)} ms")
+    return w
+
+
+for _n in ("get_revenue", "calc_fixed", "calc_taxes", "calc_payouts", "calc_pnl", "calc_cashflow", "ensure_adaptation",
+           "build_notifications", "sync_notifications", "bank_facts", "recalc", "recalc_fact", "recalc_revenue",
+           "fixed_actuals_table", "snapshot_forecasts", "run_pending_adaptation", "bank_start_balance"):
+    if _n in globals():
+        globals()[_n] = _timed(globals()[_n])
 
 
 def handler(event: dict, context) -> dict:
