@@ -138,6 +138,7 @@ def recalc(cur, c):
     for sc in SCENARIOS:
         coef = float(c[f"avans_coef_{sc}"])
         annual_fc = annual * coef
+        rows = []
         for i in range(horizon):
             m = add_months(first, i)
             prev_y = fact.get(add_months(m, -12))
@@ -149,6 +150,11 @@ def recalc(cur, c):
                 direct = prev_y * coef
                 diff = abs(direct - seasonal) / direct if direct else 0
                 final = (direct + seasonal) / 2 if diff > threshold else direct
+            rows.append([m, prev_y, direct, seasonal, diff, final])
+        k = anchor_factor(c, sc, hist[-1]["month_id"], fact.get(hist[-1]["month_id"]), first, rows[0][5] if rows else 0)
+        for m, prev_y, direct, seasonal, diff, final in rows:
+            direct = direct * k if direct is not None else None
+            seasonal, final = seasonal * k, final * k
             # Адаптация (Промт 13): к модельному прогнозу прибавляем накопленные корректировки по факту.
             c_m = corr.get((m, ""), 0.0)
             final = max(round(final) + c_m, 0)
@@ -170,6 +176,20 @@ def recalc(cur, c):
                 ),
             )
     snapshot_forecasts(cur)
+
+
+def anchor_factor(c, sc, last_month, last_value, first_month, first_forecast):
+    """Привязка к последнему закрытому месяцу: в месяцы осеннего роста прогноз первого месяца
+    не ниже последнего факта × (1 + рост сценария). Если ниже — весь прогноз сценария
+    масштабируется одним множителем, форма сезонности сохраняется."""
+    months = str(c.get("anchor_months") or "")
+    if not last_value or not first_forecast or str(int(first_month[5:7])) not in months.replace(" ", "").split(","):
+        return 1.0
+    if add_months(last_month, 1) != first_month:
+        return 1.0
+    growth = float(c.get(f"anchor_growth_pct_{sc}") or 0) / 100
+    target = float(last_value) * (1 + growth)
+    return max(1.0, target / float(first_forecast))
 
 
 def forecast_stale(cur):
@@ -297,6 +317,9 @@ def recalc_fact(cur, c):
     av_fc = [dict(r) for r in cur.fetchall()]
     corr = adapt_corrections(cur, "fact")
     cur.execute(f"DELETE FROM {S}.fm_fact_forecast")
+    closed_facts = [h for h in fact_history(cur) if h["closed"]]
+    last_fact = closed_facts[-1] if closed_facts else None
+    calc = {}
     for r in av_fc:
         m, sc = r["month_id"], r["scenario"]
         num = int(m[5:7])
@@ -306,15 +329,23 @@ def recalc_fact(cur, c):
         seasonal = annual * float(c[f"avans_coef_{sc}"]) * shares[num] / 100
         diff = abs(direct - seasonal) / direct if direct else 0
         final = (direct + seasonal) / 2 if diff > threshold else direct
-        c_m = corr.get((m, ""), 0.0)
-        final = max(round(final) + c_m, 0)
-        cur.execute(
-            f"INSERT INTO {S}.fm_fact_forecast (month_id, scenario, fact_prev_year, avans_forecast, coef, "
-            "fact_direct, fact_seasonal, diff_pct, fact_final, correction, calculated_at) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
-            (m, sc, fact_by_month.get(add_months(m, -12)), round(av), round(coef, 6),
-             round(direct), round(seasonal), round(diff * 100, 4), round(final), c_m),
-        )
+        calc.setdefault(sc, []).append([m, av, coef, direct, seasonal, diff, final])
+    for sc, rows in calc.items():
+        rows.sort(key=lambda x: x[0])
+        k = 1.0
+        if last_fact and rows:
+            k = anchor_factor(c, sc, last_fact["month_id"], last_fact["fact"], rows[0][0], rows[0][6])
+        for m, av, coef, direct, seasonal, diff, final in rows:
+            direct, seasonal, final = direct * k, seasonal * k, final * k
+            c_m = corr.get((m, ""), 0.0)
+            final = max(round(final) + c_m, 0)
+            cur.execute(
+                f"INSERT INTO {S}.fm_fact_forecast (month_id, scenario, fact_prev_year, avans_forecast, coef, "
+                "fact_direct, fact_seasonal, diff_pct, fact_final, correction, calculated_at) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now())",
+                (m, sc, fact_by_month.get(add_months(m, -12)), round(av), round(coef, 6),
+                 round(direct), round(seasonal), round(diff * 100, 4), round(final), c_m),
+            )
     snapshot_forecasts(cur)
 
 

@@ -1,0 +1,1 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_avans_monthly SET closed_at = now() WHERE month_id = '2026-09';
