@@ -957,7 +957,6 @@ def calc_fixed(cur):
     # Порядок строк — как в таблице промта.
     row("ruo_salary", "РУО (оклад)", "staff", "staff", "0,5 ставки")
     row("ruo_bonus", f"РУО (бонус {fmt_pct(ruo.get('bonus_pct') or 0.5)} от аванса)", "calc", "staff")
-    row("ruo_replacements", f"РУО (замены, {_r(ruo.get('substitution_rate') or 650)} ₽/урок)", "calc", "staff")
     row("ruo_insurance", "РУО (страховые 30%)", "calc", "staff")
     row("ruo_vacation", "РУО (отпускные 12,5%)", "calc", "staff")
     row("accountant", "Бухгалтер", "staff", "staff", "в чёрную")
@@ -972,7 +971,6 @@ def calc_fixed(cur):
         r = row(iid, it["name"], "fixed" if it["is_fixed"] else "manual", "items",
                 f"{_r(it['amount'] or 0):,} ₽/год ÷ 12".replace(",", " ") if it["amount_unit"] == "rub_year" else "")
         r["editable"] = not it["is_fixed"]
-    rows["ruo_replacements"]["editable"] = True
     rows["admins"]["editable"] = True
     custom_staff = [s_ for s_ in staff.values() if s_.get("is_custom")]
     for s_ in sorted(custom_staff, key=lambda x: x["name"]):
@@ -998,10 +996,8 @@ def calc_fixed(cur):
         av = avans.get(m, {})
         bonus = {sc: (av.get(sc) or 0) * bpct * (1 if ruo_on else 0) for sc in SCENARIOS}
         put("ruo_bonus", m, bonus, ("fact" if m in closed else "forecast") if ruo_on else "inactive")
-        repl_n = int(inp.get("ruo_replacements") or 0) if ruo_on else 0
-        repl = repl_n * float(ruo.get("substitution_rate") or 650)
-        put("ruo_replacements", m, repl, "manual" if inp.get("ruo_replacements") is not None else "default",
-            f"{repl_n} ур." if repl_n else None)
+        # Замены РУО — переменные расходы: уроки РУО входят в «Маржинальность урока», здесь не считаем.
+        repl = 0
         r_ins = base * ins_pct if ruo.get("insurance_applies") else 0
         r_vac = base * vac_pct if ruo.get("vacation_applies") else 0
         put("ruo_insurance", m, r_ins)

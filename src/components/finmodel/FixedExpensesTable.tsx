@@ -147,7 +147,7 @@ function StaffDirectory({ data, onStaffRate }: { data: FixedData; onStaffRate: P
               const name = isAdmin ? 'Админы (1 на смене)' : s.role === 'designer' ? 'Дизайнеры' : s.name;
               const extra = [
                 s.bonus_pct ? `бонус ${String(s.bonus_pct).replace('.', ',')}% от аванса` : '',
-                s.substitution_rate ? `замены ${Math.round(s.substitution_rate)} ₽/урок` : '',
+                s.substitution_rate ? `замены ${Math.round(s.substitution_rate)} ₽/урок — в переменных` : '',
                 isAdmin ? `${data.admin_shifts_default} смен/мес · KPI до ${Math.round(s.rate_max || 0)} ₽/смена` : '',
                 s.role === 'designer' ? 'сумма вводится вручную по месяцам' : '',
                 s.insurance_applies ? 'страховые + отпускные' : '',
@@ -223,17 +223,6 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
           fields={[{ key: 'rate', label: '₽/смена', value: inp.rate }, { key: 'shifts', label: 'смен', value: inp.shifts }]}
           onSave={(x) => onInputs(m, { admin_rate_override: x.rate, admin_shifts_override: Math.round(x.shifts) })}
           onReset={src === 'manual' ? () => onInputs(m, { admin_rate_override: null, admin_shifts_override: null }) : undefined}
-          onClose={close}
-        />
-      );
-    }
-    if (row.key === 'ruo_replacements') {
-      const n = Number((row.notes[m] || '0').replace(/\D/g, '')) || 0;
-      return (
-        <Editor
-          fields={[{ key: 'n', label: 'уроков', value: n }]}
-          onSave={(x) => onInputs(m, { ruo_replacements: Math.round(x.n) })}
-          onReset={src === 'manual' ? () => onInputs(m, { ruo_replacements: null }) : undefined}
           onClose={close}
         />
       );
@@ -360,7 +349,7 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
         <div className="px-5 py-4 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">Прогноз постоянных расходов</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Ручной ввод: реклама, нейронка нерегуляр, дизайнеры, замены РУО, смены/ставка админов (KPI). Для сотрудников на окладе можно задать разовую ставку месяца.
+            Ручной ввод: реклама, нейронка нерегуляр, дизайнеры, смены/ставка админов (KPI). Для сотрудников на окладе можно задать разовую ставку месяца.
           </p>
         </div>
         <div className="overflow-x-auto">

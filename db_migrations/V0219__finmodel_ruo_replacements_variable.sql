@@ -1,0 +1,2 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_fixed_actual_lines SET is_hidden = true WHERE source_key = 'ruo_replacements';
+UPDATE t_p93118852_lineaschool_initiati.fm_monthly_inputs SET ruo_replacements = NULL WHERE ruo_replacements IS NOT NULL;
