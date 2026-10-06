@@ -584,12 +584,16 @@ def students_from_reports(cur, months):
     cur.execute(
         # Все занятия кроме тестовых и диагностик, любого педагога; только оплаченные места
         # (пришёл или пропуск со списанием). Блок stats считает «Маржинальность урока».
+        # Если блока stats ещё нет (месяц посчитан старой версией отчёта) — берём прежние поля.
         f"SELECT month, computed_at, "
-        f"(payload->'stats'->>'individual_lessons')::int + (payload->'stats'->>'group_lessons')::int AS lessons, "
-        f"(payload->'stats'->>'group_paid')::numeric / NULLIF((payload->'stats'->>'group_lessons')::int, 0) AS fill, "
-        f"(payload->'stats'->>'individual_paid')::int + (payload->'stats'->>'group_paid')::int AS visits, "
+        f"COALESCE((payload->'stats'->>'individual_lessons')::int + (payload->'stats'->>'group_lessons')::int, "
+        f"  (payload->'individual'->>'lessons')::int + (payload->'group'->>'lessons')::int) AS lessons, "
+        f"COALESCE((payload->'stats'->>'group_paid')::numeric / NULLIF((payload->'stats'->>'group_lessons')::int, 0), "
+        f"  (payload->'group'->>'avg_group_size')::numeric) AS fill, "
+        f"COALESCE((payload->'stats'->>'individual_paid')::int + (payload->'stats'->>'group_paid')::int, "
+        f"  (payload->'individual'->>'paid_units')::int + (payload->'group'->>'paid_units')::int) AS visits, "
         f"(payload->'stats'->>'students')::int AS students_total "
-        f"FROM {S}.margin_unit_cache WHERE month = ANY(%s) AND payload ? 'stats'",
+        f"FROM {S}.margin_unit_cache WHERE month = ANY(%s) AND payload ? 'group'",
         (months,),
     )
     margin = {r["month"]: r for r in cur.fetchall()}
