@@ -917,10 +917,26 @@ def calc_fixed(cur):
     admin_rate_default = float(admins[0]["rate"]) if admins else 700
     ruo = staff.get("ruo_zinchenko") or {}
 
+    cur.execute(f"SELECT * FROM {S}.fm_cost_changes ORDER BY from_month")
+    changes = {}
+    for r in cur.fetchall():
+        changes.setdefault((r["kind"], r["target_id"]), []).append(dict(r))
+
+    def change_at(kind, tid, m):
+        """Последнее изменение стоимости, действующее в месяце m (с месяца X и дальше)."""
+        hit = None
+        for ch in changes.get((kind, tid), []):
+            if ch["from_month"] <= m:
+                hit = ch
+        return hit
+
     def staff_rate(sid, m):
         o = staff_m.get((sid, m))
         if o and o.get("rate_override") is not None:
             return float(o["rate_override"]), "override", o.get("note") or ""
+        ch = change_at("staff", sid, m)
+        if ch:
+            return float(ch["amount"]), "changed", f"с {month_label(ch['from_month'])}" + (f": {ch['note']}" if ch["note"] else "")
         return float(staff[sid]["rate"] or 0), "staff", ""
 
     rows = {}
@@ -1018,11 +1034,14 @@ def calc_fixed(cur):
             for sc in SCENARIOS:
                 payments.append((m, s_["id"], sc, _r(val), _r(s_ins), _r(s_vac), 0, 0, _r(val) + _r(s_ins) + _r(s_vac)))
         # Админы: ставка за смену × смены
-        a_rate = float(inp["admin_rate_override"]) if inp.get("admin_rate_override") is not None else admin_rate_default
-        shifts = int(inp["admin_shifts_override"]) if inp.get("admin_shifts_override") is not None else shifts_default
+        a_ch = change_at("staff", "admins", m)
+        rate_d = float(a_ch["amount"]) if a_ch else admin_rate_default
+        shifts_d = int(a_ch["shifts"]) if a_ch and a_ch["shifts"] is not None else shifts_default
+        a_rate = float(inp["admin_rate_override"]) if inp.get("admin_rate_override") is not None else rate_d
+        shifts = int(inp["admin_shifts_override"]) if inp.get("admin_shifts_override") is not None else shifts_d
         a_base = a_rate * shifts if (admins and _active(admins[0], m)) else 0
         a_manual = inp.get("admin_rate_override") is not None or inp.get("admin_shifts_override") is not None
-        put("admins", m, a_base, "manual" if a_manual else "staff", f"{_r(a_rate)} ₽ × {shifts} смен")
+        put("admins", m, a_base, "manual" if a_manual else ("changed" if a_ch else "staff"), f"{_r(a_rate)} ₽ × {shifts} смен")
         rows["admins"].setdefault("inputs", {})[m] = {"rate": a_rate, "shifts": shifts}
         a_ins, a_vac = a_base * ins_pct, a_base * vac_pct
         put("admins_insurance", m, a_ins)
@@ -1038,8 +1057,11 @@ def calc_fixed(cur):
             if it["amount_unit"] == "rub_year":
                 amount = amount / 12
             src = "fixed" if it["is_fixed"] else "default"
+            i_ch = change_at("item", iid, m)
+            if i_ch:
+                amount, src = float(i_ch["amount"]), "changed"
             o = ovr.get((m, iid))
-            note = (o or {}).get("note") or None
+            note = (o or {}).get("note") or (f"с {month_label(i_ch['from_month'])}" if i_ch else None)
             if o and not it["is_fixed"]:
                 amount, src = float(o["amount"]), "manual"
             elif not it["is_fixed"]:
@@ -1120,6 +1142,8 @@ def calc_fixed(cur):
         "ano": {m: {"amount": _r(ano.get(m, 0))} for m in months},
         "staff": staff_list,
         "items": item_list,
+        "cost_changes": [{**ch, "created_at": None} for lst in changes.values() for ch in lst],
+        "admin_rate_default": admin_rate_default,
         "actuals": actuals,
         "insurance_pct": ins_pct * 100,
         "vacation_pct": vac_pct * 100,
@@ -1336,6 +1360,25 @@ def fixed_model_action(cur, conn, body):
                 cur.execute(f"UPDATE {S}.fm_expense_items SET name = %s WHERE id = %s", (name, iid))
             if amount is not None:
                 cur.execute(f"UPDATE {S}.fm_expense_items SET amount = %s WHERE id = %s", (amount, iid))
+    elif op == "change_set":
+        kind = "staff" if body.get("kind") == "staff" else "item"
+        tid, month = str(body.get("target_id") or ""), str(body.get("from_month") or "")
+        amount = _amount(body.get("amount"))
+        if not tid or not _fx_month(cur, month) or amount is None:
+            return resp(400, {"error": "Нужны месяц и новая стоимость"})
+        shifts = body.get("shifts")
+        try:
+            shifts = int(shifts) if shifts not in (None, "") else None
+        except (TypeError, ValueError):
+            return resp(400, {"error": "Смен — целое число"})
+        cur.execute(
+            f"INSERT INTO {S}.fm_cost_changes (kind, target_id, from_month, amount, shifts, note) VALUES (%s,%s,%s,%s,%s,%s) "
+            "ON CONFLICT (kind, target_id, from_month) DO UPDATE SET amount = EXCLUDED.amount, shifts = EXCLUDED.shifts, "
+            "note = EXCLUDED.note",
+            (kind, tid, month, amount, shifts, str(body.get("note") or "")[:255]),
+        )
+    elif op == "change_delete":
+        cur.execute(f"DELETE FROM {S}.fm_cost_changes WHERE id = %s", (int(body.get("change_id") or 0),))
     elif op == "item_delete":
         iid = str(body.get("id") or "")
         cur.execute(f"SELECT is_custom FROM {S}.fm_expense_items WHERE id = %s", (iid,))

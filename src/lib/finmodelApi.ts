@@ -314,7 +314,7 @@ export const setStudents = (
 
 // ---------------- Постоянные расходы ----------------
 export type FixedSource = 'staff' | 'calc' | 'fixed' | 'manual';
-export type FixedCellSource = 'staff' | 'override' | 'fact' | 'forecast' | 'manual' | 'default' | 'fixed' | 'adapted' | 'inactive';
+export type FixedCellSource = 'staff' | 'override' | 'fact' | 'forecast' | 'manual' | 'default' | 'fixed' | 'adapted' | 'inactive' | 'changed';
 
 export interface FixedRow {
   key: string;
@@ -365,6 +365,16 @@ export interface FixedItem {
   active_to: string | null;
 }
 
+export interface CostChange {
+  id: number;
+  kind: 'staff' | 'item';
+  target_id: string;
+  from_month: string;
+  amount: number;
+  shifts: number | null;
+  note: string;
+}
+
 export interface FixedActualLine {
   id: number;
   name: string;
@@ -390,6 +400,8 @@ export interface FixedData {
   staff: FixedStaff[];
   items: FixedItem[];
   actuals: FixedActuals;
+  cost_changes: CostChange[];
+  admin_rate_default: number;
   insurance_pct: number;
   vacation_pct: number;
   admin_shifts_default: number;
@@ -422,8 +434,14 @@ export const fixedActual = (v: FixedActualOp) => post({ action: 'fixed_actual', 
 
 /** Конструктор прогноза: сотрудники и статьи с периодом действия. */
 export interface FixedModelOp {
-  op: 'staff_add' | 'staff_update' | 'staff_delete' | 'item_add' | 'item_update' | 'item_delete';
+  op: 'staff_add' | 'staff_update' | 'staff_delete' | 'item_add' | 'item_update' | 'item_delete' | 'change_set' | 'change_delete';
   id?: string;
+  kind?: 'staff' | 'item';
+  target_id?: string;
+  from_month?: string;
+  shifts?: number | null;
+  note?: string;
+  change_id?: number;
   name?: string;
   type?: string;
   rate?: number;

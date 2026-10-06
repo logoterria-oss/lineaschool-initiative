@@ -5,6 +5,7 @@ import {
 } from '@/lib/finmodelApi';
 import FixedActualsTable from '@/components/finmodel/FixedActualsTable';
 import FixedModelBuilder from '@/components/finmodel/FixedModelBuilder';
+import CostChanges from '@/components/finmodel/CostChanges';
 
 export interface FixedHandlers {
   onExpense: (month: string, id: string, amount: number | null) => Promise<void>;
@@ -38,6 +39,7 @@ const CELL_HINT: Partial<Record<FixedCellSource, { label: string; cls: string }>
   forecast: { label: 'прогноз', cls: 'text-gray-400' },
   adapted: { label: 'адаптация', cls: 'text-violet-600' },
   inactive: { label: 'не действует', cls: 'text-gray-300' },
+  changed: { label: 'новая стоимость', cls: 'text-emerald-600' },
 };
 
 const STAFF_BY_ROW: Record<string, string> = {
@@ -351,6 +353,8 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
       )}
 
       <FixedModelBuilder data={data} onAction={onModel} />
+
+      <CostChanges data={data} onAction={onModel} />
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="px-5 py-4 border-b border-gray-100">
