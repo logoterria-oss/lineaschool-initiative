@@ -251,6 +251,12 @@ def _build_month(token, month, test_ids=frozenset()):
         }
 
     forms = {"individual": _side(), "group": _side()}
+    # Статистика учеников и занятий для финмодели: ВСЕ проведённые занятия любого
+    # педагога (включая руководителя и РУО), кроме тестовых карточек и диагностик.
+    # Считаем только оплаченные места: пришёл или пропустил без уважительной
+    # причины (есть списание). Уважительные пропуски — бесплатные, не считаем.
+    stats = {"individual_lessons": 0, "group_lessons": 0,
+             "individual_paid": 0, "group_paid": 0, "students": set()}
     by_teacher = {}
     diag_lessons = 0
     skipped_no_details = 0
@@ -275,6 +281,13 @@ def _build_month(token, month, test_ids=frozenset()):
             skipped_test_lessons += 1
             continue
         details = real
+
+        st_form = "individual" if ls.get("lesson_type_id") == 1 else "group"
+        stats[f"{st_form}_lessons"] += 1
+        for d in details:
+            if d.get("customer_id") is not None and _to_float(d.get("commission")) > 0:
+                stats[f"{st_form}_paid"] += 1
+                stats["students"].add(d.get("customer_id"))
 
         tids_all = [t for t in (ls.get("teacher_ids") or []) if t]
         # Занятие руководителя — разовая подмена, а не работа школы.
@@ -407,8 +420,14 @@ def _build_month(token, month, test_ids=frozenset()):
         "individual": pack("individual"),
         "group": pack("group"),
         "teachers": teacher_rows,
-        # Уникальные ученики месяца: хотя бы одно проведённое занятие любой формы.
         "students_total": len(forms["individual"]["students"] | forms["group"]["students"]),
+        "stats": {
+            "individual_lessons": stats["individual_lessons"],
+            "group_lessons": stats["group_lessons"],
+            "individual_paid": stats["individual_paid"],
+            "group_paid": stats["group_paid"],
+            "students": len(stats["students"]),
+        },
         "diag_lessons": diag_lessons,
         "lessons_total": len(lessons),
         "skipped_no_details": skipped_no_details,

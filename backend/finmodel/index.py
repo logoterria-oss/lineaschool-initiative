@@ -582,12 +582,14 @@ def students_from_reports(cur, months):
     )
     active = {r["m"]: r["active_count"] for r in cur.fetchall()}
     cur.execute(
+        # Все занятия кроме тестовых и диагностик, любого педагога; только оплаченные места
+        # (пришёл или пропуск со списанием). Блок stats считает «Маржинальность урока».
         f"SELECT month, computed_at, "
-        f"(payload->'individual'->>'lessons')::int + (payload->'group'->>'lessons')::int AS lessons, "
-        f"(payload->'group'->>'avg_group_size')::numeric AS fill, "
-        f"COALESCE((payload->'individual'->>'units')::int, 0) + COALESCE((payload->'group'->>'units')::int, 0) AS visits, "
-        f"(payload->>'students_total')::int AS students_total "
-        f"FROM {S}.margin_unit_cache WHERE month = ANY(%s) AND payload ? 'group'",
+        f"(payload->'stats'->>'individual_lessons')::int + (payload->'stats'->>'group_lessons')::int AS lessons, "
+        f"(payload->'stats'->>'group_paid')::numeric / NULLIF((payload->'stats'->>'group_lessons')::int, 0) AS fill, "
+        f"(payload->'stats'->>'individual_paid')::int + (payload->'stats'->>'group_paid')::int AS visits, "
+        f"(payload->'stats'->>'students')::int AS students_total "
+        f"FROM {S}.margin_unit_cache WHERE month = ANY(%s) AND payload ? 'stats'",
         (months,),
     )
     margin = {r["month"]: r for r in cur.fetchall()}
@@ -601,7 +603,7 @@ def students_from_reports(cur, months):
             # Срез последней недели — только запасной вариант: он проседает на праздниках и каникулах.
             "active_students": mr["students_total"] if mr and mr["students_total"] else active.get(m),
             "total_lessons": mr["lessons"] if mr else None,
-            "avg_group_fill": float(mr["fill"]) if mr and mr["fill"] is not None else None,
+            "avg_group_fill": round(float(mr["fill"]), 2) if mr and mr["fill"] is not None else None,
             "visits": mr["visits"] if mr else None,
             "crm_students": bool(mr and mr["students_total"]),
             "report_complete": complete,
@@ -625,17 +627,22 @@ def get_students(cur, conn):
         s, rep = stored.get(m), live[m]
         if s and s["closed"]:
             # Закрытый месяц берёт учеников и посещения из CRM, если они уже посчитаны.
-            act = rep["active_students"] if rep["crm_students"] else s["active_students"]
-            per = _lessons_per_student(rep["visits"], act) if rep["visits"] else s["avg_lessons_per_student"]
-            rows.append({**s, "active_students": act, "avg_lessons_per_student": per,
-                         "state": "closed", "report_complete": True})
+            if rep["crm_students"]:
+                rows.append({**s, "active_students": rep["active_students"],
+                             "total_lessons": rep["total_lessons"], "avg_group_fill": rep["avg_group_fill"],
+                             "avg_lessons_per_student": _lessons_per_student(rep["visits"], rep["active_students"]),
+                             "state": "closed", "report_complete": True})
+            else:
+                rows.append({**s, "state": "closed", "report_complete": True})
             continue
         # Открытый месяц: ручные значения приоритетнее, пустые — из отчётов «на сейчас».
         s = s or {}
         active = rep["active_students"] if rep["crm_students"] else (
             s.get("active_students") if s.get("active_students") is not None else rep["active_students"])
-        lessons = s.get("total_lessons") if s.get("total_lessons") is not None else rep["total_lessons"]
-        fill = s.get("avg_group_fill") if s.get("avg_group_fill") is not None else rep["avg_group_fill"]
+        lessons = rep["total_lessons"] if rep["crm_students"] else (
+            s.get("total_lessons") if s.get("total_lessons") is not None else rep["total_lessons"])
+        fill = rep["avg_group_fill"] if rep["crm_students"] else (
+            s.get("avg_group_fill") if s.get("avg_group_fill") is not None else rep["avg_group_fill"])
         rows.append({
             "month_id": m,
             "active_students": active,
