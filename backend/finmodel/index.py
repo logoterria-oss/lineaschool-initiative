@@ -152,9 +152,10 @@ def recalc(cur, c):
                 final = (direct + seasonal) / 2 if diff > threshold else direct
             rows.append([m, prev_y, direct, seasonal, diff, final])
         k = anchor_factor(c, sc, hist[-1]["month_id"], fact.get(hist[-1]["month_id"]), first, rows[0][5] if rows else 0)
-        for m, prev_y, direct, seasonal, diff, final in rows:
-            direct = direct * k if direct is not None else None
-            seasonal, final = seasonal * k, final * k
+        for i, (m, prev_y, direct, seasonal, diff, final) in enumerate(rows):
+            ki = anchor_fade(c, k, i)
+            direct = direct * ki if direct is not None else None
+            seasonal, final = seasonal * ki, final * ki
             # Адаптация (Промт 13): к модельному прогнозу прибавляем накопленные корректировки по факту.
             c_m = corr.get((m, ""), 0.0)
             final = max(round(final) + c_m, 0)
@@ -180,8 +181,8 @@ def recalc(cur, c):
 
 def anchor_factor(c, sc, last_month, last_value, first_month, first_forecast):
     """Привязка к последнему закрытому месяцу: в месяцы осеннего роста прогноз первого месяца
-    не ниже последнего факта × (1 + рост сценария). Если ниже — весь прогноз сценария
-    масштабируется одним множителем, форма сезонности сохраняется."""
+    не ниже последнего факта × (1 + рост сценария). Если ниже — возвращаем множитель,
+    который затем затухает по anchor_fade."""
     months = str(c.get("anchor_months") or "")
     if not last_value or not first_forecast or str(int(first_month[5:7])) not in months.replace(" ", "").split(","):
         return 1.0
@@ -190,6 +191,13 @@ def anchor_factor(c, sc, last_month, last_value, first_month, first_forecast):
     growth = float(c.get(f"anchor_growth_pct_{sc}") or 0) / 100
     target = float(last_value) * (1 + growth)
     return max(1.0, target / float(first_forecast))
+
+
+def anchor_fade(c, k, i):
+    """Поправка привязки затухает: полная в первом прогнозном месяце, линейно до нуля
+    за anchor_fade_months месяцев — дальше работает обычная модель «прошлый год × рост»."""
+    fade = max(int(float(c.get("anchor_fade_months") or 3)), 1)
+    return 1 + (k - 1) * max(0.0, 1 - i / fade)
 
 
 def forecast_stale(cur):
@@ -335,8 +343,9 @@ def recalc_fact(cur, c):
         k = 1.0
         if last_fact and rows:
             k = anchor_factor(c, sc, last_fact["month_id"], last_fact["fact"], rows[0][0], rows[0][6])
-        for m, av, coef, direct, seasonal, diff, final in rows:
-            direct, seasonal, final = direct * k, seasonal * k, final * k
+        for i, (m, av, coef, direct, seasonal, diff, final) in enumerate(rows):
+            ki = anchor_fade(c, k, i)
+            direct, seasonal, final = direct * ki, seasonal * ki, final * ki
             c_m = corr.get((m, ""), 0.0)
             final = max(round(final) + c_m, 0)
             cur.execute(
