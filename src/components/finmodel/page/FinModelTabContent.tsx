@@ -19,6 +19,7 @@ import DashboardView from '@/components/finmodel/DashboardView';
 import BankPanel from '@/components/finmodel/bank/BankPanel';
 import {
   fetchDashboard, fetchScenarios, fetchFixed, setFixedExpense, setMonthInputs, setStaffMonthRate, setStaffRate,
+  fixedActual, fixedModel,
 } from '@/lib/finmodelApi';
 import type { FinModelState } from './useFinModel';
 
@@ -38,7 +39,7 @@ const FinModelTabContent = ({ fm }: Props) => {
     taxes, onTaxRegime,
     ano, onAnoSave,
     credit, onCreditOption,
-    fixed, fixedAction,
+    fixed, fixedAction, prevKpi,
     students,
     revenue, onSetPct,
     data, fact, onBankChanged,
@@ -119,6 +120,10 @@ const FinModelTabContent = ({ fm }: Props) => {
       onInputs={(m, v) => fixedAction(() => setMonthInputs(m, v))}
       onStaffMonth={(sid, m, r) => fixedAction(() => setStaffMonthRate(sid, m, r))}
       onStaffRate={(sid, r) => fixedAction(() => setStaffRate(sid, r))}
+      onActual={(v) => fixedAction(() => fixedActual(v))}
+      onModel={(v) => fixedAction(() => fixedModel(v))}
+      kpi={dash?.kpi?.[active] ?? null}
+      prevKpi={prevKpi?.[active] ?? null}
     />
   ) : tab === 'students' ? (
     <StudentsTable data={students!} />

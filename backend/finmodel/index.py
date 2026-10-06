@@ -876,6 +876,11 @@ def avans_by_month(cur):
     return out, set(closed)
 
 
+def _active(obj, m):
+    """Работает ли сотрудник / действует ли статья в месяце m (период «с — по», пусто — без ограничения)."""
+    return (not obj.get("active_from") or obj["active_from"] <= m) and (not obj.get("active_to") or m <= obj["active_to"])
+
+
 def calc_fixed(cur):
     c = constants(cur)
     ins_pct = float(c.get("insurance_pct") or 30) / 100
@@ -943,18 +948,31 @@ def calc_fixed(cur):
         r["editable"] = not it["is_fixed"]
     rows["ruo_replacements"]["editable"] = True
     rows["admins"]["editable"] = True
+    custom_staff = [s_ for s_ in staff.values() if s_.get("is_custom")]
+    for s_ in sorted(custom_staff, key=lambda x: x["name"]):
+        r = row(f"staff:{s_['id']}", s_["name"], "staff", "staff", TYPE_RU.get(s_["type"], s_["type"]))
+        r["editable"] = True
+        r["staff_id"] = s_["id"]
+        if s_.get("insurance_applies") or s_.get("vacation_applies"):
+            row(f"staff:{s_['id']}:ins", f"{s_['name']} (страховые и отпускные)", "calc", "staff")
+    # Строки в порядке: сотрудники справочника → новые сотрудники → статьи
+    order = [k for k, v in rows.items() if v["group"] == "staff"] + [k for k, v in rows.items() if v["group"] == "items"]
+    rows = {k: rows[k] for k in order}
 
     totals, payments = {}, []
     for m in months:
         inp = inputs.get(m) or {}
         # РУО
+        ruo_on = _active(ruo, m)
         base, src, note = staff_rate("ruo_zinchenko", m)
+        if not ruo_on:
+            base, src, note = 0, "inactive", "не работает"
         put("ruo_salary", m, base, src, note)
         bpct = float(ruo.get("bonus_pct") or 0.5) / 100
         av = avans.get(m, {})
-        bonus = {sc: (av.get(sc) or 0) * bpct for sc in SCENARIOS}
-        put("ruo_bonus", m, bonus, "fact" if m in closed else "forecast")
-        repl_n = int(inp.get("ruo_replacements") or 0)
+        bonus = {sc: (av.get(sc) or 0) * bpct * (1 if ruo_on else 0) for sc in SCENARIOS}
+        put("ruo_bonus", m, bonus, ("fact" if m in closed else "forecast") if ruo_on else "inactive")
+        repl_n = int(inp.get("ruo_replacements") or 0) if ruo_on else 0
         repl = repl_n * float(ruo.get("substitution_rate") or 650)
         put("ruo_replacements", m, repl, "manual" if inp.get("ruo_replacements") is not None else "default",
             f"{repl_n} ур." if repl_n else None)
@@ -970,13 +988,29 @@ def calc_fixed(cur):
             if sid not in staff:
                 continue
             val, src, note = staff_rate(sid, m)
+            if not _active(staff[sid], m):
+                val, src, note = 0, "inactive", "не работает"
             put(key, m, val, src, note)
             for sc in SCENARIOS:
                 payments.append((m, sid, sc, _r(val), 0, 0, 0, 0, _r(val)))
+        # Новые сотрудники (добавлены руководителем): оклад, для найма — страховые и отпускные
+        for s_ in custom_staff:
+            k = f"staff:{s_['id']}"
+            if _active(s_, m):
+                val, src, note = staff_rate(s_["id"], m)
+            else:
+                val, src, note = 0, "inactive", "не работает"
+            put(k, m, val, src, note)
+            s_ins = val * ins_pct if s_.get("insurance_applies") else 0
+            s_vac = val * vac_pct if s_.get("vacation_applies") else 0
+            if f"{k}:ins" in rows:
+                put(f"{k}:ins", m, s_ins + s_vac)
+            for sc in SCENARIOS:
+                payments.append((m, s_["id"], sc, _r(val), _r(s_ins), _r(s_vac), 0, 0, _r(val) + _r(s_ins) + _r(s_vac)))
         # Админы: ставка за смену × смены
         a_rate = float(inp["admin_rate_override"]) if inp.get("admin_rate_override") is not None else admin_rate_default
         shifts = int(inp["admin_shifts_override"]) if inp.get("admin_shifts_override") is not None else shifts_default
-        a_base = a_rate * shifts
+        a_base = a_rate * shifts if (admins and _active(admins[0], m)) else 0
         a_manual = inp.get("admin_rate_override") is not None or inp.get("admin_shifts_override") is not None
         put("admins", m, a_base, "manual" if a_manual else "staff", f"{_r(a_rate)} ₽ × {shifts} смен")
         rows["admins"].setdefault("inputs", {})[m] = {"rate": a_rate, "shifts": shifts}
@@ -1006,8 +1040,10 @@ def calc_fixed(cur):
                     note = f"адаптация {'+' if a_c > 0 else '−'}{_r(abs(a_c)):,} ₽".replace(",", " ")
                 if it.get("new_since") and it["new_since"] <= m and src != "adapted":
                     note = note or "новая статья, по аналогии"
+            if not _active(it, m):
+                amount, src, note = 0, "inactive", "не действует"
             # Снимок прогноза: будущие месяцы, а текущий — пока в него не ввели факт.
-            if not it["is_fixed"] and (m > cur_m or (m == cur_m and not o)):
+            elif not it["is_fixed"] and (m > cur_m or (m == cur_m and not o)):
                 fx_snaps.append((m, iid, amount))
             put(iid, m, amount, src, note)
 
@@ -1030,6 +1066,17 @@ def calc_fixed(cur):
             [(m, "fixed_expense", iid, "base", round(float(a), 4), datetime.datetime.utcnow()) for m, iid, a in fx_snaps],
         )
 
+    actuals = fixed_actuals(cur, rows, months)
+    # Прошедшие месяцы в модели — по таблице факта постоянных расходов (её ведёт руководитель).
+    for m in months:
+        if m >= cur_m or m not in actuals["totals"]:
+            continue
+        t = actuals["totals"][m]
+        des = actuals["designers"].get(m, 0)
+        an = _r(ano.get(m, 0))
+        totals[m] = {"total": {sc: t for sc in SCENARIOS}, "total_wo_designers": {sc: t - des for sc in SCENARIOS},
+                     "ano": an, "total_with_ano": {sc: t + an for sc in SCENARIOS}, "actual": True}
+
     cur.execute(f"DELETE FROM {S}.fm_staff_monthly_payments")
     if payments:
         execute_values(
@@ -1042,8 +1089,15 @@ def calc_fixed(cur):
     staff_list = [
         {"id": s["id"], "name": s["name"], "role": s["role"], "type": s["type"], "rate": s["rate"],
          "rate_unit": s["rate_unit"], "rate_max": s["rate_max"], "insurance_applies": s["insurance_applies"],
-         "vacation_applies": s["vacation_applies"], "bonus_pct": s["bonus_pct"], "substitution_rate": s["substitution_rate"]}
+         "vacation_applies": s["vacation_applies"], "bonus_pct": s["bonus_pct"], "substitution_rate": s["substitution_rate"],
+         "active_from": s.get("active_from"), "active_to": s.get("active_to"), "is_custom": bool(s.get("is_custom"))}
         for s in staff.values() if s["role"] != "teacher"
+    ]
+    item_list = [
+        {"id": i["id"], "name": i["name"], "amount": i["amount"], "amount_unit": i["amount_unit"],
+         "is_fixed": i["is_fixed"], "is_custom": bool(i.get("is_custom")),
+         "active_from": i.get("active_from"), "active_to": i.get("active_to")}
+        for i in items.values() if i["category"] == "fixed" and i["id"] not in dict(STAFF_ROWS)
     ]
     return {
         "ok": True,
@@ -1055,10 +1109,236 @@ def calc_fixed(cur):
         "totals": totals,
         "ano": {m: {"amount": _r(ano.get(m, 0))} for m in months},
         "staff": staff_list,
+        "items": item_list,
+        "actuals": actuals,
         "insurance_pct": ins_pct * 100,
         "vacation_pct": vac_pct * 100,
         "admin_shifts_default": shifts_default,
     }
+
+
+TYPE_RU = {"hired": "найм", "informal": "в чёрную", "contractor": "подрядчик", "self_employed": "самозанятый"}
+
+
+def fixed_actuals(cur, rows, model_months):
+    """Факт постоянных расходов за прошедшие месяцы — отдельная таблица, которую руководитель правит вручную.
+    Когда месяц заканчивается, он один раз заполняется значениями модели; дальше меняется только вручную."""
+    cm = current_month()
+    cur.execute(f"SELECT min(month_id) AS m FROM {S}.fm_avans_monthly")
+    first = (cur.fetchone() or {}).get("m") or FIXED_FIRST_MONTH
+    past, m = [], first
+    while m < cm:
+        past.append(m)
+        m = add_months(m, 1)
+    cur.execute(f"SELECT month_id FROM {S}.fm_fixed_actual_months")
+    seeded = {r["month_id"] for r in cur.fetchall()}
+    cur.execute(f"SELECT * FROM {S}.fm_fixed_actual_lines ORDER BY sort, id")
+    lines = [dict(r) for r in cur.fetchall()]
+    by_key = {l["source_key"]: l for l in lines if l["source_key"]}
+
+    def add_line(name, grp, key):
+        cur.execute(f"SELECT coalesce(max(sort), 0) + 10 AS s FROM {S}.fm_fixed_actual_lines")
+        srt = cur.fetchone()["s"]
+        cur.execute(
+            f"INSERT INTO {S}.fm_fixed_actual_lines (name, grp, sort, source_key) VALUES (%s,%s,%s,%s) RETURNING *",
+            (name, grp, srt, key),
+        )
+        ln = dict(cur.fetchone())
+        lines.append(ln)
+        by_key[key] = ln
+        return ln
+
+    to_seed = [m for m in past if m not in seeded]
+    if to_seed:
+        vals = []
+        for m in to_seed:
+            if m in model_months:
+                for k, r in rows.items():
+                    v = (r["values"].get(m) or {}).get("base", 0)
+                    ln = by_key.get(k)
+                    if ln is None:
+                        ln = add_line(r["name"], r["group"], k)
+                    if ln["is_hidden"] or not v:
+                        continue
+                    vals.append((ln["id"], m, v))
+            cur.execute(f"INSERT INTO {S}.fm_fixed_actual_months (month_id) VALUES (%s) ON CONFLICT DO NOTHING", (m,))
+        if vals:
+            execute_values(
+                cur,
+                f"INSERT INTO {S}.fm_fixed_actual_values (line_id, month_id, amount) VALUES %s "
+                "ON CONFLICT (line_id, month_id) DO NOTHING",
+                vals,
+            )
+    cur.execute(f"SELECT line_id, month_id, amount FROM {S}.fm_fixed_actual_values")
+    values = {}
+    for r in cur.fetchall():
+        values.setdefault(r["line_id"], {})[r["month_id"]] = float(r["amount"])
+    visible = [l for l in lines if not l["is_hidden"]]
+    totals = {m: _r(sum(values.get(l["id"], {}).get(m, 0) for l in visible)) for m in past}
+    designers = {m: _r(sum(values.get(l["id"], {}).get(m, 0) for l in visible if l["source_key"] == "designers")) for m in past}
+    return {
+        "months": past,
+        "lines": [{"id": l["id"], "name": l["name"], "group": l["grp"], "source_key": l["source_key"],
+                   "values": values.get(l["id"], {})} for l in visible],
+        "totals": totals,
+        "designers": designers,
+    }
+
+
+def _fx_month(cur, month):
+    cur.execute(f"SELECT 1 FROM {S}.fm_months WHERE id = %s", (month,))
+    return bool(cur.fetchone())
+
+
+def _amount(raw):
+    try:
+        v = round(float(raw), 2)
+    except (TypeError, ValueError):
+        return None
+    return v if v >= 0 else None
+
+
+def fixed_actual_action(cur, conn, body):
+    """Таблица факта постоянных расходов: op = set | add_line | rename | delete_line."""
+    op = body.get("op")
+    cm = current_month()
+    if op == "set":
+        month, lid = str(body.get("month") or ""), int(body.get("line_id") or 0)
+        if not _fx_month(cur, month) or month >= cm:
+            return resp(400, {"error": "Можно менять только прошедшие месяцы"})
+        raw = body.get("amount")
+        if raw is None or raw == "":
+            cur.execute(f"DELETE FROM {S}.fm_fixed_actual_values WHERE line_id = %s AND month_id = %s", (lid, month))
+        else:
+            a = _amount(raw)
+            if a is None:
+                return resp(400, {"error": "Сумма — неотрицательное число"})
+            cur.execute(
+                f"INSERT INTO {S}.fm_fixed_actual_values (line_id, month_id, amount, updated_at) VALUES (%s,%s,%s,now()) "
+                "ON CONFLICT (line_id, month_id) DO UPDATE SET amount = EXCLUDED.amount, updated_at = now()",
+                (lid, month, a),
+            )
+    elif op == "add_line":
+        name = str(body.get("name") or "").strip()[:255]
+        grp = "staff" if body.get("group") == "staff" else "items"
+        if not name:
+            return resp(400, {"error": "Нужно название"})
+        cur.execute(f"SELECT coalesce(max(sort), 0) + 10 AS s FROM {S}.fm_fixed_actual_lines")
+        cur.execute(
+            f"INSERT INTO {S}.fm_fixed_actual_lines (name, grp, sort) VALUES (%s,%s,%s)",
+            (name, grp, cur.fetchone()["s"]),
+        )
+    elif op == "rename":
+        name = str(body.get("name") or "").strip()[:255]
+        if not name:
+            return resp(400, {"error": "Нужно название"})
+        cur.execute(f"UPDATE {S}.fm_fixed_actual_lines SET name = %s WHERE id = %s", (name, int(body.get("line_id") or 0)))
+    elif op == "delete_line":
+        lid = int(body.get("line_id") or 0)
+        cur.execute(f"DELETE FROM {S}.fm_fixed_actual_values WHERE line_id = %s", (lid,))
+        cur.execute(f"UPDATE {S}.fm_fixed_actual_lines SET is_hidden = true WHERE id = %s", (lid,))
+    else:
+        return resp(400, {"error": "Неизвестная операция"})
+    conn.commit()
+    return resp(200, {"ok": True})
+
+
+def _period(body):
+    """Период «с — по» (YYYY-MM или пусто). Возвращает (from, to) или None при ошибке."""
+    f, t = body.get("active_from") or None, body.get("active_to") or None
+    for v in (f, t):
+        if v is not None and (len(str(v)) != 7 or str(v)[4] != "-"):
+            return None
+    if f and t and f > t:
+        return None
+    return f, t
+
+
+def fixed_model_action(cur, conn, body):
+    """Конструктор прогноза: op = staff_add | staff_update | staff_delete | item_add | item_update | item_delete."""
+    import secrets
+    op = body.get("op")
+    per = _period(body)
+    if op in ("staff_add", "staff_update", "item_add", "item_update") and per is None:
+        return resp(400, {"error": "Период указан неверно: «с» должно быть не позже «по»"})
+    if op == "staff_add":
+        name = str(body.get("name") or "").strip()[:255]
+        typ = body.get("type") if body.get("type") in TYPE_RU else "contractor"
+        rate = _amount(body.get("rate"))
+        if not name or rate is None:
+            return resp(400, {"error": "Нужны имя и ставка в месяц"})
+        hired = typ == "hired"
+        cur.execute(
+            f"INSERT INTO {S}.fm_staff (id, name, role, type, rate_source, rate, rate_unit, ndfl_applies, insurance_applies, "
+            "vacation_applies, active_from, active_to, is_custom) VALUES (%s,%s,'other',%s,'manual',%s,'rub_month',%s,%s,%s,%s,%s,true)",
+            (f"c_{secrets.token_hex(4)}", name, typ, rate, hired, hired, hired, per[0], per[1]),
+        )
+    elif op == "staff_update":
+        sid = str(body.get("id") or "")
+        cur.execute(f"SELECT role, is_custom FROM {S}.fm_staff WHERE id = %s", (sid,))
+        st = cur.fetchone()
+        if not st or st["role"] == "teacher":
+            return resp(400, {"error": "Нет такого сотрудника"})
+        where, arg = ("role = 'admin'", ()) if st["role"] == "admin" else ("id = %s", (sid,))
+        cur.execute(f"UPDATE {S}.fm_staff SET active_from = %s, active_to = %s WHERE {where}", (per[0], per[1], *arg))
+        if st["is_custom"]:
+            name = str(body.get("name") or "").strip()[:255]
+            rate = _amount(body.get("rate"))
+            typ = body.get("type") if body.get("type") in TYPE_RU else None
+            if name:
+                cur.execute(f"UPDATE {S}.fm_staff SET name = %s WHERE id = %s", (name, sid))
+            if rate is not None:
+                cur.execute(f"UPDATE {S}.fm_staff SET rate = %s WHERE id = %s", (rate, sid))
+            if typ:
+                h = typ == "hired"
+                cur.execute(f"UPDATE {S}.fm_staff SET type = %s, ndfl_applies = %s, insurance_applies = %s, "
+                            "vacation_applies = %s WHERE id = %s", (typ, h, h, h, sid))
+    elif op == "staff_delete":
+        sid = str(body.get("id") or "")
+        cur.execute(f"SELECT is_custom FROM {S}.fm_staff WHERE id = %s", (sid,))
+        st = cur.fetchone()
+        if not st or not st["is_custom"]:
+            return resp(400, {"error": "Сотрудника из справочника не удаляем — задайте ему период работы"})
+        cur.execute(f"DELETE FROM {S}.fm_staff_monthly WHERE staff_id = %s", (sid,))
+        cur.execute(f"DELETE FROM {S}.fm_staff WHERE id = %s", (sid,))
+    elif op == "item_add":
+        name = str(body.get("name") or "").strip()[:255]
+        amount = _amount(body.get("amount"))
+        if not name or amount is None:
+            return resp(400, {"error": "Нужны название и сумма в месяц"})
+        cur.execute(f"SELECT coalesce(max(sort), 0) + 1 AS s FROM {S}.fm_expense_items WHERE category = 'fixed' AND sort < 200")
+        cur.execute(
+            f"INSERT INTO {S}.fm_expense_items (id, name, category, input_mode, amount, amount_unit, sort, is_fixed, "
+            "active_from, active_to, is_custom) VALUES (%s,%s,'fixed','fixed',%s,'rub_month',%s,true,%s,%s,true)",
+            (f"c_{secrets.token_hex(4)}", name, amount, cur.fetchone()["s"], per[0], per[1]),
+        )
+    elif op == "item_update":
+        iid = str(body.get("id") or "")
+        cur.execute(f"SELECT is_custom FROM {S}.fm_expense_items WHERE id = %s AND category = 'fixed'", (iid,))
+        it = cur.fetchone()
+        if not it:
+            return resp(400, {"error": "Нет такой статьи"})
+        cur.execute(f"UPDATE {S}.fm_expense_items SET active_from = %s, active_to = %s WHERE id = %s", (per[0], per[1], iid))
+        if it["is_custom"]:
+            name = str(body.get("name") or "").strip()[:255]
+            amount = _amount(body.get("amount"))
+            if name:
+                cur.execute(f"UPDATE {S}.fm_expense_items SET name = %s WHERE id = %s", (name, iid))
+            if amount is not None:
+                cur.execute(f"UPDATE {S}.fm_expense_items SET amount = %s WHERE id = %s", (amount, iid))
+    elif op == "item_delete":
+        iid = str(body.get("id") or "")
+        cur.execute(f"SELECT is_custom FROM {S}.fm_expense_items WHERE id = %s", (iid,))
+        it = cur.fetchone()
+        if not it or not it["is_custom"]:
+            return resp(400, {"error": "Статью справочника не удаляем — задайте ей период действия"})
+        cur.execute(f"DELETE FROM {S}.fm_expense_monthly WHERE expense_id = %s", (iid,))
+        cur.execute(f"DELETE FROM {S}.fm_forecast_snapshots WHERE item_id = %s", (iid,))
+        cur.execute(f"DELETE FROM {S}.fm_expense_items WHERE id = %s", (iid,))
+    else:
+        return resp(400, {"error": "Неизвестная операция"})
+    conn.commit()
+    return resp(200, {"ok": True})
 
 
 def fmt_pct(v):
@@ -1164,7 +1444,9 @@ def set_staff_rate(cur, conn, body):
 def set_staff_month_rate(cur, conn, body):
     """Разовая ставка сотрудника на конкретный месяц (например, директолог в сентябре). null — по справочнику."""
     sid, month = str(body.get("staff_id") or ""), str(body.get("month") or "")
-    if sid not in dict((v, k) for k, v in STAFF_ROWS) or not _month_ok(cur, month):
+    cur.execute(f"SELECT is_custom FROM {S}.fm_staff WHERE id = %s", (sid,))
+    st = cur.fetchone()
+    if (sid not in dict((v, k) for k, v in STAFF_ROWS) and not (st and st["is_custom"])) or not _month_ok(cur, month):
         return resp(400, {"error": "Нет такого сотрудника или месяца"})
     raw = body.get("rate")
     if raw is None or raw == "":
@@ -3123,6 +3405,10 @@ def handler(event: dict, context) -> dict:
                 return set_variable_pct(cur, conn, body)
             if action == "set_current_margin":
                 return set_current_margin(cur, conn, body)
+            if action == "fixed_actual":
+                return fixed_actual_action(cur, conn, body)
+            if action == "fixed_model":
+                return fixed_model_action(cur, conn, body)
             if action == "fact_close":
                 return close_fact_month(cur, conn, body)
             if action == "set_scenario":

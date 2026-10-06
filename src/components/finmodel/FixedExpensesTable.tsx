@@ -1,19 +1,26 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import {
-  FixedCellSource, FixedData, FixedRow, SCENARIO_LABEL, Scenario, fmMoney, fmMonthLabel,
+  DashKpi, FixedActualOp, FixedCellSource, FixedData, FixedModelOp, FixedRow, SCENARIO_LABEL, Scenario, fmMoney, fmMonthLabel,
 } from '@/lib/finmodelApi';
+import FixedActualsTable from '@/components/finmodel/FixedActualsTable';
+import FixedModelBuilder from '@/components/finmodel/FixedModelBuilder';
 
 export interface FixedHandlers {
   onExpense: (month: string, id: string, amount: number | null) => Promise<void>;
   onInputs: (month: string, v: Record<string, number | null>) => Promise<void>;
   onStaffMonth: (staffId: string, month: string, rate: number | null) => Promise<void>;
   onStaffRate: (staffId: string, rate: number) => Promise<void>;
+  onActual: (v: FixedActualOp) => Promise<void>;
+  onModel: (v: FixedModelOp) => Promise<void>;
 }
 
 interface Props extends FixedHandlers {
   data: FixedData;
   active: Scenario;
+  /** Итоги модели (активный сценарий) и их значение до последнего изменения — чтобы видеть эффект. */
+  kpi?: DashKpi | null;
+  prevKpi?: DashKpi | null;
 }
 
 const ROW_SOURCE: Record<string, { label: string; cls: string }> = {
@@ -30,6 +37,7 @@ const CELL_HINT: Partial<Record<FixedCellSource, { label: string; cls: string }>
   fact: { label: 'факт аванса', cls: 'text-blue-500' },
   forecast: { label: 'прогноз', cls: 'text-gray-400' },
   adapted: { label: 'адаптация', cls: 'text-violet-600' },
+  inactive: { label: 'не действует', cls: 'text-gray-300' },
 };
 
 const STAFF_BY_ROW: Record<string, string> = {
@@ -171,16 +179,32 @@ function StaffDirectory({ data, onStaffRate }: { data: FixedData; onStaffRate: P
   );
 }
 
-const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, onStaffRate }: Props) => {
+function KpiCard({ label, value, prev, good = 'up' }: { label: string; value: number; prev?: number; good?: 'up' | 'down' }) {
+  const d = prev == null ? 0 : value - prev;
+  const better = good === 'up' ? d > 0 : d < 0;
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="text-xl font-bold text-gray-900">{fmMoney(value)}</div>
+      {Math.round(d) !== 0 && (
+        <div className={`text-xs mt-0.5 ${better ? 'text-emerald-600' : 'text-rose-600'}`}>
+          {d > 0 ? '+' : '−'}{fmMoney(Math.abs(d))} после изменения
+        </div>
+      )}
+    </div>
+  );
+}
+
+const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, onStaffRate, onActual, onModel, kpi, prevKpi }: Props) => {
   const [edit, setEdit] = useState<string | null>(null);
-  const months = data.months;
+  const months = data.months.filter((m) => m >= data.current_month);
 
   const editorFor = (row: FixedRow, m: string) => {
     const close = () => setEdit(null);
     const v = row.values[m]?.[active] ?? 0;
     const src = row.sources[m];
-    if (STAFF_BY_ROW[row.key]) {
-      const sid = STAFF_BY_ROW[row.key];
+    if (STAFF_BY_ROW[row.key] || row.staff_id) {
+      const sid = STAFF_BY_ROW[row.key] || row.staff_id!;
       return (
         <Editor
           fields={[{ key: 'v', label: 'разово', value: v }]}
@@ -223,6 +247,7 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
   };
 
   const isEditable = (row: FixedRow) => row.editable || !!STAFF_BY_ROW[row.key];
+  const cellEditable = (row: FixedRow, m: string) => isEditable(row) && row.sources[m] !== 'inactive';
   const staffRows = data.rows.filter((r) => r.group === 'staff');
   const itemRows = data.rows.filter((r) => r.group === 'items');
 
@@ -244,7 +269,7 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
           const val = row.values[m]?.[active];
           const hint = CELL_HINT[row.sources[m]];
           const note = row.notes[m];
-          const editable = isEditable(row);
+          const editable = cellEditable(row, m);
           return (
             <td key={m} className="px-3 py-2 text-right whitespace-nowrap align-top">
               {edit === key ? (
@@ -304,11 +329,11 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
     <div className="space-y-4">
       <div className="grid sm:grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500">Постоянные, {fmMonthLabel(months[0])}</div>
+          <div className="text-xs text-gray-500">Постоянные, {months[0] ? fmMonthLabel(months[0]) : '—'}</div>
           <div className="text-2xl font-bold text-rose-700">{fmMoney(cur)}</div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500">За {months.length} мес с АНО · {SCENARIO_LABEL[active]}</div>
+          <div className="text-xs text-gray-500">Прогноз на {months.length} мес с АНО · {SCENARIO_LABEL[active]}</div>
           <div className="text-2xl font-bold text-gray-900">{fmMoney(annual)}</div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-xs text-gray-500 leading-relaxed">
@@ -317,9 +342,19 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
         </div>
       </div>
 
+      {kpi && (
+        <div className="grid sm:grid-cols-3 gap-3">
+          <KpiCard label={`Чистая прибыль за горизонт · ${SCENARIO_LABEL[active]}`} value={kpi.net_profit} prev={prevKpi?.net_profit} />
+          <KpiCard label="Остаток денег на конец" value={kpi.end_balance} prev={prevKpi?.end_balance} />
+          <KpiCard label="Минимальный остаток" value={kpi.min_balance} prev={prevKpi?.min_balance} />
+        </div>
+      )}
+
+      <FixedModelBuilder data={data} onAction={onModel} />
+
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900">Постоянные расходы по месяцам</h3>
+          <h3 className="font-semibold text-gray-900">Прогноз постоянных расходов</h3>
           <p className="text-xs text-gray-500 mt-0.5">
             Ручной ввод: реклама, нейронка нерегуляр, дизайнеры, замены РУО, смены/ставка админов (KPI). Для сотрудников на окладе можно задать разовую ставку месяца.
           </p>
@@ -350,6 +385,8 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
           </table>
         </div>
       </div>
+
+      <FixedActualsTable data={data.actuals} onAction={onActual} />
 
       <StaffDirectory data={data} onStaffRate={onStaffRate} />
     </div>

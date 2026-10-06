@@ -314,7 +314,7 @@ export const setStudents = (
 
 // ---------------- Постоянные расходы ----------------
 export type FixedSource = 'staff' | 'calc' | 'fixed' | 'manual';
-export type FixedCellSource = 'staff' | 'override' | 'fact' | 'forecast' | 'manual' | 'default' | 'fixed' | 'adapted';
+export type FixedCellSource = 'staff' | 'override' | 'fact' | 'forecast' | 'manual' | 'default' | 'fixed' | 'adapted' | 'inactive';
 
 export interface FixedRow {
   key: string;
@@ -327,6 +327,7 @@ export interface FixedRow {
   sources: Record<string, FixedCellSource>;
   notes: Record<string, string>;
   inputs?: Record<string, { rate: number; shifts: number }>;
+  staff_id?: string;
 }
 
 export interface FixedTotals {
@@ -348,6 +349,35 @@ export interface FixedStaff {
   vacation_applies: boolean;
   bonus_pct: number | null;
   substitution_rate: number | null;
+  active_from: string | null;
+  active_to: string | null;
+  is_custom: boolean;
+}
+
+export interface FixedItem {
+  id: string;
+  name: string;
+  amount: number | null;
+  amount_unit: string;
+  is_fixed: boolean;
+  is_custom: boolean;
+  active_from: string | null;
+  active_to: string | null;
+}
+
+export interface FixedActualLine {
+  id: number;
+  name: string;
+  group: 'staff' | 'items';
+  source_key: string | null;
+  values: Record<string, number>;
+}
+
+export interface FixedActuals {
+  months: string[];
+  lines: FixedActualLine[];
+  totals: Record<string, number>;
+  designers: Record<string, number>;
 }
 
 export interface FixedData {
@@ -358,6 +388,8 @@ export interface FixedData {
   rows: FixedRow[];
   totals: Record<string, FixedTotals>;
   staff: FixedStaff[];
+  items: FixedItem[];
+  actuals: FixedActuals;
   insurance_pct: number;
   vacation_pct: number;
   admin_shifts_default: number;
@@ -379,6 +411,27 @@ export const setMonthInputs = (
   month: string,
   v: { ruo_replacements?: number | null; admin_shifts_override?: number | null; admin_rate_override?: number | null },
 ) => post({ action: 'set_month_inputs', month, ...v });
+
+/** Таблица факта постоянных расходов за прошедшие месяцы. */
+export type FixedActualOp =
+  | { op: 'set'; line_id: number; month: string; amount: number | null }
+  | { op: 'add_line'; name: string; group: 'staff' | 'items' }
+  | { op: 'rename'; line_id: number; name: string }
+  | { op: 'delete_line'; line_id: number };
+export const fixedActual = (v: FixedActualOp) => post({ action: 'fixed_actual', ...v });
+
+/** Конструктор прогноза: сотрудники и статьи с периодом действия. */
+export interface FixedModelOp {
+  op: 'staff_add' | 'staff_update' | 'staff_delete' | 'item_add' | 'item_update' | 'item_delete';
+  id?: string;
+  name?: string;
+  type?: string;
+  rate?: number;
+  amount?: number;
+  active_from?: string | null;
+  active_to?: string | null;
+}
+export const fixedModel = (v: FixedModelOp) => post({ action: 'fixed_model', ...v });
 
 /** Ставка сотрудника в справочнике (для админов — сразу у всех). */
 export const setStaffRate = (staff_id: string, rate: number) => post({ action: 'set_staff_rate', staff_id, rate });

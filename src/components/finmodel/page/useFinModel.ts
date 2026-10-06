@@ -202,11 +202,20 @@ export const useFinModel = () => {
   };
 
 
+  const [prevKpi, setPrevKpi] = useState<DashboardData['kpi'] | null>(null);
   const fixedAction = async (fn: () => Promise<unknown>) => {
     try {
       await fn();
       setFixed(await fetchFixed());
       setTaxes(await fetchTaxes());
+      // Пересчёт всей модели (P&L → Cash Flow → итоги), чтобы видеть эффект изменения.
+      const before = dash?.kpi ?? null;
+      fetchDashboard()
+        .then((db) => {
+          setPrevKpi(before);
+          setDash(db);
+        })
+        .catch(() => null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
       throw e;
@@ -350,7 +359,7 @@ export const useFinModel = () => {
     pnl, pnlLoading, cashflow, cfLoading, adaptation, adLoading, scenarios, setScenarios, scLoading,
     tab, setTab, dash, setDash, scView, setScView, busyTop, active, loading, error, load,
     onAdaptChanged, onCfCredit, onCfPayoutPct, switchScenario, onSetPct,
-    fixedAction, onAnoSave, onOneTimeSave, onOneTimeDelete, onPayoutSave, onTaxRegime, onCreditOption,
+    fixedAction, prevKpi, onAnoSave, onOneTimeSave, onOneTimeDelete, onPayoutSave, onTaxRegime, onCreditOption,
     goTo, onBankChanged, onCloseMonth, onRecalc, onTaxGlobal, onCreditTop, onScenarioTop, onNotif, onExport,
     notifTabs, unread, monthOpen, annual, annualFact,
   };
