@@ -77,7 +77,7 @@ export async function downloadUnitMarginPdf({
     pageW - margin, 19.5, { align: 'right' },
   );
 
-  /** Блок одной формы занятий: выручка, расходы построчно, маржа, налог. */
+  /** Блок одной формы занятий: выручка, расходы построчно, маржа. */
   const renderSide = (
     res: UnitMarginResult,
     fact: UnitFactSide | undefined,
@@ -108,7 +108,7 @@ export async function downloadUnitMarginPdf({
     doc.text(percent(res.marginPercent), pageW - margin - 42, startY + 6.5, { align: 'right' });
     doc.text(money2(res.margin), pageW - margin, startY + 6.5, { align: 'right' });
 
-    // Разбор: выручка → расходы построчно → маржа → налог → после налога
+    // Разбор: выручка → расходы построчно → маржа
     const body: (string | { content: string; styles?: object })[][] = [];
 
     body.push(['Выручка занятия', res.revenueFormula, money2(res.revenue)]);
@@ -121,13 +121,6 @@ export async function downloadUnitMarginPdf({
       `${money2(res.revenue)} - ${money2(res.costTotal)}`,
       `${money2(res.margin)} (${percent(res.marginPercent)})`,
     ]);
-    if (res.tax > 0) {
-      body.push(['- Налог УСН', '', `-${money2(res.tax)}`]);
-      body.push([
-        '= После налога', '',
-        `${money2(res.profit)} (${percent(res.profitPercent)})`,
-      ]);
-    }
 
     const marginRowIdx = 1 + res.costRows.length + 1;
 
@@ -258,13 +251,6 @@ export async function downloadUnitMarginPdf({
         `${money(totals.margin)} (${percent(totals.marginPercent)})`,
       ],
     ];
-    if (totals.tax > 0) {
-      totalsBody.push(['- Налог УСН', '', `-${money(totals.tax)}`]);
-      totalsBody.push([
-        '= После налога', '',
-        `${money(totals.profit)} (${percent(totals.profitPercent)})`,
-      ]);
-    }
 
     const share = (v: number) =>
       totals.margin !== 0 ? Math.round((v / totals.margin) * 100) : 0;

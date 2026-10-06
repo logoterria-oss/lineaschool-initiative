@@ -112,20 +112,6 @@ export default function UnitResultCard({ result, fact, showFormula }: Props) {
               {fmtMoney2(result.margin)} ({fmtPercent(result.marginPercent)})
             </span>
           </div>
-          {result.tax > 0 && (
-            <>
-              <div className="flex justify-between">
-                <span className="text-gray-600">− Налог УСН</span>
-                <span>−{fmtMoney2(result.tax)}</span>
-              </div>
-              <div className="flex justify-between border-t border-gray-200 pt-1.5 font-semibold">
-                <span>= После налога</span>
-                <span>
-                  {fmtMoney2(result.profit)} ({fmtPercent(result.profitPercent)})
-                </span>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Служебные показатели */}

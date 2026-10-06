@@ -72,20 +72,6 @@ export default function UnitMonthTotalCard({ totals, month }: Props) {
               {fmtMoney(totals.margin)} ({fmtPercent(totals.marginPercent)})
             </span>
           </div>
-          {totals.tax > 0 && (
-            <>
-              <div className="flex justify-between">
-                <span className="text-gray-600">− Налог УСН</span>
-                <span>−{fmtMoney(totals.tax)}</span>
-              </div>
-              <div className="flex justify-between border-t border-gray-200 pt-1.5 font-semibold">
-                <span>= После налога</span>
-                <span>
-                  {fmtMoney(totals.profit)} ({fmtPercent(totals.profitPercent)})
-                </span>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Кто приносит маржу: разбивка по формам занятий */}

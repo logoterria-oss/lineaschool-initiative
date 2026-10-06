@@ -210,31 +210,6 @@ export default function UnitRatesForm({
           step={0.1}
           hint="резерв = зарплата ÷ делитель"
         />
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Налог УСН</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              step={0.1}
-              value={inputs.rates.usnPercent}
-              onChange={(e) => rates({ usnPercent: parseFloat(e.target.value) })}
-              disabled={!inputs.rates.usnEnabled}
-              className="w-20 border border-gray-300 rounded-md px-2.5 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
-            <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={inputs.rates.usnEnabled}
-                onChange={(e) => rates({ usnEnabled: e.target.checked })}
-                className="accent-amber-500"
-              />
-              учитывать
-            </label>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1 leading-snug">
-            налог с выручки, на маржинальность не влияет
-          </p>
-        </div>
       </div>
 
       <div className="flex justify-end pt-1">

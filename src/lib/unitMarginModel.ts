@@ -47,10 +47,6 @@ export interface UnitRates {
   acquiringPercent: number;
   /** Делитель резерва отпускных. */
   vacationDivisor: number;
-  /** Учитывать ли налог УСН в расчёте прибыли урока. */
-  usnEnabled: boolean;
-  /** Ставка УСН «Доходы», %. */
-  usnPercent: number;
 }
 
 /** Параметры одной формы занятий. */
@@ -97,12 +93,6 @@ export interface UnitMarginResult {
   margin: number;
   /** Маржинальность занятия, %. */
   marginPercent: number;
-
-  /** Налог УСН с занятия (0, если выключен). */
-  tax: number;
-  /** Прибыль с занятия после налога. */
-  profit: number;
-  profitPercent: number;
 
   /** Минимальная выручка занятия, ниже которой оно убыточно. */
   breakEvenRevenue: number;
@@ -198,14 +188,9 @@ export function calcUnit(
   const costTotal = salary + sfr + vacation + acquiring;
   const margin = revenue - costTotal;
 
-  const tax = rates.usnEnabled ? revenue * (safe(rates.usnPercent) / 100) : 0;
-  const profit = margin - tax;
-
   // Безубыточность занятия: при какой выручке маржа обнулится.
-  // От выручки зависят только эквайринг и налог, зарплата фиксирована.
-  const variableRate =
-    safe(rates.acquiringPercent) / 100 +
-    (rates.usnEnabled ? safe(rates.usnPercent) / 100 : 0);
+  // От выручки зависит только эквайринг, зарплата фиксирована.
+  const variableRate = safe(rates.acquiringPercent) / 100;
   const payroll = salary + sfr + vacation;
   const breakEvenRevenue = 1 - variableRate > 0 ? payroll / (1 - variableRate) : 0;
   // Сколько детей нужно на занятии при текущей цене.
@@ -222,9 +207,6 @@ export function calcUnit(
     costTotal: round2(costTotal),
     margin: round2(margin),
     marginPercent: revenue > 0 ? round2((margin / revenue) * 100) : 0,
-    tax: round2(tax),
-    profit: round2(profit),
-    profitPercent: revenue > 0 ? round2((profit / revenue) * 100) : 0,
     breakEvenRevenue: round2(breakEvenRevenue),
     breakEvenClients: round2(breakEvenClients),
     payrollShare: revenue > 0 ? round2((payroll / revenue) * 100) : 0,
@@ -245,9 +227,6 @@ export interface UnitMonthTotals {
   margin: number;
   /** СРЕДНЕВЗВЕШЕННАЯ маржинальность по всем урокам месяца, %. */
   marginPercent: number;
-  tax: number;
-  profit: number;
-  profitPercent: number;
   /** Вклад каждой формы в общую маржу месяца — видно, кто зарабатывает. */
   individualMargin: number;
   groupMargin: number;
@@ -271,11 +250,9 @@ export function calcMonthTotals(
 
   const revenue = res.individual.revenue * ind + res.group.revenue * grp;
   const costTotal = res.individual.costTotal * ind + res.group.costTotal * grp;
-  const tax = res.individual.tax * ind + res.group.tax * grp;
   const individualMargin = res.individual.margin * ind;
   const groupMargin = res.group.margin * grp;
   const margin = individualMargin + groupMargin;
-  const profit = margin - tax;
 
   return {
     individualLessons: ind,
@@ -285,9 +262,6 @@ export function calcMonthTotals(
     costTotal: round2(costTotal),
     margin: round2(margin),
     marginPercent: revenue > 0 ? round2((margin / revenue) * 100) : 0,
-    tax: round2(tax),
-    profit: round2(profit),
-    profitPercent: revenue > 0 ? round2((profit / revenue) * 100) : 0,
     individualMargin: round2(individualMargin),
     groupMargin: round2(groupMargin),
   };
@@ -307,8 +281,6 @@ export const DEFAULT_RATES: UnitRates = {
   sfrPercent: 30,
   acquiringPercent: 3.19,
   vacationDivisor: VACATION_DIVISOR,
-  usnEnabled: true,
-  usnPercent: 6,
 };
 
 /** Ставка педагога по умолчанию, ₽ за проведённый урок. */
