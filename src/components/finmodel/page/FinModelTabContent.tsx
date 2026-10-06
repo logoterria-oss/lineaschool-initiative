@@ -39,7 +39,7 @@ const FinModelTabContent = ({ fm }: Props) => {
     ano, onAnoSave,
     credit, onCreditOption,
     fixed, fixedAction,
-    students, onCloseStudents, onManualStudents,
+    students,
     revenue, onSetPct,
     data, fact, onBankChanged,
   } = fm;
@@ -121,7 +121,7 @@ const FinModelTabContent = ({ fm }: Props) => {
       onStaffRate={(sid, r) => fixedAction(() => setStaffRate(sid, r))}
     />
   ) : tab === 'students' ? (
-    <StudentsTable data={students!} onClose={onCloseStudents} onManual={onManualStudents} />
+    <StudentsTable data={students!} />
   ) : tab === 'revenue' ? (
     <RevenueTable data={revenue!} active={active} onSetPct={onSetPct} />
   ) : tab === 'avans' ? (

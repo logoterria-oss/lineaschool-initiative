@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import type StudentsTable from '@/components/finmodel/StudentsTable';
 import type AnoTable from '@/components/finmodel/AnoTable';
 import type PayoutsTable from '@/components/finmodel/PayoutsTable';
 import type OneTimeExpensesTable from '@/components/finmodel/OneTimeExpensesTable';
@@ -8,8 +7,8 @@ import { exportModelCsv, exportModelXlsx } from '@/components/finmodel/dashboard
 import { checkBankMailIfStale } from '@/lib/bankApi';
 import {
   DashboardData, fetchDashboard, notificationAction, setTaxRegimeGlobal, closeStudentsPrev, recalcModel, TaxRegimeGlobal,
-  AdaptationData, fetchAdaptation, ScenariosData, fetchScenarios, CashflowData, fetchCashflow, PnlData, fetchPnl, OneTimeData, fetchOneTime, saveOneTime, deleteOneTime, PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, RevenueData, Scenario, StudentsData, closeStudents, fetchAvans, fetchFact,
-  fetchRevenue, fetchStudents, setActiveScenario, setStudents, setVariablePct,
+  AdaptationData, fetchAdaptation, ScenariosData, fetchScenarios, CashflowData, fetchCashflow, PnlData, fetchPnl, OneTimeData, fetchOneTime, saveOneTime, deleteOneTime, PayoutData, fetchPayouts, setPayout, AnoData, fetchAno, setAno, TaxData, TaxRegime, fetchTaxes, setTaxRegime, AvansData, CreditData, CreditOption, fetchCredit, setCreditOption, FactData, FixedData, fetchFixed, RevenueData, Scenario, StudentsData, fetchAvans, fetchFact,
+  fetchRevenue, fetchStudents, setActiveScenario, setVariablePct,
 } from '@/lib/finmodelApi';
 
 export type Tab = 'dashboard' | 'avans' | 'fact' | 'revenue' | 'students' | 'fixed' | 'credit' | 'ano' | 'taxes' | 'payouts' | 'one_time' | 'pnl' | 'cashflow' | 'adaptation' | 'scenarios' | 'bank';
@@ -195,23 +194,6 @@ export const useFinModel = () => {
     }
   };
 
-  const onCloseStudents = async (month: string) => {
-    try {
-      await closeStudents(month);
-      setStudentsData(await fetchStudents());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось закрыть месяц');
-    }
-  };
-
-  const onManualStudents: Parameters<typeof StudentsTable>[0]['onManual'] = async (month, v) => {
-    try {
-      await setStudents(month, v);
-      setStudentsData(await fetchStudents());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
-    }
-  };
 
   const fixedAction = async (fn: () => Promise<unknown>) => {
     try {
@@ -365,7 +347,7 @@ export const useFinModel = () => {
     data, fact, revenue, students, fixed, setFixed, credit, ano, taxes, payouts, oneTime,
     pnl, pnlLoading, cashflow, cfLoading, adaptation, adLoading, scenarios, setScenarios, scLoading,
     tab, setTab, dash, setDash, scView, setScView, busyTop, active, loading, error, load,
-    onAdaptChanged, onCfCredit, onCfPayoutPct, switchScenario, onSetPct, onCloseStudents, onManualStudents,
+    onAdaptChanged, onCfCredit, onCfPayoutPct, switchScenario, onSetPct,
     fixedAction, onAnoSave, onOneTimeSave, onOneTimeDelete, onPayoutSave, onTaxRegime, onCreditOption,
     goTo, onBankChanged, onCloseMonth, onRecalc, onTaxGlobal, onCreditTop, onScenarioTop, onNotif, onExport,
     notifTabs, unread, monthOpen, annual, annualFact,
