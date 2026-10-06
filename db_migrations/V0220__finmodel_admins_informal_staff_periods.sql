@@ -1,0 +1,4 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_staff SET type = 'informal', ndfl_applies = false, insurance_applies = false, vacation_applies = false WHERE role = 'admin';
+UPDATE t_p93118852_lineaschool_initiati.fm_staff SET active_from = '2026-09' WHERE id IN ('accountant', 'targetologist');
+UPDATE t_p93118852_lineaschool_initiati.fm_fixed_actual_values SET amount = 0, updated_at = now() WHERE line_id IN (SELECT id FROM t_p93118852_lineaschool_initiati.fm_fixed_actual_lines WHERE source_key IN ('admins_insurance', 'admins_vacation'));
+UPDATE t_p93118852_lineaschool_initiati.fm_fixed_actual_lines SET is_hidden = true WHERE source_key IN ('admins_insurance', 'admins_vacation');

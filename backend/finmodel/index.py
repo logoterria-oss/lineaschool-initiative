@@ -962,9 +962,15 @@ def calc_fixed(cur):
     row("accountant", "Бухгалтер", "staff", "staff", "в чёрную")
     row("targetologist", "Директолог", "staff", "staff")
     row("developer", "Разработчик", "staff", "staff")
-    row("admins", "Админы", "staff", "staff", "ставка × смены, 1 админ на смене")
-    row("admins_insurance", "Админы (страховые 30%)", "calc", "staff")
-    row("admins_vacation", "Админы (отпускные 12,5%)", "calc", "staff")
+    row("admins", "Админы", "staff", "staff", "ставка × смены, 1 админ на смене"
+        + (", в чёрную" if admins and admins[0]["type"] == "informal" else ""))
+    # Страховые/отпускные админов — только если админы в найме (сейчас «в чёрную» — строк нет).
+    adm_ins_on = bool(admins and admins[0].get("insurance_applies"))
+    adm_vac_on = bool(admins and admins[0].get("vacation_applies"))
+    if adm_ins_on:
+        row("admins_insurance", "Админы (страховые 30%)", "calc", "staff")
+    if adm_vac_on:
+        row("admins_vacation", "Админы (отпускные 12,5%)", "calc", "staff")
     for iid, it in items.items():
         if iid in dict(STAFF_ROWS) or it["category"] == "ano":
             continue
@@ -1039,9 +1045,12 @@ def calc_fixed(cur):
         a_manual = inp.get("admin_rate_override") is not None or inp.get("admin_shifts_override") is not None
         put("admins", m, a_base, "manual" if a_manual else ("changed" if a_ch else "staff"), f"{_r(a_rate)} ₽ × {shifts} смен")
         rows["admins"].setdefault("inputs", {})[m] = {"rate": a_rate, "shifts": shifts}
-        a_ins, a_vac = a_base * ins_pct, a_base * vac_pct
-        put("admins_insurance", m, a_ins)
-        put("admins_vacation", m, a_vac)
+        a_ins = a_base * ins_pct if adm_ins_on else 0
+        a_vac = a_base * vac_pct if adm_vac_on else 0
+        if adm_ins_on:
+            put("admins_insurance", m, a_ins)
+        if adm_vac_on:
+            put("admins_vacation", m, a_vac)
         for sc in SCENARIOS:
             payments.append((m, "admins", sc, _r(a_base), _r(a_ins), _r(a_vac), 0, 0,
                              _r(a_base) + _r(a_ins) + _r(a_vac)))
