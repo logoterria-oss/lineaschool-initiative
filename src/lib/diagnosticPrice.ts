@@ -23,10 +23,7 @@ type PricePoint = {
 /** Базовая цена — действует до первой записи расписания. */
 const PRIMARY_PRICE_BASE: Omit<PricePoint, 'from'> = { price: 1490, oldPrice: 4500 };
 
-const PRIMARY_PRICE_SCHEDULE: PricePoint[] = [
-  // С 1 октября 2026, 00:00 по Москве
-  { from: '2026-10-01T00:00:00+03:00', price: 2190, oldPrice: 4500 },
-];
+const PRIMARY_PRICE_SCHEDULE: PricePoint[] = [];
 
 const schedule = [...PRIMARY_PRICE_SCHEDULE].sort(
   (a, b) => Date.parse(a.from) - Date.parse(b.from),
