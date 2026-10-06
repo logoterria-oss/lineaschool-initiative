@@ -6,15 +6,15 @@ import UnitRatesForm from '@/components/unitMargin/UnitRatesForm';
 import UnitResultCard from '@/components/unitMargin/UnitResultCard';
 import UnitTeachersTable from '@/components/unitMargin/UnitTeachersTable';
 import UnitMonthTotalCard from '@/components/unitMargin/UnitMonthTotalCard';
-import UnitPlanCard from '@/components/unitMargin/UnitPlanCard';
+import UnitStatsCard from '@/components/unitMargin/UnitStatsCard';
 import UnitWeightedRateCard from '@/components/unitMargin/UnitWeightedRateCard';
 import UnitReportHeader from '@/components/unitMargin/UnitReportHeader';
 import UnitConclusionCard from '@/components/unitMargin/UnitConclusionCard';
 import UnitSaveBox from '@/components/unitMargin/UnitSaveBox';
 import UnitReportsHistory from '@/components/unitMargin/UnitReportsHistory';
 import {
-  UnitFact, UnitMarginReport as SavedReport, UnitPlanMonth,
-  deleteUnitReport, fetchUnitDefaults, fetchUnitFact, fetchUnitPlan,
+  UnitFact, UnitMarginReport as SavedReport,
+  deleteUnitReport, fetchUnitDefaults, fetchUnitFact,
   fetchUnitReports, saveUnitDefaults, saveUnitReport,
 } from '@/lib/unitMarginApi';
 import { fetchSupervisions, type Supervision } from '@/lib/supervisionsApi';
@@ -59,10 +59,6 @@ export default function UnitMarginReport() {
 
   /** Пресет ставок: их руководитель задаёт один раз, дальше они переносятся. */
   const [preset, setPreset] = useState<Partial<UnitMarginInputs> | null>(null);
-
-  /** План по занятиям, уже стоящим в расписании CRM на будущие месяцы. */
-  const [plan, setPlan] = useState<UnitPlanMonth[]>([]);
-  const [planLoading, setPlanLoading] = useState(false);
 
   /** Супервизии и сохранённые ставки — источник точных ставок педагогов. */
   const [supervisions, setSupervisions] = useState<Supervision[]>([]);
@@ -208,21 +204,6 @@ export default function UnitMarginReport() {
         : null,
     [result, fact],
   );
-
-  const loadPlan = useCallback(async (refresh = false) => {
-    setPlanLoading(true);
-    try {
-      setPlan(await fetchUnitPlan(3, refresh));
-    } catch {
-      setPlan([]);
-    } finally {
-      setPlanLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadPlan();
-  }, [loadPlan]);
 
   const onSaveDefaults = async () => {
     setSavingDefaults(true);
@@ -391,13 +372,16 @@ export default function UnitMarginReport() {
                 />
               )}
 
-              {/* План на будущие месяцы по расписанию CRM */}
-              <UnitPlanCard
-                plan={plan}
-                result={result}
-                baseMonth={inputs.periodMonth}
-                loading={planLoading}
-                onRefresh={() => loadPlan(true)}
+              {/* Статистика и динамика по месяцам с сентября 2026 */}
+              <UnitStatsCard
+                inputs={inputs}
+                useRealRates={useRealRates}
+                supervisions={supervisions}
+                teacherRates={teacherRates}
+                onOpenMonth={(m) => {
+                  patch({ periodMonth: m });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
 
               {/* Вывод */}
