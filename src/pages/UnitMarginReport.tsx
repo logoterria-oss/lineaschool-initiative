@@ -9,7 +9,6 @@ import UnitMonthTotalCard from '@/components/unitMargin/UnitMonthTotalCard';
 import UnitStatsCard from '@/components/unitMargin/UnitStatsCard';
 import UnitWeightedRateCard from '@/components/unitMargin/UnitWeightedRateCard';
 import UnitReportHeader from '@/components/unitMargin/UnitReportHeader';
-import UnitConclusionCard from '@/components/unitMargin/UnitConclusionCard';
 import UnitReportsHistory from '@/components/unitMargin/UnitReportsHistory';
 import {
   UnitFact, UnitMarginReport as SavedReport,
@@ -238,14 +237,6 @@ export default function UnitMarginReport() {
     }
   };
 
-  const better =
-    result.individual.marginPercent >= result.group.marginPercent
-      ? 'индивидуальные'
-      : 'групповые';
-  const diff = Math.abs(
-    result.individual.marginPercent - result.group.marginPercent,
-  ).toFixed(1);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -347,14 +338,6 @@ export default function UnitMarginReport() {
                   patch({ periodMonth: m });
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-              />
-
-              {/* Вывод */}
-              <UnitConclusionCard
-                result={result}
-                month={inputs.periodMonth}
-                better={better}
-                diff={diff}
               />
 
               {/* Педагоги: у каждого своя ставка, если считаем по реальным */}
