@@ -189,5 +189,7 @@ export const COLS: { key: keyof Lead; label: string; w: string }[] = [
   { key: 'report_link', label: 'Ссылка на закл.', w: 'min-w-[180px]' },
   { key: 'contact_when', label: 'Когда связаться', w: 'min-w-[190px]' },
   { key: 'contact', label: 'Номер для связи', w: 'min-w-[170px]' },
+  { key: 'utm_campaign', label: 'Рекламная кампания', w: 'min-w-[180px]' },
+  { key: 'utm_source', label: 'Источник (utm_source)', w: 'min-w-[150px]' },
   { key: 'responsible', label: 'Ответственный', w: 'min-w-[170px]' },
 ];

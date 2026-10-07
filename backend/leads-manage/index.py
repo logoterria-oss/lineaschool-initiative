@@ -12,6 +12,7 @@ FIELDS = [
     'parent_name', 'student_name', 'student_age', 'contact', 'request_date',
     'responsible', 'processing_status', 'lead_status', 'diag_date',
     'report_link', 'schedule', 'teachers', 'comment', 'contact_when', 'source',
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
 ]
 
 CORS = {
@@ -60,13 +61,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(
                 "SELECT id, parent_name, student_name, student_age, contact, request_date, "
                 "responsible, processing_status, lead_status, diag_date, report_link, "
-                "schedule, teachers, comment, contact_when, source, created_at, updated_at "
+                "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
+                "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer "
                 "FROM leads ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
                     'request_date', 'responsible', 'processing_status', 'lead_status',
                     'diag_date', 'report_link', 'schedule', 'teachers', 'comment',
-                    'contact_when', 'source', 'created_at', 'updated_at']
+                    'contact_when', 'source', 'created_at', 'updated_at',
+                    'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+                    'landing_page', 'referrer']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}
@@ -136,6 +140,18 @@ def parse_request_date(text, created_at):
     return created_at.date() if created_at else None
 
 
+def finalize(bucket):
+    """Список строк с конверсиями, крупные кампании сверху."""
+    out = []
+    for b in bucket.values():
+        t = b['total']
+        b['conv_to_diag'] = round(b['diag'] / t * 100, 1) if t else 0
+        b['conv_to_client'] = round(b['clients'] / t * 100, 1) if t else 0
+        out.append(b)
+    out.sort(key=lambda x: (-x['total'], x['name']))
+    return out
+
+
 def build_stats(cur, date_from, date_to):
     from datetime import datetime
 
@@ -150,7 +166,8 @@ def build_stats(cur, date_from, date_to):
 
     cur.execute(
         "SELECT lead_status, processing_status, diag_date, request_date, "
-        "responsible, created_at FROM leads"
+        "responsible, created_at, utm_source, utm_medium, utm_campaign, "
+        "utm_content, referrer FROM leads"
     )
     rows = cur.fetchall()
 
@@ -162,7 +179,21 @@ def build_stats(cur, date_from, date_to):
     clients = 0
     diag_count = 0
 
-    for lead_status, processing, diag_date, request_date, responsible, created_at in rows:
+    # Эффективность рекламы: по кампаниям, источникам и объявлениям
+    by_campaign = {}
+    by_source = {}
+    by_content = {}
+
+    def bump(bucket, key, is_diag, is_client, extra=None):
+        b = bucket.setdefault(key, {'name': key, 'total': 0, 'diag': 0, 'clients': 0})
+        if extra:
+            b.update(extra)
+        b['total'] += 1
+        b['diag'] += 1 if is_diag else 0
+        b['clients'] += 1 if is_client else 0
+
+    for (lead_status, processing, diag_date, request_date, responsible, created_at,
+         u_source, u_medium, u_campaign, u_content, referrer) in rows:
         rd = parse_request_date(request_date, created_at)
         if d_from and (rd is None or rd < d_from):
             continue
@@ -183,8 +214,36 @@ def build_stats(cur, date_from, date_to):
         by_responsible[resp] = by_responsible.get(resp, 0) + 1
 
         dd = (diag_date or '').strip()
-        if dd and dd != '-':
+        is_diag = bool(dd and dd != '-')
+        if is_diag:
             diag_count += 1
+        is_client = ls == 'клиент'
+
+        src = (u_source or '').strip()
+        med = (u_medium or '').strip()
+        camp = (u_campaign or '').strip()
+        cont = (u_content or '').strip()
+        if camp:
+            camp_key = camp
+        elif src:
+            camp_key = f'{src} (без кампании)'
+        else:
+            camp_key = 'Без UTM-метки'
+        bump(by_campaign, camp_key, is_diag, is_client,
+             {'source': src, 'medium': med} if camp or src else None)
+
+        if src:
+            src_key = f'{src} / {med}' if med else src
+        elif referrer:
+            from urllib.parse import urlparse
+            host = urlparse(referrer).netloc or referrer
+            src_key = f'Переход с {host.replace("www.", "")}'
+        else:
+            src_key = 'Прямой заход / вручную'
+        bump(by_source, src_key, is_diag, is_client)
+
+        if cont:
+            bump(by_content, f'{camp_key} → {cont}', is_diag, is_client)
 
         if rd is not None:
             label = MONTHS_MAP.get(rd.month, 'Не указан')
@@ -210,6 +269,9 @@ def build_stats(cur, date_from, date_to):
         'by_processing': by_processing,
         'by_month': by_month_out,
         'by_responsible': by_responsible,
+        'by_campaign': finalize(by_campaign),
+        'by_source': finalize(by_source),
+        'by_content': finalize(by_content),
         'from': date_from,
         'to': date_to,
     }), 'isBase64Encoded': False}

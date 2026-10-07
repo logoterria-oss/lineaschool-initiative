@@ -38,6 +38,7 @@ export default function LeadsListView() {
   const [fResponsible, setFResponsible] = useState('');
   const [fProcessing, setFProcessing] = useState('');
   const [fLeadStatus, setFLeadStatus] = useState('');
+  const [fCampaign, setFCampaign] = useState('');
   const [fDateFrom, setFDateFrom] = useState('');
   const [fDateTo, setFDateTo] = useState('');
   const [fUntouchedOnly, setFUntouchedOnly] = useState(false);
@@ -49,6 +50,7 @@ export default function LeadsListView() {
     setFResponsible('');
     setFProcessing('');
     setFLeadStatus('');
+    setFCampaign('');
     setFDateFrom('');
     setFDateTo('');
     setFUntouchedOnly(false);
@@ -60,6 +62,7 @@ export default function LeadsListView() {
     (fResponsible ? 1 : 0) +
     (fProcessing ? 1 : 0) +
     (fLeadStatus ? 1 : 0) +
+    (fCampaign ? 1 : 0) +
     (fDateFrom || fDateTo ? 1 : 0) +
     (fUntouchedOnly ? 1 : 0) +
     (fContactDue ? 1 : 0);
@@ -91,6 +94,10 @@ export default function LeadsListView() {
       if (fResponsible && (l.responsible || '') !== fResponsible) return false;
       if (fProcessing && (l.processing_status || '') !== fProcessing) return false;
       if (fLeadStatus && (l.lead_status || '') !== fLeadStatus) return false;
+      if (fCampaign) {
+        const camp = (l.utm_campaign || '').trim();
+        if (fCampaign === '__none__' ? camp !== '' : camp !== fCampaign) return false;
+      }
       if (fUntouchedOnly && !isUntouched(l)) return false;
       if (fContactDue && !isContactDue(l) && !isContactOverdue(l)) return false;
       if (fromKey > 0 || toKey > 0) {
@@ -101,7 +108,12 @@ export default function LeadsListView() {
       }
       return true;
     });
-  }, [sortedLeads, fSearch, fResponsible, fProcessing, fLeadStatus, fDateFrom, fDateTo, fUntouchedOnly, fContactDue]);
+  }, [sortedLeads, fSearch, fResponsible, fProcessing, fLeadStatus, fCampaign, fDateFrom, fDateTo, fUntouchedOnly, fContactDue]);
+
+  const campaignOptions = useMemo(
+    () => Array.from(new Set(leads.map((l) => (l.utm_campaign || '').trim()).filter(Boolean))).sort(),
+    [leads],
+  );
 
   // Новые (необработанные) лиды — сверху, с кнопкой «Списались».
   const newLeads = useMemo(() => sortedLeads.filter(isUntouched), [sortedLeads]);
@@ -192,6 +204,9 @@ export default function LeadsListView() {
         setFProcessing={setFProcessing}
         fLeadStatus={fLeadStatus}
         setFLeadStatus={setFLeadStatus}
+        fCampaign={fCampaign}
+        setFCampaign={setFCampaign}
+        campaignOptions={campaignOptions}
         fDateFrom={fDateFrom}
         setFDateFrom={setFDateFrom}
         fDateTo={fDateTo}

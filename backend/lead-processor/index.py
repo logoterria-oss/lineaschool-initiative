@@ -25,6 +25,33 @@ EXTRA_ADMIN_CHAT_IDS = [
 ]
 
 
+UTM_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content',
+              'utm_term', 'landing_page', 'referrer']
+
+
+def clean_utm(raw: Any) -> dict:
+    """UTM-метки из заявки: только известные поля, строки, с ограничением длины."""
+    if not isinstance(raw, dict):
+        return {}
+    out = {}
+    for f in UTM_FIELDS:
+        v = raw.get(f)
+        if isinstance(v, str) and v.strip():
+            out[f] = v.strip()[:500]
+    return out
+
+
+def utm_summary(utm: dict) -> str:
+    """Короткая подпись рекламного источника для CRM и Telegram."""
+    parts = [utm.get(k, '') for k in ('utm_source', 'utm_medium', 'utm_campaign')]
+    text = ' / '.join(p for p in parts if p)
+    if utm.get('utm_content'):
+        text += f" (объявление: {utm['utm_content']})"
+    if utm.get('utm_term'):
+        text += f" [ключ: {utm['utm_term']}]"
+    return text
+
+
 def recipients() -> list:
     """Кому шлём уведомления: основной чат + дополнительные администраторы."""
     main = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
@@ -33,8 +60,9 @@ def recipients() -> list:
 
 def save_lead_to_db(parent_name: str, student_name: str, contact: str,
                     messengers: list = None, telegram: str = '',
-                    marketing_consent: bool = False):
+                    marketing_consent: bool = False, utm: dict = None):
     """Сохраняет новую заявку в таблицу leads (для раздела 'Список лидов')."""
+    utm = utm or {}
     dsn = os.environ.get('DATABASE_URL')
     if not dsn:
         print('DATABASE_URL not set - skip saving lead to db')
@@ -56,9 +84,10 @@ def save_lead_to_db(parent_name: str, student_name: str, contact: str,
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO leads (parent_name, student_name, contact, request_date, "
-            "source, marketing_consent) "
+            "source, marketing_consent, " + ', '.join(UTM_FIELDS) + ") "
             f"VALUES ('{esc(parent_name)}', '{esc(student_name)}', '{esc(contact_full)}', "
-            f"'{esc(req_date)}', 'site', {'TRUE' if marketing_consent else 'FALSE'})"
+            f"'{esc(req_date)}', 'site', {'TRUE' if marketing_consent else 'FALSE'}, "
+            + ', '.join(f"'{esc(utm.get(f, ''))}'" for f in UTM_FIELDS) + ")"
         )
         cur.close()
         conn.close()
@@ -214,7 +243,7 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '',
 def send_telegram_notification(child_name: str, parent_name: str, child_birth_date: str, 
                                telegram: str, phone: str, email: str = '', 
                                date: str = '', time: str = '', messengers: list = None,
-                               marketing_consent: bool = False):
+                               marketing_consent: bool = False, ad_source: str = ''):
     bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
     chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
     
@@ -254,6 +283,8 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
     message_parts.append(
         f"\n📣 Реклама: {'согласие получено' if marketing_consent else 'отказ'}"
     )
+    if ad_source:
+        message_parts.append(f"\n🎯 Кампания: {ad_source}")
 
     message = ''.join(message_parts)
     
@@ -386,6 +417,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Режим «только CRM»: заявка уже есть в базе и в Telegram, но карточка
         # в CRM не создалась. Досылаем её, не плодя дубль лида и уведомление.
         crm_only = bool(body_data.get('crmOnly'))
+        # С какой рекламной кампании пришёл родитель (UTM-метки с сайта)
+        utm = clean_utm(body_data.get('utm'))
+        ad_source = utm_summary(utm)
         
         # Проверяем обязательные поля
         if not phone:
@@ -423,6 +457,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'Согласие на рекламную рассылку (SMS, e-mail, соцсети): '
             + ('ДА' if marketing_consent else 'НЕТ')
         )
+        if ad_source:
+            note_parts.append(f'Рекламный источник: {ad_source}')
         if custom_note:
             note_parts.append(custom_note)
         
@@ -451,6 +487,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 messengers=messengers,
                 telegram=telegram_username,
                 marketing_consent=marketing_consent,
+                utm=utm,
             )
 
         # Отправка в Telegram. Никогда не роняем запрос из-за проблем с Telegram:
@@ -471,7 +508,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     date=date,
                     time=time,
                     messengers=messengers,
-                    marketing_consent=marketing_consent
+                    marketing_consent=marketing_consent,
+                    ad_source=ad_source,
                 )
             except Exception as tg_err:
                 print(f'Telegram notification skipped due to error: {str(tg_err)}')

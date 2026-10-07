@@ -1,5 +1,6 @@
 import { LeadsStats } from '@/lib/leadsApi';
 import Icon from '@/components/ui/icon';
+import CampaignStatsTable from './CampaignStatsTable';
 
 interface Props {
   stats: LeadsStats | null;
@@ -149,6 +150,38 @@ export default function LeadsStatsPanel({
               <h3 className="text-sm font-semibold text-gray-800 mb-3">По месяцам</h3>
               <Row items={stats.by_month} />
             </div>
+          </div>
+
+          {/* Эффективность рекламы по UTM-меткам */}
+          <div className="mt-5">
+            <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Icon name="Megaphone" size={18} className="text-amber-600" />
+              Эффективность рекламных кампаний
+            </h2>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <CampaignStatsTable
+                title="По кампаниям (utm_campaign)"
+                hint="Сколько заявок дала каждая кампания и сколько дошли до диагностики и оплаты"
+                firstCol="Кампания"
+                rows={stats.by_campaign || []}
+              />
+              <CampaignStatsTable
+                title="По источникам (utm_source / utm_medium)"
+                hint="Рекламные площадки; без меток — по сайту, с которого перешли"
+                firstCol="Источник"
+                rows={stats.by_source || []}
+              />
+            </div>
+            {(stats.by_content || []).length > 0 && (
+              <div className="mt-4">
+                <CampaignStatsTable
+                  title="По объявлениям (utm_content)"
+                  hint="Какие объявления внутри кампаний работают лучше"
+                  firstCol="Кампания → объявление"
+                  rows={stats.by_content || []}
+                />
+              </div>
+            )}
           </div>
         </>
       )}

@@ -20,8 +20,26 @@ export interface Lead {
   comment: string;
   contact_when?: string;
   source: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  landing_page?: string;
+  referrer?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface CampaignRow {
+  name: string;
+  source?: string;
+  medium?: string;
+  total: number;
+  diag: number;
+  clients: number;
+  conv_to_diag: number;
+  conv_to_client: number;
 }
 
 export interface LeadsStats {
@@ -34,6 +52,9 @@ export interface LeadsStats {
   by_processing: Record<string, number>;
   by_month: Record<string, number>;
   by_responsible: Record<string, number>;
+  by_campaign?: CampaignRow[];
+  by_source?: CampaignRow[];
+  by_content?: CampaignRow[];
   from: string;
   to: string;
 }

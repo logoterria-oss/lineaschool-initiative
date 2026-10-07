@@ -13,6 +13,7 @@ import Icon from "@/components/ui/icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import PrivacyModal from "@/components/PrivacyModal";
+import { getUtm } from "@/lib/utm";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -79,6 +80,8 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       // Согласие на рекламную рассылку — добровольное, поэтому фиксируем
       // выбор родителя как есть: по нему решается, можно ли слать промо
       marketingConsent: formData.marketingConsent,
+      // С какой рекламной кампании пришёл родитель
+      utm: getUtm(),
     };
 
     // Показываем подтверждение сразу, заявку отправляем в фоне.

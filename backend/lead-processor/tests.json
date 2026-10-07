@@ -14,9 +14,18 @@
         "childName": "Тестовый Ребенок",
         "parentName": "Тестовый Родитель",
         "phone": "+79236251611",
-        "messengers": ["Telegram", "Max"],
+        "messengers": [
+          "Telegram",
+          "Max"
+        ],
         "telegram": "@testuser",
-        "marketingConsent": true
+        "marketingConsent": true,
+        "utm": {
+          "utm_source": "yandex",
+          "utm_medium": "cpc",
+          "utm_campaign": "test_campaign",
+          "utm_content": "ad1"
+        }
       },
       "expectedStatus": 200,
       "expectedBody": {

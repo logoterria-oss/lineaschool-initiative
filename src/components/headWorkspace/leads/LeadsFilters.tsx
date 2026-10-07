@@ -25,6 +25,9 @@ interface LeadsFiltersProps {
   setFProcessing: (v: string) => void;
   fLeadStatus: string;
   setFLeadStatus: (v: string) => void;
+  fCampaign: string;
+  setFCampaign: (v: string) => void;
+  campaignOptions: string[];
   fDateFrom: string;
   setFDateFrom: (v: string) => void;
   fDateTo: string;
@@ -56,6 +59,9 @@ export default function LeadsFilters({
   setFProcessing,
   fLeadStatus,
   setFLeadStatus,
+  fCampaign,
+  setFCampaign,
+  campaignOptions,
   fDateFrom,
   setFDateFrom,
   fDateTo,
@@ -195,6 +201,21 @@ export default function LeadsFilters({
                 >
                   <option value="">Все</option>
                   {LEAD_STATUS_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Рекламная кампания</label>
+                <select
+                  value={fCampaign}
+                  onChange={(e) => setFCampaign(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
+                >
+                  <option value="">Все</option>
+                  <option value="__none__">Без UTM-метки</option>
+                  {campaignOptions.map((o) => (
                     <option key={o} value={o}>{o}</option>
                   ))}
                 </select>
