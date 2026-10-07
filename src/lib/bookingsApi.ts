@@ -109,6 +109,27 @@ const json = async (res: Response) => {
   }
 };
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Быстрая проверка ссылки — без тяжёлого расписания.
+ *  Сетевой сбой или перегрузка сервера (не ответ «ссылки нет») повторяем
+ *  несколько раз: раньше из-за этого страницу приходилось обновлять вручную. */
+export const checkBookingLink = async (
+  token: string,
+): Promise<{ link?: BookingLink; limitReached?: boolean; error?: string; message?: string; network?: boolean }> => {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const res = await fetch(`${BOOKINGS_URL}?action=check&token=${encodeURIComponent(token)}`);
+      const data = await json(res);
+      if (data.link || data.error) return data;
+    } catch {
+      // сеть — пробуем ещё раз
+    }
+    await sleep(700 * (attempt + 1));
+  }
+  return { network: true };
+};
+
 // ── Родитель ──────────────────────────────────────────────────────────────────
 
 export const fetchBookingSlots = async (
@@ -128,12 +149,16 @@ export const fetchBookingSlots = async (
   message?: string;
 }> => {
   // Один тип за запрос: расписание тяжёлое, вместе не успевает ответить
-  const res = await fetch(
-    `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}` +
-      `&start_from=${startFrom}&lesson_type=${lessonType}`,
-  );
-  const data = await json(res);
-  return { individualDays: [], groupDays: [], ...data };
+  try {
+    const res = await fetch(
+      `${BOOKINGS_URL}?action=slots&token=${encodeURIComponent(token)}` +
+        `&start_from=${startFrom}&lesson_type=${lessonType}`,
+    );
+    const data = await json(res);
+    return { individualDays: [], groupDays: [], ...data };
+  } catch {
+    return { individualDays: [], groupDays: [] };
+  }
 };
 
 /** Оба расписания сразу — двумя параллельными запросами.
@@ -144,9 +169,12 @@ export const fetchBookingSlots = async (
  */
 export const fetchAllBookingSlots = async (token: string, startFrom: string) => {
   const load = async (type: LessonType) => {
-    const first = await fetchBookingSlots(token, startFrom, type);
-    if (first.link || first.error) return first;
-    return fetchBookingSlots(token, startFrom, type);
+    let last = await fetchBookingSlots(token, startFrom, type);
+    for (let i = 0; i < 2 && !last.link && !last.error; i++) {
+      await sleep(800);
+      last = await fetchBookingSlots(token, startFrom, type);
+    }
+    return last;
   };
 
   const [ind, grp] = await Promise.all([load('individual'), load('groups')]);

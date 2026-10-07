@@ -12,18 +12,33 @@ HW_START_DATE = "2026-06-01"
 TEACHER_SCHEDULE_URL = "https://functions.poehali.dev/6dcf4744-e843-45cf-9614-9afe432b92f5"
 
 
+def _schedule_db():
+    """Прямое подключение к БД (раньше шли через HTTP в teacher-schedule — лишний сетевой
+    прыжок, который иногда висел по 8 секунд и ронял страницу записи)."""
+    schema = os.environ.get("MAIN_DB_SCHEMA", "public")
+    conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=5)
+    return conn, schema
+
+
 def get_work_schedule_from_db() -> dict:
-    """График работы педагогов из БД — через HTTP к функции teacher-schedule."""
+    """График работы педагогов: {teacher_id: [{weekday, time_from, time_to}]}."""
     result = {}
     try:
-        r = requests.get(TEACHER_SCHEDULE_URL, timeout=8)
-        for row in r.json().get("schedule", []):
-            tid = row["teacher_id"]
-            result.setdefault(tid, []).append({
-                "weekday": row["weekday"],
-                "time_from": row["time_from"],
-                "time_to": row["time_to"],
-            })
+        conn, schema = _schedule_db()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT teacher_id, weekday, time_from, time_to FROM {schema}.teacher_work_schedule "
+                "ORDER BY teacher_id, weekday, time_from"
+            )
+            for tid, wd, tf, tt in cur.fetchall():
+                result.setdefault(tid, []).append({
+                    "weekday": wd,
+                    "time_from": str(tf)[:5] if tf is not None else tf,
+                    "time_to": str(tt)[:5] if tt is not None else tt,
+                })
+        finally:
+            conn.close()
     except Exception as e:
         print(f"DB error: {e}")
     return result
@@ -33,17 +48,24 @@ def get_teacher_absences_from_db() -> dict:
     """Выходные и отпуска педагогов из БД: {teacher_id: [ {kind, date_from, date_to, time_from, time_to} ]}."""
     result = {}
     try:
-        r = requests.get(f"{TEACHER_SCHEDULE_URL}?resource=absences", timeout=8)
-        for row in r.json().get("absences", []):
-            tid = int(row["teacher_id"])
-            result.setdefault(tid, []).append({
-                "kind": row.get("kind"),
-                "date_from": str(row.get("date_from"))[:10],
-                "date_to": str(row.get("date_to"))[:10],
-                "time_from": (str(row["time_from"])[:5] if row.get("time_from") else None),
-                "time_to": (str(row["time_to"])[:5] if row.get("time_to") else None),
-                "substitute_name": (row.get("substitute_name") or "").strip(),
-            })
+        conn, schema = _schedule_db()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT teacher_id, kind, date_from, date_to, time_from, time_to, substitute_name "
+                f"FROM {schema}.teacher_absences ORDER BY teacher_id, date_from"
+            )
+            for tid, kind, df, dt, tf, tt, sub in cur.fetchall():
+                result.setdefault(int(tid), []).append({
+                    "kind": kind,
+                    "date_from": str(df)[:10],
+                    "date_to": str(dt)[:10],
+                    "time_from": (str(tf)[:5] if tf else None),
+                    "time_to": (str(tt)[:5] if tt else None),
+                    "substitute_name": (sub or "").strip(),
+                })
+        finally:
+            conn.close()
     except Exception as e:
         print(f"Absences DB error: {e}")
     return result

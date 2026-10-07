@@ -10,9 +10,9 @@ import {
   BookingLink,
   FreeDay,
   GroupDay,
+  checkBookingLink,
   createBooking,
   fetchAllBookingSlots,
-  fetchBookingSlots,
 } from '@/lib/bookingsApi';
 
 const iso = (d: Date) => {
@@ -90,19 +90,28 @@ const BookingPage = () => {
     setLoading(false);
   };
 
-  // Проверяем ссылку сразу, чтобы не показывать форму по нерабочей ссылке
+  // Сбой связи — это не «ссылка недействительна»: даём повторить
+  const [netFailed, setNetFailed] = useState(false);
+
+  // Проверяем ссылку сразу (быстро, без расписания), чтобы не показывать форму по нерабочей ссылке
+  const checkLink = async () => {
+    setLoading(true);
+    setNetFailed(false);
+    setError('');
+    const data = await checkBookingLink(token);
+    if (data.error) setError(data.message || 'Ссылка недействительна');
+    else if (data.link) {
+      setLink(data.link);
+      setLimitReached(!!data.limitReached);
+      if (data.link.childName) setChildName(data.link.childName);
+    } else {
+      setNetFailed(true);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const data = await fetchBookingSlots(token, tomorrow, 'individual');
-      if (data.error) setError(data.message || 'Ссылка недействительна');
-      else if (data.link) {
-        setLink(data.link);
-        setLimitReached(!!data.limitReached);
-        if (data.link.childName) setChildName(data.link.childName);
-      }
-      setLoading(false);
-    })();
+    checkLink();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -172,6 +181,24 @@ const BookingPage = () => {
         <div className="text-center text-gray-500">
           <Icon name="Loader2" size={36} className="animate-spin mx-auto mb-3" />
           Загружаем…
+        </div>
+      </div>
+    );
+  }
+
+  if (!link && netFailed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md text-center">
+          <Icon name="WifiOff" size={40} className="mx-auto mb-4 text-gray-400" />
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">Не удалось загрузить страницу</h1>
+          <p className="text-gray-500 text-sm mb-5">
+            Похоже, проблема со связью. Ссылка в порядке — попробуйте ещё раз.
+          </p>
+          <Button onClick={checkLink} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Icon name={loading ? 'Loader2' : 'RefreshCw'} size={16} className={loading ? 'animate-spin mr-2' : 'mr-2'} />
+            Повторить
+          </Button>
         </div>
       </div>
     );

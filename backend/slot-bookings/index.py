@@ -513,6 +513,28 @@ def handler(event: dict, context) -> dict:
             conn.commit()
             return _resp(200, {'ok': True})
 
+        # ── Страница родителя: быстрая проверка ссылки (без расписания) ───────
+        # Открытие страницы не должно ждать тяжёлое расписание CRM: иначе при
+        # медленном ответе родитель видел «Ссылка недействительна».
+        if method == 'GET' and action == 'check':
+            token = (params.get('token') or '').strip()
+            if not token:
+                return _resp(400, {'error': 'no_token'})
+            cur.execute("SELECT * FROM booking_links WHERE token = %s", (token,))
+            link = cur.fetchone()
+            if not link:
+                return _resp(404, {'error': 'link_not_found', 'message': 'Ссылка не найдена'})
+            if not link['active']:
+                return _resp(403, {'error': 'link_disabled', 'message': 'Ссылка больше не действует'})
+            if link['expires_at'] and link['expires_at'] < date.today():
+                return _resp(403, {'error': 'link_expired', 'message': 'Срок действия ссылки истёк'})
+            cur.execute(
+                "SELECT COUNT(*) AS n FROM slot_bookings WHERE token = %s AND status IN ('new', 'confirmed')",
+                (token,),
+            )
+            used = cur.fetchone()['n']
+            return _resp(200, {'link': _row_to_link(dict(link, bookings_count=used)), 'limitReached': False})
+
         # ── Страница родителя: проверка ссылки и свободные окна ───────────────
         if method == 'GET' and action == 'slots':
             token = (params.get('token') or '').strip()
