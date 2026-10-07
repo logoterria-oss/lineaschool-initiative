@@ -8,7 +8,9 @@ import {
   createLead,
   updateLead,
   deleteLead,
+  moveLead,
 } from '@/lib/leadsApi';
+import LeadsBoard from './leads/LeadsBoard';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
 import LeadsFilters from './leads/LeadsFilters';
 import NewLeadsPanel, { CONTACTED_STATUS } from './leads/NewLeadsPanel';
@@ -44,6 +46,14 @@ export default function LeadsListView() {
   const [fUntouchedOnly, setFUntouchedOnly] = useState(false);
   const [fContactDue, setFContactDue] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Вид: таблица или колонки по статусу обработки (запоминаем выбор)
+  const [view, setViewState] = useState<'table' | 'board'>(
+    () => (localStorage.getItem('leads_view') === 'board' ? 'board' : 'table'),
+  );
+  const setView = (v: 'table' | 'board') => {
+    setViewState(v);
+    localStorage.setItem('leads_view', v);
+  };
 
   const resetFilters = () => {
     setFSearch('');
@@ -118,12 +128,16 @@ export default function LeadsListView() {
   // Новые (необработанные) лиды — сверху, с кнопкой «Списались».
   const newLeads = useMemo(() => sortedLeads.filter(isUntouched), [sortedLeads]);
 
-  const markContacted = async (id: number) => {
-    await updateLead(id, { processing_status: CONTACTED_STATUS });
-    setLeads((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, processing_status: CONTACTED_STATUS } : l)),
-    );
+  const moveToStatus = async (id: number, status: string) => {
+    const now = new Date().toISOString();
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, processing_status: status, status_changed_at: now } : l)));
+    const changed = await moveLead(id, status);
+    if (changed) {
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status_changed_at: changed } : l)));
+    }
   };
+
+  const markContacted = (id: number) => moveToStatus(id, CONTACTED_STATUS);
 
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
   // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
@@ -172,6 +186,10 @@ export default function LeadsListView() {
   };
 
   const save = (id: number, key: keyof Lead, value: string) => {
+    if (key === 'processing_status') {
+      moveToStatus(id, value);
+      return;
+    }
     updateLead(id, { [key]: value });
   };
 
@@ -217,6 +235,8 @@ export default function LeadsListView() {
         setFContactDue={setFContactDue}
         resetFilters={resetFilters}
         visibleCount={visibleLeads.length}
+        view={view}
+        setView={setView}
       />
 
       {statsOpen && (
@@ -262,6 +282,12 @@ export default function LeadsListView() {
             Сбросить фильтры
           </button>
         </div>
+      ) : view === 'board' ? (
+        <LeadsBoard
+          leads={visibleLeads}
+          onMove={moveToStatus}
+          onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
+        />
       ) : (
         <>
         {/* Мобильный вид — карточки (таблица неудобна на узких экранах) */}

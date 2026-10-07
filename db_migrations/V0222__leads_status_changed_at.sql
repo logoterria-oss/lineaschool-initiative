@@ -1,0 +1,2 @@
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS status_changed_at TIMESTAMP NULL;
+UPDATE leads SET status_changed_at = COALESCE(updated_at, created_at) WHERE status_changed_at IS NULL AND processing_status <> '';

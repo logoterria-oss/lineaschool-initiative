@@ -39,6 +39,8 @@ interface LeadsFiltersProps {
 
   resetFilters: () => void;
   visibleCount: number;
+  view: 'table' | 'board';
+  setView: (v: 'table' | 'board') => void;
 }
 
 // Панель действий (кнопки) + всплывающее окно фильтров.
@@ -72,10 +74,20 @@ export default function LeadsFilters({
   setFContactDue,
   resetFilters,
   visibleCount,
+  view,
+  setView,
 }: LeadsFiltersProps) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-4">
+        <button
+          onClick={() => setView(view === 'table' ? 'board' : 'table')}
+          className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
+          title={view === 'table' ? 'Показать колонками по статусу обработки' : 'Вернуться к таблице'}
+        >
+          <Icon name={view === 'table' ? 'Columns3' : 'Table'} size={18} />
+          {view === 'table' ? 'Колонки' : 'Таблица'}
+        </button>
         <button
           onClick={() => onCollectStats()}
           disabled={statsLoading}

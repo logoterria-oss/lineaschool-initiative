@@ -62,7 +62,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "SELECT id, parent_name, student_name, student_age, contact, request_date, "
                 "responsible, processing_status, lead_status, diag_date, report_link, "
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
-                "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer "
+                "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
+                "status_changed_at "
                 "FROM leads ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
@@ -70,7 +71,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'diag_date', 'report_link', 'schedule', 'teachers', 'comment',
                     'contact_when', 'source', 'created_at', 'updated_at',
                     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
-                    'landing_page', 'referrer']
+                    'landing_page', 'referrer', 'status_changed_at']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}
@@ -92,10 +93,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {'statusCode': 400, 'headers': CORS,
                         'body': json.dumps({'error': 'id required'}), 'isBase64Encoded': False}
             sets = [f"{f} = '{esc(body[f])}'" for f in FIELDS if f in body]
+            if 'processing_status' in body:
+                # Дата перехода в колонку доски — только если статус реально сменился
+                new_ps = esc(body['processing_status'])
+                sets.append(
+                    f"status_changed_at = CASE WHEN COALESCE(processing_status, '') <> '{new_ps}' "
+                    "THEN CURRENT_TIMESTAMP ELSE status_changed_at END"
+                )
             sets.append("updated_at = CURRENT_TIMESTAMP")
-            cur.execute(f"UPDATE leads SET {', '.join(sets)} WHERE id = {lead_id}")
+            cur.execute(f"UPDATE leads SET {', '.join(sets)} WHERE id = {lead_id} RETURNING status_changed_at")
+            row = cur.fetchone()
+            changed = row[0].isoformat() if row and row[0] else None
             return {'statusCode': 200, 'headers': CORS,
-                    'body': json.dumps({'success': True}), 'isBase64Encoded': False}
+                    'body': json.dumps({'success': True, 'status_changed_at': changed}), 'isBase64Encoded': False}
 
         if method == 'DELETE':
             lead_id = int(body.get('id', 0))

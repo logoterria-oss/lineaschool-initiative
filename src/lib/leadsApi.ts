@@ -27,6 +27,7 @@ export interface Lead {
   utm_term?: string;
   landing_page?: string;
   referrer?: string;
+  status_changed_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -116,6 +117,14 @@ export async function createLead(lead: Partial<Lead>): Promise<number | null> {
 export async function updateLead(id: number, patch: Partial<Lead>): Promise<boolean> {
   const res = await fetch(URL, { method: 'PUT', headers: headers(), body: JSON.stringify({ id, ...patch }) });
   return res.ok;
+}
+
+/** Смена статуса обработки; возвращает дату перехода в новую колонку. */
+export async function moveLead(id: number, processing_status: string): Promise<string | null> {
+  const res = await fetch(URL, { method: 'PUT', headers: headers(), body: JSON.stringify({ id, processing_status }) });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.status_changed_at ?? null;
 }
 
 export async function deleteLead(id: number): Promise<boolean> {
