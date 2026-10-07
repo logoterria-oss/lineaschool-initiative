@@ -285,7 +285,7 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
 
   const renderRow = (row: FixedRow, nested = false) => {
     const rs = ROW_SOURCE[row.source];
-    const scenarioDependent = row.key === 'ruo_bonus';
+    const scenarioDependent = ['ruo_bonus', 'ruo_insurance', 'ruo_vacation'].includes(row.key);
     return (
       <tr key={row.key} className={`border-t border-gray-100 hover:bg-gray-50/60 ${nested ? 'bg-gray-50/40' : ''}`}>
         <td className={`sticky left-0 bg-white py-2 min-w-[230px] z-10 ${nested ? 'pl-10 pr-4' : 'px-4'}`}>
@@ -369,7 +369,7 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
           <div className="text-2xl font-bold text-gray-900">{fmMoney(annual)}</div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-xs text-gray-500 leading-relaxed">
-          Суммы фиксированные и одинаковы во всех сценариях — меняется только бонус РУО (0,5% от аванса сценария).
+          Суммы фиксированные и одинаковы во всех сценариях — меняется только бонус РУО (0,5% от аванса сценария) и страховые/отпускные с него.
           Нажмите на сумму, чтобы изменить её для месяца.
         </div>
       </div>

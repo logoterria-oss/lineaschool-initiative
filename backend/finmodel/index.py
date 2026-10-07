@@ -957,8 +957,8 @@ def calc_fixed(cur):
     # Порядок строк — как в таблице промта.
     row("ruo_salary", "РУО (оклад)", "staff", "staff", "0,5 ставки")
     row("ruo_bonus", f"РУО (бонус {fmt_pct(ruo.get('bonus_pct') or 0.5)} от аванса)", "calc", "staff")
-    row("ruo_insurance", "РУО (страховые 30%)", "calc", "staff")
-    row("ruo_vacation", "РУО (отпускные 12,5%)", "calc", "staff")
+    row("ruo_insurance", "РУО (страховые 30%)", "calc", "staff", "с оклада и бонуса")
+    row("ruo_vacation", "РУО (отпускные 12,5%)", "calc", "staff", "с оклада и бонуса")
     row("accountant", "Бухгалтер", "staff", "staff", "в чёрную")
     row("targetologist", "Директолог", "staff", "staff")
     row("developer", "Разработчик", "staff", "staff")
@@ -1004,13 +1004,15 @@ def calc_fixed(cur):
         put("ruo_bonus", m, bonus, ("fact" if m in closed else "forecast") if ruo_on else "inactive")
         # Замены РУО — переменные расходы: уроки РУО входят в «Маржинальность урока», здесь не считаем.
         repl = 0
-        r_ins = base * ins_pct if ruo.get("insurance_applies") else 0
-        r_vac = base * vac_pct if ruo.get("vacation_applies") else 0
+        # Страховые и отпускные — с оклада И бонуса (бонус — часть зарплаты, зависит от аванса сценария).
+        # Замены сюда не входят: их страховые учтены в переменных (маржинальность урока).
+        r_ins = {sc: (base + bonus[sc]) * ins_pct if ruo.get("insurance_applies") else 0 for sc in SCENARIOS}
+        r_vac = {sc: (base + bonus[sc]) * vac_pct if ruo.get("vacation_applies") else 0 for sc in SCENARIOS}
         put("ruo_insurance", m, r_ins)
         put("ruo_vacation", m, r_vac)
         for sc in SCENARIOS:
-            payments.append((m, "ruo_zinchenko", sc, _r(base), _r(r_ins), _r(r_vac), _r(bonus[sc]), _r(repl),
-                             _r(base) + _r(r_ins) + _r(r_vac) + _r(bonus[sc]) + _r(repl)))
+            payments.append((m, "ruo_zinchenko", sc, _r(base), _r(r_ins[sc]), _r(r_vac[sc]), _r(bonus[sc]), _r(repl),
+                             _r(base) + _r(r_ins[sc]) + _r(r_vac[sc]) + _r(bonus[sc]) + _r(repl)))
         # Прочие сотрудники на окладе
         for key, sid in STAFF_ROWS[1:]:
             if sid not in staff:
@@ -3105,8 +3107,10 @@ def scenario_inputs(cur, conn):
 
     cur.execute(f"SELECT DISTINCT ON (month_id) month_id, variable_pct FROM {S}.fm_revenue_monthly ORDER BY month_id")
     vp = {r["month_id"]: float(r["variable_pct"]) for r in cur.fetchall()}
-    cur.execute(f"SELECT bonus_pct FROM {S}.fm_staff WHERE id = 'ruo_zinchenko'")
+    cur.execute(f"SELECT bonus_pct, insurance_applies, vacation_applies FROM {S}.fm_staff WHERE id = 'ruo_zinchenko'")
     ruo = cur.fetchone() or {}
+    ruo_load = ((float(c.get("insurance_pct") or 30) if ruo.get("insurance_applies") else 0)
+                + (float(c.get("vacation_reserve_pct") or 12.5) if ruo.get("vacation_applies") else 0)) / 100
     rows_fx = {r["key"]: r for r in fixed["rows"]}
     ano = {r["month_id"]: r["total"] for r in ano_rows(cur)}
     one_time = one_time_totals(cur)
@@ -3115,6 +3119,8 @@ def scenario_inputs(cur, conn):
     month_in = {}
     for m in months:
         bonus_base = rows_fx["ruo_bonus"]["values"].get(m, {}).get("base", 0)
+        # Страховые и отпускные с бонуса тоже зависят от аванса — выносим их вместе с бонусом
+        bonus_base += _r(bonus_base * ruo_load)
         fx_total = ((fixed["totals"].get(m) or {}).get("total") or {}).get("base", 0)
         mi = m_inputs.get(m) or {}
         month_in[m] = {
@@ -3140,6 +3146,7 @@ def scenario_inputs(cur, conn):
         "f_annual": f_annual,
         "f_corr": adapt_corrections(cur, "fact"),
         "bonus_pct": float(ruo.get("bonus_pct") or 0.5) / 100,
+        "bonus_load": ruo_load,
         "month": month_in,
         "start_balance": bank_start_balance(cur, c, c.get("bank_fact_from") or "2026-10")["total"],
         "credit_default": c.get("credit_option_default") if c.get("credit_option_default") in CREDIT_OPTIONS else "6m",
@@ -3197,7 +3204,8 @@ def run_model(inp, p):
         revenue_in = avans * (1 - acq)
         gross = fact - variable
 
-        fixed = mi["fixed_ex_bonus"] + _r(avans * inp["bonus_pct"]) + t_cost
+        bonus = _r(avans * inp["bonus_pct"])
+        fixed = mi["fixed_ex_bonus"] + bonus + _r(bonus * inp.get("bonus_load", 0)) + t_cost
         if ads is not None:
             fixed += float(ads) - mi["advertising"]
         ebitda = gross - fixed - mi["ano"] - mi["one_time"]
