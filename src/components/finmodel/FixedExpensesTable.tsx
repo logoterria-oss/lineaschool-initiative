@@ -199,6 +199,7 @@ function KpiCard({ label, value, prev, good = 'up' }: { label: string; value: nu
 
 const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, onStaffRate, onActual, onModel, kpi, prevKpi }: Props) => {
   const [edit, setEdit] = useState<string | null>(null);
+  const [ruoOpen, setRuoOpen] = useState(false);
   const months = data.months.filter((m) => m >= data.current_month);
 
   const editorFor = (row: FixedRow, m: string) => {
@@ -241,14 +242,54 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
   const cellEditable = (row: FixedRow, m: string) => isEditable(row) && row.sources[m] !== 'inactive';
   const staffRows = data.rows.filter((r) => r.group === 'staff');
   const itemRows = data.rows.filter((r) => r.group === 'items');
+  const ruoRows = staffRows.filter((r) => r.key.startsWith('ruo_'));
+  const otherStaffRows = staffRows.filter((r) => !r.key.startsWith('ruo_'));
 
-  const renderRow = (row: FixedRow) => {
+  const subName = (row: FixedRow) => {
+    const m = row.name.match(/^РУО\s*\((.+)\)$/);
+    if (!m) return row.name;
+    const s = m[1];
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+
+  const renderRuoGroup = () => {
+    if (!ruoRows.length) return null;
+    return (
+      <>
+        <tr className="border-t border-gray-100 hover:bg-gray-50/60 cursor-pointer" onClick={() => setRuoOpen((v) => !v)}>
+          <td className="sticky left-0 bg-white px-4 py-2 min-w-[230px] z-10">
+            <div className="flex items-center gap-1.5 text-gray-900 font-medium">
+              <Icon name={ruoOpen ? 'ChevronDown' : 'ChevronRight'} size={16} className="text-gray-400" />
+              РУО
+            </div>
+            <div className="text-[11px] text-gray-400 pl-[22px]">
+              {ruoOpen ? 'свернуть' : `${ruoRows.length} статьи · развернуть`}
+            </div>
+          </td>
+          {months.map((m) => {
+            const sum = ruoRows.reduce((s, r) => s + (r.values[m]?.[active] || 0), 0);
+            return (
+              <td key={m} className="px-3 py-2 text-right whitespace-nowrap align-top tabular-nums font-medium text-gray-900">
+                {sum ? Math.round(sum).toLocaleString('ru-RU') : <span className="text-gray-300">0</span>}
+              </td>
+            );
+          })}
+          <td className="px-4 py-2 whitespace-nowrap">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">Группа</span>
+          </td>
+        </tr>
+        {ruoOpen && ruoRows.map((r) => renderRow(r, true))}
+      </>
+    );
+  };
+
+  const renderRow = (row: FixedRow, nested = false) => {
     const rs = ROW_SOURCE[row.source];
     const scenarioDependent = row.key === 'ruo_bonus';
     return (
-      <tr key={row.key} className="border-t border-gray-100 hover:bg-gray-50/60">
-        <td className="sticky left-0 bg-white px-4 py-2 min-w-[230px] z-10">
-          <div className="text-gray-900">{row.name}</div>
+      <tr key={row.key} className={`border-t border-gray-100 hover:bg-gray-50/60 ${nested ? 'bg-gray-50/40' : ''}`}>
+        <td className={`sticky left-0 bg-white py-2 min-w-[230px] z-10 ${nested ? 'pl-10 pr-4' : 'px-4'}`}>
+          <div className={nested ? 'text-gray-700' : 'text-gray-900'}>{nested ? subName(row) : row.name}</div>
           {(row.note || scenarioDependent) && (
             <div className="text-[11px] text-gray-400">
               {scenarioDependent ? `зависит от сценария · ${SCENARIO_LABEL[active]}` : row.note}
@@ -367,9 +408,10 @@ const FixedExpensesTable = ({ data, active, onExpense, onInputs, onStaffMonth, o
             </thead>
             <tbody>
               {groupHead('Сотрудники')}
-              {staffRows.map(renderRow)}
+              {renderRuoGroup()}
+              {otherStaffRows.map((r) => renderRow(r))}
               {groupHead('Сервисы, реклама, подрядчики')}
-              {itemRows.map(renderRow)}
+              {itemRows.map((r) => renderRow(r))}
               {sumRow('Итого без дизайнеров', (m) => data.totals[m]?.total_wo_designers[active] || 0, 'bg-gray-50 text-gray-600 border-t border-gray-200')}
               {sumRow('Итого постоянных', (m) => data.totals[m]?.total[active] || 0, 'bg-gray-100 font-semibold text-gray-900 border-t border-gray-200')}
               {sumRow('АНО (отдельная строка)', (m) => data.totals[m]?.ano || 0, 'bg-white text-gray-700 border-t border-gray-100')}
