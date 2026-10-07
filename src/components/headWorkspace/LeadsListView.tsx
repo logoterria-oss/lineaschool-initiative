@@ -294,6 +294,7 @@ export default function LeadsListView() {
           leads={visibleLeads}
           onMove={moveToStatus}
           onArchive={archiveLead}
+          onLeadStatus={(id, v) => { patch(id, 'lead_status', v); save(id, 'lead_status', v); }}
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />
       ) : (

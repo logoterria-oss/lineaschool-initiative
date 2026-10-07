@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { Lead, PROCESSING_OPTIONS } from '@/lib/leadsApi';
+import { LEAD_STATUS_OPTIONS, Lead, PROCESSING_OPTIONS } from '@/lib/leadsApi';
 import { leadStatusColor } from './leadColors';
 import { isUntouched } from './leadUtils';
 
@@ -9,6 +9,7 @@ interface Props {
   onMove: (id: number, status: string) => void;
   onComment: (id: number, comment: string) => void;
   onArchive: (id: number, archived: boolean) => void;
+  onLeadStatus: (id: number, status: string) => void;
 }
 
 const NONE = '';
@@ -34,9 +35,10 @@ function fmtDate(iso?: string | null): string {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-function LeadTile({ lead, onComment, onDragStart, onDragEnd, onRestore }: {
+function LeadTile({ lead, onComment, onLeadStatus, onDragStart, onDragEnd, onRestore }: {
   lead: Lead;
   onComment: (c: string) => void;
+  onLeadStatus: (s: string) => void;
   onDragStart: () => void;
   onDragEnd?: () => void;
   onRestore?: () => void;
@@ -84,11 +86,30 @@ function LeadTile({ lead, onComment, onDragStart, onDragEnd, onRestore }: {
         </div>
       )}
 
-      {lead.lead_status && (
-        <span className={`inline-block mt-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${leadStatusColor(lead.lead_status)}`}>
-          {lead.lead_status}
+      {/* Статус лида — меняется прямо на карточке */}
+      <div className="relative inline-block mt-2" title="Изменить статус лида">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+            lead.lead_status
+              ? leadStatusColor(lead.lead_status)
+              : 'bg-gray-50 text-gray-400 border border-dashed border-gray-300'
+          }`}
+        >
+          {lead.lead_status || 'статус лида'}
+          <Icon name="ChevronDown" size={10} className="opacity-60" />
         </span>
-      )}
+        <select
+          value={lead.lead_status || ''}
+          onChange={(e) => onLeadStatus(e.target.value)}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        >
+          <option value="">—</option>
+          {LEAD_STATUS_OPTIONS.map((o) => (
+            <option key={o} value={o}>{o}</option>
+          ))}
+        </select>
+      </div>
 
       <div className="mt-2 border-t border-gray-100 pt-1.5">
         {editing ? (
@@ -129,7 +150,7 @@ function LeadTile({ lead, onComment, onDragStart, onDragEnd, onRestore }: {
 
 // Доска лидов: колонки по статусу обработки, как воронка в CRM.
 // Карточку можно перетащить в другую колонку — статус обработки сменится.
-export default function LeadsBoard({ leads, onMove, onComment, onArchive }: Props) {
+export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLeadStatus }: Props) {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
   const [overArchive, setOverArchive] = useState(false);
@@ -190,6 +211,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive }: Prop
                 lead={l}
                 onDragStart={() => undefined}
                 onComment={(c) => onComment(l.id, c)}
+                onLeadStatus={(v) => onLeadStatus(l.id, v)}
                 onRestore={() => onArchive(l.id, false)}
               />
             ))}
@@ -261,6 +283,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive }: Prop
                       onDragStart={() => setDragId(l.id)}
                       onDragEnd={() => { setDragId(null); setOverCol(null); setOverArchive(false); }}
                       onComment={(c) => onComment(l.id, c)}
+                      onLeadStatus={(v) => onLeadStatus(l.id, v)}
                     />
                   ))
                 )}
