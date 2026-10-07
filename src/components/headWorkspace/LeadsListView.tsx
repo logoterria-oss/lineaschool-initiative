@@ -9,6 +9,7 @@ import {
   updateLead,
   deleteLead,
   moveLead,
+  setLeadArchived,
 } from '@/lib/leadsApi';
 import LeadsBoard from './leads/LeadsBoard';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
@@ -135,6 +136,12 @@ export default function LeadsListView() {
     if (changed) {
       setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status_changed_at: changed } : l)));
     }
+  };
+
+  const archiveLead = async (id: number, archived: boolean) => {
+    const now = archived ? new Date().toISOString() : null;
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, archived, archived_at: now } : l)));
+    await setLeadArchived(id, archived);
   };
 
   const markContacted = (id: number) => moveToStatus(id, CONTACTED_STATUS);
@@ -286,6 +293,7 @@ export default function LeadsListView() {
         <LeadsBoard
           leads={visibleLeads}
           onMove={moveToStatus}
+          onArchive={archiveLead}
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />
       ) : (

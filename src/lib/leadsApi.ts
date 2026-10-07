@@ -28,6 +28,8 @@ export interface Lead {
   landing_page?: string;
   referrer?: string;
   status_changed_at?: string | null;
+  archived?: boolean;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -116,6 +118,12 @@ export async function createLead(lead: Partial<Lead>): Promise<number | null> {
 
 export async function updateLead(id: number, patch: Partial<Lead>): Promise<boolean> {
   const res = await fetch(URL, { method: 'PUT', headers: headers(), body: JSON.stringify({ id, ...patch }) });
+  return res.ok;
+}
+
+/** Архив доски: лид уходит из колонок, но остаётся в таблице. */
+export async function setLeadArchived(id: number, archived: boolean): Promise<boolean> {
+  const res = await fetch(URL, { method: 'PUT', headers: headers(), body: JSON.stringify({ id, archived }) });
   return res.ok;
 }
 

@@ -63,7 +63,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "responsible, processing_status, lead_status, diag_date, report_link, "
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
-                "status_changed_at "
+                "status_changed_at, archived, archived_at "
                 "FROM leads ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
@@ -71,7 +71,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'diag_date', 'report_link', 'schedule', 'teachers', 'comment',
                     'contact_when', 'source', 'created_at', 'updated_at',
                     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
-                    'landing_page', 'referrer', 'status_changed_at']
+                    'landing_page', 'referrer', 'status_changed_at', 'archived', 'archived_at']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}
@@ -93,6 +93,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {'statusCode': 400, 'headers': CORS,
                         'body': json.dumps({'error': 'id required'}), 'isBase64Encoded': False}
             sets = [f"{f} = '{esc(body[f])}'" for f in FIELDS if f in body]
+            if 'archived' in body:
+                # Архив доски: лид убирается из колонок, но остаётся в таблице
+                if body['archived']:
+                    sets.append("archived = TRUE, archived_at = CURRENT_TIMESTAMP")
+                else:
+                    sets.append("archived = FALSE, archived_at = NULL")
             if 'processing_status' in body:
                 # Дата перехода в колонку доски — только если статус реально сменился
                 new_ps = esc(body['processing_status'])

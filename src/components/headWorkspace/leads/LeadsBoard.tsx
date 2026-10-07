@@ -8,6 +8,7 @@ interface Props {
   leads: Lead[];
   onMove: (id: number, status: string) => void;
   onComment: (id: number, comment: string) => void;
+  onArchive: (id: number, archived: boolean) => void;
 }
 
 const NONE = '';
@@ -33,10 +34,12 @@ function fmtDate(iso?: string | null): string {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-function LeadTile({ lead, onComment, onDragStart }: {
+function LeadTile({ lead, onComment, onDragStart, onDragEnd, onRestore }: {
   lead: Lead;
   onComment: (c: string) => void;
   onDragStart: () => void;
+  onDragEnd?: () => void;
+  onRestore?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(lead.comment || '');
@@ -45,12 +48,13 @@ function LeadTile({ lead, onComment, onDragStart }: {
 
   return (
     <div
-      draggable={!editing}
+      draggable={!editing && !onRestore}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', String(lead.id));
         onDragStart();
       }}
+      onDragEnd={onDragEnd}
       className={`rounded-lg border bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing ${
         untouched ? 'border-red-300 bg-red-50' : 'border-gray-200'
       }`}
@@ -73,6 +77,12 @@ function LeadTile({ lead, onComment, onDragStart }: {
           <div className="font-medium text-gray-700">{moved || '—'}</div>
         </div>
       </div>
+
+      {onRestore && (
+        <div className="mt-1 text-[11px] text-gray-400">
+          {lead.processing_status || 'Не разобрано'} · в архиве с {fmtDate(lead.archived_at) || '—'}
+        </div>
+      )}
 
       {lead.lead_status && (
         <span className={`inline-block mt-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${leadStatusColor(lead.lead_status)}`}>
@@ -103,20 +113,35 @@ function LeadTile({ lead, onComment, onDragStart }: {
           </button>
         )}
       </div>
+
+      {onRestore && (
+        <button
+          onClick={onRestore}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-md py-1.5"
+        >
+          <Icon name="Undo2" size={13} />
+          Вернуть на доску
+        </button>
+      )}
     </div>
   );
 }
 
 // Доска лидов: колонки по статусу обработки, как воронка в CRM.
 // Карточку можно перетащить в другую колонку — статус обработки сменится.
-export default function LeadsBoard({ leads, onMove, onComment }: Props) {
+export default function LeadsBoard({ leads, onMove, onComment, onArchive }: Props) {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
+  const [overArchive, setOverArchive] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+
+  const archived = leads.filter((l) => l.archived);
+  const active = leads.filter((l) => !l.archived);
 
   const known = new Set(PROCESSING_OPTIONS);
   const columns = [NONE, ...PROCESSING_OPTIONS];
   const byCol: Record<string, Lead[]> = Object.fromEntries(columns.map((c) => [c, []]));
-  for (const l of leads) {
+  for (const l of active) {
     const ps = (l.processing_status || '').trim();
     (known.has(ps) ? byCol[ps] : byCol[NONE]).push(l);
   }
@@ -130,7 +155,72 @@ export default function LeadsBoard({ leads, onMove, onComment }: Props) {
     setOverCol(null);
   };
 
+  const dropToArchive = () => {
+    if (dragId != null) onArchive(dragId, true);
+    setDragId(null);
+    setOverArchive(false);
+  };
+
+  if (showArchive) {
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <button
+            onClick={() => setShowArchive(false)}
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg px-3 py-2"
+          >
+            <Icon name="ArrowLeft" size={15} />
+            К колонкам
+          </button>
+          <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <Icon name="Archive" size={18} className="text-gray-500" />
+            Архив · {archived.length}
+          </h3>
+          <span className="text-xs text-gray-400">отказники и игнор — в таблице они остаются</span>
+        </div>
+        {archived.length === 0 ? (
+          <div className="py-12 text-center text-sm text-gray-400 border border-dashed border-gray-200 rounded-xl">
+            Архив пуст. Перетащите карточку на кнопку «Архив», чтобы убрать её с доски.
+          </div>
+        ) : (
+          <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(250px,1fr))]">
+            {archived.map((l) => (
+              <LeadTile
+                key={l.id}
+                lead={l}
+                onDragStart={() => undefined}
+                onComment={(c) => onComment(l.id, c)}
+                onRestore={() => onArchive(l.id, false)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
+    <div>
+    <div className="flex items-center justify-end mb-2">
+      <button
+        onClick={() => setShowArchive(true)}
+        onDragOver={(e) => { e.preventDefault(); setOverArchive(true); }}
+        onDragLeave={() => setOverArchive(false)}
+        onDrop={(e) => { e.preventDefault(); dropToArchive(); }}
+        className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border-2 transition-all ${
+          overArchive
+            ? 'border-red-400 bg-red-50 text-red-700 scale-105'
+            : dragId != null
+            ? 'border-dashed border-gray-400 bg-gray-50 text-gray-700'
+            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+        }`}
+        title="Перетащите сюда карточку отказника или игнорщика. Нажмите, чтобы открыть архив"
+      >
+        <Icon name="Archive" size={17} />
+        {dragId != null ? 'Перетащите сюда — в архив' : 'Архив'}
+        <span className="text-xs font-bold bg-gray-200 text-gray-700 rounded-full px-2 py-0.5">{archived.length}</span>
+      </button>
+    </div>
     <div className="overflow-x-auto pb-3">
       <div className="flex gap-3 min-w-max items-start">
         {columns.map((col) => {
@@ -169,6 +259,7 @@ export default function LeadsBoard({ leads, onMove, onComment }: Props) {
                       key={l.id}
                       lead={l}
                       onDragStart={() => setDragId(l.id)}
+                      onDragEnd={() => { setDragId(null); setOverCol(null); setOverArchive(false); }}
                       onComment={(c) => onComment(l.id, c)}
                     />
                   ))
@@ -178,6 +269,7 @@ export default function LeadsBoard({ leads, onMove, onComment }: Props) {
           );
         })}
       </div>
+    </div>
     </div>
   );
 }
