@@ -151,14 +151,52 @@ function AddLine({ group, onAction, cols }: { group: 'staff' | 'items'; onAction
 const FixedActualsTable = ({ data, onAction }: Props) => {
   const months = data.months;
   const cols = months.length + 2;
+  const [ruoOpen, setRuoOpen] = useState(false);
   const staff = data.lines.filter((l) => l.group === 'staff');
+  // Все строки РУО (оклад, бонус, страховые, отпускные) — одна сворачиваемая группа
+  const isRuo = (l: FixedActualLine) => (l.source_key || '').startsWith('ruo_') || /^РУО\b/.test(l.name);
+  const ruoLines = staff.filter(isRuo);
+  const otherStaff = staff.filter((l) => !isRuo(l));
   const items = data.lines.filter((l) => l.group === 'items');
   const rowTotal = (l: FixedActualLine) => months.reduce((s, m) => s + (l.values[m] || 0), 0);
   const grand = months.reduce((s, m) => s + (data.totals[m] || 0), 0);
 
-  const renderLine = (l: FixedActualLine) => (
-    <tr key={l.id} className="border-t border-gray-100 hover:bg-gray-50/60">
-      <td className="sticky left-0 bg-white px-4 py-2 min-w-[240px] z-10">
+  const renderRuoGroup = () => {
+    if (!ruoLines.length) return null;
+    const sumAt = (m: string) => ruoLines.reduce((s, l) => s + (l.values[m] || 0), 0);
+    const total = ruoLines.reduce((s, l) => s + rowTotal(l), 0);
+    return (
+      <>
+        <tr className="border-t border-gray-100 hover:bg-gray-50/60 cursor-pointer" onClick={() => setRuoOpen((v) => !v)}>
+          <td className="sticky left-0 bg-white px-4 py-2 min-w-[240px] z-10">
+            <div className="flex items-center gap-1.5 text-gray-900 font-medium">
+              <Icon name={ruoOpen ? 'ChevronDown' : 'ChevronRight'} size={16} className="text-gray-400" />
+              РУО
+            </div>
+            <div className="text-[11px] text-gray-400 pl-[22px]">
+              {ruoOpen ? 'свернуть' : `${ruoLines.length} статьи · развернуть`}
+            </div>
+          </td>
+          {months.map((m) => {
+            const v = sumAt(m);
+            return (
+              <td key={m} className="px-3 py-2 text-right whitespace-nowrap tabular-nums font-medium text-gray-900">
+                {v ? Math.round(v).toLocaleString('ru-RU') : <span className="text-gray-300">—</span>}
+              </td>
+            );
+          })}
+          <td className="px-4 py-2 text-right tabular-nums text-gray-700 font-medium whitespace-nowrap">
+            {Math.round(total).toLocaleString('ru-RU')}
+          </td>
+        </tr>
+        {ruoOpen && ruoLines.map((l) => renderLine(l, true))}
+      </>
+    );
+  };
+
+  const renderLine = (l: FixedActualLine, nested = false) => (
+    <tr key={l.id} className={`border-t border-gray-100 hover:bg-gray-50/60 ${nested ? 'bg-gray-50/40' : ''}`}>
+      <td className={`sticky left-0 bg-white py-2 min-w-[240px] z-10 ${nested ? 'pl-10 pr-4' : 'px-4'}`}>
         <LineName line={l} onAction={onAction} />
       </td>
       {months.map((m) => (
@@ -206,10 +244,11 @@ const FixedActualsTable = ({ data, onAction }: Props) => {
             </thead>
             <tbody>
               {head('Сотрудники')}
-              {staff.map(renderLine)}
+              {renderRuoGroup()}
+              {otherStaff.map((l) => renderLine(l))}
               <AddLine group="staff" onAction={onAction} cols={cols} />
               {head('Сервисы, реклама, подрядчики')}
-              {items.map(renderLine)}
+              {items.map((l) => renderLine(l))}
               <AddLine group="items" onAction={onAction} cols={cols} />
               <tr className="bg-rose-50 font-semibold text-rose-900 border-t border-rose-100">
                 <td className="sticky left-0 px-4 py-2 z-10 bg-rose-50">Итого постоянных (факт)</td>
