@@ -1,0 +1,3 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET label='Дизайнеры метод.материалов', updated_at=now() WHERE line='methodists';
+UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET note=replace(replace(replace(note,'методисты (проектная работа)','дизайнеры метод.материалов'),'методист Смоляк','дизайнер метод.материалов Смоляк'),'Методисты','Дизайнеры метод.материалов'), updated_at=now() WHERE note ILIKE '%методист%';
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET note=replace(replace(note,'методисты (проектная работа)','дизайнеры метод.материалов'),'Методисты','Дизайнеры метод.материалов'), updated_at=now() WHERE note ILIKE '%методист%';
