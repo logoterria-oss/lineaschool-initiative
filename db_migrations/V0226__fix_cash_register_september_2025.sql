@@ -1,0 +1,5 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET note='Касса digitalkassa (ООО «ЦИБ»): тариф «почековый» на год 15 000 + фискальный накопитель на 36 мес 18 250', updated_at=now() WHERE month_id='2025-09' AND line='one_time';
+UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET note='Налоги за сентябрь (УСН 937 + взносы ИП за себя 4 904,23) оплачены 02.10.2025 — в Cash Flow октября', updated_at=now() WHERE month_id='2025-09' AND line='tax';
+UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET note='Педагогам за сентябрь заплатили в октябре (Шишаева 15.10 со счёта ИП, Яновец с личной карты)', updated_at=now() WHERE month_id='2025-09' AND line='variable';
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount=1756.94, note='Тариф 15 000 / 12 = 1 250 + накопитель 18 250 / 36 = 506,94', updated_at=now() WHERE month_id='2025-09' AND line='cash_register';
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount=14685.23, note='Прибыль до налогов 20 526,46 − УСН 937 − взносы 4 904,23', updated_at=now() WHERE month_id='2025-09' AND line='net_profit';
