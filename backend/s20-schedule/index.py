@@ -1603,8 +1603,12 @@ def handler(event: dict, context) -> dict:
         }
 
     # default: mode=lessons — все статусы за период
-    lessons = get_lessons_all_statuses(token, date_from, date_to)
-    lessons = filter_lessons_by_groups(lessons, build_group_filter(token))
+    if params.get("status"):
+        lessons = get_lessons(token, date_from, date_to, status=int(params["status"]))
+    else:
+        lessons = get_lessons_all_statuses(token, date_from, date_to)
+    if params.get("raw") != "1":
+        lessons = filter_lessons_by_groups(lessons, build_group_filter(token))
     return {
         "statusCode": 200,
         "headers": {**cors_headers, "Content-Type": "application/json"},
