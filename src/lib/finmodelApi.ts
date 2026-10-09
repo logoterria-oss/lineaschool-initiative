@@ -3,6 +3,22 @@ import func2url from '../../backend/func2url.json';
 const API = (func2url as Record<string, string>)['finmodel'];
 const PAYMENT_REPORT = (func2url as Record<string, string>)['payment-report'];
 
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+/** Запрос к финмодели с повтором: при перегрузке базы (5xx / обрыв сети) ждём и пробуем снова. */
+const fmFetch = async (url: string, init?: RequestInit): Promise<Response> => {
+  const delays = [1500, 3000, 5000];
+  for (let i = 0; ; i++) {
+    try {
+      const r = await fetch(url, init);
+      if (r.status < 500 || i >= delays.length) return r;
+    } catch (e) {
+      if (i >= delays.length) throw e;
+    }
+    await sleep(delays[i]);
+  }
+};
+
 export type Scenario = 'min' | 'base' | 'opt';
 export const SCENARIOS: Scenario[] = ['min', 'base', 'opt'];
 export const SCENARIO_LABEL: Record<Scenario, string> = {
@@ -70,14 +86,14 @@ const headers = (json = false): Record<string, string> => {
 };
 
 const post = async (body: Record<string, unknown>) => {
-  const r = await fetch(API, { method: 'POST', headers: headers(true), body: JSON.stringify(body) });
+  const r = await fmFetch(API, { method: 'POST', headers: headers(true), body: JSON.stringify(body) });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка сервера');
   return data;
 };
 
 export const fetchAvansRaw = async (): Promise<AvansData> => {
-  const r = await fetch(`${API}?action=avans`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=avans`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -180,7 +196,7 @@ export interface FactData {
 }
 
 export const fetchFactRaw = async (): Promise<FactData> => {
-  const r = await fetch(`${API}?action=fact`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=fact`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -257,7 +273,7 @@ export interface RevenueData {
 }
 
 export const fetchRevenue = async (): Promise<RevenueData> => {
-  const r = await fetch(`${API}?action=revenue`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=revenue`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -297,7 +313,7 @@ export interface StudentsData {
 }
 
 export const fetchStudents = async (): Promise<StudentsData> => {
-  const r = await fetch(`${API}?action=students`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=students`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -408,7 +424,7 @@ export interface FixedData {
 }
 
 export const fetchFixed = async (): Promise<FixedData> => {
-  const r = await fetch(`${API}?action=fixed`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=fixed`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -499,7 +515,7 @@ export interface CreditData {
 }
 
 export const fetchCredit = async (): Promise<CreditData> => {
-  const r = await fetch(`${API}?action=credit`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=credit`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -529,7 +545,7 @@ export interface AnoData {
 }
 
 export const fetchAno = async (): Promise<AnoData> => {
-  const r = await fetch(`${API}?action=ano`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=ano`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -580,7 +596,7 @@ export interface TaxData {
 }
 
 export const fetchTaxes = async (): Promise<TaxData> => {
-  const r = await fetch(`${API}?action=taxes`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=taxes`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -629,7 +645,7 @@ export interface PayoutData {
 }
 
 export const fetchPayouts = async (): Promise<PayoutData> => {
-  const r = await fetch(`${API}?action=payouts`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=payouts`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -675,7 +691,7 @@ export interface OneTimeInput {
 }
 
 export const fetchOneTime = async (): Promise<OneTimeData> => {
-  const r = await fetch(`${API}?action=one_time`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=one_time`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -707,7 +723,7 @@ export interface PnlData {
 }
 
 export const fetchPnl = async (): Promise<PnlData> => {
-  const r = await fetch(`${API}?action=pnl`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=pnl`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -774,7 +790,7 @@ export interface CashflowData {
 }
 
 export const fetchCashflow = async (): Promise<CashflowData> => {
-  const r = await fetch(`${API}?action=cashflow`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=cashflow`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -847,7 +863,7 @@ export interface AdaptationData {
 }
 
 export const fetchAdaptation = async (): Promise<AdaptationData> => {
-  const r = await fetch(`${API}?action=adaptation`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=adaptation`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -934,7 +950,7 @@ export interface ScenariosData {
 }
 
 export const fetchScenarios = async (): Promise<ScenariosData> => {
-  const r = await fetch(`${API}?action=scenarios`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=scenarios`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
@@ -1032,7 +1048,7 @@ export interface DashboardData {
 }
 
 export const fetchDashboard = async (): Promise<DashboardData> => {
-  const r = await fetch(`${API}?action=dashboard`, { headers: headers() });
+  const r = await fmFetch(`${API}?action=dashboard`, { headers: headers() });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
   return data;
