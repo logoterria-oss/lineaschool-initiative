@@ -1,0 +1,3 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount=0, note='Ждём фактическую сумму', updated_at=now() WHERE month_id='2025-10' AND line IN ('tax_usn','owner_insurance');
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET label='Налог УСН', updated_at=now() WHERE month_id='2025-10' AND line='tax_usn';
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET label='Чистая прибыль', amount=165212.16, note='Пока без налогов за октябрь — добавим по факту', updated_at=now() WHERE month_id='2025-10' AND line='net_profit';
