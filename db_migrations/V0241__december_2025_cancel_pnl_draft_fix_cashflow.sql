@@ -1,0 +1,5 @@
+UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount=0, note='Черновик отменён — P&L за декабрь ещё не собирался' WHERE month_id='2025-12';
+
+UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET amount=106181.29, note='Педагоги 80 900 со счёта ИП (14.12 за 16–30 ноя: Найденова 14 000, Камнева 5 600, Мельникова 18 650; 29.12 за 1–15 дек: Найденова 11 250, Камнева 11 650, Мельникова 19 750) + комиссия за переводы самозанятым 404,50 + комиссия за оплату картой 18 436,79 + комиссия Т-Покупки 6 440. Выплаты педагогам вне счёта (наличные/личная карта) — ждём' WHERE month_id='2025-12' AND line='variable';
+
+UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET amount=380000, note='Переводы себе со счёта ИП 380 000. Траты школы с личной карты за декабрь — ждём, после них уменьшим' WHERE month_id='2025-12' AND line='payout';
