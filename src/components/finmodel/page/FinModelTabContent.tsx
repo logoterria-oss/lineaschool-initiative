@@ -1,3 +1,4 @@
+import FactHistoryTable from '@/components/finmodel/FactHistoryTable';
 import Icon from '@/components/ui/icon';
 import AvansForecastTable from '@/components/finmodel/AvansForecastTable';
 import AvansHistoryTable from '@/components/finmodel/AvansHistoryTable';
@@ -86,7 +87,10 @@ const FinModelTabContent = ({ fm }: Props) => {
     )
   ) : tab === 'cashflow' ? (
     cashflow && !cfLoading ? (
-      <CashflowTable data={cashflow} active={active} onCreditOption={onCfCredit} onPayoutPct={onCfPayoutPct} />
+      <div className="space-y-4">
+        <FactHistoryTable kind="cashflow" />
+        <CashflowTable data={cashflow} active={active} onCreditOption={onCfCredit} onPayoutPct={onCfPayoutPct} />
+      </div>
     ) : (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
         <Icon name="Loader2" size={26} className="animate-spin mx-auto mb-2" />
@@ -95,7 +99,10 @@ const FinModelTabContent = ({ fm }: Props) => {
     )
   ) : tab === 'pnl' ? (
     pnl && !pnlLoading ? (
-      <PnlTable data={pnl} active={active} />
+      <div className="space-y-4">
+        <FactHistoryTable kind="pnl" />
+        <PnlTable data={pnl} active={active} />
+      </div>
     ) : (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
         <Icon name="Loader2" size={26} className="animate-spin mx-auto mb-2" />

@@ -1059,3 +1059,14 @@ export const notificationAction = (op: 'dismiss' | 'snooze' | 'read' | 'restore'
 export const setTaxRegimeGlobal = (regime: TaxRegimeGlobal) => post({ action: 'set_tax_regime_global', regime });
 export const closeStudentsPrev = () => post({ action: 'close_students_prev' });
 export const recalcModel = () => post({ action: 'recalc' });
+
+export interface HistoryPnlRow { month_id: string; line: string; label: string; amount: number | string; sort: number; note: string }
+export interface HistoryCfRow { month_id: string; line: string; amount: number | string; note: string }
+export interface HistoryData { pnl: HistoryPnlRow[]; cashflow: HistoryCfRow[] }
+
+export const fetchHistory = async (): Promise<HistoryData> => {
+  const r = await fmFetch(`${API}?action=history`, { headers: headers() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Ошибка загрузки');
+  return data;
+};

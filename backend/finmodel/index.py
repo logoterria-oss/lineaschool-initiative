@@ -3438,6 +3438,15 @@ for _n in ("get_revenue", "calc_fixed", "calc_taxes", "calc_payouts", "calc_pnl"
         globals()[_n] = _timed(globals()[_n])
 
 
+def get_history(cur):
+    """Собранный вручную факт прошлых месяцев: P&L и Cash Flow по строкам с пояснениями."""
+    cur.execute(f"SELECT month_id, line, label, amount, sort, note FROM {S}.fm_pnl_fact_manual ORDER BY month_id, sort")
+    pnl = [dict(r) for r in cur.fetchall()]
+    cur.execute(f"SELECT month_id, line, amount, note FROM {S}.fm_cashflow_fact_manual ORDER BY month_id, line")
+    cf = [dict(r) for r in cur.fetchall()]
+    return {"ok": True, "pnl": pnl, "cashflow": cf}
+
+
 def handler(event: dict, context) -> dict:
     """Финмодель: GET ?action=avans|fact|revenue|students|fixed|credit|ano|taxes|payouts|one_time|pnl|cashflow|adaptation|scenarios|dashboard — история, сезонность, прогноз; POST avans_close / fact_close / set_variable_pct / set_students / close_students / set_fixed_expense / set_month_inputs / set_staff_rate / set_staff_month_rate / set_scenario / set_credit_option / set_ano / set_tax_regime / set_payout / save_one_time / delete_one_time / set_adapt_params / cancel_adaptation / adapt_manual / adapt_new_item / adapt_set_base / save_scenario / delete_scenario / notification / set_tax_regime_global / close_students_prev / recalc."""
     method = event.get("httpMethod", "GET")
@@ -3482,6 +3491,8 @@ def handler(event: dict, context) -> dict:
                 return resp(200, get_scenarios(cur, conn))
             if action == "dashboard":
                 return resp(200, get_dashboard(cur, conn))
+            if action == "history":
+                return resp(200, get_history(cur))
             return resp(400, {"error": "Неизвестное действие"})
 
         if method == "POST":
