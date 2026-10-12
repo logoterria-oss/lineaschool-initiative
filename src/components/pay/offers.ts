@@ -153,6 +153,25 @@ const individualOffer: PayOffer = {
 };
 
 /**
+ * Персональная страница: архивный «3 урока в неделю» на месяц по старой цене —
+ * для конкретной ученицы, в общий прайс не входит.
+ */
+const archive3PechegorovaOffer: PayOffer = {
+  slug: 'abonement-archive-3-pechegorova',
+  title: 'Абонемент для Эли Печегоровой',
+  paymentTitle: '3 урока в неделю (архивный тариф), 1 месяц — Эля Печегорова',
+  subtitle: '3 урока в неделю · 2 групповых + 1 индивидуальный',
+  options: [
+    {
+      title: '1 месяц',
+      pricePerLesson: 1200,
+      totalPrice: 14400,
+      details: composition(8, 4),
+    },
+  ],
+};
+
+/**
  * Первичная диагностика. Цену берём в момент обращения, а не при импорте
  * модуля: иначе вкладка, открытая до смены цены, продолжала бы вести на оплату
  * по старому тарифу.
@@ -203,6 +222,7 @@ export const getPayOffers = (): PayOffer[] => [
   ...subscriptionOffers,
   individualOffer,
   archiveOffer,
+  archive3PechegorovaOffer,
 ];
 
 export const getPayOffer = (slug?: string) =>

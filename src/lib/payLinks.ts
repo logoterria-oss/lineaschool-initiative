@@ -18,6 +18,10 @@ export const PAY_LINKS: PayLink[] = [
     label: 'Архивный 2 урока в неделю (1 инд + 1 гр)',
     url: 'https://lineaschool.ru/pay/abonement-archive-2',
   },
+  {
+    label: 'Абонемент для Эли Печегоровой',
+    url: 'https://lineaschool.ru/pay/abonement-archive-3-pechegorova',
+  },
 ];
 
 const BY_WEEK: Record<number, string> = {
