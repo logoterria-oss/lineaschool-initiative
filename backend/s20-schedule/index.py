@@ -6,6 +6,86 @@ import psycopg2
 from datetime import datetime, timedelta, date
 from concurrent.futures import ThreadPoolExecutor
 
+import threading
+import time
+
+CACHE_SCHEMA = "t_p93118852_lineaschool_initiati"
+
+# CRM ограничивает частоту запросов (429 Too Many Requests): одновременно
+# не больше 4 запросов, при отказе — короткая пауза и повтор.
+_CRM_SLOTS = threading.Semaphore(4)
+
+
+def crm_post(url, json=None, headers=None, timeout=20):
+    resp = None
+    for delay in (0, 0.7, 1.5):
+        if delay:
+            time.sleep(delay)
+        with _CRM_SLOTS:
+            resp = requests.post(url, json=json, headers=headers, timeout=timeout)
+        if resp.status_code != 429:
+            return resp
+    return resp
+
+
+def cache_get(key, max_age_sec=None):
+    """Достать сохранённый ответ CRM. max_age_sec=None — любой давности."""
+    try:
+        conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=5)
+        cur = conn.cursor()
+        sql = f"SELECT payload FROM {CACHE_SCHEMA}.crm_json_cache WHERE cache_key = %s"
+        args = [key]
+        if max_age_sec is not None:
+            sql += " AND updated_at > now() - make_interval(secs => %s)"
+            args.append(max_age_sec)
+        cur.execute(sql, args)
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return row[0] if row else None
+    except Exception as e:
+        print(f"cache read failed {key}: {e}")
+        return None
+
+
+def cache_put(key, payload):
+    try:
+        conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=5)
+        cur = conn.cursor()
+        cur.execute(
+            f"INSERT INTO {CACHE_SCHEMA}.crm_json_cache (cache_key, payload, updated_at) "
+            "VALUES (%s, %s, now()) ON CONFLICT (cache_key) DO UPDATE "
+            "SET payload = EXCLUDED.payload, updated_at = now()",
+            (key, json.dumps(payload, ensure_ascii=False)),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"cache write failed {key}: {e}")
+
+
+def cached_crm(key, fresh_sec, loader, ok=lambda v: bool(v)):
+    """Свежий кэш → CRM → при отказе CRM последний сохранённый ответ."""
+    hit = cache_get(key, fresh_sec)
+    if hit is not None:
+        return hit
+    try:
+        val = loader()
+    except Exception as e:
+        print(f"crm load failed {key}: {e}")
+        val = None
+    if val is not None and ok(val):
+        cache_put(key, val)
+        return val
+    stale = cache_get(key)
+    if stale is not None:
+        return stale
+    if val is None:
+        raise RuntimeError(f"CRM недоступна: {key}")
+    return val
+
+
 HW_START_DATE = "2026-06-01"
 
 
@@ -164,10 +244,22 @@ def get_headers(token: str = None) -> dict:
     return h
 
 
+_TOKEN = {"value": None, "at": 0.0}
+
+
 def get_token() -> str:
+    """Токен S20 API; в тёплом экземпляре живёт 10 минут — меньше логинов в CRM."""
+    if _TOKEN["value"] and time.time() - _TOKEN["at"] < 600:
+        return _TOKEN["value"]
+    _TOKEN["value"] = _login_token()
+    _TOKEN["at"] = time.time()
+    return _TOKEN["value"]
+
+
+def _login_token() -> str:
     """Получить токен авторизации S20 API"""
     url = f"{S20_HOST}/v2api/auth/login"
-    resp = requests.post(url, json={
+    resp = crm_post(url, json={
         "email": S20_EMAIL,
         "api_key": os.environ["S20_API_KEY"],
     }, headers=get_headers())
@@ -191,7 +283,7 @@ def get_lessons(token: str, date_from: str, date_to: str, status=None) -> list:
         if status is not None:
             # AlfaCRM ждёт целое число статуса (1=запланирован, 2=отменён, 3=проведён)
             payload["status"] = status
-        resp = requests.post(url, json=payload, headers=get_headers(token))
+        resp = crm_post(url, json=payload, headers=get_headers(token))
         resp.raise_for_status()
         data = resp.json()
         items = data.get("items", [])
@@ -202,17 +294,20 @@ def get_lessons(token: str, date_from: str, date_to: str, status=None) -> list:
     return all_items
 
 
-def get_lessons_all_statuses(token: str, date_from: str, date_to: str) -> list:
+def get_lessons_all_statuses(token: str, date_from: str, date_to: str, strict: bool = False) -> list:
     """Получить занятия по всем статусам.
     S20 lesson/index по умолчанию возвращает только status=3 (проведённые).
     Чтобы получить запланированные — делаем отдельные запросы по каждому статусу и склеиваем."""
     seen = set()
     out = []
+    failed = []
 
     def _one(status_arg):
         try:
             return get_lessons(token, date_from, date_to, status=status_arg)
-        except Exception:
+        except Exception as e:
+            print(f"lessons fetch failed (status={status_arg}): {e}")
+            failed.append(status_arg)
             return []
 
     with ThreadPoolExecutor(max_workers=3) as pool:
@@ -224,12 +319,14 @@ def get_lessons_all_statuses(token: str, date_from: str, date_to: str) -> list:
                 continue
             seen.add(lid)
             out.append(ls)
+    if strict and failed:
+        raise RuntimeError(f"lessons incomplete: statuses {failed}")
     return out
 
 
-def get_groups(token: str) -> list:
+def _get_groups_raw(token: str) -> list:
     url = f"{S20_HOST}/v2api/1/group/index"
-    resp = requests.post(url, json={"page": 0, "pageSize": 200, "is_active": 1},
+    resp = crm_post(url, json={"page": 0, "pageSize": 200, "is_active": 1},
                          headers=get_headers(token))
     resp.raise_for_status()
     return resp.json().get("items", [])
@@ -331,9 +428,9 @@ def filter_lessons_by_groups(lessons: list, gfilter: dict) -> list:
     return out
 
 
-def get_teachers(token: str) -> list:
+def _get_teachers_raw(token: str) -> list:
     url = f"{S20_HOST}/v2api/1/teacher/index"
-    resp = requests.post(url, json={"page": 0, "pageSize": 100}, headers=get_headers(token))
+    resp = crm_post(url, json={"page": 0, "pageSize": 100}, headers=get_headers(token))
     resp.raise_for_status()
     return resp.json().get("items", [])
 
@@ -351,7 +448,7 @@ def _fetch_customers_raw(token: str, is_study=None, removed=None) -> list:
             payload["is_study"] = is_study
         if removed is not None:
             payload["removed"] = removed
-        resp = requests.post(url, json=payload, headers=get_headers(token))
+        resp = crm_post(url, json=payload, headers=get_headers(token))
         resp.raise_for_status()
         data = resp.json()
         items = data.get("items", [])
@@ -362,7 +459,7 @@ def _fetch_customers_raw(token: str, is_study=None, removed=None) -> list:
     return all_items
 
 
-def get_customers(token: str) -> list:
+def _get_customers_raw(token: str) -> list:
     """Лёгкий список клиентов: id, name, dob, is_study, study_status_id.
     Берём ВСЕХ — учеников (is_study=1), лидов (is_study=0) и ушедших (removed=1) —
     чтобы в расписании отображать имена для каждого id."""
@@ -405,13 +502,32 @@ def get_customers(token: str) -> list:
     return light
 
 
+
+def get_groups(token: str) -> list:
+    return cached_crm("groups", 600, lambda: _get_groups_raw(token))
+
+
+def get_teachers(token: str) -> list:
+    return cached_crm("teachers", 600, lambda: _get_teachers_raw(token))
+
+
+def get_customers(token: str) -> list:
+    # Список клиентов из 4 выборок: если CRM отказала в части из них,
+    # неполный список не сохраняем — берём прошлый полный.
+    prev = cache_get("customers") or []
+    return cached_crm(
+        "customers", 600, lambda: _get_customers_raw(token),
+        ok=lambda v: len(v) >= len(prev) * 0.9,
+    )
+
+
 def get_regular_lessons(token: str, teacher_ids: list) -> list:
     url = f"{S20_HOST}/v2api/1/regular-lesson/index"
     all_items = []
     for teacher_id in teacher_ids:
         page = 0
         while True:
-            resp = requests.post(url, json={
+            resp = crm_post(url, json={
                 "teacher_id": teacher_id,
                 "page": page,
                 "pageSize": 200,
@@ -1130,6 +1246,223 @@ def _hw_table(params, cors_headers):
     return _hw_json(200, {"students": result, "month": month, "months": available}, cors_headers)
 
 
+def _groups_week(token: str, date_from: str, date_to: str):
+    """Неделя групп из CRM: строки со свободными местами. None — CRM не ответила."""
+    MAX_GROUP_SIZE = 6
+    # Все справочники S20 тянем параллельно: последовательно функция
+    # не укладывается в лимит времени и страница брони получает ошибку.
+    try:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            f_lessons = pool.submit(get_lessons_all_statuses, token, date_from, date_to, True)
+            f_groups = pool.submit(get_groups, token)
+            f_teachers = pool.submit(get_teachers, token)
+            f_customers = pool.submit(get_customers, token)
+            teachers = f_teachers.result()
+            raw_groups = f_groups.result()
+            crm_failed = False
+            try:
+                lessons = f_lessons.result()
+            except Exception as e:
+                # Часть занятий CRM не отдала — повторяем мягко, без кэширования
+                print(f"groups_week lessons: {e}")
+                crm_failed = True
+                lessons = get_lessons_all_statuses(token, date_from, date_to)
+    except Exception as e:
+        print(f"groups_week S20 fetch failed: {e}")
+        return None
+
+    periods = {}
+    service = set()
+    group_names = {}
+    for g in raw_groups:
+        gid = g.get("id")
+        if gid is None:
+            continue
+        group_names[gid] = (g.get("name") or "").strip()
+        if _is_service_group(g.get("name") or ""):
+            service.add(gid)
+        periods[gid] = {
+            "b_date": _parse_group_date(g.get("b_date")),
+            "e_date": _parse_group_date(g.get("e_date")),
+        }
+    lessons = filter_lessons_by_groups(lessons, {"periods": periods, "service": service})
+
+    teacher_short = {}
+    for t in teachers:
+        tid = t.get("id")
+        full = (t.get("name") or "").strip()
+        parts = full.split()
+        if not parts:
+            teacher_short[tid] = f"#{tid}"
+        elif len(parts) == 1:
+            teacher_short[tid] = parts[0]
+        else:
+            teacher_short[tid] = f"{parts[0]} {parts[1][0]}."
+
+    rows: dict = {}
+    # Страница брони смотрит несколько недель подряд, но ячейки строк
+    # ключуются днём недели: без разбивки недели затирают друг друга.
+    # Поэтому параллельно собираем те же строки отдельно по неделям —
+    # так родителю хватает ОДНОГО запроса вместо четырёх.
+    week_rows: dict = {}
+
+    def _week_key(d_obj):
+        try:
+            base = datetime.strptime(date_from, "%Y-%m-%d").date()
+        except Exception:
+            return 0
+        return max(0, (d_obj - base).days // 7)
+
+    for lesson in lessons:
+        # Те же правила, что в админке «Расписание → Группы»: только
+        # групповые занятия, запланированные (1) и проведённые (3)
+        if lesson.get("lesson_type_id") != 2:
+            continue
+        if lesson.get("status") not in (1, 3):
+            continue
+
+        lesson_date = (lesson.get("date") or "")[:10]
+        if not lesson_date:
+            continue
+        try:
+            d = datetime.strptime(lesson_date, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        weekday = d.weekday()
+        wk = _week_key(d)
+
+        time_from = lesson.get("time_from") or ""
+        if " " in time_from:
+            time_from = time_from.split(" ")[-1]
+        time_from = time_from[:5]
+        if not time_from:
+            continue
+
+        tids = lesson.get("teacher_ids") or []
+        if not tids:
+            continue
+        teacher_id = int(tids[0])
+
+        details = lesson.get("details") or []
+        absent_ids = set()
+        if isinstance(details, list):
+            for d_item in details:
+                if isinstance(d_item, dict) and d_item.get("is_attend") == 0:
+                    cid = d_item.get("customer_id") or d_item.get("client_id")
+                    if cid is not None:
+                        absent_ids.add(cid)
+        students = set()
+        for key in ("customer_ids", "client_ids", "student_ids"):
+            for sid in lesson.get(key) or []:
+                if sid not in absent_ids:
+                    students.add(sid)
+        if isinstance(details, list):
+            for d_item in details:
+                if isinstance(d_item, dict) and d_item.get("is_attend") != 0:
+                    cid = d_item.get("customer_id") or d_item.get("client_id")
+                    if cid is not None:
+                        students.add(cid)
+        enrolled = len(students)
+        group_id = lesson.get("group_ids")
+        if isinstance(group_id, list):
+            group_id = group_id[0] if group_id else None
+
+        # В группировку входит и сама группа: у педагога в одно время
+        # могут идти две разные группы (например, «ВТ 14:00» и «ВТ 16:00»,
+        # если время занятий в CRM совпало). Без group_id они склеивались
+        # в одну строку, и вторая группа пропадала из расписания.
+        row_key = (time_from, teacher_id, group_id)
+        if row_key not in rows:
+            rows[row_key] = {
+                "time": time_from,
+                "teacher_id": teacher_id,
+                "teacher_name": teacher_short.get(teacher_id, f"#{teacher_id}"),
+                "cells": {},
+                "group_id": group_id,
+                "group_name": group_names.get(group_id, ""),
+            }
+        cell_data = {
+            "date": lesson_date,
+            "enrolled": enrolled,
+            "free": max(0, MAX_GROUP_SIZE - enrolled),
+            "lesson_id": lesson.get("id"),
+            "student_ids": sorted(students),
+        }
+        cell = rows[row_key]["cells"].get(weekday)
+        if cell is None or enrolled > cell["enrolled"]:
+            rows[row_key]["cells"][weekday] = cell_data
+
+        wk_rows = week_rows.setdefault(wk, {})
+        if row_key not in wk_rows:
+            wk_rows[row_key] = {
+                "time": time_from,
+                "teacher_id": teacher_id,
+                "teacher_name": teacher_short.get(teacher_id, f"#{teacher_id}"),
+                "cells": {},
+                "group_id": group_id,
+                "group_name": group_names.get(group_id, ""),
+            }
+        w_cell = wk_rows[row_key]["cells"].get(weekday)
+        if w_cell is None or enrolled > w_cell["enrolled"]:
+            wk_rows[row_key]["cells"][weekday] = dict(cell_data)
+
+    out_rows = [
+        data
+        for _, data in sorted(
+            rows.items(),
+            key=lambda kv: (kv[0][0], kv[1]["teacher_name"], str(kv[1].get("group_name") or "")),
+        )
+    ]
+
+    # Возраст и имена учеников: возраст — чтобы показать родителю, для
+    # какого возраста группа; имена — чтобы бронирование не посчитало
+    # место дважды, если ребёнок из заявки уже заведён в CRM.
+    ages = {}
+    student_names = {}
+    try:
+        today_d = date.today()
+        for c in f_customers.result():
+            cid = c.get("id")
+            name = (c.get("name") or "").strip()
+            if name:
+                student_names[cid] = name
+            born = _parse_group_date(c.get("dob") or "")
+            if not born:
+                continue
+            years = today_d.year - born.year - (
+                (today_d.month, today_d.day) < (born.month, born.day)
+            )
+            if 0 < years < 100:
+                ages[cid] = years
+    except Exception as e:
+        print(f"groups_week ages failed: {e}")
+
+    result = {
+            "max_size": MAX_GROUP_SIZE,
+            "date_from": date_from,
+            "date_to": date_to,
+            "rows": out_rows,
+            "weeks": [
+                [
+                    data
+                    for _, data in sorted(
+                        (week_rows.get(w) or {}).items(),
+                        key=lambda kv: (
+                            kv[0][0],
+                            kv[1]["teacher_name"],
+                            str(kv[1].get("group_name") or ""),
+                        ),
+                    )
+                ]
+                for w in range(max(week_rows) + 1 if week_rows else 0)
+            ],
+            "student_ages": ages,
+            "student_names": student_names,
+        }
+    result["_crm_failed"] = crm_failed or not lessons
+    return result
+
+
 def handler(event: dict, context) -> dict:
     """Расписание S20: занятия, группы, педагоги, свободные слоты для записи"""
     cors_headers = {
@@ -1169,6 +1502,15 @@ def handler(event: dict, context) -> dict:
     try:
         token = get_token()
     except Exception as e:
+        # Неделю групп можем отдать из сохранённого ответа и без CRM
+        if mode == "groups_week":
+            stale = cache_get(f"groups_week:{date_from}:{date_to}")
+            if stale is not None:
+                return {
+                    "statusCode": 200,
+                    "headers": {**cors_headers, "Content-Type": "application/json"},
+                    "body": json.dumps(stale, ensure_ascii=False),
+                }
         return {
             "statusCode": 502,
             "headers": {**cors_headers, "Content-Type": "application/json"},
@@ -1225,216 +1567,34 @@ def handler(event: dict, context) -> dict:
         }
 
     if mode == "groups_week":
-        MAX_GROUP_SIZE = 6
-        # Все справочники S20 тянем параллельно: последовательно функция
-        # не укладывается в лимит времени и страница брони получает ошибку.
-        try:
-            with ThreadPoolExecutor(max_workers=4) as pool:
-                f_lessons = pool.submit(get_lessons_all_statuses, token, date_from, date_to)
-                f_groups = pool.submit(get_groups, token)
-                f_teachers = pool.submit(get_teachers, token)
-                f_customers = pool.submit(get_customers, token)
-                lessons = f_lessons.result()
-                teachers = f_teachers.result()
-                raw_groups = f_groups.result()
-        except Exception as e:
+        # Готовый ответ за этот период держим 3 минуты: страницу брони и
+        # расписание открывают часто, а CRM ограничивает частоту запросов.
+        gw_key = f"groups_week:{date_from}:{date_to}"
+        gw_hit = cache_get(gw_key, 180)
+        if gw_hit is not None:
+            return {
+                "statusCode": 200,
+                "headers": {**cors_headers, "Content-Type": "application/json"},
+                "body": json.dumps(gw_hit, ensure_ascii=False),
+            }
+        gw = _groups_week(token, date_from, date_to)
+        # CRM отказала (пусто или ошибка) — отдаём последний удачный ответ
+        if gw is None or gw.get("_crm_failed"):
+            stale = cache_get(gw_key)
+            if stale is not None:
+                gw = stale
+        if gw is None:
             return {
                 "statusCode": 502,
                 "headers": {**cors_headers, "Content-Type": "application/json"},
-                "body": json.dumps({"error": f"S20 fetch failed: {str(e)}"}, ensure_ascii=False),
+                "body": json.dumps({"error": "S20 fetch failed"}, ensure_ascii=False),
             }
-
-        periods = {}
-        service = set()
-        group_names = {}
-        for g in raw_groups:
-            gid = g.get("id")
-            if gid is None:
-                continue
-            group_names[gid] = (g.get("name") or "").strip()
-            if _is_service_group(g.get("name") or ""):
-                service.add(gid)
-            periods[gid] = {
-                "b_date": _parse_group_date(g.get("b_date")),
-                "e_date": _parse_group_date(g.get("e_date")),
-            }
-        lessons = filter_lessons_by_groups(lessons, {"periods": periods, "service": service})
-
-        teacher_short = {}
-        for t in teachers:
-            tid = t.get("id")
-            full = (t.get("name") or "").strip()
-            parts = full.split()
-            if not parts:
-                teacher_short[tid] = f"#{tid}"
-            elif len(parts) == 1:
-                teacher_short[tid] = parts[0]
-            else:
-                teacher_short[tid] = f"{parts[0]} {parts[1][0]}."
-
-        rows: dict = {}
-        # Страница брони смотрит несколько недель подряд, но ячейки строк
-        # ключуются днём недели: без разбивки недели затирают друг друга.
-        # Поэтому параллельно собираем те же строки отдельно по неделям —
-        # так родителю хватает ОДНОГО запроса вместо четырёх.
-        week_rows: dict = {}
-
-        def _week_key(d_obj):
-            try:
-                base = datetime.strptime(date_from, "%Y-%m-%d").date()
-            except Exception:
-                return 0
-            return max(0, (d_obj - base).days // 7)
-
-        for lesson in lessons:
-            # Те же правила, что в админке «Расписание → Группы»: только
-            # групповые занятия, запланированные (1) и проведённые (3)
-            if lesson.get("lesson_type_id") != 2:
-                continue
-            if lesson.get("status") not in (1, 3):
-                continue
-
-            lesson_date = (lesson.get("date") or "")[:10]
-            if not lesson_date:
-                continue
-            try:
-                d = datetime.strptime(lesson_date, "%Y-%m-%d").date()
-            except Exception:
-                continue
-            weekday = d.weekday()
-            wk = _week_key(d)
-
-            time_from = lesson.get("time_from") or ""
-            if " " in time_from:
-                time_from = time_from.split(" ")[-1]
-            time_from = time_from[:5]
-            if not time_from:
-                continue
-
-            tids = lesson.get("teacher_ids") or []
-            if not tids:
-                continue
-            teacher_id = int(tids[0])
-
-            details = lesson.get("details") or []
-            absent_ids = set()
-            if isinstance(details, list):
-                for d_item in details:
-                    if isinstance(d_item, dict) and d_item.get("is_attend") == 0:
-                        cid = d_item.get("customer_id") or d_item.get("client_id")
-                        if cid is not None:
-                            absent_ids.add(cid)
-            students = set()
-            for key in ("customer_ids", "client_ids", "student_ids"):
-                for sid in lesson.get(key) or []:
-                    if sid not in absent_ids:
-                        students.add(sid)
-            if isinstance(details, list):
-                for d_item in details:
-                    if isinstance(d_item, dict) and d_item.get("is_attend") != 0:
-                        cid = d_item.get("customer_id") or d_item.get("client_id")
-                        if cid is not None:
-                            students.add(cid)
-            enrolled = len(students)
-            group_id = lesson.get("group_ids")
-            if isinstance(group_id, list):
-                group_id = group_id[0] if group_id else None
-
-            # В группировку входит и сама группа: у педагога в одно время
-            # могут идти две разные группы (например, «ВТ 14:00» и «ВТ 16:00»,
-            # если время занятий в CRM совпало). Без group_id они склеивались
-            # в одну строку, и вторая группа пропадала из расписания.
-            row_key = (time_from, teacher_id, group_id)
-            if row_key not in rows:
-                rows[row_key] = {
-                    "time": time_from,
-                    "teacher_id": teacher_id,
-                    "teacher_name": teacher_short.get(teacher_id, f"#{teacher_id}"),
-                    "cells": {},
-                    "group_id": group_id,
-                    "group_name": group_names.get(group_id, ""),
-                }
-            cell_data = {
-                "date": lesson_date,
-                "enrolled": enrolled,
-                "free": max(0, MAX_GROUP_SIZE - enrolled),
-                "lesson_id": lesson.get("id"),
-                "student_ids": sorted(students),
-            }
-            cell = rows[row_key]["cells"].get(weekday)
-            if cell is None or enrolled > cell["enrolled"]:
-                rows[row_key]["cells"][weekday] = cell_data
-
-            wk_rows = week_rows.setdefault(wk, {})
-            if row_key not in wk_rows:
-                wk_rows[row_key] = {
-                    "time": time_from,
-                    "teacher_id": teacher_id,
-                    "teacher_name": teacher_short.get(teacher_id, f"#{teacher_id}"),
-                    "cells": {},
-                    "group_id": group_id,
-                    "group_name": group_names.get(group_id, ""),
-                }
-            w_cell = wk_rows[row_key]["cells"].get(weekday)
-            if w_cell is None or enrolled > w_cell["enrolled"]:
-                wk_rows[row_key]["cells"][weekday] = dict(cell_data)
-
-        out_rows = [
-            data
-            for _, data in sorted(
-                rows.items(),
-                key=lambda kv: (kv[0][0], kv[1]["teacher_name"], str(kv[1].get("group_name") or "")),
-            )
-        ]
-
-        # Возраст и имена учеников: возраст — чтобы показать родителю, для
-        # какого возраста группа; имена — чтобы бронирование не посчитало
-        # место дважды, если ребёнок из заявки уже заведён в CRM.
-        ages = {}
-        student_names = {}
-        try:
-            today_d = date.today()
-            for c in f_customers.result():
-                cid = c.get("id")
-                name = (c.get("name") or "").strip()
-                if name:
-                    student_names[cid] = name
-                born = _parse_group_date(c.get("dob") or "")
-                if not born:
-                    continue
-                years = today_d.year - born.year - (
-                    (today_d.month, today_d.day) < (born.month, born.day)
-                )
-                if 0 < years < 100:
-                    ages[cid] = years
-        except Exception as e:
-            print(f"groups_week ages failed: {e}")
-
+        if not gw.pop("_crm_failed", False):
+            cache_put(gw_key, gw)
         return {
             "statusCode": 200,
             "headers": {**cors_headers, "Content-Type": "application/json"},
-            "body": json.dumps({
-                "max_size": MAX_GROUP_SIZE,
-                "date_from": date_from,
-                "date_to": date_to,
-                "rows": out_rows,
-                "weeks": [
-                    [
-                        data
-                        for _, data in sorted(
-                            (week_rows.get(w) or {}).items(),
-                            key=lambda kv: (
-                                kv[0][0],
-                                kv[1]["teacher_name"],
-                                str(kv[1].get("group_name") or ""),
-                            ),
-                        )
-                    ]
-                    for w in range(max(week_rows) + 1 if week_rows else 0)
-                ],
-                "student_ages": ages,
-                "student_names": student_names,
-            }, ensure_ascii=False),
+            "body": json.dumps(gw, ensure_ascii=False),
         }
 
     if mode == "teachers":
