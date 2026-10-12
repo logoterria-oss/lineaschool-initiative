@@ -199,10 +199,14 @@ def _mark_in_crm(rows: list) -> None:
     groups = [b for b in rows if b.get('lessonType') == 'groups']
     if not groups:
         return
-    dates = [b['date'] for b in groups if b.get('date')]
-    if not dates:
+    # Берём только текущую и следующую неделю: длинный период (с самой
+    # старой брони до самой дальней) расписание не отдаёт — падает с 502,
+    # и тогда все брони дублировали учеников, уже заведённых в CRM.
+    monday = date.today() - timedelta(days=date.today().weekday())
+    df, dt = monday.isoformat(), (monday + timedelta(days=13)).isoformat()
+    week = _fetch_group_rows(df, dt) or _fetch_group_rows(df, dt)
+    if not week:
         return
-    week = _fetch_group_rows(min(dates), max(dates))
     names = {int(k): v for k, v in (week.get('student_names') or {}).items()}
 
     # (день недели, время, педагог) → имена учеников группы в CRM

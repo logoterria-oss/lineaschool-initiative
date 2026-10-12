@@ -22,6 +22,7 @@ import {
   ageRangeLabel,
 } from './types';
 import { Booking, bookingHoldsSlot, fetchBookings } from '@/lib/bookingsApi';
+import { sameChild } from '@/lib/childName';
 
 const GroupsTab = () => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
@@ -266,6 +267,9 @@ const GroupsTab = () => {
                 // Бронь показываем один раз: если у педагога в это время две
                 // группы, она уходит в первую из них
                 const usedBookings = new Set<number>();
+                const weekNames = groupsData.rows.flatMap((r) =>
+                  Object.values(r.cells).flatMap((c) => (c?.student_ids || []).map((id) => customers[id]?.name || '')),
+                ).filter(Boolean);
                 return (
                   <div
                     key={day}
@@ -282,7 +286,11 @@ const GroupsTab = () => {
                       // Список уже очищен от тех, кого завели в CRM.
                       const booked = groupBookings.filter((b) => {
                         if (usedBookings.has(b.id)) return false;
+                        // Ребёнок уже стоит в расписании этой недели — бронь не дублируем
+                        if (weekNames.some((nm) => sameChild(b.childName, nm))) return false;
+                        // Бронь на будущую дату не занимает место в более ранних неделях
                         const mine =
+                          (b.date || '') <= fmtDate(addDays(weekStart, 6)) &&
                           b.timeFrom.slice(0, 5) === row.time &&
                           Number(b.teacherId) === row.teacher_id &&
                           new Date(`${b.date}T00:00:00`).getDay() === (day + 1) % 7;
