@@ -246,7 +246,13 @@ export const invalidateStudentsCache = (): void => {
 };
 
 const loadStudents = async (): Promise<StudentRow[]> => {
-  const res = await fetch(`${API_URL}?mode=list`);
+  let res = await fetch(`${API_URL}?mode=list`);
+  // CRM иногда отвечает «слишком много запросов» — повторяем пару раз
+  for (const wait of [2000, 5000]) {
+    if (res.ok || res.status < 500) break;
+    await new Promise((r) => setTimeout(r, wait));
+    res = await fetch(`${API_URL}?mode=list`);
+  }
   if (!res.ok) throw new Error('Не удалось загрузить учеников');
   const data = await res.json();
   const items = (data.items as StudentRow[]) || [];

@@ -46,6 +46,27 @@ def db():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
+import threading
+import time
+
+# CRM ограничивает частоту запросов (429 Too Many Requests). Без ограничения
+# параллельности и повторов список учеников падал по таймауту целиком.
+_CRM_SLOTS = threading.Semaphore(4)
+
+
+def crm_post(url, json=None, headers=None, timeout=20):
+    """POST в CRM: не больше 4 запросов одновременно, при 429 — пауза и повтор."""
+    resp = None
+    for delay in (0, 1, 2, 4):
+        if delay:
+            time.sleep(delay)
+        with _CRM_SLOTS:
+            resp = requests.post(url, json=json, headers=headers, timeout=timeout)
+        if resp.status_code != 429:
+            return resp
+    return resp
+
+
 def get_headers(token=None):
     h = {
         "X-APP-KEY": os.environ["S20_X_APP_KEY"],
@@ -59,7 +80,7 @@ def get_headers(token=None):
 
 def get_token():
     url = f"{S20_HOST}/v2api/auth/login"
-    resp = requests.post(url, json={
+    resp = crm_post(url, json={
         "email": S20_EMAIL,
         "api_key": os.environ["S20_API_KEY"],
     }, headers=get_headers(), timeout=20)
@@ -69,7 +90,7 @@ def get_token():
 
 def get_study_statuses(token):
     url = f"{S20_HOST}/v2api/1/study-status/index"
-    resp = requests.post(url, json={"page": 0, "pageSize": 200},
+    resp = crm_post(url, json={"page": 0, "pageSize": 200},
                          headers=get_headers(token), timeout=20)
     resp.raise_for_status()
     return resp.json().get("items", [])
@@ -205,7 +226,7 @@ def fetch_customers_raw(token, is_study=None, removed=None):
             payload["is_study"] = is_study
         if removed is not None:
             payload["removed"] = removed
-        resp = requests.post(url, json=payload, headers=get_headers(token), timeout=30)
+        resp = crm_post(url, json=payload, headers=get_headers(token), timeout=30)
         resp.raise_for_status()
         data = resp.json()
         items = data.get("items", [])
@@ -252,7 +273,7 @@ def get_lessons(token, date_from, date_to, status=3):
                    "page": page, "pageSize": page_size}
         if status is not None:
             payload["status"] = status
-        resp = requests.post(url, json=payload, headers=get_headers(token), timeout=30)
+        resp = crm_post(url, json=payload, headers=get_headers(token), timeout=30)
         resp.raise_for_status()
         return resp.json()
 
@@ -280,7 +301,7 @@ def get_tariffs(token):
     page = 0
     while True:
         try:
-            resp = requests.post(url, json={"page": page, "pageSize": 200},
+            resp = crm_post(url, json={"page": page, "pageSize": 200},
                                  headers=get_headers(token), timeout=20)
             if resp.status_code != 200:
                 break
@@ -308,10 +329,10 @@ def get_customer_tariffs(token, customer_id):
     page = 0
     while True:
         try:
-            resp = requests.post(url, json={"page": page, "pageSize": 100},
+            resp = crm_post(url, json={"page": page, "pageSize": 100},
                                  headers=get_headers(token), timeout=15)
             if resp.status_code != 200:
-                break
+                return None
             data = resp.json()
             items = data.get("items", [])
             all_items.extend(items)
@@ -320,24 +341,68 @@ def get_customer_tariffs(token, customer_id):
             page += 1
         except Exception as e:
             print(f"customer-tariff failed {customer_id}: {e}")
-            break
+            return None
     return all_items
 
 
+TARIFFS_FRESH_MIN = 20
+TARIFFS_REFRESH_LIMIT = 80
+
+
 def get_all_customer_tariffs(token, customer_ids):
-    """Абонементы всех клиентов параллельно -> {customer_id: [items]}."""
+    """Абонементы всех клиентов -> {customer_id: [items]}.
+
+    В CRM это отдельный запрос на каждого ребёнка (сотни запросов), и CRM
+    начинает отвечать «слишком много запросов». Поэтому храним последний
+    ответ в базе и за один заход обновляем не больше TARIFFS_REFRESH_LIMIT
+    самых старых записей. Новые клиенты загружаются в первую очередь.
+    """
     from concurrent.futures import ThreadPoolExecutor
-    out = {}
-    with ThreadPoolExecutor(max_workers=12) as ex:
-        futures = {ex.submit(get_customer_tariffs, token, cid): cid
-                   for cid in customer_ids}
-        for f in futures:
-            cid = futures[f]
-            try:
-                out[cid] = f.result()
-            except Exception:
-                out[cid] = []
-    return out
+    ids = [int(c) for c in customer_ids if c is not None]
+    cached, ages = {}, {}
+    try:
+        conn = db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            f"SELECT customer_id, items, EXTRACT(EPOCH FROM now() - updated_at) / 60 AS age "
+            f"FROM {SCHEMA}.crm_customer_tariffs_cache"
+        )
+        for r in cur.fetchall():
+            cached[r["customer_id"]] = r["items"] or []
+            ages[r["customer_id"]] = float(r["age"])
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"tariffs cache read failed: {e}")
+
+    stale = [cid for cid in ids if ages.get(cid, 1e9) > TARIFFS_FRESH_MIN]
+    stale.sort(key=lambda cid: -ages.get(cid, 1e9))
+    to_fetch = stale[:TARIFFS_REFRESH_LIMIT]
+
+    fresh = {}
+    if to_fetch:
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            for cid, items in zip(to_fetch, ex.map(lambda c: get_customer_tariffs(token, c), to_fetch)):
+                if items is not None:
+                    fresh[cid] = items
+    if fresh:
+        try:
+            conn = db()
+            cur = conn.cursor()
+            for cid, items in fresh.items():
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.crm_customer_tariffs_cache (customer_id, items, updated_at) "
+                    "VALUES (%s, %s, now()) ON CONFLICT (customer_id) DO UPDATE "
+                    "SET items = EXCLUDED.items, updated_at = now()",
+                    (cid, json.dumps(items, ensure_ascii=False)),
+                )
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"tariffs cache write failed: {e}")
+
+    return {cid: fresh.get(cid, cached.get(cid, [])) for cid in ids}
 
 
 def get_regular_lessons(token):
@@ -357,7 +422,7 @@ def get_regular_lessons(token):
     page = 0
     while True:
         try:
-            resp = requests.post(url, json={"page": page, "pageSize": 200},
+            resp = crm_post(url, json={"page": page, "pageSize": 200},
                                  headers=get_headers(token), timeout=25)
             if resp.status_code != 200:
                 break
@@ -1231,7 +1296,7 @@ def _push_city_to_crm(student_id, city, region, timezone):
     """
     url = "https://functions.poehali.dev/27be949a-2324-46cd-b3fa-f72058a31ddc"
     try:
-        resp = requests.post(url, json={
+        resp = crm_post(url, json={
             "customerId": student_id,
             "city": city,
             "region": region,
