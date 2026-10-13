@@ -330,7 +330,7 @@ def list_bookings(cur, params):
     return _resp(200, {'bookings': rows, 'newCount': cur.fetchone()['n']})
 
 
-def set_status(cur, body, me):
+def set_status(cur, body, me, notify_window: bool = True):
     status = body.get('status')
     if status not in STATUS_LABELS:
         return _resp(400, {'error': 'bad status'})
@@ -351,8 +351,9 @@ def set_status(cur, body, me):
             f"UPDATE {SCHEMA}.diag_slots SET booking_id = %s WHERE id = %s AND booking_id IS NULL",
             (bid, row['slot_id']),
         )
-    # Статус меняется и в карточке «Окна»
-    send_diag_hook(row, 'diag_booking_status')
+    # Статус меняется и в карточке «Окна». Если меняло само «Окно» — обратно не шлём
+    if notify_window:
+        send_diag_hook(row, 'diag_booking_status')
     return _resp(200, {'booking': _booking(row)})
 
 
@@ -403,6 +404,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not _service_ok(event):
                 return _resp(401, {'error': 'unauthorized'})
             return feed(cur, params)
+        # «Окно» подтверждает или отменяет запись из карточки в чате
+        if method == 'POST' and action == 'set-status' and _service_ok(event):
+            who = str(body.get('processedBy') or 'Окно взаимодействия').strip()[:200]
+            return set_status(cur, body, {'full_name': who}, notify_window=False)
 
         me = _me(cur, event)
         if not me or me['role'] not in ('head', 'admin'):

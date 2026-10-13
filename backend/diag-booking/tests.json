@@ -23,6 +23,16 @@
       "method": "GET",
       "path": "/?action=feed&status=new",
       "expectedStatus": 401
+    },
+    {
+      "name": "Set status without key or login",
+      "method": "POST",
+      "path": "/?action=set-status",
+      "body": {
+        "id": 1,
+        "status": "confirmed"
+      },
+      "expectedStatus": 401
     }
   ]
 }
