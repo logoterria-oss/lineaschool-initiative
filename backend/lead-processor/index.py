@@ -8,6 +8,7 @@ import os
 from typing import Dict, Any, Optional
 import requests
 from telegram_send import notify_all, get_recent_chats, bot_info
+from lead_hook import send_lead_hook, mark_lead_hook, lead_feed, service_key_ok, is_test_lead
 
 # Боты проекта: короткое имя -> переменная с токеном
 TG_BOTS = {
@@ -60,13 +61,15 @@ def recipients() -> list:
 
 def save_lead_to_db(parent_name: str, student_name: str, contact: str,
                     messengers: list = None, telegram: str = '',
-                    marketing_consent: bool = False, utm: dict = None):
-    """Сохраняет новую заявку в таблицу leads (для раздела 'Список лидов')."""
+                    marketing_consent: bool = False, utm: dict = None,
+                    notify_text: str = '') -> Optional[int]:
+    """Сохраняет новую заявку в таблицу leads (для раздела 'Список лидов').
+    Возвращает id лида — по нему «Окно» не дублирует уведомление."""
     utm = utm or {}
     dsn = os.environ.get('DATABASE_URL')
     if not dsn:
         print('DATABASE_URL not set - skip saving lead to db')
-        return
+        return None
     try:
         import psycopg2
         from datetime import datetime
@@ -84,16 +87,20 @@ def save_lead_to_db(parent_name: str, student_name: str, contact: str,
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO leads (parent_name, student_name, contact, request_date, "
-            "source, marketing_consent, " + ', '.join(UTM_FIELDS) + ") "
+            "source, marketing_consent, notify_text, " + ', '.join(UTM_FIELDS) + ") "
             f"VALUES ('{esc(parent_name)}', '{esc(student_name)}', '{esc(contact_full)}', "
             f"'{esc(req_date)}', 'site', {'TRUE' if marketing_consent else 'FALSE'}, "
-            + ', '.join(f"'{esc(utm.get(f, ''))}'" for f in UTM_FIELDS) + ")"
+            f"'{esc(notify_text)}', "
+            + ', '.join(f"'{esc(utm.get(f, ''))}'" for f in UTM_FIELDS) + ") RETURNING id"
         )
+        lead_id = cur.fetchone()[0]
         cur.close()
         conn.close()
-        print('✅ Lead saved to db')
+        print(f'✅ Lead saved to db: id={lead_id}')
+        return lead_id
     except Exception as e:
         print(f'Failed to save lead to db: {str(e)}')
+        return None
 
 def normalize_dob(raw: str) -> str:
     """Дата рождения ребёнка в DD.MM.YYYY. «07.08.13» → «07.08.2013». Непонятную дату не отправляем."""
@@ -240,25 +247,11 @@ def send_to_alfacrm(name: str, phone: str, email: str = '', note: str = '',
         print(f'AlfaCRM integration error: {str(e)}')
         return None
 
-def send_telegram_notification(child_name: str, parent_name: str, child_birth_date: str, 
-                               telegram: str, phone: str, email: str = '', 
-                               date: str = '', time: str = '', messengers: list = None,
-                               marketing_consent: bool = False, ad_source: str = ''):
-    bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
-    chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
-    
-    print(f'=== TELEGRAM NOTIFICATION ===')
-    print(f'Bot token configured: {bool(bot_token)}, length: {len(bot_token) if bot_token else 0}')
-    print(f'Chat ID: {chat_id}')
-    
-    if not bot_token:
-        print('No bot token configured')
-        return
-    
-    if not chat_id:
-        print('No chat_id configured - skipping notification')
-        return
-    
+def build_lead_message(child_name: str, parent_name: str, child_birth_date: str,
+                       telegram: str, phone: str, email: str = '',
+                       date: str = '', time: str = '', messengers: list = None,
+                       marketing_consent: bool = False, ad_source: str = '') -> str:
+    """Текст уведомления о новом лиде — один и тот же для Telegram и «Окна»."""
     # Формируем сообщение с полными данными
     message_parts = ["🎓 Новая запись на диагностику:"]
     
@@ -287,6 +280,31 @@ def send_telegram_notification(child_name: str, parent_name: str, child_birth_da
         message_parts.append(f"\n🎯 Кампания: {ad_source}")
 
     message = ''.join(message_parts)
+    return message
+
+
+def send_telegram_notification(child_name: str, parent_name: str, child_birth_date: str, 
+                               telegram: str, phone: str, email: str = '', 
+                               date: str = '', time: str = '', messengers: list = None,
+                               marketing_consent: bool = False, ad_source: str = ''):
+    bot_token = os.environ.get('TELEGRAM_LEADS_BOT_TOKEN')
+    chat_id = os.environ.get('TELEGRAM_ADMIN_CHAT_ID')
+    
+    print(f'=== TELEGRAM NOTIFICATION ===')
+    print(f'Bot token configured: {bool(bot_token)}, length: {len(bot_token) if bot_token else 0}')
+    print(f'Chat ID: {chat_id}')
+    
+    if not bot_token:
+        print('No bot token configured')
+        return
+    
+    if not chat_id:
+        print('No chat_id configured - skipping notification')
+        return
+    
+    message = build_lead_message(child_name, parent_name, child_birth_date, telegram,
+                                 phone, email, date, time, messengers,
+                                 marketing_consent, ad_source)
     
     recipient_ids = recipients()
     # Отправляем через перебор адресов Telegram: DNS отдаёт несколько IP,
@@ -319,6 +337,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
+        # Страховочная выгрузка для «Окна»: лиды, уведомление о которых не дошло
+        if params.get('action') == 'feed':
+            if not service_key_ok(event):
+                return {'statusCode': 401, 'headers': {'Content-Type': 'application/json'},
+                        'body': json.dumps({'error': 'unauthorized'})}
+            return {'statusCode': 200, 'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps(lead_feed(params.get('status') or 'new'), ensure_ascii=False)}
+
         # Кто недавно писал боту — чтобы узнать chat_id нового администратора
         if params.get('action') == 'recent-chats':
             token_env = TG_BOTS.get(params.get('bot') or 'payment')
@@ -479,8 +505,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Сохранение в таблицу лидов (раздел 'Список лидов' у руководителя).
         # В режиме «только CRM» пропускаем: лид в базе уже есть.
+        notify_text = build_lead_message(
+            child_name, parent_name, child_birth_date, telegram_username, phone,
+            email, date, time, messengers, marketing_consent, ad_source,
+        )
+        lead_id = None
         if not crm_only:
-            save_lead_to_db(
+            lead_id = save_lead_to_db(
                 parent_name=parent_name,
                 student_name=child_name,
                 contact=phone,
@@ -488,7 +519,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 telegram=telegram_username,
                 marketing_consent=marketing_consent,
                 utm=utm,
+                notify_text=notify_text,
             )
+
+        # Уведомление о новом лиде в «Окно взаимодействия». Тестовые заявки
+        # не шлём. Не дошло — «Окно» заберёт лид из ?action=feed&status=new.
+        if lead_id and not is_test_lead(parent_name, child_name, phone):
+            hook = send_lead_hook({
+                'id': lead_id, 'parent_name': parent_name, 'student_name': child_name,
+                'phone': phone, 'telegram': telegram_username, 'notify_text': notify_text,
+            })
+            mark_lead_hook(lead_id, hook)
 
         # Отправка в Telegram. Никогда не роняем запрос из-за проблем с Telegram:
         # заявка уже сохранена в CRM и в БД, поэтому уведомление — best effort.

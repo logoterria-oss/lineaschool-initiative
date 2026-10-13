@@ -32,6 +32,12 @@
         "success": true
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Feed without service key",
+      "method": "GET",
+      "path": "/?action=feed",
+      "expectedStatus": 401
     }
   ]
 }
