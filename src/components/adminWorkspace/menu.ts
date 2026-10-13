@@ -45,3 +45,19 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     ],
   },
 ];
+/**
+ * Разделы, открытые отдельным администраторам сверх общего меню.
+ * Ключ — id сотрудника в таблице staff.
+ */
+const PERSONAL_ITEMS: Record<number, AdminItem[]> = {
+  // Хорунжева Анна
+  14: [{ id: 'questionnaires', label: 'Анкеты родителей', kind: 'component', icon: 'ClipboardList' }],
+};
+
+/** Меню конкретного администратора: общее + личные разделы после расписания */
+export const adminMenuFor = (staffId?: number | null): AdminItem[] => {
+  const extra = (staffId && PERSONAL_ITEMS[staffId]) || [];
+  if (!extra.length) return ADMIN_MENU;
+  const at = ADMIN_MENU.findIndex((i) => i.id === 'schedule') + 1;
+  return [...ADMIN_MENU.slice(0, at), ...extra, ...ADMIN_MENU.slice(at)];
+};

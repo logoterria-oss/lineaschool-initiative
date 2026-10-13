@@ -4,7 +4,7 @@ import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
 import { logoutStaff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
 import { useRoleGuard } from '@/lib/useRoleGuard';
-import { ADMIN_MENU, ADMIN_GROUPS, AdminItem } from '@/components/adminWorkspace/menu';
+import { adminMenuFor, ADMIN_GROUPS, AdminItem } from '@/components/adminWorkspace/menu';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
 import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
@@ -17,6 +17,7 @@ import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import PayLinksView from '@/components/headWorkspace/PayLinksView';
+import QuestionnairesView from '@/components/headWorkspace/QuestionnairesView';
 import LeadsSection from '@/components/diagBooking/LeadsSection';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
@@ -49,6 +50,7 @@ const AdminWorkspace = () => {
     setOpenGroups((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
 
   const fullName = me?.full_name || 'Сотрудник';
+  const menu = useMemo(() => adminMenuFor(me?.id), [me?.id]);
   const role = (me?.role || null) as StaffRole | null;
 
   const onLogout = async () => {
@@ -67,6 +69,7 @@ const AdminWorkspace = () => {
       case 'schedule': return <ScheduleView currentUser={fullName} />;
       case 'payments-status': return <PaymentsStatusView />;
       case 'pay-links': return <PayLinksView />;
+      case 'questionnaires': return <QuestionnairesView />;
       case 'interactions': return <InteractionsView />;
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;
@@ -185,7 +188,7 @@ const AdminWorkspace = () => {
       <OnShiftHint admins={onShift} collapsed={collapsed} />
 
       <nav className="bg-white rounded-2xl border border-gray-200 shadow-sm p-2">
-        {ADMIN_MENU.map((item) => {
+        {menu.map((item) => {
           const isActive = active?.id === item.id;
           return (
             <button
