@@ -172,10 +172,10 @@ export const fetchDiagCoverage = async (): Promise<DiagCoverage | null> => {
   return data.today ? data : null;
 };
 
+/** У каждого дня — свой набор времён */
 export const addDiagSlots = async (
-  dates: string[],
-  times: { from: string; to: string }[],
-): Promise<{ ok?: boolean; added?: number; error?: string }> => post('add-slots', { dates, times });
+  days: { date: string; times: { from: string; to: string }[] }[],
+): Promise<{ ok?: boolean; added?: number; error?: string }> => post('add-slots', { days });
 
 export const deleteDiagSlot = async (id: number): Promise<{ ok?: boolean; error?: string }> =>
   fetch(`${DIAG_BOOKING_URL}?action=delete-slot&id=${id}`, {

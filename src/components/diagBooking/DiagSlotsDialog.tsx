@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import { Calendar } from '@/components/ui/calendar';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import DayTimesEditor, { TimeRow } from './DayTimesEditor';
 import {
   DiagCoverage,
   DiagSlot,
@@ -14,18 +14,6 @@ import {
   fetchDiagAdminSlots,
   notifyDiagSlotsChanged,
 } from '@/lib/diagBookingApi';
-
-interface TimeRow {
-  from: string;
-  to: string;
-}
-
-/** «10:00» + 60 минут → «11:00» */
-const plusHour = (t: string) => {
-  const [h, m] = t.split(':').map(Number);
-  if (Number.isNaN(h)) return '';
-  return `${String(Math.min(h + 1, 23)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
-};
 
 const isoOf = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -36,7 +24,9 @@ const startOfToday = () => {
   return d;
 };
 
-const ruShort = (d: Date) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short' });
+const ruDay = (d: Date) => d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+
+const DEFAULT_TIMES: TimeRow[] = [{ from: '10:00', to: '11:00' }];
 
 /** Руководитель заводит окна для диагностик на конкретные даты */
 const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
@@ -45,7 +35,8 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
   const [coverage, setCoverage] = useState<DiagCoverage | null>(null);
   const [loading, setLoading] = useState(true);
   const [dates, setDates] = useState<Date[]>([]);
-  const [rows, setRows] = useState<TimeRow[]>([{ from: '10:00', to: '11:00' }]);
+  // У каждого дня свой набор времён: ключ — дата YYYY-MM-DD
+  const [times, setTimes] = useState<Record<string, TimeRow[]>>({});
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -66,14 +57,19 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
     return [...map.entries()];
   }, [slots]);
 
-  const setRow = (i: number, patch: Partial<TimeRow>) =>
-    setRows((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const sortedDates = useMemo(() => [...dates].sort((a, b) => a.getTime() - b.getTime()), [dates]);
+  const timesOf = (d: Date) => times[isoOf(d)] || DEFAULT_TIMES;
+  const setTimesOf = (d: Date, rows: TimeRow[]) => setTimes((prev) => ({ ...prev, [isoOf(d)]: rows }));
+  const removeDay = (d: Date) => setDates((prev) => prev.filter((x) => isoOf(x) !== isoOf(d)));
+  const total = sortedDates.reduce((n, d) => n + timesOf(d).filter((r) => r.from && r.to).length, 0);
 
   const save = async () => {
-    const times = rows.filter((r) => r.from && r.to);
-    if (dates.length === 0 || times.length === 0) return;
+    const days = sortedDates
+      .map((d) => ({ date: isoOf(d), times: timesOf(d).filter((r) => r.from && r.to) }))
+      .filter((d) => d.times.length > 0);
+    if (days.length === 0) return;
     setSaving(true);
-    const res = await addDiagSlots(dates.map(isoOf), times);
+    const res = await addDiagSlots(days);
     setSaving(false);
     if (!res.ok) {
       toast({ title: 'Не сохранилось', description: res.error || 'Попробуйте ещё раз', variant: 'destructive' });
@@ -81,6 +77,7 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
     }
     toast({ title: `Добавлено окон: ${res.added ?? 0}` });
     setDates([]);
+    setTimes({});
     notifyDiagSlotsChanged();
     load();
   };
@@ -116,7 +113,7 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
         <div className="border border-gray-200 rounded-xl p-3 space-y-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Даты — отметьте все дни, в которые нужны окна
+              Отметьте в календаре все дни, в которые нужны окна
             </label>
             <div className="flex justify-center border border-gray-100 rounded-lg">
               <Calendar
@@ -129,58 +126,38 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
                 numberOfMonths={1}
               />
             </div>
-            {dates.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                {[...dates]
-                  .sort((a, b) => a.getTime() - b.getTime())
-                  .map((d) => (
-                    <span key={d.getTime()} className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md px-2 py-0.5">
-                      {ruShort(d)}
-                    </span>
-                  ))}
-                <button onClick={() => setDates([])} className="text-xs text-gray-400 hover:text-gray-600 ml-1">
-                  сбросить
-                </button>
-              </div>
-            )}
           </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-600">Время — одинаковое для всех выбранных дней</label>
-            {rows.map((r, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  type="time"
-                  value={r.from}
-                  onChange={(e) => setRow(i, { from: e.target.value, to: plusHour(e.target.value) })}
-                />
-                <span className="text-gray-400">—</span>
-                <Input type="time" value={r.to} onChange={(e) => setRow(i, { to: e.target.value })} />
+
+          {sortedDates.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-gray-600">Время для каждого дня</label>
                 <button
-                  onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))}
-                  disabled={rows.length === 1}
-                  className="text-gray-300 hover:text-red-500 disabled:opacity-30 p-1"
-                  title="Убрать"
+                  onClick={() => {
+                    setDates([]);
+                    setTimes({});
+                  }}
+                  className="text-xs text-gray-400 hover:text-gray-600"
                 >
-                  <Icon name="X" size={16} />
+                  сбросить все дни
                 </button>
               </div>
-            ))}
-            <button
-              onClick={() => {
-                const last = rows[rows.length - 1];
-                setRows([...rows, { from: last?.to || '10:00', to: plusHour(last?.to || '10:00') }]);
-              }}
-              className="text-sm text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
-            >
-              <Icon name="Plus" size={14} />
-              Ещё время
-            </button>
-          </div>
-          <Button onClick={save} disabled={saving || dates.length === 0} className="w-full gap-1.5">
+              {sortedDates.map((d, i) => (
+                <DayTimesEditor
+                  key={isoOf(d)}
+                  title={ruDay(d)}
+                  rows={timesOf(d)}
+                  onChange={(rows) => setTimesOf(d, rows)}
+                  onRemoveDay={() => removeDay(d)}
+                  onCopyPrev={i > 0 ? () => setTimesOf(d, timesOf(sortedDates[i - 1]).map((r) => ({ ...r }))) : undefined}
+                />
+              ))}
+            </div>
+          )}
+
+          <Button onClick={save} disabled={saving || total === 0} className="w-full gap-1.5">
             {saving ? <Icon name="Loader2" size={15} className="animate-spin" /> : <Icon name="Check" size={15} />}
-            {dates.length === 0
-              ? 'Выберите даты'
-              : `Добавить окна: ${dates.length} дн. × ${rows.length} = ${dates.length * rows.length}`}
+            {sortedDates.length === 0 ? 'Отметьте дни в календаре' : `Добавить окна: ${total}`}
           </Button>
         </div>
 

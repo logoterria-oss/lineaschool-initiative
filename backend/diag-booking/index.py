@@ -241,31 +241,36 @@ def admin_slots(cur):
 
 
 def add_slots(cur, body, me):
-    """Добавить окна: одни и те же времена [{from, to}] на одну или несколько дат.
-    Дубли по времени пропускаем."""
-    raw_dates = body.get('dates') or ([body['date']] if body.get('date') else [])
-    try:
-        dates = sorted({date.fromisoformat(str(d)) for d in raw_dates})
-    except ValueError:
-        return _resp(400, {'error': 'Проверьте даты'})
-    if not dates:
-        return _resp(400, {'error': 'Выберите хотя бы одну дату'})
-    if dates[0] < _msk_today(cur):
-        return _resp(400, {'error': 'Среди дат есть прошедшая'})
-    times = body.get('times') or []
-    for t in times:
-        tf, tt = str(t.get('from') or ''), str(t.get('to') or '')
-        if not TIME_RE.match(tf) or not TIME_RE.match(tt) or tt <= tf:
-            return _resp(400, {'error': f'Проверьте время {tf}–{tt}'})
+    """Добавить окна. days: [{date, times: [{from, to}]}] — у каждого дня своё время.
+    Старый формат (date/dates + общие times) тоже принимаем. Дубли по времени пропускаем."""
+    days = body.get('days')
+    if not days:
+        raw = body.get('dates') or ([body['date']] if body.get('date') else [])
+        days = [{'date': d, 'times': body.get('times') or []} for d in raw]
+    plan = []
+    today = _msk_today(cur)
+    for day in days:
+        try:
+            d = date.fromisoformat(str(day.get('date') or ''))
+        except ValueError:
+            return _resp(400, {'error': 'Проверьте даты'})
+        if d < today:
+            return _resp(400, {'error': f'Дата {_ru(d)} уже прошла'})
+        for t in day.get('times') or []:
+            tf, tt = str(t.get('from') or ''), str(t.get('to') or '')
+            if not TIME_RE.match(tf) or not TIME_RE.match(tt) or tt <= tf:
+                return _resp(400, {'error': f'Проверьте время {tf}–{tt} на {_ru(d)}'})
+            plan.append((d, tf, tt))
+    if not plan:
+        return _resp(400, {'error': 'Добавьте хотя бы одно время'})
     added = 0
-    for d in dates:
-        for t in times:
-            cur.execute(
-                f"INSERT INTO {SCHEMA}.diag_slots (slot_date, time_from, time_to, created_by) "
-                "VALUES (%s, %s, %s, %s) ON CONFLICT (slot_date, time_from) DO NOTHING",
-                (d, t['from'], t['to'], me['full_name']),
-            )
-            added += cur.rowcount
+    for d, tf, tt in plan:
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.diag_slots (slot_date, time_from, time_to, created_by) "
+            "VALUES (%s, %s, %s, %s) ON CONFLICT (slot_date, time_from) DO NOTHING",
+            (d, tf, tt, me['full_name']),
+        )
+        added += cur.rowcount
     return _resp(200, {'ok': True, 'added': added, 'coverage': coverage(cur)})
 
 
