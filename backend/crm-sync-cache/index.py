@@ -39,8 +39,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
-    cur.execute(f"TRUNCATE {schema}.crm_customers_cache")
-    saved = 0
+    # TRUNCATE на площадке запрещён — из-за него кэш не обновлялся вовсе.
+    # Обновляем карточки пачками, а удалённые из CRM чистим после.
+    rows = []
     for c in customers:
         cid = c.get('id')
         nm = (c.get('name') or '').strip()
@@ -49,13 +50,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         safe = nm.replace("'", "''")
         phone = _first_phone(c.get('phone'))
         phone_sql = f"'{phone}'" if phone else 'NULL'
+        rows.append(f"({int(cid)}, '{safe}', {phone_sql}, NOW())")
+    for i in range(0, len(rows), 200):
         cur.execute(
             f"INSERT INTO {schema}.crm_customers_cache (id, name, phone, updated_at) "
-            f"VALUES ({int(cid)}, '{safe}', {phone_sql}, NOW()) "
+            f"VALUES {', '.join(rows[i:i + 200])} "
             f"ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, "
             f"phone = EXCLUDED.phone, updated_at = NOW()"
         )
-        saved += 1
+    saved = len(rows)
+    if saved:
+        ids = ', '.join(r.split(',', 1)[0][1:] for r in rows)
+        cur.execute(f"DELETE FROM {schema}.crm_customers_cache WHERE id NOT IN ({ids})")
     conn.commit()
     cur.close()
     conn.close()
