@@ -17,7 +17,7 @@ import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import PayLinksView from '@/components/headWorkspace/PayLinksView';
-import LeadsListView from '@/components/adminWorkspace/LeadsListView';
+import LeadsListView from '@/components/headWorkspace/LeadsListView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import TodayTasksView from '@/components/adminShifts/TodayTasksView';
