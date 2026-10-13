@@ -135,7 +135,3 @@ export async function moveLead(id: number, processing_status: string): Promise<s
   return data.status_changed_at ?? null;
 }
 
-export async function deleteLead(id: number): Promise<boolean> {
-  const res = await fetch(URL, { method: 'DELETE', headers: headers(), body: JSON.stringify({ id }) });
-  return res.ok;
-}

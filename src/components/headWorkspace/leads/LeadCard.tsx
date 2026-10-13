@@ -4,12 +4,12 @@ import { Cell } from './LeadCells';
 import { COLS, isUntouched, isContactDue, isContactOverdue } from './leadUtils';
 
 // Мобильная карточка лида: все поля в столбик, редактируются теми же ячейками.
-export default function LeadCard({ lead, index, onPatch, onSave, onRemove }: {
+export default function LeadCard({ lead, index, onPatch, onSave, onArchive }: {
   lead: Lead;
   index: number;
   onPatch: (k: keyof Lead, v: string) => void;
   onSave: (k: keyof Lead, v: string) => void;
-  onRemove: () => void;
+  onArchive: (archived: boolean) => void;
 }) {
   const untouched = isUntouched(lead);
   const overdue = isContactOverdue(lead);
@@ -35,8 +35,12 @@ export default function LeadCard({ lead, index, onPatch, onSave, onRemove }: {
             {lead.student_age ? `, ${lead.student_age}` : ''}
           </div>
         </div>
-        <button onClick={onRemove} className="shrink-0 text-gray-300 hover:text-red-500 p-1">
-          <Icon name="Trash2" size={16} />
+        <button
+          onClick={() => onArchive(!lead.archived)}
+          title={lead.archived ? 'Вернуть из архива' : 'В архив'}
+          className="shrink-0 text-gray-300 hover:text-amber-600 p-1"
+        >
+          <Icon name={lead.archived ? 'ArchiveRestore' : 'Archive'} size={16} />
         </button>
       </div>
 

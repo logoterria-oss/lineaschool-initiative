@@ -7,7 +7,6 @@ import {
   fetchLeadsStats,
   createLead,
   updateLead,
-  deleteLead,
   moveLead,
   setLeadArchived,
 } from '@/lib/leadsApi';
@@ -205,11 +204,6 @@ export default function LeadsListView() {
     if (id) load();
   };
 
-  const removeLead = async (id: number) => {
-    if (!confirm('Удалить этого лида?')) return;
-    if (await deleteLead(id)) setLeads((prev) => prev.filter((l) => l.id !== id));
-  };
-
   return (
     <div>
       <LeadsFilters
@@ -308,7 +302,7 @@ export default function LeadsListView() {
               index={idx + 1}
               onPatch={(k, v) => patch(l.id, k, v)}
               onSave={(k, v) => save(l.id, k, v)}
-              onRemove={() => removeLead(l.id)}
+              onArchive={(a) => archiveLead(l.id, a)}
             />
           ))}
         </div>

@@ -1,6 +1,6 @@
 '''
 Business: Управление списком лидов для ЛК руководителя — список, добавление, редактирование, удаление и сбор статистики
-Args: event с httpMethod (GET список/статистика, POST создать, PUT обновить, DELETE удалить)
+Args: event с httpMethod (GET список/статистика, POST создать, PUT обновить; удаления нет — лиды только архивируются)
 Returns: HTTP ответ со списком лидов или статистикой
 '''
 import json
@@ -17,7 +17,7 @@ FIELDS = [
 
 CORS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
     'Access-Control-Max-Age': '86400',
     'Content-Type': 'application/json',
@@ -112,12 +112,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             changed = row[0].isoformat() if row and row[0] else None
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'success': True, 'status_changed_at': changed}), 'isBase64Encoded': False}
-
-        if method == 'DELETE':
-            lead_id = int(body.get('id', 0))
-            cur.execute(f"DELETE FROM leads WHERE id = {lead_id}")
-            return {'statusCode': 200, 'headers': CORS,
-                    'body': json.dumps({'success': True}), 'isBase64Encoded': False}
 
         return {'statusCode': 405, 'headers': CORS,
                 'body': json.dumps({'error': 'Method not allowed'}), 'isBase64Encoded': False}
