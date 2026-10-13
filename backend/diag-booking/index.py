@@ -16,6 +16,8 @@ from typing import Any, Dict, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from diag_hook import diag_payload, mark_diag_hook, send_diag_hook
+
 SCHEMA = 't_p93118852_lineaschool_initiati'
 MSK_NOW = "(now() AT TIME ZONE 'Europe/Moscow')"
 # Окна должны быть заведены на 2 недели вперёд
@@ -24,7 +26,7 @@ COVERAGE_DAYS = 14
 CORS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token, X-Service-Key',
     'Access-Control-Max-Age': '86400',
 }
 
@@ -223,7 +225,10 @@ def public_book(cur, body):
     )
     booking = cur.fetchone()
     cur.execute(f"UPDATE {SCHEMA}.diag_slots SET booking_id = %s WHERE id = %s", (booking['id'], slot['id']))
-    return _resp(200, {'ok': True, 'booking': _booking(booking)})
+    # Сразу сообщаем «Окну»: админы увидят запись, не дожидаясь опроса
+    hook = send_diag_hook(booking)
+    mark_diag_hook(cur, booking['id'], hook, SCHEMA)
+    return _resp(200, {'ok': True, 'booking': _booking(booking), 'notified': hook.get('ok', False)})
 
 
 # ── Сотрудники ───────────────────────────────────────────────────────────────
@@ -346,7 +351,33 @@ def set_status(cur, body, me):
             f"UPDATE {SCHEMA}.diag_slots SET booking_id = %s WHERE id = %s AND booking_id IS NULL",
             (bid, row['slot_id']),
         )
+    # Статус меняется и в карточке «Окна»
+    send_diag_hook(row, 'diag_booking_status')
     return _resp(200, {'booking': _booking(row)})
+
+
+def _service_ok(event) -> bool:
+    key = os.environ.get('INTERACTION_SERVICE_KEY') or ''
+    for name, value in (event.get('headers') or {}).items():
+        if str(name).lower() == 'x-service-key':
+            return bool(key) and secrets.compare_digest(str(value or ''), key)
+    return False
+
+
+def feed(cur, params):
+    """Страховочная выгрузка для «Окна». status=new — ещё не доставленные
+    (отданные помечаются доставленными), all — последние записи целиком."""
+    status = params.get('status') or 'new'
+    where = 'WHERE interaction_sent_at IS NULL' if status == 'new' else ''
+    cur.execute(f"SELECT * FROM {SCHEMA}.diag_bookings {where} ORDER BY created_at DESC LIMIT 200")
+    rows = cur.fetchall()
+    items = [diag_payload(r) for r in rows]
+    if status == 'new' and rows:
+        cur.execute(
+            f"UPDATE {SCHEMA}.diag_bookings SET interaction_sent_at = CURRENT_TIMESTAMP WHERE id = ANY(%s)",
+            ([r['id'] for r in rows],),
+        )
+    return _resp(200, {'bookings': items})
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -368,6 +399,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return public_slots(cur, params)
         if method == 'POST' and action == 'book':
             return public_book(cur, body)
+        if method == 'GET' and action == 'feed':
+            if not _service_ok(event):
+                return _resp(401, {'error': 'unauthorized'})
+            return feed(cur, params)
 
         me = _me(cur, event)
         if not me or me['role'] not in ('head', 'admin'):

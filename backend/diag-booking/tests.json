@@ -1,7 +1,28 @@
 {
   "tests": [
-    {"name": "CORS", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
-    {"name": "Unknown link", "method": "GET", "path": "/?action=check&token=nope", "expectedStatus": 404},
-    {"name": "Admin slots need login", "method": "GET", "path": "/?action=admin-slots", "expectedStatus": 401}
+    {
+      "name": "CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Unknown link",
+      "method": "GET",
+      "path": "/?action=check&token=nope",
+      "expectedStatus": 404
+    },
+    {
+      "name": "Admin slots need login",
+      "method": "GET",
+      "path": "/?action=admin-slots",
+      "expectedStatus": 401
+    },
+    {
+      "name": "Feed needs service key",
+      "method": "GET",
+      "path": "/?action=feed&status=new",
+      "expectedStatus": 401
+    }
   ]
 }
