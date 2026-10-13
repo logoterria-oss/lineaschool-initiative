@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import { Calendar } from '@/components/ui/calendar';
+import { ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import {
   DiagCoverage,
@@ -25,11 +27,16 @@ const plusHour = (t: string) => {
   return `${String(Math.min(h + 1, 23)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
 };
 
-const tomorrowIso = () => {
+const isoOf = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const startOfToday = () => {
   const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  d.setHours(0, 0, 0, 0);
+  return d;
 };
+
+const ruShort = (d: Date) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short' });
 
 /** Руководитель заводит окна для диагностик на конкретные даты */
 const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
@@ -37,7 +44,7 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
   const [slots, setSlots] = useState<DiagSlot[]>([]);
   const [coverage, setCoverage] = useState<DiagCoverage | null>(null);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState(tomorrowIso());
+  const [dates, setDates] = useState<Date[]>([]);
   const [rows, setRows] = useState<TimeRow[]>([{ from: '10:00', to: '11:00' }]);
   const [saving, setSaving] = useState(false);
 
@@ -64,17 +71,16 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
 
   const save = async () => {
     const times = rows.filter((r) => r.from && r.to);
-    if (!date || times.length === 0) return;
+    if (dates.length === 0 || times.length === 0) return;
     setSaving(true);
-    const res = await addDiagSlots(date, times);
+    const res = await addDiagSlots(dates.map(isoOf), times);
     setSaving(false);
     if (!res.ok) {
       toast({ title: 'Не сохранилось', description: res.error || 'Попробуйте ещё раз', variant: 'destructive' });
       return;
     }
     toast({ title: `Добавлено окон: ${res.added ?? 0}` });
-    const last = times[times.length - 1];
-    setRows([{ from: last.to, to: plusHour(last.to) }]);
+    setDates([]);
     notifyDiagSlotsChanged();
     load();
   };
@@ -109,11 +115,37 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
 
         <div className="border border-gray-200 rounded-xl p-3 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Дата</label>
-            <Input type="date" value={date} min={tomorrowIso()} onChange={(e) => setDate(e.target.value)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Даты — отметьте все дни, в которые нужны окна
+            </label>
+            <div className="flex justify-center border border-gray-100 rounded-lg">
+              <Calendar
+                mode="multiple"
+                selected={dates}
+                onSelect={(v) => setDates(v || [])}
+                disabled={{ before: startOfToday() }}
+                locale={ru}
+                weekStartsOn={1}
+                numberOfMonths={1}
+              />
+            </div>
+            {dates.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                {[...dates]
+                  .sort((a, b) => a.getTime() - b.getTime())
+                  .map((d) => (
+                    <span key={d.getTime()} className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md px-2 py-0.5">
+                      {ruShort(d)}
+                    </span>
+                  ))}
+                <button onClick={() => setDates([])} className="text-xs text-gray-400 hover:text-gray-600 ml-1">
+                  сбросить
+                </button>
+              </div>
+            )}
           </div>
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-600">Время</label>
+            <label className="block text-xs font-medium text-gray-600">Время — одинаковое для всех выбранных дней</label>
             {rows.map((r, i) => (
               <div key={i} className="flex items-center gap-2">
                 <Input
@@ -141,12 +173,14 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
               className="text-sm text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
             >
               <Icon name="Plus" size={14} />
-              Ещё время в этот день
+              Ещё время
             </button>
           </div>
-          <Button onClick={save} disabled={saving} className="w-full gap-1.5">
+          <Button onClick={save} disabled={saving || dates.length === 0} className="w-full gap-1.5">
             {saving ? <Icon name="Loader2" size={15} className="animate-spin" /> : <Icon name="Check" size={15} />}
-            Добавить окна
+            {dates.length === 0
+              ? 'Выберите даты'
+              : `Добавить окна: ${dates.length} дн. × ${rows.length} = ${dates.length * rows.length}`}
           </Button>
         </div>
 

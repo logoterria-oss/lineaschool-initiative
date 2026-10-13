@@ -173,9 +173,9 @@ export const fetchDiagCoverage = async (): Promise<DiagCoverage | null> => {
 };
 
 export const addDiagSlots = async (
-  date: string,
+  dates: string[],
   times: { from: string; to: string }[],
-): Promise<{ ok?: boolean; added?: number; error?: string }> => post('add-slots', { date, times });
+): Promise<{ ok?: boolean; added?: number; error?: string }> => post('add-slots', { dates, times });
 
 export const deleteDiagSlot = async (id: number): Promise<{ ok?: boolean; error?: string }> =>
   fetch(`${DIAG_BOOKING_URL}?action=delete-slot&id=${id}`, {

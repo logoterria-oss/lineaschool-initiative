@@ -241,24 +241,31 @@ def admin_slots(cur):
 
 
 def add_slots(cur, body, me):
-    """Добавить окна на дату: [{from, to}]. Дубли по времени пропускаем."""
+    """Добавить окна: одни и те же времена [{from, to}] на одну или несколько дат.
+    Дубли по времени пропускаем."""
+    raw_dates = body.get('dates') or ([body['date']] if body.get('date') else [])
     try:
-        d = date.fromisoformat(str(body.get('date') or ''))
+        dates = sorted({date.fromisoformat(str(d)) for d in raw_dates})
     except ValueError:
-        return _resp(400, {'error': 'Укажите дату'})
-    if d < _msk_today(cur):
-        return _resp(400, {'error': 'Дата уже прошла'})
-    added = 0
-    for t in body.get('times') or []:
+        return _resp(400, {'error': 'Проверьте даты'})
+    if not dates:
+        return _resp(400, {'error': 'Выберите хотя бы одну дату'})
+    if dates[0] < _msk_today(cur):
+        return _resp(400, {'error': 'Среди дат есть прошедшая'})
+    times = body.get('times') or []
+    for t in times:
         tf, tt = str(t.get('from') or ''), str(t.get('to') or '')
         if not TIME_RE.match(tf) or not TIME_RE.match(tt) or tt <= tf:
             return _resp(400, {'error': f'Проверьте время {tf}–{tt}'})
-        cur.execute(
-            f"INSERT INTO {SCHEMA}.diag_slots (slot_date, time_from, time_to, created_by) "
-            "VALUES (%s, %s, %s, %s) ON CONFLICT (slot_date, time_from) DO NOTHING",
-            (d, tf, tt, me['full_name']),
-        )
-        added += cur.rowcount
+    added = 0
+    for d in dates:
+        for t in times:
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.diag_slots (slot_date, time_from, time_to, created_by) "
+                "VALUES (%s, %s, %s, %s) ON CONFLICT (slot_date, time_from) DO NOTHING",
+                (d, t['from'], t['to'], me['full_name']),
+            )
+            added += cur.rowcount
     return _resp(200, {'ok': True, 'added': added, 'coverage': coverage(cur)})
 
 
