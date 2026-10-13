@@ -1,3 +1,5 @@
+import { getStaffToken } from './staffApi';
+
 export const BOOKINGS_URL = 'https://functions.poehali.dev/1f1f495f-752e-4470-b50c-51490b382f89';
 
 export type BookingStatus = 'new' | 'confirmed' | 'rejected';
@@ -315,4 +317,61 @@ export const bookingHoldsSlot = (b: Pick<Booking, 'status' | 'date'>, today = ne
   if (b.status !== 'confirmed') return false;
   const t = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   return (b.date || '') >= t;
+};
+
+// ── Временные ограничения мест в группах ──────────────────────────────────────
+
+export interface GroupLimit {
+  id: number;
+  /** 0 = ПН … 6 = ВС */
+  weekday: number;
+  timeFrom: string;
+  teacherId: number;
+  groupId: number | null;
+  maxSize: number;
+  dateFrom: string;
+  dateTo: string;
+  createdBy: string;
+}
+
+const staffAuthHeaders = (): Record<string, string> => {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  const t = getStaffToken();
+  if (t) h['X-Auth-Token'] = t;
+  return h;
+};
+
+export const fetchGroupLimits = async (): Promise<GroupLimit[]> => {
+  try {
+    const res = await fetch(`${BOOKINGS_URL}?action=group-limits`);
+    return (await json(res)).limits || [];
+  } catch {
+    return [];
+  }
+};
+
+export const setGroupLimit = async (input: {
+  weekday: number;
+  timeFrom: string;
+  teacherId: number;
+  groupId: number | null;
+  maxSize: number;
+  enrolled: number;
+  dateFrom: string;
+  dateTo: string;
+}): Promise<{ ok?: boolean; error?: string }> => {
+  const res = await fetch(`${BOOKINGS_URL}?action=set-group-limit`, {
+    method: 'POST',
+    headers: staffAuthHeaders(),
+    body: JSON.stringify(input),
+  });
+  return json(res);
+};
+
+export const deleteGroupLimit = async (id: number): Promise<boolean> => {
+  const res = await fetch(`${BOOKINGS_URL}?action=delete-group-limit&id=${id}`, {
+    method: 'DELETE',
+    headers: staffAuthHeaders(),
+  });
+  return res.ok;
 };

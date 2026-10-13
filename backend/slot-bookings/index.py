@@ -268,6 +268,63 @@ def _group_booked(cur) -> Dict[tuple, list]:
     return out
 
 
+def _active_limits(cur) -> list:
+    """Временные ограничения мест в группах (действуют ещё сегодня или позже)."""
+    cur.execute(
+        "SELECT id, weekday, time_from, teacher_id, group_id, max_size, date_from, date_to, created_by "
+        "FROM group_slot_limits WHERE date_to >= (now() AT TIME ZONE 'Europe/Moscow')::date "
+        "ORDER BY date_from"
+    )
+    return [dict(r) for r in cur.fetchall()]
+
+
+def _apply_limits(rows: list, limits: list) -> None:
+    """Урезаем свободные места в ячейках групп по ограничениям руководителя.
+
+    Ограничение задаёт потолок группы на период: свободно = потолок − записано.
+    Меньше текущего числа учеников потолок не бывает, это проверяется при сохранении.
+    """
+    if not limits:
+        return
+    for r in rows or []:
+        for cell in (r.get('cells') or {}).values():
+            iso = cell.get('date') or ''
+            try:
+                d = date.fromisoformat(iso[:10])
+            except ValueError:
+                continue
+            for lim in limits:
+                if (lim['weekday'] == d.weekday() and lim['time_from'] == (r.get('time') or '')
+                        and int(lim['teacher_id']) == int(r.get('teacher_id') or 0)
+                        and (lim['group_id'] is None or str(lim['group_id']) == str(r.get('group_id')))
+                        and lim['date_from'] <= d <= lim['date_to']):
+                    enrolled = int(cell.get('enrolled') or len(cell.get('student_ids') or []))
+                    cell['free'] = min(int(cell.get('free') or 0), max(0, int(lim['max_size']) - enrolled))
+
+
+def _limit_out(lim: dict) -> dict:
+    return {
+        'id': lim['id'], 'weekday': lim['weekday'], 'timeFrom': lim['time_from'],
+        'teacherId': lim['teacher_id'], 'groupId': lim['group_id'], 'maxSize': lim['max_size'],
+        'dateFrom': lim['date_from'].isoformat(), 'dateTo': lim['date_to'].isoformat(),
+        'createdBy': lim.get('created_by') or '',
+    }
+
+
+def _staff(cur, event) -> Optional[dict]:
+    headers = event.get('headers') or {}
+    token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+    if not token:
+        return None
+    cur.execute(
+        "SELECT s.full_name, s.role FROM staff_sessions ss JOIN staff s ON s.id = ss.staff_id "
+        "WHERE ss.token = %s AND ss.expires_at > now() AND s.status = 'active'",
+        (token,),
+    )
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
 def _find_dialog_by_child(cur, child: str) -> Optional[int]:
     '''Ищем диалог родителя по имени ребёнка.
 
@@ -643,6 +700,9 @@ def handler(event: dict, context) -> dict:
                     for r in raw_weeks:
                         for sid, nm in (r.get('student_names') or {}).items():
                             crm_names[int(sid)] = nm
+                    limits = _active_limits(cur)
+                    for r in raw_weeks:
+                        _apply_limits(r.get('rows') or [], limits)
                     group_days = week_slots.build_groups(
                         [r.get('rows') or [] for r in raw_weeks],
                         start,
@@ -765,6 +825,50 @@ def handler(event: dict, context) -> dict:
                 'bookings': bookings,
                 'notified': notified.get('sent', False),
             })
+
+        # ── Временные ограничения мест в группах ──────────────────────────────
+        if method == 'GET' and action == 'group-limits':
+            return _resp(200, {'limits': [_limit_out(l) for l in _active_limits(cur)]})
+
+        if action in ('set-group-limit', 'delete-group-limit'):
+            me = _staff(cur, event)
+            if not me or me['role'] not in ('head', 'admin'):
+                return _resp(401, {'error': 'Нужен вход в админку'})
+            if method == 'DELETE':
+                cur.execute("DELETE FROM group_slot_limits WHERE id = %s", (int(params.get('id') or 0),))
+                conn.commit()
+                return _resp(200, {'ok': True})
+            body = json.loads(event.get('body') or '{}')
+            try:
+                d_from = date.fromisoformat(str(body.get('dateFrom')))
+                d_to = date.fromisoformat(str(body.get('dateTo')))
+                max_size = int(body.get('maxSize'))
+                enrolled = int(body.get('enrolled') or 0)
+                weekday = int(body.get('weekday'))
+                teacher_id = int(body.get('teacherId'))
+            except (TypeError, ValueError):
+                return _resp(400, {'error': 'Проверьте даты и количество мест'})
+            time_from = str(body.get('timeFrom') or '')[:5]
+            if d_to < d_from:
+                return _resp(400, {'error': 'Дата окончания раньше начала'})
+            if max_size < enrolled:
+                return _resp(400, {'error': f'Нельзя меньше текущего числа учеников ({enrolled})'})
+            gid = body.get('groupId')
+            gid = int(gid) if gid not in (None, '') else None
+            # Одно ограничение на группу и период: старое пересекающееся заменяем
+            cur.execute(
+                "DELETE FROM group_slot_limits WHERE weekday = %s AND time_from = %s AND teacher_id = %s "
+                "AND group_id IS NOT DISTINCT FROM %s AND date_from <= %s AND date_to >= %s",
+                (weekday, time_from, teacher_id, gid, d_to, d_from),
+            )
+            cur.execute(
+                "INSERT INTO group_slot_limits (weekday, time_from, teacher_id, group_id, max_size, "
+                "date_from, date_to, created_by) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+                (weekday, time_from, teacher_id, gid, max_size, d_from, d_to, me['full_name']),
+            )
+            row = dict(cur.fetchone())
+            conn.commit()
+            return _resp(200, {'ok': True, 'limit': _limit_out(row)})
 
         # ── Список броней (админ + окно взаимодействия) ───────────────────────
         if method == 'GET' and action in ('bookings', 'feed'):

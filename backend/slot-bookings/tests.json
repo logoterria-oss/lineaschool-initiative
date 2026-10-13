@@ -71,6 +71,23 @@
         "error": "link_not_found"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Group limits list",
+      "method": "GET",
+      "path": "/?action=group-limits",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "limits": []
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set limit needs login",
+      "method": "POST",
+      "path": "/?action=set-group-limit",
+      "body": {},
+      "expectedStatus": 401
     }
   ]
 }

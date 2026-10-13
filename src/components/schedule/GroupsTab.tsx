@@ -21,7 +21,8 @@ import {
   findAgeGroupRule,
   ageRangeLabel,
 } from './types';
-import { Booking, bookingHoldsSlot, fetchBookings } from '@/lib/bookingsApi';
+import { Booking, GroupLimit, bookingHoldsSlot, fetchBookings, fetchGroupLimits } from '@/lib/bookingsApi';
+import GroupLimitsDialog from './GroupLimitsDialog';
 import { sameChild } from '@/lib/childName';
 
 const GroupsTab = () => {
@@ -32,6 +33,22 @@ const GroupsTab = () => {
   const [groupsAutoJumped, setGroupsAutoJumped] = useState(false);
   const [customers, setCustomers] = useState<Record<number, Customer>>({});
   const [groupBookings, setGroupBookings] = useState<Booking[]>([]);
+  const [limits, setLimits] = useState<GroupLimit[]>([]);
+  const [limitsOpen, setLimitsOpen] = useState(false);
+
+  const loadLimits = async () => setLimits(await fetchGroupLimits());
+
+  // Временный потолок группы на дату занятия (null — ограничения нет)
+  const limitFor = (day: number, time: string, teacherId: number, groupId: number | null | undefined, date: string) =>
+    limits.find(
+      (l) =>
+        l.weekday === day &&
+        l.timeFrom === time &&
+        l.teacherId === teacherId &&
+        (l.groupId == null || l.groupId === groupId) &&
+        l.dateFrom <= date &&
+        date <= l.dateTo,
+    ) || null;
 
   const loadGroups = async (autoJump = false) => {
     setGroupsLoading(true);
@@ -140,6 +157,7 @@ const GroupsTab = () => {
   useEffect(() => {
     loadCustomers();
     loadGroupBookings();
+    loadLimits();
   }, []);
 
   return (
@@ -177,11 +195,44 @@ const GroupsTab = () => {
             Эта неделя
           </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => loadGroups()} className="gap-1.5">
-          <Icon name="RefreshCw" size={14} />
-          Обновить
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLimitsOpen(true)}
+            disabled={!groupsData?.rows.length}
+            className="gap-1.5"
+          >
+            <Icon name="SlidersHorizontal" size={14} />
+            Ограничить количество слотов
+            {limits.length > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-gray-200 text-gray-700 text-[11px] font-bold">
+                {limits.length}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              loadGroups();
+              loadLimits();
+            }}
+            className="gap-1.5"
+          >
+            <Icon name="RefreshCw" size={14} />
+            Обновить
+          </Button>
+        </div>
       </div>
+
+      <GroupLimitsDialog
+        open={limitsOpen}
+        onClose={() => setLimitsOpen(false)}
+        rows={groupsData?.rows || []}
+        limits={limits}
+        onChanged={loadLimits}
+      />
 
       {groupsLoading && (
         <div className="text-center py-12 text-gray-500">
@@ -297,7 +348,9 @@ const GroupsTab = () => {
                         if (mine) usedBookings.add(b.id);
                         return mine;
                       });
-                      const isFull = cell.free - booked.length <= 0;
+                      const limit = limitFor(day, row.time, row.teacher_id, row.group_id, cell.date);
+                      const capacity = limit ? Math.min(MAX_GROUP_SIZE, limit.maxSize) : MAX_GROUP_SIZE;
+                      const isFull = capacity - cell.student_ids.length - booked.length <= 0;
                       const isDone = cell.status === 3;
                       const ageRule = findAgeGroupRule(day, row.time);
                       return (
@@ -357,6 +410,21 @@ const GroupsTab = () => {
                                         title="Бронь: ученика ещё нет в CRM"
                                       >
                                         бронь
+                                      </span>
+                                    </li>
+                                  );
+                                }
+                                if (i >= capacity && i < MAX_GROUP_SIZE) {
+                                  return (
+                                    <li
+                                      key={i}
+                                      className="text-gray-400"
+                                      title={`Место закрыто до ${limit?.dateTo.split('-').reverse().join('.')}`}
+                                    >
+                                      {numNode}
+                                      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                        <Icon name="Lock" size={10} />
+                                        закрыто
                                       </span>
                                     </li>
                                   );
