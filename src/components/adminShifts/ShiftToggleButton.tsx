@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import {
+  AdminShift,
+  OnShiftAdmin,
   fetchMyShift,
+  fetchOnShiftNow,
+  fetchShifts,
   markMyShift,
   moscowToday,
   shiftTime,
@@ -12,6 +16,7 @@ import { notifyShiftChange, sendShiftReport } from '@/lib/interactionsApi';
 import { notifyShiftChanged } from '@/components/interaction/useOnShiftAdmins';
 import { useShiftChecklist, CHECKLIST_EVENT } from './useShiftChecklist';
 import CloseShiftDialog from './CloseShiftDialog';
+import TakeOverShiftDialog from './TakeOverShiftDialog';
 
 const today = () => moscowToday();
 
@@ -25,6 +30,9 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
   const [state, setState] = useState<MyShiftState | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [takeOver, setTakeOver] = useState<{ current: OnShiftAdmin[]; schedule: AdminShift[] } | null>(
+    null,
+  );
   const dayRef = useRef(moscowToday());
   const { items, headTasks, marks, doneCount, total, reload } = useShiftChecklist();
 
@@ -40,11 +48,10 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
      перечитываем состояние: незакрытая смена считается закрытой,
      и кнопка снова становится «На смене» для нового дня. */
   useEffect(() => {
+    // Раз в минуту сверяем состояние: смену могли принять у этого сотрудника
     const id = setInterval(() => {
-      if (moscowToday() !== dayRef.current) {
-        dayRef.current = moscowToday();
-        load();
-      }
+      dayRef.current = moscowToday();
+      load();
     }, 60_000);
     return () => clearInterval(id);
   }, [load]);
@@ -74,12 +81,21 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
     })),
   ];
 
-  const doMark = async (act: 'start' | 'finish', reason = '') => {
+  const doMark = async (act: 'start' | 'finish', reason = '', take = false) => {
     setBusy(true);
-    const next = await markMyShift(act);
+    const next = await markMyShift(act, take);
     setBusy(false);
     if (!next) {
-      toast({ title: 'Не удалось отметить смену', variant: 'destructive' });
+      // Смену могли забрать, пока страница была открыта — показываем актуальное
+      const fresh = await fetchMyShift();
+      if (fresh) setState(fresh);
+      toast({
+        title: fresh?.finished_at ? 'Смена уже закрыта' : 'Не удалось отметить смену',
+        description: fresh?.finished_at
+          ? 'Вашу смену принял другой сотрудник'
+          : undefined,
+        variant: 'destructive',
+      });
       return;
     }
     setState(next);
@@ -110,10 +126,27 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
     });
   };
 
+  /** Перед открытием смотрим, не занята ли смена кем-то ещё */
+  const startShift = async () => {
+    setBusy(true);
+    const day = moscowToday();
+    const [onShift, month] = await Promise.all([fetchOnShiftNow(), fetchShifts(day.slice(0, 7))]);
+    setBusy(false);
+    const others = onShift.filter((a) => a.staff_id !== state?.staff_id);
+    if (others.length === 0) {
+      doMark('start');
+      return;
+    }
+    setTakeOver({
+      current: others,
+      schedule: month.shifts.filter((x) => x.shift_date.slice(0, 10) === day),
+    });
+  };
+
   const press = () => {
     if (busy || finished) return;
     if (!started) {
-      doMark('start');
+      startShift();
       return;
     }
     if (undone > 0) {
@@ -160,6 +193,20 @@ const ShiftToggleButton = ({ staffName }: { staffName?: string }) => {
           onConfirm={(reason) => {
             setConfirm(false);
             doMark('finish', reason);
+          }}
+        />
+      )}
+
+      {takeOver && (
+        <TakeOverShiftDialog
+          current={takeOver.current}
+          schedule={takeOver.schedule}
+          myId={state?.staff_id}
+          busy={busy}
+          onCancel={() => setTakeOver(null)}
+          onConfirm={() => {
+            setTakeOver(null);
+            doMark('start', '', true);
           }}
         />
       )}

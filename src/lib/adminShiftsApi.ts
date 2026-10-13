@@ -35,6 +35,7 @@ export interface MyShiftState {
   started_at: string | null;
   finished_at: string | null;
   planned: boolean;
+  staff_id?: number;
   /** День смены по Москве — его определяет сервер */
   date?: string | null;
 }
@@ -66,6 +67,7 @@ export async function fetchMyShift(): Promise<MyShiftState | null> {
     started_at: data.started_at,
     finished_at: data.finished_at,
     planned: !!data.planned,
+    staff_id: data.staff_id,
     date: data.date || null,
   };
 }
@@ -222,11 +224,14 @@ export async function fetchOnShiftNow(): Promise<OnShiftAdmin[]> {
  * Часы на компьютере сотрудника не участвуют — админы работают из
  * разных часовых поясов, и их дата уводила бы смену не в тот день.
  */
-export async function markMyShift(action: 'start' | 'finish'): Promise<MyShiftState | null> {
+export async function markMyShift(
+  action: 'start' | 'finish',
+  takeOver = false,
+): Promise<MyShiftState | null> {
   const r = await fetch(API_URL, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ action }),
+    body: JSON.stringify(takeOver ? { action, take_over: true } : { action }),
   });
   const data = await r.json().catch(() => ({}));
   if (!data.ok) return null;

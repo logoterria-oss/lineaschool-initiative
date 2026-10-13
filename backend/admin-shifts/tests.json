@@ -96,6 +96,20 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Забрать смену без входа закрыто",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "start",
+        "take_over": true
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

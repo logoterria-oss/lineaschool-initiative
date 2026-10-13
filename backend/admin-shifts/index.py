@@ -160,6 +160,25 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
             if act == "start" and row.get("finished_at"):
                 return _json(400, {"error": "Смена за этот день уже закрыта"})
 
+            # Смену могли забрать — повторное закрытие затёрло бы время передачи
+            if act == "finish" and row.get("finished_at"):
+                return _json(409, {"error": "Смена уже закрыта"})
+
+            # Сотрудник забирает смену: у тех, кто ещё не закрылся, смена
+            # закрывается этой же минутой, с пометкой, кому передана
+            taken_from = []
+            if act == "start" and body.get("take_over"):
+                cur.execute(
+                    f"UPDATE admin_shifts SET finished_at = {MSK_NOW}, updated_at = {MSK_NOW}, "
+                    f"note = trim(both ' ' from coalesce(note, '') || ' Смену забрал(а) ' || %s || ' в ' "
+                    f"|| to_char({MSK_NOW}, 'HH24:MI')) "
+                    f"WHERE shift_date = {MSK_TODAY} AND staff_id <> %s "
+                    f"AND started_at IS NOT NULL AND finished_at IS NULL "
+                    f"RETURNING staff_name",
+                    (me["full_name"], me["id"]),
+                )
+                taken_from = [r["staff_name"] for r in cur.fetchall()]
+
             field = "started_at" if act == "start" else "finished_at"
             cur.execute(
                 f"UPDATE admin_shifts SET {field} = {MSK_NOW}, updated_at = {MSK_NOW} "
@@ -173,7 +192,9 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
 
             # Сразу сообщаем окну взаимодействия обновлённый состав смены
             hook = push_shift_to_interaction(cur)
-        return _json(200, {"ok": True, **marks, "date": _msk_today(), "interaction": hook})
+        return _json(200, {
+            "ok": True, **marks, "date": _msk_today(), "interaction": hook, "taken_from": taken_from,
+        })
     finally:
         conn.close()
 
@@ -203,6 +224,7 @@ def my_shift_state(event: dict) -> dict:
             "started_at": (row or {}).get("started_at"),
             "finished_at": (row or {}).get("finished_at"),
             "planned": bool(row),
+            "staff_id": me["id"],
             # Дата смены по Москве — фронт показывает её рядом с кнопкой
             "date": _msk_today(),
         })
