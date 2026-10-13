@@ -15,6 +15,14 @@ FIELDS = [
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
 ]
 
+# Тестовые заявки: слово «тест»/«тестовый»/«test» в имени родителя, ребёнка или контакте.
+# В список и статистику они не попадают.
+# Регистр задан вручную: в локали базы ~* не понимает кириллицу
+NOT_TEST = (
+    "NOT (concat_ws(' ', parent_name, student_name, contact) ~ "
+    "'(^|[^А-ЯЁа-яёA-Za-z0-9])([Тт][Ее][Сс][Тт]([Оо][Вв]([Ыы][Йй]|[Аа][Яя]|[Оо][Ее]|[Ыы][Ее]))?|[Tt][Ee][Ss][Tt])([^А-ЯЁа-яёA-Za-z0-9]|$)')"
+)
+
 CORS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
@@ -64,7 +72,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
                 "status_changed_at, archived, archived_at "
-                "FROM leads ORDER BY id ASC"
+                f"FROM leads WHERE {NOT_TEST} ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
                     'request_date', 'responsible', 'processing_status', 'lead_status',
@@ -177,7 +185,7 @@ def build_stats(cur, date_from, date_to):
     cur.execute(
         "SELECT lead_status, processing_status, diag_date, request_date, "
         "responsible, created_at, utm_source, utm_medium, utm_campaign, "
-        "utm_content, referrer FROM leads"
+        f"utm_content, referrer FROM leads WHERE {NOT_TEST}"
     )
     rows = cur.fetchall()
 
