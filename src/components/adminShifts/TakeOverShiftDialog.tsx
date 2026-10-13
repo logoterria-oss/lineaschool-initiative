@@ -39,8 +39,8 @@ const TakeOverShiftDialog = ({ current, schedule, myId, busy, onCancel, onConfir
           <div className="min-w-0">
             <div className="font-semibold text-gray-900">Сейчас на смене {who}</div>
             <div className="text-sm text-gray-600 mt-1">
-              Если вы откроете смену, смена у {names.length > 1 ? 'них' : who} закроется, и новые
-              чаты будут приходить вам.
+              Если вы откроете смену, смена у {names.length > 1 ? 'них' : who} закроется, и чаты
+              перейдут вам.
             </div>
           </div>
         </div>
