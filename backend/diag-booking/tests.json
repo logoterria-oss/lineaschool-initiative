@@ -1,0 +1,7 @@
+{
+  "tests": [
+    {"name": "CORS", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
+    {"name": "Unknown link", "method": "GET", "path": "/?action=check&token=nope", "expectedStatus": 404},
+    {"name": "Admin slots need login", "method": "GET", "path": "/?action=admin-slots", "expectedStatus": 401}
+  ]
+}

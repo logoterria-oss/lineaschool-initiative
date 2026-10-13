@@ -53,6 +53,7 @@ const TelegramSetup = lazyWithRetry(() => import("./pages/TelegramSetup"));
 const PaymentLeadsPage = lazyWithRetry(() => import("./pages/PaymentLeadsPage"));
 const SchedulePage = lazyWithRetry(() => import("./pages/SchedulePage"));
 const BookingPage = lazyWithRetry(() => import("./pages/BookingPage"));
+const DiagBookingPage = lazyWithRetry(() => import("./pages/DiagBookingPage"));
 const StudentsTablePage = lazyWithRetry(() => import("./pages/StudentsTablePage"));
 const SettingsPage = lazyWithRetry(() => import("./pages/SettingsPage"));
 const StaffManagePage = lazyWithRetry(() => import("./pages/StaffManagePage"));
@@ -131,6 +132,7 @@ const App = () => (
             <Route path="/admin/payment-leads" element={<PaymentLeadsPage />} />
             <Route path="/admin/schedule" element={<SchedulePage />} />
             <Route path="/booking/:token" element={<BookingPage />} />
+            <Route path="/diag-booking/:token" element={<DiagBookingPage />} />
             <Route path="/admin/students" element={<StudentsTablePage />} />
             <Route path="/admin/settings" element={<SettingsPage />} />
             <Route path="/admin/staff" element={<StaffManagePage />} />

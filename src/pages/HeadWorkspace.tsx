@@ -6,7 +6,7 @@ import { logoutStaff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
 import { useRoleGuard } from '@/lib/useRoleGuard';
 import { HEAD_MENU, SubItem } from '@/components/headWorkspace/menu';
 import StudentsListView from '@/components/headWorkspace/StudentsListView';
-import LeadsListView from '@/components/headWorkspace/LeadsListView';
+import LeadsSection from '@/components/diagBooking/LeadsSection';
 import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
 import ProgressMonitoringView from '@/components/headWorkspace/ProgressMonitoringView';
@@ -30,6 +30,7 @@ import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
+import DiagSlotsControl from '@/components/diagBooking/DiagSlotsControl';
 import { buildInteractionUrl } from '@/lib/interactionUrl';
 import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
 import OnShiftHint from '@/components/interaction/OnShiftHint';
@@ -73,7 +74,7 @@ const HeadWorkspace = () => {
     switch (active.id) {
       case 'admin-shifts': return <AdminShiftsView />;
       case 'students-list': return <StudentsListView />;
-      case 'leads': return <LeadsListView />;
+      case 'leads': return <LeadsSection />;
       case 'interactions': return <InteractionsView />;
       case 'vacations': return <VacationsView />;
       case 'progress': return <ProgressMonitoringView />;
@@ -161,7 +162,12 @@ const HeadWorkspace = () => {
           <Icon name="UserCog" size={16} className="flex-shrink-0" />
           <span className={collapsed ? lbl : ''}>Мой профиль</span>
         </button>
-        <ShiftToggleButton staffName={fullName} />
+        <div className="flex gap-2 items-stretch">
+          <div className="flex-1 min-w-0">
+            <ShiftToggleButton staffName={fullName} />
+          </div>
+          <DiagSlotsControl />
+        </div>
       </div>
 
       <a

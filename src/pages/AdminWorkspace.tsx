@@ -17,7 +17,7 @@ import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import PaymentsStatusView from '@/components/adminWorkspace/PaymentsStatusView';
 import PayLinksView from '@/components/headWorkspace/PayLinksView';
-import LeadsListView from '@/components/headWorkspace/LeadsListView';
+import LeadsSection from '@/components/diagBooking/LeadsSection';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import TodayTasksView from '@/components/adminShifts/TodayTasksView';
@@ -77,7 +77,7 @@ const AdminWorkspace = () => {
         return <ReviewsView kind="free_lesson" title="Бесплатный урок за отзыв" />;
       case 'violations': return <TeacherViolationsManager withRole />;
       case 'students-list': return <StudentsListView />;
-      case 'leads-list': return <LeadsListView />;
+      case 'leads-list': return <LeadsSection />;
       case 'staff-list': return <StaffListView readOnly />;
       case 'today-tasks': return <TodayTasksView />;
       default: return <StubView label={active.label} />;
