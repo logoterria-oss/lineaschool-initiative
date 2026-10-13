@@ -260,6 +260,28 @@ export function moscowToday(): string {
   return parts;
 }
 
+/**
+ * Расставить типовую неделю на период: пн–пт Анастасия 9–12 и Анна 12–20,
+ * сб — руководитель, вс — РУО. Заполняются только пустые дни,
+ * ручные замены и отмеченные смены не трогаются.
+ */
+export async function fillShiftTemplate(
+  dateFrom: string,
+  dateTo: string,
+): Promise<{ ok: boolean; added: number; skipped_days: number }> {
+  try {
+    const r = await fetch(API_URL, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ action: 'fill-template', date_from: dateFrom, date_to: dateTo }),
+    });
+    const data = await r.json().catch(() => ({}));
+    return { ok: !!data.ok, added: data.added || 0, skipped_days: data.skipped_days || 0 };
+  } catch {
+    return { ok: false, added: 0, skipped_days: 0 };
+  }
+}
+
 export async function saveShift(payload: {
   staff_id: number;
   date: string;

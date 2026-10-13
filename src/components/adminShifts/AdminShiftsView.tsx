@@ -8,6 +8,7 @@ import {
   ShiftTask,
   deleteShift,
   fetchShifts,
+  fillShiftTemplate,
   moscowToday,
   saveShift,
 } from '@/lib/adminShiftsApi';
@@ -109,6 +110,36 @@ const AdminShiftsView = () => {
     load();
   };
 
+  const [filling, setFilling] = useState(false);
+
+  /** Типовая неделя на открытый месяц — с завтрашнего дня, только пустые дни */
+  const handleFill = async () => {
+    const [y, m] = month.split('-').map(Number);
+    const last = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+    const tomorrow = new Date(`${today}T00:00:00`);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tmr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    const from = `${month}-01` > tmr ? `${month}-01` : tmr;
+    if (from > last) {
+      toast({ title: 'Этот месяц уже прошёл', variant: 'destructive' });
+      return;
+    }
+    setFilling(true);
+    const res = await fillShiftTemplate(from, last);
+    setFilling(false);
+    if (!res.ok) {
+      toast({ title: 'Не удалось заполнить график', variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: res.added ? `Поставлено смен: ${res.added}` : 'Все дни уже заполнены',
+      description: res.skipped_days
+        ? `Дней с уже назначенными сменами не трогали: ${res.skipped_days}`
+        : undefined,
+    });
+    load();
+  };
+
   const handleDelete = async (staffId: number, date: string) => {
     const ok = await deleteShift(staffId, date);
     if (!ok) {
@@ -138,6 +169,16 @@ const AdminShiftsView = () => {
             <Icon name="ChevronRight" size={18} />
           </button>
         </div>
+
+        <button
+          onClick={handleFill}
+          disabled={filling}
+          title="Пн–пт: Анастасия 9–12, Анна 12–20 · Сб — руководитель · Вс — РУО. Заполняются только пустые дни"
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-green-200 bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 disabled:opacity-60"
+        >
+          <Icon name={filling ? 'Loader' : 'CalendarPlus'} size={16} className={filling ? 'animate-spin' : ''} />
+          Заполнить по шаблону
+        </button>
 
         <div className="flex flex-wrap items-center gap-3 ml-auto text-xs text-gray-500">
           <span className="inline-flex items-center gap-1">
