@@ -26,7 +26,7 @@ const startOfToday = () => {
 
 const ruDay = (d: Date) => d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
 
-const DEFAULT_TIMES: TimeRow[] = [{ from: '10:00', to: '11:00' }];
+const DEFAULT_TIMES: TimeRow[] = [{ from: '10:00', to: '12:00' }];
 
 /** Руководитель заводит окна для диагностик на конкретные даты */
 const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => {

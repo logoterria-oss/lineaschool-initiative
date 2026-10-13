@@ -6,11 +6,14 @@ export interface TimeRow {
   to: string;
 }
 
-/** «10:00» + 60 минут → «11:00» */
-export const plusHour = (t: string) => {
+/** Диагностика длится 2 часа */
+export const DIAG_HOURS = 2;
+
+/** «10:00» → «12:00»: конец окна = начало + длительность диагностики */
+export const plusDiag = (t: string) => {
   const [h, m] = t.split(':').map(Number);
   if (Number.isNaN(h)) return '';
-  return `${String(Math.min(h + 1, 23)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+  return `${String(Math.min(h + DIAG_HOURS, 23)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
 };
 
 interface Props {
@@ -30,7 +33,7 @@ const DayTimesEditor = ({ title, rows, onChange, onRemoveDay, onCopyPrev }: Prop
   const addRow = () => {
     const last = rows[rows.length - 1];
     const from = last?.to || '10:00';
-    onChange([...rows, { from, to: plusHour(from) }]);
+    onChange([...rows, { from, to: plusDiag(from) }]);
   };
 
   return (
@@ -56,7 +59,7 @@ const DayTimesEditor = ({ title, rows, onChange, onRemoveDay, onCopyPrev }: Prop
               type="time"
               value={r.from}
               className="h-9 bg-white"
-              onChange={(e) => setRow(i, { from: e.target.value, to: plusHour(e.target.value) })}
+              onChange={(e) => setRow(i, { from: e.target.value, to: plusDiag(e.target.value) })}
             />
             <span className="text-gray-400">—</span>
             <Input
