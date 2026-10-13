@@ -31,6 +31,8 @@ interface Props {
 const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props) => {
   const [staffId, setStaffId] = useState<number>(admins[0]?.id || 0);
   const [note, setNote] = useState('');
+  const [timeFrom, setTimeFrom] = useState('09:00');
+  const [timeTo, setTimeTo] = useState('20:00');
   const [dayTasks, setDayTasks] = useState<PlannedTask[]>([]);
 
   // Подтягиваем ранее назначенные задачи на этот день
@@ -65,7 +67,7 @@ const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props)
 
   const submit = () => {
     if (!staffId) return;
-    onSave({ staff_id: staffId, date, time_from: '', time_to: '', kind: 'work' as ShiftKind, note });
+    onSave({ staff_id: staffId, date, time_from: timeFrom, time_to: timeTo, kind: 'work' as ShiftKind, note });
     setNote('');
   };
 
@@ -91,7 +93,23 @@ const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props)
                   key={s.id}
                   className="flex items-center gap-2 border border-green-200 bg-green-50 text-green-900 rounded-xl px-3 py-2 text-sm"
                 >
-                  <span className="font-medium truncate">{s.staff_name}</span>
+                  <button
+                    onClick={() => {
+                      setStaffId(s.staff_id);
+                      if (s.time_from) setTimeFrom(s.time_from);
+                      if (s.time_to) setTimeTo(s.time_to);
+                      setNote(s.note || '');
+                    }}
+                    className="font-medium truncate text-left hover:underline"
+                    title="Изменить время"
+                  >
+                    {s.staff_name}
+                  </button>
+                  {s.time_from && (
+                    <span className="text-xs whitespace-nowrap opacity-80">
+                      {s.time_from}–{s.time_to}
+                    </span>
+                  )}
                   <span className="ml-auto whitespace-nowrap text-xs opacity-80">
                     {s.started_at
                       ? `${shiftTime(s.started_at)}${s.finished_at ? `–${shiftTime(s.finished_at)}` : '…'}`
@@ -124,6 +142,23 @@ const ShiftEditor = ({ date, admins, shifts, onSave, onDelete, onClose }: Props)
                 </option>
               ))}
             </select>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Время</span>
+              <input
+                type="time"
+                value={timeFrom}
+                onChange={(e) => setTimeFrom(e.target.value)}
+                className="border border-gray-200 rounded-xl px-3 py-2 text-sm"
+              />
+              <span className="text-gray-400">—</span>
+              <input
+                type="time"
+                value={timeTo}
+                onChange={(e) => setTimeTo(e.target.value)}
+                className="border border-gray-200 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
 
             <input
               value={note}

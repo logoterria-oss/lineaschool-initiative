@@ -29,6 +29,7 @@ import SupervisionRates from '@/components/supervision/SupervisionRates';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
+import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import { buildInteractionUrl } from '@/lib/interactionUrl';
 import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
 import OnShiftHint from '@/components/interaction/OnShiftHint';
@@ -160,6 +161,7 @@ const HeadWorkspace = () => {
           <Icon name="UserCog" size={16} className="flex-shrink-0" />
           <span className={collapsed ? lbl : ''}>Мой профиль</span>
         </button>
+        <ShiftToggleButton staffName={fullName} />
       </div>
 
       <a

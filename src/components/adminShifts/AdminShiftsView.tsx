@@ -192,7 +192,12 @@ const AdminShiftsView = () => {
                       className="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 border bg-green-100 text-green-800 border-green-200"
                       title={s.staff_name}
                     >
-                      <span className="truncate flex-1">{shortName(s.staff_name)}</span>
+                      <span className="truncate flex-1">
+                        {shortName(s.staff_name)}
+                        {s.time_from && (
+                          <span className="hidden sm:inline opacity-70"> {s.time_from.replace(':00', '')}–{s.time_to.replace(':00', '')}</span>
+                        )}
+                      </span>
                       {(s.started_at || s.finished_at) && (
                         <span className="flex items-center shrink-0">
                           {s.started_at && <Icon name="Check" size={11} className="-mr-1" />}

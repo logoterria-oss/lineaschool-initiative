@@ -82,6 +82,8 @@ def handler(event: dict, context) -> dict:
                 return save_checklist(event, body)
             if act == "head-tasks":
                 return save_head_tasks(event, body)
+            if act == "fill-template":
+                return fill_template(body)
             return save_shift(event)
         if method == "DELETE":
             return delete_shift(event)
@@ -219,7 +221,8 @@ def push_shift_to_interaction(cur) -> dict:
     """Сообщаем окну взаимодействия полный список админов, которые сейчас на смене.
 
     Шлём телефоны — окно сопоставляет сотрудников по ним.
-    Руководителей не отправляем: на смене стоят только администраторы.
+    Руководитель и РУО тоже ведут админскую работу (сб/вс) — их отправляем,
+    если они сами нажали «На смене».
     """
     key = os.environ.get("INTERACTION_SERVICE_KEY")
     if not key:
@@ -232,7 +235,7 @@ def push_shift_to_interaction(cur) -> dict:
         # смена считается закрытой и из состава уходит сама
         f"WHERE sh.shift_date = {MSK_TODAY} "
         f"AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
-        f"AND s.role = 'admin' AND s.status = 'active'"
+        f"AND s.role IN ('admin', 'head') AND s.status = 'active'"
     )
     phones = [_only_digits(r["phone"]) for r in cur.fetchall()]
     phones = [p for p in phones if p]
@@ -389,6 +392,71 @@ def save_shift(event: dict) -> dict:
             saved = dict(cur.fetchone())
             conn.commit()
         return _json(200, {"ok": True, "shift": saved})
+    finally:
+        conn.close()
+
+
+# Типовая неделя администрирования (с октября 2026).
+# Ключ — день недели (0 = понедельник), значение — смены (телефон, с, до).
+# Сотрудника ищем по телефону: так шаблон не зависит от id в базе.
+WEEK_TEMPLATE = {
+    **{wd: [("79236138874", "09:00", "12:00"), ("79277601832", "12:00", "20:00")] for wd in range(5)},
+    5: [("79236251611", "09:00", "20:00")],
+    6: [("79879500712", "09:00", "20:00")],
+}
+
+
+def fill_template(body: dict) -> dict:
+    """Расставить смены по типовой неделе на период.
+    Body: { date_from, date_to, overwrite }
+    overwrite=false — трогаем только пустые дни (ручные замены сохраняются).
+    overwrite=true — заменяем неотмеченные смены дня шаблоном.
+    Дни, где кто-то уже отметился «На смене», не меняем никогда.
+    """
+    try:
+        d_from = datetime.date.fromisoformat(str(body.get("date_from"))[:10])
+        d_to = datetime.date.fromisoformat(str(body.get("date_to"))[:10])
+    except ValueError:
+        return _json(400, {"error": "date_from/date_to required"})
+    if d_to < d_from or (d_to - d_from).days > 370:
+        return _json(400, {"error": "bad period"})
+    overwrite = bool(body.get("overwrite"))
+
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id, full_name, phone FROM staff WHERE status = 'active'")
+            by_phone = {_only_digits(r["phone"]): r for r in cur.fetchall()}
+
+            cur.execute(
+                "SELECT shift_date, bool_or(started_at IS NOT NULL OR finished_at IS NOT NULL) AS marked "
+                "FROM admin_shifts WHERE shift_date BETWEEN %s AND %s GROUP BY shift_date",
+                (d_from, d_to),
+            )
+            existing = {r["shift_date"]: r["marked"] for r in cur.fetchall()}
+
+            added = skipped = 0
+            d = d_from
+            while d <= d_to:
+                if d in existing and (existing[d] or not overwrite):
+                    skipped += 1
+                    d += datetime.timedelta(days=1)
+                    continue
+                if d in existing:
+                    cur.execute("DELETE FROM admin_shifts WHERE shift_date = %s", (d,))
+                for phone, t_from, t_to in WEEK_TEMPLATE.get(d.weekday(), []):
+                    st = by_phone.get(phone)
+                    if not st:
+                        continue
+                    cur.execute(
+                        "INSERT INTO admin_shifts (staff_id, staff_name, shift_date, time_from, time_to, kind) "
+                        "VALUES (%s, %s, %s, %s, %s, 'work') ON CONFLICT (staff_id, shift_date) DO NOTHING",
+                        (st["id"], st["full_name"], d, t_from, t_to),
+                    )
+                    added += 1
+                d += datetime.timedelta(days=1)
+            conn.commit()
+        return _json(200, {"ok": True, "added": added, "skipped_days": skipped})
     finally:
         conn.close()
 
