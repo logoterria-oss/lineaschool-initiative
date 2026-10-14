@@ -3,7 +3,7 @@ import { checkBatch, CheckRow, loadStudents } from './subscriptionCheckApi';
 
 const BATCH = 4;
 const PARALLEL = 2;
-const ATTEMPTS = 3;
+const ATTEMPTS = 5;
 
 /**
  * Загружает учеников, затем пачками проверяет в CRM абонементы и списания —
@@ -40,6 +40,10 @@ export function useSubscriptionCheck(isVisible: (r: CheckRow) => boolean) {
             await new Promise((ok) => setTimeout(ok, 1500));
           }
         }
+        if (id === run.current && part.length) {
+          const failed = new Set(part.map((r) => r.customerId));
+          setRows((prev) => prev.map((r) => (failed.has(r.customerId) ? { ...r, failed: true } : r)));
+        }
         if (id === run.current) setProgress((p) => ({ ...p, done: p.done + size }));
       }
       workers.current--;
@@ -49,7 +53,7 @@ export function useSubscriptionCheck(isVisible: (r: CheckRow) => boolean) {
 
   const enqueue = useCallback(
     (list: CheckRow[]) => {
-      const fresh = list.filter((r) => !r.checked && !queued.current.has(r.customerId));
+      const fresh = list.filter((r) => !r.checked && !r.failed && !queued.current.has(r.customerId));
       if (!fresh.length) return;
       fresh.forEach((r) => queued.current.add(r.customerId));
       queue.current.push(...fresh);
@@ -93,5 +97,13 @@ export function useSubscriptionCheck(isVisible: (r: CheckRow) => boolean) {
     if (!loading && rows.length) enqueue(rows.filter(isVisible));
   }, [rows, loading, isVisible, enqueue]);
 
-  return { rows, loading, error, progress, reload: () => start(true) };
+  const retryFailed = useCallback(() => {
+    setRows((prev) => {
+      const list = prev.filter((r) => r.failed);
+      list.forEach((r) => queued.current.delete(r.customerId));
+      return prev.map((r) => (r.failed ? { ...r, failed: false } : r));
+    });
+  }, []);
+
+  return { rows, loading, error, progress, reload: () => start(true), retryFailed };
 }

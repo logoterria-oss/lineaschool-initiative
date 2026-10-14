@@ -37,7 +37,16 @@ const PayCell = ({ pay, mismatch }: { pay: CheckRow['ourPay']; mismatch?: boolea
     <span className="text-gray-400">—</span>
   );
 
-const TariffCell = ({ row }: { row: CheckRow }) => {
+const TariffCell = ({ row, onRetry }: { row: CheckRow; onRetry: () => void }) => {
+  if (row.failed)
+    return (
+      <span className="text-amber-700">
+        CRM не ответила ·{' '}
+        <button onClick={onRetry} className="underline hover:text-amber-900">
+          повторить
+        </button>
+      </span>
+    );
   if (!row.checked) return <span className="text-gray-400">проверяю…</span>;
   const t = row.tariffNow;
   const next = row.tariffNext;
@@ -64,7 +73,7 @@ const TariffCell = ({ row }: { row: CheckRow }) => {
 };
 
 const LessonCell = ({ row }: { row: CheckRow }) => {
-  if (!row.checked) return <span className="text-gray-400">…</span>;
+  if (!row.checked) return <span className="text-gray-400">{row.failed ? '—' : '…'}</span>;
   const l = row.lastLesson;
   if (!l) return <span className="text-gray-400">уроков не было</span>;
   const wrong = l.expected != null && Math.abs(l.expected - l.charged) > 1;
@@ -87,7 +96,7 @@ const SubscriptionCheckView = () => {
     (r: CheckRow) => !statuses.length || statuses.includes(r.studyStatusId ?? -1),
     [statuses],
   );
-  const { rows, loading, error, progress, reload } = useSubscriptionCheck(inStatus);
+  const { rows, loading, error, progress, reload, retryFailed } = useSubscriptionCheck(inStatus);
 
   const byStatus = useMemo(() => rows.filter(inStatus), [rows, inStatus]);
 
@@ -235,7 +244,7 @@ const SubscriptionCheckView = () => {
                     </td>
                     <td className="px-3 py-2.5"><PayCell pay={r.ourPay} /></td>
                     <td className="px-3 py-2.5"><PayCell pay={r.crmPay} mismatch={payMismatch} /></td>
-                    <td className="px-3 py-2.5"><TariffCell row={r} /></td>
+                    <td className="px-3 py-2.5"><TariffCell row={r} onRetry={retryFailed} /></td>
                     <td className="px-3 py-2.5"><LessonCell row={r} /></td>
                   </tr>
                 );

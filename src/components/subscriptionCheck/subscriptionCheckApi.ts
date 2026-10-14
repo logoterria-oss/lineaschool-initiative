@@ -34,6 +34,7 @@ export interface CheckRow {
   issues: string[];
   status: CheckStatus;
   checked: boolean;
+  failed?: boolean;
 }
 
 const headers = () => {

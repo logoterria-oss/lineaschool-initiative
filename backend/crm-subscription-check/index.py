@@ -18,7 +18,7 @@ import json
 import os
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import date, datetime, timedelta
 
 import psycopg2
@@ -35,6 +35,7 @@ LESSONS_DAYS = 60
 PAY_WINDOW_DAYS = 3
 ROW_CACHE_MIN = 10
 BATCH_MAX = 4
+CHECK_DEADLINE = 3.8
 MIN_PAY = 1000
 DIAG_LESSON_TYPE = 3
 
@@ -397,6 +398,7 @@ def _evaluate(row, ct, lesson, tariffs):
 
 
 def _check(cur, rows, tariffs, refresh):
+    t0 = time.time()
     tariffs = {int(t["id"]): t for t in tariffs}
     cids = [int(r["customerId"]) for r in rows]
     cached = {}
@@ -414,13 +416,19 @@ def _check(cur, rows, tariffs, refresh):
         if not tariffs:
             tariffs = _tariff_dict(token)
         diag = _diag_prices(tariffs)
-        with ThreadPoolExecutor(max_workers=8) as ex:
-            f_ct = {c: ex.submit(_customer_tariffs, token, c) for c in need}
-            f_ls = {c: ex.submit(_last_lesson, token, c, diag) for c in need}
-            for c in need:
-                ct, ls = f_ct[c].result(), f_ls[c].result()
-                if ct is not None and ls is not None:
-                    fresh[c] = {"ct": ct, "lesson": ls}
+        # CRM иногда отвечает медленно. Ждём не дольше дедлайна и отдаём то,
+        # что успели: остальных фронт перезапросит, а не повиснет на таймауте.
+        ex = ThreadPoolExecutor(max_workers=8)
+        f_ct = {c: ex.submit(_customer_tariffs, token, c) for c in need}
+        f_ls = {c: ex.submit(_last_lesson, token, c, diag) for c in need}
+        wait(list(f_ct.values()) + list(f_ls.values()), timeout=max(0.5, CHECK_DEADLINE - (time.time() - t0)))
+        ex.shutdown(wait=False, cancel_futures=True)
+        for c in need:
+            if not (f_ct[c].done() and f_ls[c].done()):
+                continue
+            ct, ls = f_ct[c].result(), f_ls[c].result()
+            if ct is not None and ls is not None:
+                fresh[c] = {"ct": ct, "lesson": ls}
         for c, data in fresh.items():
             cur.execute(
                 f"INSERT INTO {SCHEMA}.crm_json_cache (cache_key, payload, updated_at) "
