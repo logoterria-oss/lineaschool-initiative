@@ -8,6 +8,10 @@ import os
 import psycopg2
 from typing import Dict, Any
 
+from window_hook import send_contacted
+
+CONTACTED_PREFIX = 'Списались'
+
 FIELDS = [
     'parent_name', 'student_name', 'student_age', 'contact', 'request_date',
     'responsible', 'processing_status', 'lead_status', 'diag_date',
@@ -107,6 +111,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     sets.append("archived = TRUE, archived_at = CURRENT_TIMESTAMP")
                 else:
                     sets.append("archived = FALSE, archived_at = NULL")
+            prev = None
+            if 'processing_status' in body:
+                cur.execute(
+                    "SELECT id, parent_name, student_name, contact, responsible, processing_status "
+                    f"FROM leads WHERE id = {lead_id}"
+                )
+                r = cur.fetchone()
+                if r:
+                    prev = dict(zip(['id', 'parent_name', 'student_name', 'contact',
+                                     'responsible', 'processing_status'], r))
             if 'processing_status' in body:
                 # Дата перехода в колонку доски — только если статус реально сменился
                 new_ps = esc(body['processing_status'])
@@ -118,8 +132,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(f"UPDATE leads SET {', '.join(sets)} WHERE id = {lead_id} RETURNING status_changed_at")
             row = cur.fetchone()
             changed = row[0].isoformat() if row and row[0] else None
+            new_status = str(body.get('processing_status') or '')
+            window = None
+            if (prev and new_status.startswith(CONTACTED_PREFIX)
+                    and not str(prev.get('processing_status') or '').startswith(CONTACTED_PREFIX)):
+                window = send_contacted(prev, new_status)
             return {'statusCode': 200, 'headers': CORS,
-                    'body': json.dumps({'success': True, 'status_changed_at': changed}), 'isBase64Encoded': False}
+                    'body': json.dumps({'success': True, 'status_changed_at': changed,
+                                        'window_sent': window.get('ok') if window else None}), 'isBase64Encoded': False}
 
         return {'statusCode': 405, 'headers': CORS,
                 'body': json.dumps({'error': 'Method not allowed'}), 'isBase64Encoded': False}
