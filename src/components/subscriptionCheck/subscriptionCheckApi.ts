@@ -23,6 +23,8 @@ export interface TariffInfo {
 export interface CheckRow {
   customerId: number;
   student: string;
+  studyStatusId: number | null;
+  studyStatus: string;
   ourPay: PayInfo | null;
   crmPay: PayInfo | null;
   tariffNow?: TariffInfo | null;

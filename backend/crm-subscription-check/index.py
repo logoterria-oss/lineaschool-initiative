@@ -181,13 +181,21 @@ def _diag_prices(tariffs):
 
 # ---------- шаг 1: ученики и оплаты ----------
 
+# Как в «Списке учеников»: 1=Активен, 2=Завершил, 3=Бросил, 4=Каникулы (заморожен), 5=Каникулы
+STATUS_NAMES = {1: "Активен", 2: "Завершил", 3: "Бросил",
+                4: "Каникулы (заморожен)", 5: "Каникулы"}
+
+
 def _students(token):
+    """Ученики CRM со статусом. Архивные карточки считаем «Бросил»."""
     out = {}
-    for c in _paged(token, "/v2api/1/customer/index", {"is_study": 1, "removed": 0}):
-        name = (c.get("name") or "").strip()
-        if c.get("id") is None or not name or _is_test(name):
-            continue
-        out[int(c["id"])] = name
+    for removed in (0, 1):
+        for c in _paged(token, "/v2api/1/customer/index", {"is_study": 1, "removed": removed}):
+            name = (c.get("name") or "").strip()
+            if c.get("id") is None or not name or _is_test(name) or int(c["id"]) in out:
+                continue
+            sid = 3 if removed else c.get("study_status_id")
+            out[int(c["id"])] = (name, sid)
     return out
 
 
@@ -223,9 +231,9 @@ def _base(cur):
         f"AND paid_at > now() - interval '{PAYMENTS_DAYS} days' ORDER BY paid_at")
     payments = cur.fetchall()
     by_name = {}
-    for cid, nm in students.items():
+    for cid, (nm, _sid) in students.items():
         by_name.setdefault(_norm(nm), cid)
-    names = list(students.values())
+    names = [nm for nm, _sid in students.values()]
     our_last = {}
     for p in payments:
         amount = _num(p["amount"])
@@ -247,9 +255,10 @@ def _base(cur):
             our_last[cid] = {"date": p["d"], "amount": amount, "plan": p.get("plan") or ""}
 
     rows = [{"customerId": cid, "student": name,
+             "studyStatusId": sid, "studyStatus": STATUS_NAMES.get(sid, "—"),
              "ourPay": our_last.get(cid), "crmPay": crm_last.get(cid),
              "checked": False, "status": "pending", "issues": []}
-            for cid, name in students.items()]
+            for cid, (name, sid) in students.items()]
     rows.sort(key=lambda r: _norm(r["student"]))
     return {"rows": rows, "tariffs": list(tariffs.values()),
             "builtAt": datetime.utcnow().isoformat() + "Z"}

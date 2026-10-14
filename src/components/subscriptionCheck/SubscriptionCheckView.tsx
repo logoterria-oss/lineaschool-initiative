@@ -1,9 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { statusDot } from '@/components/students/studentsTableHelpers';
 import { useSubscriptionCheck } from './useSubscriptionCheck';
 import { CheckRow } from './subscriptionCheckApi';
 
 type Filter = 'all' | 'error' | 'ok';
+
+// Статусы CRM, как в «Списке учеников»
+const STUDY_STATUSES: { id: number; label: string }[] = [
+  { id: 1, label: 'Активен' },
+  { id: 5, label: 'Каникулы' },
+  { id: 4, label: 'Каникулы (заморожен)' },
+  { id: 2, label: 'Завершил' },
+  { id: 3, label: 'Бросил' },
+];
+const DEFAULT_STATUSES = [1];
 
 const money = (v?: number | null) => (v || v === 0 ? `${Math.round(v).toLocaleString('ru-RU')} ₽` : '—');
 const day = (d?: string | null) => (d ? d.slice(0, 10).split('-').reverse().join('.') : '');
@@ -69,23 +82,37 @@ const LessonCell = ({ row }: { row: CheckRow }) => {
 const SubscriptionCheckView = () => {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
-  const { rows, loading, error, progress, reload } = useSubscriptionCheck();
+  const [statuses, setStatuses] = useState<number[]>(DEFAULT_STATUSES);
+  const inStatus = useCallback(
+    (r: CheckRow) => !statuses.length || statuses.includes(r.studyStatusId ?? -1),
+    [statuses],
+  );
+  const { rows, loading, error, progress, reload } = useSubscriptionCheck(inStatus);
+
+  const byStatus = useMemo(() => rows.filter(inStatus), [rows, inStatus]);
 
   const counts = useMemo(
     () => ({
-      all: rows.length,
-      error: rows.filter((r) => r.status === 'error').length,
-      ok: rows.filter((r) => r.status === 'ok').length,
+      all: byStatus.length,
+      error: byStatus.filter((r) => r.status === 'error').length,
+      ok: byStatus.filter((r) => r.status === 'ok').length,
     }),
-    [rows],
+    [byStatus],
   );
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return rows.filter(
+    return byStatus.filter(
       (r) => (filter === 'all' || r.status === filter) && (!q || r.student.toLowerCase().includes(q)),
     );
-  }, [rows, filter, query]);
+  }, [byStatus, filter, query]);
+
+  const statusLabel =
+    statuses.length === 1
+      ? STUDY_STATUSES.find((s) => s.id === statuses[0])?.label
+      : statuses.length === 0
+        ? 'Все статусы'
+        : `Статусы · ${statuses.length}`;
 
   const checking = progress.total > 0 && progress.done < progress.total;
 
@@ -100,12 +127,43 @@ const SubscriptionCheckView = () => {
       <div>
         <h2 className="text-xl font-bold text-gray-900">Корректность абонементов в CRM</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Все занимающиеся ученики. Зелёная строка — платёж проведён в CRM той же суммой, оплаченный абонемент
+          Ученики из CRM (по умолчанию — со статусом «Активен»). Зелёная строка — платёж проведён в CRM той же суммой, оплаченный абонемент
           заведён (сейчас или следующим), а последний урок списан по цене абонемента. Иначе — красная.
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="h-[34px] px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 inline-flex items-center gap-1.5 hover:bg-gray-50">
+              <Icon name="Users" size={15} className="text-gray-400" />
+              {statusLabel}
+              <Icon name="ChevronDown" size={14} className="text-gray-400" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-60 p-2">
+            {STUDY_STATUSES.map((st) => (
+              <label key={st.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                <Checkbox
+                  checked={statuses.includes(st.id)}
+                  onCheckedChange={() =>
+                    setStatuses((prev) => (prev.includes(st.id) ? prev.filter((x) => x !== st.id) : [...prev, st.id]))
+                  }
+                />
+                <span className={`w-2 h-2 rounded-full ${statusDot(st.id)}`} />
+                <span className="text-sm text-gray-700">{st.label}</span>
+              </label>
+            ))}
+            <div className="flex justify-between border-t border-gray-100 mt-1 pt-1.5 px-2">
+              <button onClick={() => setStatuses(DEFAULT_STATUSES)} className="text-xs text-gray-600 hover:underline">
+                Только активные
+              </button>
+              <button onClick={() => setStatuses([])} className="text-xs text-gray-600 hover:underline">
+                Все
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
         {FILTERS.map((f) => (
           <button
             key={f.id}
@@ -159,6 +217,10 @@ const SubscriptionCheckView = () => {
                   <tr key={r.customerId} className={`border-t border-gray-200 align-top ${ROW_BG[r.status]}`}>
                     <td className="px-3 py-2.5">
                       <div className="font-medium text-gray-900">{r.student}</div>
+                      <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusDot(r.studyStatusId)}`} />
+                        {r.studyStatus}
+                      </div>
                       {r.issues.length > 0 && (
                         <ul className="mt-1 space-y-0.5">
                           {r.issues.map((i) => (
