@@ -33,9 +33,10 @@ SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
 PAYMENTS_DAYS = 365
 LESSONS_DAYS = 60
 PAY_WINDOW_DAYS = 3
-ROW_CACHE_MIN = 30
+ROW_CACHE_MIN = 10
 BATCH_MAX = 4
 MIN_PAY = 1000
+DIAG_LESSON_TYPE = 3
 
 CORS = {
     "Content-Type": "application/json",
@@ -289,11 +290,15 @@ def _last_lesson(token, cid, diag):
     best = None
     for ls in items:
         d = _d(ls.get("date"))
+        # Диагностику узнаём по типу урока, а не по цене: 2 000 ₽ — это и
+        # ПДУ, и урок по абонементу «16 индивидуальных»
+        if int(ls.get("lesson_type_id") or 0) == DIAG_LESSON_TYPE:
+            continue
         for det in ls.get("details") or []:
             if not isinstance(det, dict) or det.get("customer_id") != cid:
                 continue
             c = _num(det.get("commission"))
-            if c <= 0 or c in diag or not d:
+            if c <= 0 or not d:
                 continue
             if best is None or d > best["date"]:
                 best = {"date": d, "charged": c}
