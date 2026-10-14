@@ -3,43 +3,35 @@ import { getStaffToken } from '@/lib/staffApi';
 
 const API = (func2url as Record<string, string>)['crm-subscription-check'];
 
-export type CheckStatus = 'ok' | 'warn' | 'error' | 'pending';
+export type CheckStatus = 'ok' | 'error' | 'pending';
 
-export interface CheckIssue {
-  code: string;
-  text: string;
-  level?: 'warn' | 'error';
-  diff?: number;
+export interface PayInfo {
+  date: string;
+  amount: number;
+  plan?: string;
 }
 
 export interface TariffInfo {
   name: string;
   price: number | null;
+  perLesson: number | null;
   since: string;
   till: string | null;
-  archive: boolean;
+  expired?: boolean;
 }
 
 export interface CheckRow {
-  key: string;
-  source: 'ours' | 'crm_only';
-  customerId: number | null;
+  customerId: number;
   student: string;
-  date: string;
-  amount: number;
-  plan: string;
-  paySource: string;
-  kind?: 'diagnostic' | 'subscription';
-  crmPay: { id: number; date: string; amount: number; payer: string } | null;
-  tariffAtPayment?: TariffInfo | null;
+  ourPay: PayInfo | null;
+  crmPay: PayInfo | null;
   tariffNow?: TariffInfo | null;
-  expectedTariff?: string;
-  expectedLessonPrice?: number[];
-  wrongLessons?: { date: string; charged: number; tariff: string }[];
-  issues: CheckIssue[];
+  tariffNext?: TariffInfo | null;
+  expectedTariff?: string | null;
+  lastLesson?: { date: string; charged: number; expected: number | null } | null;
+  issues: string[];
   status: CheckStatus;
   checked: boolean;
-  retry?: boolean;
 }
 
 const headers = () => {
@@ -49,20 +41,20 @@ const headers = () => {
   return h;
 };
 
-export async function loadPayments(month: string) {
-  const r = await fetch(`${API}?month=${month}`, { headers: headers() });
+export async function loadStudents() {
+  const r = await fetch(API, { headers: headers() });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error || data.errorMessage || 'Не удалось загрузить оплаты');
+  if (!r.ok) throw new Error(data.error === 'unauthorized' ? 'Войдите заново' : 'CRM не ответила, попробуйте позже');
   return data as { rows: CheckRow[]; tariffs: unknown[] };
 }
 
-export async function checkBatch(rows: CheckRow[], tariffs: unknown[]): Promise<CheckRow[]> {
-  const r = await fetch(`${API}?action=check`, {
+export async function checkBatch(rows: CheckRow[], tariffs: unknown[], refresh: boolean): Promise<CheckRow[]> {
+  const r = await fetch(`${API}?action=check${refresh ? '&refresh=1' : ''}`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({ rows, tariffs }),
   });
   const data = await r.json();
-  if (!r.ok || !data.rows) throw new Error(data.error || data.errorMessage || 'CRM не ответила');
+  if (!r.ok || !data.rows) throw new Error('CRM не ответила');
   return data.rows as CheckRow[];
 }

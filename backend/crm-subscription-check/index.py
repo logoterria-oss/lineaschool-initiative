@@ -1,18 +1,17 @@
 """
-Корректность абонементов в CRM.
+Корректность абонементов в CRM — сводная таблица по всем занимающимся ученикам.
 
-Сверяем три вещи по каждой оплате месяца:
-1) деньги, которые пришли нам (payment_leads — эквайринг и ручные оплаты);
-2) оплату, проведённую в CRM (pay/index);
-3) абонемент, который стоит у ученика в CRM (customer-tariff + tariff).
+По каждому ученику: последний платёж школе, последняя оплата, проведённая в CRM,
+абонемент в CRM и сумма списания за последний урок. Строка зелёная, если:
+  1) последний платёж проведён в CRM той же суммой;
+  2) у ученика заведён абонемент ровно на эту сумму — действующий или
+     начинающийся позже (новый абонемент стартует после окончания текущего,
+     а не в день оплаты);
+  3) последний урок списан по цене абонемента, действовавшего в день урока.
 
-Плюс смотрим проведённые после оплаты уроки: если CRM списывает их по цене
-не того абонемента (например, 1200 ₽ по архивному вместо 1470 ₽ по новому),
-значит абонемент забыли поменять.
-
-GET ?month=YYYY-MM — шаг 1: оплаты наши ↔ оплаты в CRM.
-POST ?action=check {rows} — шаг 2: абонементы и списания по пачке учеников
-(CRM медленная, а у функции 5 секунд — поэтому страница дозирует пачки).
+GET  ?action=list                    — шаг 1: ученики и оплаты (быстро).
+POST ?action=check {rows, tariffs}   — шаг 2: абонементы и списания пачкой
+     по несколько учеников (у функции 5 секунд, а CRM — запрос на каждого).
 Нужен вход сотрудника (админ или руководитель).
 """
 import json
@@ -31,10 +30,12 @@ from crm_match import find_customer
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
-# Оплату в CRM могут провести на пару дней позже/раньше поступления
+PAYMENTS_DAYS = 365
+LESSONS_DAYS = 60
 PAY_WINDOW_DAYS = 3
-# Абонемент считаем вовремя заведённым, если он начался не позже этого срока
-TARIFF_GRACE_DAYS = 2
+ROW_CACHE_MIN = 30
+BATCH_MAX = 4
+MIN_PAY = 1000
 
 CORS = {
     "Content-Type": "application/json",
@@ -56,15 +57,15 @@ def _money(v):
 
 # ---------- CRM ----------
 
+_TOKEN = {"value": None, "at": 0.0}
+
+
 def _headers(token=None):
     h = {"X-APP-KEY": os.environ["S20_X_APP_KEY"], "Content-Type": "application/json",
          "Accept": "application/json"}
     if token:
         h["X-ALFACRM-TOKEN"] = token
     return h
-
-
-_TOKEN = {"value": None, "at": 0.0}
 
 
 def _token():
@@ -79,12 +80,22 @@ def _token():
     return _TOKEN["value"]
 
 
-def _paged(token, path, payload, page_size=200, workers=6):
-    """Первая страница даёт total, остальные тянем разом."""
+def _post(url, body, token, timeout=15):
+    """CRM отвечает 429 при всплеске запросов — пауза и повтор."""
+    r = None
+    for _ in range(2):
+        r = requests.post(url, json=body, headers=_headers(token), timeout=timeout)
+        if r.status_code != 429:
+            return r
+        time.sleep(0.8)
+    return r
+
+
+def _paged(token, path, payload, page_size=200, workers=4):
     def page(p):
         body = dict(payload)
         body.update({"page": p, "pageSize": page_size})
-        r = _post_retry(f"{S20_HOST}{path}", body, token, timeout=30)
+        r = _post(f"{S20_HOST}{path}", body, token, timeout=30)
         r.raise_for_status()
         return r.json()
 
@@ -98,32 +109,6 @@ def _paged(token, path, payload, page_size=200, workers=6):
         for data in ex.map(page, range(1, last)):
             items.extend(data.get("items", []))
     return items
-
-
-def _post_retry(url, body, token, timeout=15):
-    """CRM отвечает 429 при всплеске запросов — одна пауза и повтор."""
-    for attempt in range(2):
-        r = requests.post(url, json=body, headers=_headers(token), timeout=timeout)
-        if r.status_code != 429:
-            return r
-        time.sleep(0.8)
-    return r
-
-
-def _customer_tariffs(token, cids):
-    """{cid: [абонементы]} или None для ученика, если CRM не ответила —
-    тогда не делаем вывод «абонемента нет», а помечаем как непроверенное."""
-    def one(cid):
-        try:
-            r = _post_retry(f"{S20_HOST}/v2api/1/customer-tariff/index?customer_id={cid}",
-                            {"page": 0, "pageSize": 100}, token)
-            return r.json().get("items", []) if r.status_code == 200 else None
-        except Exception as e:
-            print(f"customer-tariff {cid}: {e}")
-            return None
-
-    with ThreadPoolExecutor(max_workers=6) as ex:
-        return dict(zip(cids, ex.map(one, cids)))
 
 
 # ---------- помощники ----------
@@ -148,20 +133,18 @@ def _d(v):
         return None
 
 
-def _is_archive(name):
-    return bool(re.search(r"архивн", name or "", re.I))
-
-
 def _is_diag(name):
     n = name or ""
     return bool(re.match(r"\s*(ПУ|ПДУ)\b", n)) or "диагност" in n.lower()
 
 
-def _month_bounds(month):
-    y, m = int(month[:4]), int(month[5:7])
-    first = date(y, m, 1)
-    nxt = date(y + (m == 12), (m % 12) + 1, 1)
-    return first, nxt - timedelta(days=1)
+def _is_test(name):
+    s = (name or "").lower().replace("ё", "е")
+    return bool(re.search(r"(?<![а-яa-z])(тест|test)(ов(ый|ая|ое|ые))?(?![а-яa-z])", s))
+
+
+def _norm(s):
+    return re.sub(r"\s+", " ", (s or "").strip().lower().replace("ё", "е"))
 
 
 def _conn():
@@ -182,33 +165,72 @@ def _me(cur, event):
     return cur.fetchone()
 
 
-# ---------- сверка ----------
-
-def _our_payments(cur, d_from, d_to):
-    cur.execute(
-        f"SELECT id, name, crm_name, plan, amount, source, "
-        f"(paid_at + interval '3 hours')::date AS pay_date "
-        f"FROM {SCHEMA}.payment_leads WHERE paid_at IS NOT NULL "
-        f"AND (paid_at + interval '3 hours')::date BETWEEN %s AND %s ORDER BY paid_at",
-        (d_from, d_to),
-    )
-    return cur.fetchall()
-
-
-def _norm(s):
-    return re.sub(r"\s+", " ", (s or "").strip().lower().replace("ё", "е"))
-
-
-def _customer_ids(cur, payments):
-    """Карточка CRM для каждой оплаты: сначала точное имя, потом нестрогий поиск."""
-    cur.execute(f"SELECT id, name FROM {SCHEMA}.crm_customers_cache")
-    rows = cur.fetchall()
-    by_name = {}
-    for r in rows:
-        by_name.setdefault(_norm(r["name"]), r["id"])
-    names = [r["name"] for r in rows]
+def _tariff_dict(token):
     out = {}
+    for t in _paged(token, "/v2api/1/tariff/index", {}):
+        price, cnt = _num(t.get("price")), _num(t.get("lessons_count"))
+        out[int(t["id"])] = {"id": int(t["id"]), "name": (t.get("name") or "").strip(),
+                             "price": price, "lessons_count": cnt,
+                             "per_lesson": round(price / cnt) if cnt else None}
+    return out
+
+
+def _diag_prices(tariffs):
+    return {t["price"] for t in tariffs.values() if _is_diag(t["name"]) and t["price"]}
+
+
+# ---------- шаг 1: ученики и оплаты ----------
+
+def _students(token):
+    out = {}
+    for c in _paged(token, "/v2api/1/customer/index", {"is_study": 1, "removed": 0}):
+        name = (c.get("name") or "").strip()
+        if c.get("id") is None or not name or _is_test(name):
+            continue
+        out[int(c["id"])] = name
+    return out
+
+
+def _base(cur):
+    token = _token()
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        f_st = ex.submit(_students, token)
+        f_tar = ex.submit(_tariff_dict, token)
+        f_pay = ex.submit(_paged, token, "/v2api/1/pay/index", {
+            "date_from": (date.today() - timedelta(days=PAYMENTS_DAYS)).strftime("%d.%m.%Y"),
+            "date_to": date.today().strftime("%d.%m.%Y")})
+        students, tariffs, pays = f_st.result(), f_tar.result(), f_pay.result()
+    diag = _diag_prices(tariffs)
+
+    # Последняя оплата абонемента, проведённая в CRM (диагностики не считаем)
+    crm_last = {}
+    for p in pays:
+        cid = p.get("customer_id")
+        amount = _num(p.get("income"))
+        d = _d(p.get("document_date"))
+        # Доплаты в пару сотен рублей — не оплата абонемента
+        if not cid or int(p.get("pay_type_id") or 0) != 1 or amount < MIN_PAY or not d or amount in diag:
+            continue
+        cid = int(cid)
+        prev = crm_last.get(cid)
+        if prev is None or (d, p["id"]) > (prev["date"], prev["id"]):
+            crm_last[cid] = {"id": p["id"], "date": d, "amount": amount}
+
+    # Последний платёж школе (онлайн-оплата и ручные), сопоставленный с учеником CRM
+    cur.execute(
+        f"SELECT name, crm_name, plan, amount, (paid_at + interval '3 hours')::date AS d "
+        f"FROM {SCHEMA}.payment_leads WHERE paid_at IS NOT NULL "
+        f"AND paid_at > now() - interval '{PAYMENTS_DAYS} days' ORDER BY paid_at")
+    payments = cur.fetchall()
+    by_name = {}
+    for cid, nm in students.items():
+        by_name.setdefault(_norm(nm), cid)
+    names = list(students.values())
+    our_last = {}
     for p in payments:
+        amount = _num(p["amount"])
+        if amount in diag or _is_diag(p.get("plan")):
+            continue
         cid = None
         for raw in (p.get("crm_name"), p.get("name")):
             raw = (raw or "").strip()
@@ -221,279 +243,189 @@ def _customer_ids(cur, payments):
                     cid = by_name.get(_norm(found))
             if cid:
                 break
-        out[p["id"]] = cid
-    return out, {r["id"]: r["name"] for r in rows}
+        if cid:
+            our_last[cid] = {"date": p["d"], "amount": amount, "plan": p.get("plan") or ""}
 
-
-def _lesson_charges(lessons):
-    """{cid: [(date, commission)]} — списания за проведённые уроки."""
-    out = {}
-    for ls in lessons:
-        day = _d(ls.get("date"))
-        for det in ls.get("details") or []:
-            if not isinstance(det, dict) or det.get("customer_id") is None:
-                continue
-            out.setdefault(det["customer_id"], []).append((day, _num(det.get("commission"))))
-    return out
-
-
-def _tariff_on(items, tariffs, day):
-    """Абонемент ученика, действующий в этот день (последний начавшийся)."""
-    best = None
-    for t in items:
-        b, e = _d(t.get("b_date")), _d(t.get("e_date"))
-        if b and b <= day and (e is None or e >= day):
-            if best is None or b > best[0]:
-                best = (b, e, t.get("tariff_id"))
-    if not best:
-        return None
-    tar = tariffs.get(best[2]) or {}
-    return {"name": tar.get("name") or f"#{best[2]}", "price": tar.get("price"),
-            "since": best[0], "till": best[1], "archive": _is_archive(tar.get("name"))}
-
-
-def _tariff_id_on(items, day):
-    best = None
-    for t in items:
-        b, e = _d(t.get("b_date")), _d(t.get("e_date"))
-        if b and b <= day and (e is None or e >= day) and (best is None or b > best[0]):
-            best = (b, t.get("tariff_id"))
-    return best[1] if best else None
-
-
-def _check(row, ct_items, tariffs, charges, next_pay):
-    """Проверка абонемента и списаний для одной оплаты."""
-    amount, day = row["amount"], row["date"]
-    issues = []
-    fitting = [t for t in tariffs.values() if t["price"] and abs(t["price"] - amount) < 1]
-    if _is_diag(row.get("plan")) or (fitting and all(_is_diag(t["name"]) for t in fitting)):
-        row["kind"] = "diagnostic"
-    else:
-        row["kind"] = "subscription"
-
-    current = _tariff_on(ct_items, tariffs, day) if ct_items else None
-    row["tariffAtPayment"] = current
-    today = date.today()
-    row["tariffNow"] = _tariff_on(ct_items, tariffs, today) if ct_items else None
-
-    if row["kind"] == "diagnostic":
-        return issues
-
-    if not fitting:
-        issues.append({"code": "no_tariff_price",
-                       "text": f"В CRM нет абонемента стоимостью {_money(amount)} ₽ — проверьте, за что оплата"})
-        return issues
-
-    fit_ids = {t["id"] for t in fitting}
-    per_lesson = sorted({round(t["price"] / t["lessons_count"]) for t in fitting if t["lessons_count"]})
-    row["expectedTariff"] = " / ".join(sorted({t["name"] for t in fitting}))
-    row["expectedLessonPrice"] = per_lesson
-
-    # Подходящий по цене абонемент, который ещё действовал на дату оплаты или начат позже
-    match = None
-    for t in ct_items:
-        if t.get("tariff_id") not in fit_ids:
-            continue
-        b, e = _d(t.get("b_date")), _d(t.get("e_date"))
-        if e and e < day:
-            continue
-        if match is None or (b and match[0] and b < match[0]):
-            match = (b, e)
-    if match is None:
-        now_name = current["name"] if current else "абонемента нет"
-        issues.append({"code": "tariff_not_changed",
-                       "text": f"Абонемент не заменён: в CRM стоит «{now_name}», оплачен «{row['expectedTariff']}»"})
-    elif match[0] and (match[0] - day).days > TARIFF_GRACE_DAYS:
-        late = (match[0] - day).days
-        issues.append({"code": "tariff_late",
-                       "text": f"Абонемент заменили с опозданием: оплата {day:%d.%m}, новый абонемент с {match[0]:%d.%m} (+{late} дн.)"})
-
-    # Уроки после оплаты, которые CRM списала по другому (старому) абонементу:
-    # смотрим, какой абонемент стоял у ученика в день урока
-    till = next_pay or (today + timedelta(days=1))
-    diag_prices = {t["price"] for t in tariffs.values() if _is_diag(t["name"]) and t["price"]}
-    wrong = []
-    for d_, c in sorted(charges):
-        if not d_ or not (day <= d_ < till) or c <= 0 or c in diag_prices:
-            continue
-        on = _tariff_id_on(ct_items, d_)
-        if on not in fit_ids:
-            wrong.append((d_, c, (tariffs.get(on) or {}).get("name") or "без абонемента"))
-    if wrong and per_lesson:
-        expected = max(per_lesson)
-        diff = sum(expected - c for _x, c, _n in wrong)
-        prices = sorted({c for _x, c, _n in wrong})
-        row["wrongLessons"] = [{"date": d_, "charged": c, "tariff": n} for d_, c, n in wrong]
-        issues.append({"code": "wrong_lesson_price",
-                       "text": (f"{len(wrong)} ур. после оплаты списаны по старому абонементу "
-                                f"({', '.join(_money(p) for p in prices)} ₽ вместо {_money(expected)} ₽)"),
-                       "diff": round(diff)})
-    return issues
-
-
-def _tariff_dict(token):
-    out = {}
-    for t in _paged(token, "/v2api/1/tariff/index", {}):
-        out[t["id"]] = {"id": t["id"], "name": (t.get("name") or "").strip(),
-                        "price": _num(t.get("price")), "lessons_count": _num(t.get("lessons_count"))}
-    return out
-
-
-def _base(cur, month):
-    """Шаг 1: наши оплаты ↔ оплаты в CRM. Быстро: два запроса к CRM."""
-    d_from, d_to = _month_bounds(month)
-    ours = _our_payments(cur, d_from, d_to)
-    for p in ours:
-        p["amount"] = _num(p["amount"])
-    cid_of, cust_names = _customer_ids(cur, ours)
-
-    token = _token()
-    tariffs = _tariff_dict(token)
-    crm_pays = [p for p in _paged(token, "/v2api/1/pay/index",
-                                  {"date_from": (d_from - timedelta(days=PAY_WINDOW_DAYS)).strftime("%d.%m.%Y"),
-                                   "date_to": (d_to + timedelta(days=PAY_WINDOW_DAYS)).strftime("%d.%m.%Y")})
-                if p.get("customer_id") and int(p.get("pay_type_id") or 0) == 1 and _num(p.get("income")) > 0]
-    for p in crm_pays:
-        p["_date"] = _d(p.get("document_date"))
-        p["_amount"] = _num(p.get("income"))
-
-    # Наши оплаты ↔ оплаты CRM. Сначала пары с той же суммой, потом остальные:
-    # иначе диагностика за 1 490 ₽ «забирает» себе оплату абонемента того же ученика
-    used, pair = set(), {}
-    for exact in (True, False):
-        for p in ours:
-            cid = cid_of.get(p["id"])
-            if not cid or p["id"] in pair:
-                continue
-            best = None
-            for cp in crm_pays:
-                if cp["id"] in used or cp["customer_id"] != cid or not cp["_date"]:
-                    continue
-                same = abs(cp["_amount"] - p["amount"]) < 1
-                if exact != same:
-                    continue
-                # Неточная пара — только опечатка в сумме (±10%), а не
-                # диагностика против абонемента того же ученика
-                if not exact and abs(cp["_amount"] - p["amount"]) > p["amount"] * 0.1:
-                    continue
-                if not exact and any(cid_of.get(o["id"]) == cid and o["id"] not in pair
-                                     and abs(o["amount"] - cp["_amount"]) < 1 for o in ours):
-                    continue
-                gap = abs((cp["_date"] - p["pay_date"]).days)
-                if gap > PAY_WINDOW_DAYS:
-                    continue
-                if best is None or gap < best[0]:
-                    best = (gap, cp)
-            if best:
-                used.add(best[1]["id"])
-                pair[p["id"]] = best[1]
-
-    rows = []
-    for p in ours:
-        cid = cid_of.get(p["id"])
-        crm = pair.get(p["id"])
-        rows.append({
-            "key": f"our-{p['id']}", "source": "ours", "customerId": cid,
-            "student": cust_names.get(cid) or p.get("crm_name") or p.get("name"),
-            "date": p["pay_date"], "amount": p["amount"], "plan": p.get("plan") or "",
-            "paySource": p.get("source") or "",
-            "crmPay": {"id": crm["id"], "date": crm["_date"], "amount": crm["_amount"],
-                       "payer": crm.get("payer_name") or ""} if crm else None,
-        })
-
-    # Оплаты в CRM за месяц без поступления у нас (наличные, переводы на карту)
-    for cp in crm_pays:
-        if cp["id"] in used or not cp["_date"] or not (d_from <= cp["_date"] <= d_to):
-            continue
-        cid = cp["customer_id"]
-        rows.append({
-            "key": f"crm-{cp['id']}", "source": "crm_only", "customerId": cid,
-            "student": cust_names.get(cid) or (cp.get("payer_name") or f"Клиент CRM #{cid}"),
-            "date": cp["_date"], "amount": cp["_amount"], "plan": "", "paySource": "",
-            "crmPay": {"id": cp["id"], "date": cp["_date"], "amount": cp["_amount"],
-                       "payer": cp.get("payer_name") or ""},
-        })
-
-    diag_prices = {t["price"] for t in tariffs.values() if _is_diag(t["name"]) and t["price"]}
-    for r in rows:
-        r["issues"] = []
-        r["kind"] = ("diagnostic" if _is_diag(r["plan"]) or (not r["plan"] and r["amount"] in diag_prices)
-                     else "subscription")
-        if not r["customerId"]:
-            r["issues"].append({"code": "no_customer", "text": "Не нашли ученика в CRM по имени из оплаты"})
-        elif r["source"] == "ours" and not r["crmPay"]:
-            r["issues"].append({"code": "no_crm_pay", "text": "Оплата не проведена в CRM",
-                                "level": "warn" if r["kind"] == "diagnostic" else "error"})
-        elif r["crmPay"] and abs(r["crmPay"]["amount"] - r["amount"]) >= 1:
-            r["issues"].append({"code": "pay_amount",
-                                "text": f"В CRM проведено {_money(r['crmPay']['amount'])} ₽ вместо {_money(r['amount'])} ₽"})
-        r["checked"] = not r["customerId"]
-        r["status"] = _status(r["issues"]) if r["checked"] else "pending"
-    rows.sort(key=lambda r: r["date"], reverse=True)
-    return {"month": month, "rows": rows, "tariffs": list(tariffs.values()),
+    rows = [{"customerId": cid, "student": name,
+             "ourPay": our_last.get(cid), "crmPay": crm_last.get(cid),
+             "checked": False, "status": "pending", "issues": []}
+            for cid, name in students.items()]
+    rows.sort(key=lambda r: _norm(r["student"]))
+    return {"rows": rows, "tariffs": list(tariffs.values()),
             "builtAt": datetime.utcnow().isoformat() + "Z"}
 
 
-def _status(issues):
-    if any(i.get("level", "error") == "error" for i in issues):
-        return "error"
-    return "warn" if issues else "ok"
+# ---------- шаг 2: абонементы и списания ----------
+
+def _customer_tariffs(token, cid):
+    try:
+        r = _post(f"{S20_HOST}/v2api/1/customer-tariff/index?customer_id={cid}",
+                  {"page": 0, "pageSize": 100}, token)
+        return r.json().get("items", []) if r.status_code == 200 else None
+    except Exception as e:
+        print(f"customer-tariff {cid}: {e}")
+        return None
 
 
-def _check_rows(rows, tariffs=None):
-    """Шаг 2: абонементы и списания по пачке учеников (до ~8 за вызов)."""
-    token = _token()
-    for r in rows:
-        r["date"] = _d(r["date"])
-    cids = sorted({r["customerId"] for r in rows if r.get("customerId")})
-    first = min((r["date"] for r in rows), default=date.today())
+def _last_lesson(token, cid, diag):
+    """Последний проведённый урок с платным списанием (не диагностика)."""
+    try:
+        items = _paged(token, "/v2api/1/lesson/index", {
+            "customer_id": cid, "status": 3,
+            "date_from": (date.today() - timedelta(days=LESSONS_DAYS)).isoformat(),
+            "date_to": date.today().isoformat()}, workers=2)
+    except Exception as e:
+        print(f"lessons {cid}: {e}")
+        return None
+    best = None
+    for ls in items:
+        d = _d(ls.get("date"))
+        for det in ls.get("details") or []:
+            if not isinstance(det, dict) or det.get("customer_id") != cid:
+                continue
+            c = _num(det.get("commission"))
+            if c <= 0 or c in diag or not d:
+                continue
+            if best is None or d > best["date"]:
+                best = {"date": d, "charged": c}
+    return best or {}
+
+
+def _active_on(items, day):
+    """Абонементы, действующие в этот день; первым — начавшийся раньше
+    (новый абонемент начинают после окончания текущего)."""
+    out = []
+    for t in items:
+        b, e = _d(t.get("b_date")), _d(t.get("e_date"))
+        if b and b <= day and (e is None or e >= day):
+            out.append((b, e, t))
+    return sorted(out, key=lambda x: x[0])
+
+
+def _evaluate(row, ct, lesson, tariffs):
     today = date.today()
+    issues = []
+    our, crm = row.get("ourPay"), row.get("crmPay")
+    for p in (our, crm):
+        if p and isinstance(p.get("date"), str):
+            p["date"] = _d(p["date"])
 
-    def lessons(cid):
-        try:
-            items = _paged(token, "/v2api/1/lesson/index",
-                           {"customer_id": cid, "status": 3, "date_from": first.isoformat(),
-                            "date_to": today.isoformat()}, workers=2)
-        except Exception as e:
-            print(f"lessons {cid}: {e}")
+    def info(entry):
+        if not entry:
             return None
-        return _lesson_charges(items).get(cid, [])
+        b, e, t = entry
+        tar = tariffs.get(int(t.get("tariff_id") or 0)) or {}
+        return {"name": tar.get("name") or f"#{t.get('tariff_id')}", "price": tar.get("price"),
+                "perLesson": tar.get("per_lesson"), "since": b, "till": e}
 
-    if not tariffs:
-        tariffs = _tariff_dict(token)
-    with ThreadPoolExecutor(max_workers=2) as ex:
-        f_ct = ex.submit(_customer_tariffs, token, cids)
-        f_les = ex.submit(lambda: dict(zip(cids, ThreadPoolExecutor(max_workers=4).map(lessons, cids))))
-        ct, charges = f_ct.result(), f_les.result()
+    act = _active_on(ct, today)
+    now = act[0] if act else None
+    if not now:
+        started = [(_d(t.get("b_date")), _d(t.get("e_date")), t) for t in ct]
+        started = [s for s in started if s[0] and s[0] <= today]
+        now = max(started, key=lambda s: s[0]) if started else None
+    upcoming = sorted(((_d(t.get("b_date")), _d(t.get("e_date")), t) for t in ct
+                       if _d(t.get("b_date")) and _d(t.get("b_date")) > today), key=lambda s: s[0])
+    row["tariffNow"] = info(now)
+    row["tariffNext"] = info(upcoming[0]) if upcoming else None
+    if now and now[1] and now[1] < today:
+        row["tariffNow"]["expired"] = True
 
-    by_cid = {}
+    # 1. Последний платёж школе проведён в CRM той же суммой
+    if our:
+        gap = (our["date"] - crm["date"]).days if crm else None
+        if crm is None or gap > PAY_WINDOW_DAYS:
+            issues.append(f"Платёж от {our['date']:%d.%m.%Y} не проведён в CRM")
+        elif abs(gap) <= PAY_WINDOW_DAYS and abs(crm["amount"] - our["amount"]) >= 1:
+            issues.append(f"В CRM проведено {_money(crm['amount'])} ₽, а пришло {_money(our['amount'])} ₽")
+
+    # 2. Абонемент на сумму последней оплаты заведён — текущий или следующий.
+    # Сумму берём и из CRM, и из нашего платежа: если в CRM опечатка в сумме,
+    # это уже показано в пункте 1, второй раз не ругаемся.
+    paid = crm or our
+    if not paid:
+        issues.append("Нет оплат абонемента за год")
+    else:
+        amounts = {p["amount"] for p in (our, crm) if p and abs((p["date"] - paid["date"]).days) <= PAY_WINDOW_DAYS}
+        fit = {tid for tid, t in tariffs.items() if t["price"] and any(abs(t["price"] - a) < 1 for a in amounts)}
+        row["expectedTariff"] = " / ".join(sorted(tariffs[t]["name"] for t in fit)) or None
+        has = any(int(t.get("tariff_id") or 0) in fit
+                  and (_d(t.get("e_date")) or today) >= paid["date"] for t in ct)
+        if not fit:
+            issues.append(f"Нет абонемента стоимостью {_money(paid['amount'])} ₽")
+        elif not has:
+            issues.append(f"Оплачен «{row['expectedTariff']}», но он не заведён ученику")
+
+    # 3. Последний урок списан по цене абонемента, действовавшего в тот день
+    if lesson:
+        on = _active_on(ct, lesson["date"])
+        prices = [(tariffs.get(int(t.get("tariff_id") or 0)) or {}).get("per_lesson") for _b, _e, t in on]
+        prices = [p for p in prices if p]
+        lesson["expected"] = prices[0] if prices else None
+        if not on:
+            issues.append(f"Урок {lesson['date']:%d.%m} списан без действующего абонемента")
+        elif prices and all(abs(p - lesson["charged"]) > 1 for p in prices):
+            issues.append(f"Урок {lesson['date']:%d.%m} списан по {_money(lesson['charged'])} ₽ "
+                          f"вместо {_money(prices[0])} ₽")
+    row["lastLesson"] = lesson or None
+
+    row["issues"] = issues
+    row["status"] = "error" if issues else "ok"
+    row["checked"] = True
+    return row
+
+
+def _check(cur, rows, tariffs, refresh):
+    tariffs = {int(t["id"]): t for t in tariffs}
+    cids = [int(r["customerId"]) for r in rows]
+    cached = {}
+    if not refresh and cids:
+        cur.execute(
+            f"SELECT cache_key, payload FROM {SCHEMA}.crm_json_cache WHERE cache_key = ANY(%s) "
+            f"AND updated_at > now() - interval '{ROW_CACHE_MIN} minutes'",
+            ([f"subrow:{c}" for c in cids],))
+        cached = {int(r["cache_key"].split(":")[1]): r["payload"] for r in cur.fetchall()}
+
+    need = [c for c in cids if c not in cached]
+    fresh = {}
+    if need:
+        token = _token()
+        if not tariffs:
+            tariffs = _tariff_dict(token)
+        diag = _diag_prices(tariffs)
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            f_ct = {c: ex.submit(_customer_tariffs, token, c) for c in need}
+            f_ls = {c: ex.submit(_last_lesson, token, c, diag) for c in need}
+            for c in need:
+                ct, ls = f_ct[c].result(), f_ls[c].result()
+                if ct is not None and ls is not None:
+                    fresh[c] = {"ct": ct, "lesson": ls}
+        for c, data in fresh.items():
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.crm_json_cache (cache_key, payload, updated_at) "
+                "VALUES (%s, %s::jsonb, now()) ON CONFLICT (cache_key) DO UPDATE "
+                "SET payload = EXCLUDED.payload, updated_at = now()",
+                (f"subrow:{c}", json.dumps(data, ensure_ascii=False, default=str)))
+
+    out = []
     for r in rows:
-        by_cid.setdefault(r["customerId"], set()).add(r["date"])
-    for r in rows:
-        cid = r["customerId"]
-        if ct.get(cid) is None or charges.get(cid) is None:
-            r["checked"] = False
-            r["status"] = "pending"
-            r["retry"] = True
+        c = int(r["customerId"])
+        data = fresh.get(c) or cached.get(c)
+        if data is None:
+            out.append(r)
             continue
-        later = sorted(d_ for d_ in by_cid.get(cid, ()) if d_ > r["date"])
-        extra = _check(r, ct.get(cid) or [], tariffs, charges.get(cid) or [], later[0] if later else None)
-        r["issues"] = list(r.get("issues") or []) + extra
-        r["checked"] = True
-        r["status"] = _status(r["issues"])
-    return rows
+        ls = data.get("lesson") or {}
+        lesson = {"date": _d(ls["date"]), "charged": _num(ls["charged"])} if ls.get("date") else None
+        out.append(_evaluate(dict(r), data.get("ct") or [], lesson, tariffs))
+    return out
 
 
 def handler(event: dict, context) -> dict:
-    '''Сверка оплат, оплат в CRM и абонементов учеников в CRM за месяц.'''
+    '''Сводная сверка по ученикам: платёж школе, оплата в CRM, абонемент и списание за урок.'''
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
     params = event.get("queryStringParameters") or {}
-    month = params.get("month") or date.today().strftime("%Y-%m")
-    if not re.fullmatch(r"\d{4}-\d{2}", month):
-        return _json({"error": "bad_month"}, 400)
-
     conn = _conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -503,11 +435,11 @@ def handler(event: dict, context) -> dict:
 
         if event.get("httpMethod") == "POST" and params.get("action") == "check":
             body = json.loads(event.get("body") or "{}")
-            rows = [r for r in (body.get("rows") or []) if r.get("customerId")][:40]
-            tariffs = {int(t["id"]): t for t in (body.get("tariffs") or []) if t.get("id") is not None}
-            data = _check_rows(rows, tariffs)
-            return _json({"rows": json.loads(json.dumps(data, default=str))})
+            rows = [r for r in (body.get("rows") or []) if r.get("customerId")][:BATCH_MAX]
+            res = _check(cur, rows, body.get("tariffs") or [], params.get("refresh") == "1")
+            conn.commit()
+            return _json({"rows": json.loads(json.dumps(res, default=str))})
 
-        return _json(json.loads(json.dumps(_base(cur, month), ensure_ascii=False, default=str)))
+        return _json(json.loads(json.dumps(_base(cur), ensure_ascii=False, default=str)))
     finally:
         conn.close()
