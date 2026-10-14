@@ -366,14 +366,7 @@ def _evaluate(row, ct, lesson, tariffs):
         row["expectedTariff"] = " / ".join(sorted(tariffs[t]["name"] for t in fit)) or None
         has = any(int(t.get("tariff_id") or 0) in fit
                   and (_d(t.get("e_date")) or today) >= paid["date"] for t in ct)
-        # Платёж есть только в CRM, а денег от клиента не было — это перенос
-        # остатка (например, с брата на брата). Сумма тогда любая: достаточно,
-        # чтобы ученику был заведён абонемент на это время.
-        transfer = not our and not fit and any(
-            (_d(t.get("e_date")) or today) >= paid["date"] for t in ct)
-        if transfer:
-            row["expectedTariff"] = "перенос остатка"
-        elif not fit:
+        if not fit:
             issues.append(f"Нет абонемента стоимостью {_money(paid['amount'])} ₽")
         elif not has:
             issues.append(f"Оплачен «{row['expectedTariff']}», но он не заведён ученику")
