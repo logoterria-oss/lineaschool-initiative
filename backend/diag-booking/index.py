@@ -184,6 +184,31 @@ def public_slots(cur, params):
                        'slots': [_slot(r) for r in cur.fetchall()]})
 
 
+def _name_words(raw: Any) -> set:
+    text = str(raw or '').lower().replace('ё', 'е')
+    return {w for w in re.split(r'[^a-zа-я]+', text) if len(w) > 1}
+
+
+def _phone_from_questionnaire(cur, child: str, parent: str) -> str:
+    """Телефон из анкеты родителя: совпадают слова в имени ребёнка и родителя."""
+    cw, pw = _name_words(child), _name_words(parent)
+    if not cw or not pw:
+        return ''
+    cur.execute(
+        f"SELECT child_name, parent_name, parent_phone FROM {SCHEMA}.parent_questionnaire "
+        "WHERE COALESCE(parent_phone, '') <> '' ORDER BY id DESC LIMIT 3000"
+    )
+    best, best_score = '', 0
+    for r in cur.fetchall():
+        c = len(cw & _name_words(r['child_name']))
+        p = len(pw & _name_words(r['parent_name']))
+        if c and p and c + p > best_score:
+            phone = re.sub(r'\D', '', r['parent_phone'] or '')
+            if len(phone) >= 11:
+                best, best_score = phone[:15], c + p
+    return best
+
+
 def public_book(cur, body):
     link = _link_by_token(cur, str(body.get('token') or ''))
     err = _link_error(link)
@@ -197,6 +222,8 @@ def public_book(cur, body):
     phone = re.sub(r'\D', '', str(body.get('phone') or link['phone'] or ''))[:15]
     if not child or not parent:
         return _resp(400, {'error': 'fields', 'message': 'Заполните имя ребёнка и ответственного родителя.'})
+    if not phone:
+        phone = _phone_from_questionnaire(cur, child, parent)
 
     try:
         slot_id = int(body.get('slotId') or 0)
