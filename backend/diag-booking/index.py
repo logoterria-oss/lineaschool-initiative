@@ -190,23 +190,30 @@ def _name_words(raw: Any) -> set:
 
 
 def _phone_from_questionnaire(cur, child: str, parent: str) -> str:
-    """Телефон из анкеты родителя: совпадают слова в имени ребёнка и родителя."""
+    """Телефон из анкеты, только при точном и однозначном совпадении.
+
+    Все слова имени ребёнка и все слова имени родителя (минимум имя + фамилия)
+    должны быть в одной анкете. Если подходят анкеты с разными телефонами —
+    не угадываем, телефон не ставим.
+    """
     cw, pw = _name_words(child), _name_words(parent)
-    if not cw or not pw:
+    if len(cw) < 2 or len(pw) < 2:
         return ''
     cur.execute(
         f"SELECT child_name, parent_name, parent_phone FROM {SCHEMA}.parent_questionnaire "
-        "WHERE COALESCE(parent_phone, '') <> '' ORDER BY id DESC LIMIT 3000"
+        "WHERE COALESCE(parent_phone, '') <> ''"
     )
-    best, best_score = '', 0
+    phones = set()
     for r in cur.fetchall():
-        c = len(cw & _name_words(r['child_name']))
-        p = len(pw & _name_words(r['parent_name']))
-        if c and p and c + p > best_score:
+        if cw <= _name_words(r['child_name']) and pw <= _name_words(r['parent_name']):
             phone = re.sub(r'\D', '', r['parent_phone'] or '')
-            if len(phone) >= 11:
-                best, best_score = phone[:15], c + p
-    return best
+            if len(phone) == 11 and phone[0] == '8':
+                phone = '7' + phone[1:]
+            phones.add(phone)
+    if len(phones) != 1:
+        return ''
+    phone = phones.pop()
+    return phone if len(phone) == 11 else ''
 
 
 def public_book(cur, body):
