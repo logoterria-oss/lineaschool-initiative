@@ -102,9 +102,10 @@ const SubscriptionCheckView = () => {
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return byStatus.filter(
-      (r) => (filter === 'all' || r.status === filter) && (!q || r.student.toLowerCase().includes(q)),
-    );
+    const order = { error: 0, pending: 1, ok: 2 } as const;
+    return byStatus
+      .filter((r) => (filter === 'all' || r.status === filter) && (!q || r.student.toLowerCase().includes(q)))
+      .sort((a, b) => order[a.status] - order[b.status]);
   }, [byStatus, filter, query]);
 
   const statusLabel =
