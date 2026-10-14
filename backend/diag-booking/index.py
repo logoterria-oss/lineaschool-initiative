@@ -195,8 +195,8 @@ def public_book(cur, body):
     child = str(body.get('childName') or link['child_name'] or '').strip()[:200]
     parent = str(body.get('parentName') or link['parent_name'] or '').strip()[:200]
     phone = re.sub(r'\D', '', str(body.get('phone') or link['phone'] or ''))[:15]
-    if not child or not parent or len(phone) < 11:
-        return _resp(400, {'error': 'fields', 'message': 'Заполните имя ребёнка, родителя и телефон.'})
+    if not child or not parent:
+        return _resp(400, {'error': 'fields', 'message': 'Заполните имя ребёнка и мамы.'})
 
     try:
         slot_id = int(body.get('slotId') or 0)

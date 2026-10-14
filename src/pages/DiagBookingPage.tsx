@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import DiagContactForm, { DiagContactValues, EMPTY_CONTACT } from '@/components/diagBooking/DiagContactForm';
+import DiagNamesScreen from '@/components/diagBooking/DiagNamesScreen';
 import { getUtm } from '@/lib/utm';
 import {
   DiagBooking,
@@ -29,7 +29,9 @@ const DiagBookingPage = () => {
   const [network, setNetwork] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   const [picked, setPicked] = useState<DiagSlot | null>(null);
-  const [contact, setContact] = useState<DiagContactValues>(EMPTY_CONTACT);
+  const [childName, setChildName] = useState('');
+  const [parentName, setParentName] = useState('');
+  const [namesDone, setNamesDone] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<DiagBooking | null>(null);
 
@@ -49,7 +51,8 @@ const DiagBookingPage = () => {
     }
     setLink(res.link);
     setLimitReached(!!res.limitReached);
-    if (res.link.childName) setContact((c) => ({ ...c, childName: res.link!.childName }));
+    if (res.link.childName) setChildName(res.link.childName);
+    if (res.link.parentName) setParentName(res.link.parentName);
     const free = await fetchDiagFreeSlots(token);
     if (free === null) {
       setNetwork(true);
@@ -79,19 +82,19 @@ const DiagBookingPage = () => {
     const input = {
       token,
       slotId: picked.id,
-      childName: contact.childName.trim(),
-      childBirthDate: contact.childBirthDate,
-      parentName: contact.parentName.trim(),
-      phone: contact.phone.replace(/\D/g, ''),
-      telegram: contact.messengerTelegram && contact.telegram.replace('@', '').trim() ? contact.telegram.trim() : '',
-      messengers: [contact.messengerTelegram && 'Telegram', contact.messengerMax && 'Max'].filter(Boolean) as string[],
-      marketingConsent: contact.marketingConsent,
+      childName: childName.trim(),
+      childBirthDate: '',
+      parentName: parentName.trim(),
+      phone: (link?.phone || '').replace(/\D/g, ''),
+      telegram: '',
+      messengers: [],
+      marketingConsent: false,
       utm: getUtm(),
     };
     const res = await bookDiag(input);
     setSending(false);
     if (res.ok && res.booking) {
-      sendDiagLead(input, res.booking);
+      if (input.phone) sendDiagLead(input, res.booking);
       setDone(res.booking);
       return;
     }
@@ -165,12 +168,26 @@ const DiagBookingPage = () => {
     );
   }
 
+  if (!namesDone) {
+    return (
+      <DiagNamesScreen
+        title={link.title || 'Запись на диагностику'}
+        childName={childName}
+        parentName={parentName}
+        childLocked={!!link.childName && !link.isPublic}
+        onChildNameChange={setChildName}
+        onParentNameChange={setParentName}
+        onSubmit={() => setNamesDone(true)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-5">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">{link.title || 'Запись на диагностику'}</h1>
-          <p className="text-gray-500 text-sm">Выберите удобное время и оставьте контакты</p>
+          <p className="text-gray-500 text-sm">Выберите удобное время</p>
         </div>
 
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800 text-sm mb-4 flex items-center gap-2">
@@ -229,14 +246,10 @@ const DiagBookingPage = () => {
                 <span className="text-gray-400">Сначала выберите время выше</span>
               )}
             </div>
-            <DiagContactForm
-              values={contact}
-              onChange={setContact}
-              childLocked={!!link.childName && !link.isPublic}
-              sending={sending}
-              disabled={!picked}
-              onSubmit={submit}
-            />
+            <Button onClick={submit} disabled={!picked || sending} className="w-full gap-2">
+              <Icon name={sending ? 'Loader2' : 'Check'} size={16} className={sending ? 'animate-spin' : ''} />
+              Записаться на диагностику
+            </Button>
           </div>
         )}
       </div>
