@@ -36,6 +36,9 @@ PAY_WINDOW_DAYS = 3
 ROW_CACHE_MIN = 10
 BATCH_MAX = 4
 CHECK_DEADLINE = 3.8
+# Проверенные вручную платежи CRM (id), которые не надо сверять с ценой абонемента:
+# 410 — Савелий Карцев, остаток перенесён с брата Саши
+OK_CRM_PAYMENTS = {410}
 MIN_PAY = 1000
 DIAG_LESSON_TYPE = 3
 
@@ -358,7 +361,9 @@ def _evaluate(row, ct, lesson, tariffs):
     # Сумму берём и из CRM, и из нашего платежа: если в CRM опечатка в сумме,
     # это уже показано в пункте 1, второй раз не ругаемся.
     paid = crm or our
-    if not paid:
+    if crm and not our and crm.get("id") in OK_CRM_PAYMENTS:
+        pass
+    elif not paid:
         issues.append("Нет оплат абонемента за год")
     else:
         amounts = {p["amount"] for p in (our, crm) if p and abs((p["date"] - paid["date"]).days) <= PAY_WINDOW_DAYS}
