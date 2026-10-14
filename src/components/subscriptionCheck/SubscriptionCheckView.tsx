@@ -135,8 +135,7 @@ const SubscriptionCheckView = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Корректность абонементов в CRM</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500">
           Ученики из CRM (по умолчанию — со статусом «Активен»). Зелёная строка — платёж проведён в CRM той же суммой, оплаченный абонемент
           заведён (сейчас или следующим), а последний урок списан по цене абонемента. Иначе — красная.
         </p>
