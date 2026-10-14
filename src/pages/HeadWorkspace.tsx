@@ -22,6 +22,7 @@ import RegulationsView from '@/components/headWorkspace/RegulationsView';
 import ReportsFinView from '@/components/headWorkspace/ReportsFinView';
 import RecurringPaymentsView from '@/components/headWorkspace/RecurringPaymentsView';
 import PayLinksView from '@/components/headWorkspace/PayLinksView';
+import SubscriptionCheckView from '@/components/subscriptionCheck/SubscriptionCheckView';
 import UsersView from '@/components/headWorkspace/UsersView';
 import StaffListView from '@/components/headWorkspace/StaffListView';
 import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
@@ -87,6 +88,7 @@ const HeadWorkspace = () => {
       case 'reports-fin': return <ReportsFinView />;
       case 'calendar': return <RecurringPaymentsView />;
       case 'pay-links': return <PayLinksView />;
+      case 'subscription-check': return <SubscriptionCheckView />;
       case 'users': return <UsersView />;
       case 'staff-list': return <StaffListView />;
       case 'schedule': return <ScheduleView currentUser={fullName} />;

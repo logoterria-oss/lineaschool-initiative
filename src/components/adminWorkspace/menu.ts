@@ -22,6 +22,7 @@ export const ADMIN_MENU: AdminItem[] = [
   { id: 'schedule', label: 'Расписание групп и свободные слоты', kind: 'component', icon: 'CalendarDays' },
   { id: 'payments-status', label: 'Статус оплат', kind: 'component', icon: 'CreditCard' },
   { id: 'pay-links', label: 'Ссылки на оплату', kind: 'component', icon: 'Link' },
+  { id: 'subscription-check', label: 'Корректность абонементов в CRM', kind: 'component', icon: 'BadgeCheck' },
   { id: 'interactions', label: 'Взаимодействия', kind: 'component', icon: 'MessagesSquare' },
   { id: 'vacations', label: 'Даты каникул', kind: 'component', icon: 'CalendarOff' },
   { id: 'progress', label: 'Мониторинг прогресса', kind: 'component', icon: 'TrendingUp' },

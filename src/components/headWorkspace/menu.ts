@@ -51,6 +51,7 @@ export const HEAD_MENU: MenuGroup[] = [
     icon: 'Settings',
     items: [
       { id: 'interactions', label: 'Взаимодействия', kind: 'component', icon: 'MessagesSquare' },
+      { id: 'subscription-check', label: 'Корректность абонементов в CRM', kind: 'component', icon: 'BadgeCheck' },
       { id: 'vacations', label: 'Даты каникул', kind: 'component', icon: 'CalendarOff' },
       { id: 'progress', label: 'Мониторинг прогресса', kind: 'component', icon: 'TrendingUp' },
       { id: 'dropouts', label: 'Бросившие', kind: 'component', icon: 'UserMinus' },
