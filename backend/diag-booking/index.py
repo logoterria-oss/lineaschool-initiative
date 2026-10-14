@@ -10,7 +10,7 @@ import json
 import os
 import re
 import secrets
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import psycopg2
@@ -19,7 +19,11 @@ from psycopg2.extras import RealDictCursor
 from diag_hook import diag_payload, mark_diag_hook, send_diag_hook
 
 SCHEMA = 't_p93118852_lineaschool_initiati'
-MSK_NOW = "(now() AT TIME ZONE 'Europe/Moscow')"
+MSK = timezone(timedelta(hours=3))
+
+
+def _msk_now_sql() -> str:
+    return "'" + datetime.now(MSK).strftime('%Y-%m-%d %H:%M:%S') + "'::timestamp"
 # Окна должны быть заведены на 2 недели вперёд
 COVERAGE_DAYS = 14
 
@@ -55,8 +59,7 @@ def _ru(d) -> str:
 
 
 def _msk_today(cur) -> date:
-    cur.execute(f"SELECT ({MSK_NOW})::date AS d")
-    return cur.fetchone()['d']
+    return datetime.now(MSK).date()
 
 
 def _me(cur, event) -> Optional[Dict[str, Any]]:
@@ -174,7 +177,7 @@ def public_slots(cur, params):
         return err
     cur.execute(
         f"SELECT id, slot_date, time_from, time_to, booking_id FROM {SCHEMA}.diag_slots "
-        f"WHERE booking_id IS NULL AND (slot_date + time_from::time) > {MSK_NOW} "
+        f"WHERE booking_id IS NULL AND (slot_date + time_from::time) > {_msk_now_sql()} "
         "ORDER BY slot_date, time_from"
     )
     return _resp(200, {'link': _link(link), 'limitReached': _limit_reached(link),
@@ -203,7 +206,7 @@ def public_book(cur, body):
     # Сначала занимаем окно одним запросом — двое родителей не возьмут одно время
     cur.execute(
         f"UPDATE {SCHEMA}.diag_slots SET booking_id = -1 "
-        f"WHERE id = %s AND booking_id IS NULL AND (slot_date + time_from::time) > {MSK_NOW} "
+        f"WHERE id = %s AND booking_id IS NULL AND (slot_date + time_from::time) > {_msk_now_sql()} "
         "RETURNING id, slot_date, time_from, time_to",
         (slot_id,),
     )

@@ -109,9 +109,13 @@ export const checkDiagLink = async (
 };
 
 export const fetchDiagFreeSlots = async (token: string): Promise<DiagSlot[]> => {
-  const res = await fetch(`${DIAG_BOOKING_URL}?action=slots&token=${encodeURIComponent(token)}`);
-  const data = await json(res);
-  return data.slots || [];
+  try {
+    const res = await fetch(`${DIAG_BOOKING_URL}?action=slots&token=${encodeURIComponent(token)}`);
+    const data = await json(res);
+    return data.slots || [];
+  } catch {
+    return [];
+  }
 };
 
 export interface DiagBookInput {
