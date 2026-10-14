@@ -134,13 +134,6 @@ const SubscriptionCheckView = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-sm text-gray-500">
-          Ученики из CRM (по умолчанию — со статусом «Активен»). Зелёная строка — платёж проведён в CRM той же суммой, оплаченный абонемент
-          заведён (сейчас или следующим), а последний урок списан по цене абонемента. Иначе — красная.
-        </p>
-      </div>
-
       <div className="flex flex-wrap items-center gap-2">
         <Popover>
           <PopoverTrigger asChild>
