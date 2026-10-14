@@ -50,7 +50,13 @@ const DiagBookingPage = () => {
     setLink(res.link);
     setLimitReached(!!res.limitReached);
     if (res.link.childName) setContact((c) => ({ ...c, childName: res.link!.childName }));
-    setSlots(await fetchDiagFreeSlots(token));
+    const free = await fetchDiagFreeSlots(token);
+    if (free === null) {
+      setNetwork(true);
+      setLoading(false);
+      return;
+    }
+    setSlots(free);
     setLoading(false);
   };
 
@@ -92,7 +98,9 @@ const DiagBookingPage = () => {
     setError(res.message || 'Не удалось записаться. Попробуйте ещё раз.');
     if (res.error === 'taken') {
       setPicked(null);
-      setSlots(await fetchDiagFreeSlots(token));
+      const free = await fetchDiagFreeSlots(token);
+      if (free === null) setNetwork(true);
+      else setSlots(free);
     }
   };
 
@@ -109,7 +117,10 @@ const DiagBookingPage = () => {
     return (
       <Centered>
         <Icon name="WifiOff" size={36} className="mx-auto mb-3 text-gray-400" />
-        <p className="text-gray-600 mb-4">Не получилось загрузить страницу</p>
+        <h1 className="text-lg font-semibold text-gray-800 mb-1">Не получилось загрузить страницу</h1>
+        <p className="text-gray-500 text-sm mb-4">
+          Проверьте интернет и нажмите «Повторить». Если не помогает — напишите администратору.
+        </p>
         <Button onClick={load}>Повторить</Button>
       </Centered>
     );

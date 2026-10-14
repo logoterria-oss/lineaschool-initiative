@@ -108,14 +108,19 @@ export const checkDiagLink = async (
   return { network: true };
 };
 
-export const fetchDiagFreeSlots = async (token: string): Promise<DiagSlot[]> => {
-  try {
-    const res = await fetch(`${DIAG_BOOKING_URL}?action=slots&token=${encodeURIComponent(token)}`);
-    const data = await json(res);
-    return data.slots || [];
-  } catch {
-    return [];
+/** null — список не загрузился (сеть или ошибка сервера) */
+export const fetchDiagFreeSlots = async (token: string): Promise<DiagSlot[] | null> => {
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(`${DIAG_BOOKING_URL}?action=slots&token=${encodeURIComponent(token)}`);
+      const data = await json(res);
+      if (res.ok && Array.isArray(data.slots)) return data.slots;
+    } catch {
+      /* сеть — пробуем ещё раз */
+    }
+    await new Promise((r) => setTimeout(r, 700 * (i + 1)));
   }
+  return null;
 };
 
 export interface DiagBookInput {
