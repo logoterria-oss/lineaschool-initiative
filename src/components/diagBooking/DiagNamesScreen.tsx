@@ -50,7 +50,7 @@ const DiagNamesScreen = ({
         />
 
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Имя и фамилия мамы <span className="text-red-500">*</span>
+          Имя и фамилия ответственного родителя <span className="text-red-500">*</span>
         </label>
         <Input
           value={parentName}
