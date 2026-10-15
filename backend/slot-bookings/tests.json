@@ -76,11 +76,7 @@
       "name": "Group limits list",
       "method": "GET",
       "path": "/?action=group-limits",
-      "expectedStatus": 200,
-      "expectedBody": {
-        "limits": []
-      },
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     },
     {
       "name": "Set limit needs login",

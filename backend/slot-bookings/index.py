@@ -21,6 +21,7 @@ import requests
 
 import week_slots
 from name_match import same_child
+from lead_funnel import advance_lead, BEFORE_SCHEDULE, ST_SCHEDULE
 
 SCHEDULE_URL = 'https://functions.poehali.dev/6d9e6094-fd18-47ec-b45f-ad3ee4ba7cc2'
 # Окно взаимодействия — туда сразу сообщаем о новой брони
@@ -802,6 +803,7 @@ def handler(event: dict, context) -> dict:
                     args,
                 )
                 rows.append(cur.fetchone())
+            advance_lead(cur, ST_SCHEDULE, BEFORE_SCHEDULE, phone=phone, name=parent_name or child)
             conn.commit()
 
             bookings = [_row_to_booking(r) for r in rows]

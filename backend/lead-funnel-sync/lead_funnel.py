@@ -16,9 +16,13 @@ ST_REPLIED = 'Списались в "Окне" (ответ получен)'
 ST_FORM = 'Заполнена анкета'
 ST_DIAG_UNPAID = 'Запланирована диагностика (не оплачено)'
 ST_DIAG_PAID = 'Запланирована диагностика (оплачено)'
+ST_DIAG_DONE = 'Проведена диагностика'
+ST_SCHEDULE = 'Утверждено расписание'
 
 BEFORE_BOOKING = (ST_EMPTY, ST_NO_REPLY, ST_REPLIED, ST_FORM)
 BEFORE_PAYMENT = BEFORE_BOOKING + (ST_DIAG_UNPAID,)
+BEFORE_DONE = BEFORE_PAYMENT + (ST_DIAG_PAID,)
+BEFORE_SCHEDULE = BEFORE_DONE + (ST_DIAG_DONE,)
 
 
 def _q(v: str) -> str:
@@ -48,6 +52,7 @@ def advance_lead(cur, new_status: str, allowed_from: Iterable[str],
             print(f'lead-funnel: нет телефона и имени для «{new_status}»')
             return 0
         allowed = ', '.join(_q(s) for s in allowed_from)
+        cur = cur.connection.cursor()
         cur.execute(
             f"UPDATE {LEADS} SET processing_status = {_q(new_status)}, "
             "status_changed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP "
@@ -56,6 +61,7 @@ def advance_lead(cur, new_status: str, allowed_from: Iterable[str],
             "AND COALESCE(archived, FALSE) = FALSE ORDER BY id DESC LIMIT 1) RETURNING id"
         )
         row = cur.fetchone()
+        cur.close()
         n = 1 if row else 0
         if row:
             print(f'lead-funnel: лид {row[0]} → «{new_status}»')
