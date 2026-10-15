@@ -25,10 +25,9 @@ export default function ConfirmationModal({ isOpen, onClose }: ConfirmationModal
             Заявка отправлена!
           </DialogTitle>
           <DialogDescription className="text-gray-600 text-base leading-relaxed">
-            Спасибо за вашу заявку! Наш специалист свяжется с вами в ближайшее время для подтверждения записи и уточнения деталей.
-            <span className="block mt-3 font-medium text-gray-800">
-              Мы свяжемся с вами с 12:00 до 20:00 по МСК.
-            </span>
+            Спасибо за вашу заявку! Наш специалист свяжется с вами{" "}
+            <span className="font-medium text-gray-800">с 12:00 до 20:00 по МСК</span>{" "}
+            для подтверждения записи и уточнения деталей.
           </DialogDescription>
         </DialogHeader>
 
