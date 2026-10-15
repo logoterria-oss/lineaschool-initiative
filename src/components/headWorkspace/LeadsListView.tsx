@@ -4,6 +4,7 @@ import {
   Lead,
   LeadsStats,
   fetchLeads,
+  syncLeadFunnel,
   fetchLeadsStats,
   createLead,
   updateLead,
@@ -169,6 +170,9 @@ export default function LeadsListView() {
 
   useEffect(() => {
     load();
+    syncLeadFunnel().then((n) => {
+      if (n > 0) fetchLeads().then(setLeads);
+    });
   }, []);
 
   const collectStats = async (from = dateFrom, to = dateTo) => {

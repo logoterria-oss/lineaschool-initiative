@@ -53,10 +53,12 @@ def advance_lead(cur, new_status: str, allowed_from: Iterable[str],
             "status_changed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP "
             f"WHERE id = (SELECT id FROM {LEADS} WHERE {where} "
             f"AND COALESCE(TRIM(processing_status), '') IN ({allowed}) "
-            "AND COALESCE(archived, FALSE) = FALSE ORDER BY id DESC LIMIT 1)"
+            "AND COALESCE(archived, FALSE) = FALSE ORDER BY id DESC LIMIT 1) RETURNING id"
         )
-        n = cur.rowcount or 0
-        print(f'lead-funnel: «{new_status}» → обновлено {n}')
+        row = cur.fetchone()
+        n = 1 if row else 0
+        if row:
+            print(f'lead-funnel: лид {row[0]} → «{new_status}»')
         return n
     except Exception as e:
         print(f'lead-funnel failed: {e}')

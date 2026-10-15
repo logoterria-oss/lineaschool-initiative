@@ -1,0 +1,4 @@
+{"tests": [
+  {"name": "CORS", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
+  {"name": "Sync", "method": "GET", "path": "/?days=14", "expectedStatus": 200, "expectedBody": {"ok": true}, "bodyMatcher": "partial"}
+]}

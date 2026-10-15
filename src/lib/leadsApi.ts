@@ -135,3 +135,23 @@ export async function moveLead(id: number, processing_status: string): Promise<s
   return data.status_changed_at ?? null;
 }
 
+
+const FUNNEL_SYNC_URL = (func2url as Record<string, string>)['lead-funnel-sync'];
+const PAYMENT_SYNC_URL = (func2url as Record<string, string>)['mail-payment-sync'];
+
+// Подтягиваем статусы из CRM («Проведено») и банка (оплата диагностики).
+// Возвращает число лидов, которые сдвинулись по воронке.
+export async function syncLeadFunnel(): Promise<number> {
+  const run = async (url?: string) => {
+    if (!url) return 0;
+    try {
+      const r = await fetch(url);
+      const d = await r.json();
+      return Number(d?.moved || d?.matched || 0);
+    } catch {
+      return 0;
+    }
+  };
+  const [paid, done] = await Promise.all([run(PAYMENT_SYNC_URL), run(FUNNEL_SYNC_URL)]);
+  return paid + done;
+}
