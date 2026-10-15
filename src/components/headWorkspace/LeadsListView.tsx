@@ -13,7 +13,7 @@ import {
 import LeadsBoard from './leads/LeadsBoard';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
 import LeadsFilters from './leads/LeadsFilters';
-import NewLeadsPanel, { CONTACTED_STATUS } from './leads/NewLeadsPanel';
+import NewLeadsPanel from './leads/NewLeadsPanel';
 import LeadCard from './leads/LeadCard';
 import { Cell } from './leads/LeadCells';
 import {
@@ -143,8 +143,6 @@ export default function LeadsListView() {
     await setLeadArchived(id, archived);
   };
 
-  const markContacted = (id: number) => moveToStatus(id, CONTACTED_STATUS);
-
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
   // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
   useEffect(() => {
@@ -254,7 +252,7 @@ export default function LeadsListView() {
         />
       )}
 
-      {!loading && <NewLeadsPanel leads={newLeads} onContacted={markContacted} />}
+      {!loading && <NewLeadsPanel leads={newLeads} />}
 
       {!loading && leads.length > 0 && hasActiveFilters && (
         <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">

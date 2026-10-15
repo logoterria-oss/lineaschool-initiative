@@ -2,27 +2,15 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Lead } from '@/lib/leadsApi';
 
-const CONTACTED_STATUS = 'Списались в "Окне" (ответ не получен)';
-
 interface Props {
   leads: Lead[];
-  onContacted: (id: number) => void;
 }
 
-export default function NewLeadsPanel({ leads, onContacted }: Props) {
-  const [busyId, setBusyId] = useState<number | null>(null);
+export default function NewLeadsPanel({ leads }: Props) {
   const [open, setOpen] = useState(true);
 
   if (leads.length === 0) return null;
 
-  const handleContacted = async (id: number) => {
-    setBusyId(id);
-    try {
-      await onContacted(id);
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   return (
     <div className="mb-5 rounded-xl border border-red-200 bg-red-50/60 overflow-hidden">
@@ -63,18 +51,13 @@ export default function NewLeadsPanel({ leads, onContacted }: Props) {
                   {l.request_date && <span>Заявка: {l.request_date}</span>}
                 </div>
               </div>
-              <button
-                onClick={() => handleContacted(l.id)}
-                disabled={busyId === l.id}
-                className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+              <span
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white border border-red-200 px-2.5 py-1 text-xs text-red-600"
+                title="Карточка сама перейдёт в «Списались в Окне (ответ получен)», когда родитель напишет в «Окно»"
               >
-                {busyId === l.id ? (
-                  <Icon name="Loader2" size={15} className="animate-spin" />
-                ) : (
-                  <Icon name="Check" size={15} />
-                )}
-                Списались
-              </button>
+                <Icon name="Clock" size={13} />
+                Ждём ответа в «Окне»
+              </span>
             </div>
           ))}
         </div>
@@ -83,4 +66,3 @@ export default function NewLeadsPanel({ leads, onContacted }: Props) {
   );
 }
 
-export { CONTACTED_STATUS };

@@ -8,6 +8,7 @@ import os
 from typing import Dict, Any, Optional
 import requests
 from telegram_send import notify_all, get_recent_chats, bot_info
+from first_reply import mark_first_reply
 from lead_hook import send_lead_hook, mark_lead_hook, lead_feed, service_key_ok, is_test_lead, mark_first_message
 
 # Боты проекта: короткое имя -> переменная с токеном
@@ -422,6 +423,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         except ValueError:
             fm_body = {}
         res = mark_first_message(fm_body if isinstance(fm_body, dict) else {})
+        return {'statusCode': res['status'], 'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps(res['body'], ensure_ascii=False)}
+
+    if method == 'POST' and (event.get('queryStringParameters') or {}).get('action') == 'first-reply':
+        if not service_key_ok(event):
+            return {'statusCode': 401, 'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'ok': False, 'error': 'unauthorized'})}
+        try:
+            fr_body = json.loads(event.get('body') or '{}')
+        except ValueError:
+            fr_body = {}
+        res = mark_first_reply(fr_body if isinstance(fr_body, dict) else {})
         return {'statusCode': res['status'], 'headers': {'Content-Type': 'application/json'},
                 'body': json.dumps(res['body'], ensure_ascii=False)}
 

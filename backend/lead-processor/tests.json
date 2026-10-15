@@ -47,6 +47,15 @@
         "leadId": 227
       },
       "expectedStatus": 401
+    },
+    {
+      "name": "First reply without service key",
+      "method": "POST",
+      "path": "/?action=first-reply",
+      "body": {
+        "leadId": 227
+      },
+      "expectedStatus": 401
     }
   ]
 }
