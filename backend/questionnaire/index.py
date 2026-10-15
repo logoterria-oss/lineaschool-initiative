@@ -11,6 +11,7 @@ import urllib.request
 import psycopg2
 from typing import Dict, Any, Optional
 
+from lead_status import mark_lead_questionnaire
 from form_hook import form_payload, mark_hook_result, norm_phone, send_form_hook
 
 # API «Окна взаимодействия» — туда передаём заполненную анкету,
@@ -182,6 +183,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 mark_hook_result(conn, questionnaire_id, hook_result)
             except Exception as e:
                 print(f'form-hook failed: {e}')
+
+            try:
+                mark_lead_questionnaire(conn, saved.get('parent_phone'))
+            except Exception as e:
+                print(f'lead-status failed: {e}')
 
             conn.close()
 
