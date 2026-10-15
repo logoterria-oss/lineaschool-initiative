@@ -54,7 +54,7 @@ export default function LeadsListView() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Вид: таблица или колонки по статусу обработки (запоминаем выбор)
   const [view, setViewState] = useState<'table' | 'board'>(
-    () => (localStorage.getItem('leads_view') === 'board' ? 'board' : 'table'),
+    () => (localStorage.getItem('leads_view') === 'table' ? 'table' : 'board'),
   );
   const setView = (v: 'table' | 'board') => {
     setViewState(v);
