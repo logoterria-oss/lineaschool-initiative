@@ -10,6 +10,7 @@ import {
   updateLead,
   moveLead,
   setLeadArchived,
+  NO_CONTACT_FINAL,
 } from '@/lib/leadsApi';
 import LeadsBoard from './leads/LeadsBoard';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
@@ -136,6 +137,21 @@ export default function LeadsListView() {
     if (changed) {
       setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status_changed_at: changed } : l)));
     }
+  };
+
+  // Этап дозвона. Последний — «лид не вышел на связь»: ставим этот статус лида и убираем в архив.
+  const setStage = async (id: number, stage: string) => {
+    if (stage === NO_CONTACT_FINAL) {
+      const now = new Date().toISOString();
+      setLeads((prev) => prev.map((l) => (l.id === id
+        ? { ...l, no_contact_stage: stage, lead_status: NO_CONTACT_FINAL, archived: true, archived_at: now }
+        : l)));
+      await updateLead(id, { no_contact_stage: stage, lead_status: NO_CONTACT_FINAL });
+      await setLeadArchived(id, true);
+      return;
+    }
+    patch(id, 'no_contact_stage', stage);
+    updateLead(id, { no_contact_stage: stage });
   };
 
   const archiveLead = async (id: number, archived: boolean) => {
@@ -291,6 +307,7 @@ export default function LeadsListView() {
           onMove={moveToStatus}
           onArchive={archiveLead}
           onLeadStatus={(id, v) => { patch(id, 'lead_status', v); save(id, 'lead_status', v); }}
+          onStage={setStage}
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />
       ) : (
@@ -305,6 +322,7 @@ export default function LeadsListView() {
               onPatch={(k, v) => patch(l.id, k, v)}
               onSave={(k, v) => save(l.id, k, v)}
               onArchive={(a) => archiveLead(l.id, a)}
+              onStage={(s) => setStage(l.id, s)}
             />
           ))}
         </div>
@@ -357,12 +375,13 @@ export default function LeadsListView() {
                           fieldKey={c.key}
                           onChange={(v) => patch(l.id, c.key, v)}
                           onCommit={(v) => save(l.id, c.key, v)}
+                          onStage={(s) => setStage(l.id, s)}
                         />
                       </td>
                     ))}
                     <td className="px-1 py-1 pr-6 border-b border-gray-100 align-top text-center">
-                      <button onClick={() => removeLead(l.id)} className="text-gray-300 hover:text-red-500">
-                        <Icon name="Trash2" size={15} />
+                      <button onClick={() => archiveLead(l.id, !l.archived)} title={l.archived ? 'Вернуть из архива' : 'В архив'} className="text-gray-300 hover:text-amber-600">
+                        <Icon name={l.archived ? 'ArchiveRestore' : 'Archive'} size={15} />
                       </button>
                     </td>
                   </tr>

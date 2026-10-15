@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { LEAD_STATUS_OPTIONS, Lead, PROCESSING_OPTIONS } from '@/lib/leadsApi';
+import { Lead, PROCESSING_OPTIONS, leadStatusOptions } from '@/lib/leadsApi';
+import NoContactStage from './NoContactStage';
 import { leadStatusColor } from './leadColors';
 import { isUntouched } from './leadUtils';
 
@@ -10,6 +11,7 @@ interface Props {
   onComment: (id: number, comment: string) => void;
   onArchive: (id: number, archived: boolean) => void;
   onLeadStatus: (id: number, status: string) => void;
+  onStage: (id: number, stage: string) => void;
 }
 
 const NONE = '';
@@ -35,10 +37,11 @@ function fmtDate(iso?: string | null): string {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-function LeadTile({ lead, onComment, onLeadStatus, onDragStart, onDragEnd, onRestore }: {
+function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragEnd, onRestore }: {
   lead: Lead;
   onComment: (c: string) => void;
   onLeadStatus: (s: string) => void;
+  onStage: (s: string) => void;
   onDragStart: () => void;
   onDragEnd?: () => void;
   onRestore?: () => void;
@@ -105,11 +108,12 @@ function LeadTile({ lead, onComment, onLeadStatus, onDragStart, onDragEnd, onRes
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         >
           <option value="">—</option>
-          {LEAD_STATUS_OPTIONS.map((o) => (
+          {leadStatusOptions(lead.processing_status, lead.lead_status).map((o) => (
             <option key={o} value={o}>{o}</option>
           ))}
         </select>
       </div>
+      <div><NoContactStage lead={lead} onStage={onStage} compact /></div>
 
       <div className="mt-2 border-t border-gray-100 pt-1.5">
         {editing ? (
@@ -150,7 +154,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onDragStart, onDragEnd, onRes
 
 // Доска лидов: колонки по статусу обработки, как воронка в CRM.
 // Карточку можно перетащить в другую колонку — статус обработки сменится.
-export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLeadStatus }: Props) {
+export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLeadStatus, onStage }: Props) {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
   const [overArchive, setOverArchive] = useState(false);
@@ -212,6 +216,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLead
                 onDragStart={() => undefined}
                 onComment={(c) => onComment(l.id, c)}
                 onLeadStatus={(v) => onLeadStatus(l.id, v)}
+                onStage={(v) => onStage(l.id, v)}
                 onRestore={() => onArchive(l.id, false)}
               />
             ))}
@@ -284,6 +289,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLead
                       onDragEnd={() => { setDragId(null); setOverCol(null); setOverArchive(false); }}
                       onComment={(c) => onComment(l.id, c)}
                       onLeadStatus={(v) => onLeadStatus(l.id, v)}
+                      onStage={(v) => onStage(l.id, v)}
                     />
                   ))
                 )}

@@ -18,6 +18,7 @@ FIELDS = [
     'responsible', 'processing_status', 'lead_status', 'diag_date',
     'report_link', 'schedule', 'teachers', 'comment', 'contact_when', 'source',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+    'no_contact_stage',
 ]
 
 # Тестовые заявки: слово «тест»/«тестовый»/«test» в имени родителя, ребёнка или контакте.
@@ -80,7 +81,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "responsible, processing_status, lead_status, diag_date, report_link, "
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
-                "status_changed_at, archived, archived_at "
+                "status_changed_at, archived, archived_at, no_contact_stage "
                 f"FROM leads WHERE {NOT_TEST} AND became_client_at IS NULL AND duplicate_of IS NULL ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
@@ -88,7 +89,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'diag_date', 'report_link', 'schedule', 'teachers', 'comment',
                     'contact_when', 'source', 'created_at', 'updated_at',
                     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
-                    'landing_page', 'referrer', 'status_changed_at', 'archived', 'archived_at']
+                    'landing_page', 'referrer', 'status_changed_at', 'archived', 'archived_at',
+                    'no_contact_stage']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}

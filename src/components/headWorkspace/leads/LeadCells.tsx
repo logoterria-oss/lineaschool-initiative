@@ -4,8 +4,9 @@ import {
   Lead,
   RESPONSIBLE_OPTIONS,
   PROCESSING_OPTIONS,
-  LEAD_STATUS_OPTIONS,
+  leadStatusOptions,
 } from '@/lib/leadsApi';
+import NoContactStage from './NoContactStage';
 import { processingColor, leadStatusColor } from './leadColors';
 import { isContactDue, isContactOverdue } from './leadUtils';
 import ContactWhenCell from './ContactWhenCell';
@@ -15,9 +16,10 @@ interface CellProps {
   fieldKey: keyof Lead;
   onChange: (v: string) => void;
   onCommit: (v: string) => void;
+  onStage?: (stage: string) => void;
 }
 
-export function Cell({ lead, fieldKey, onChange, onCommit }: CellProps) {
+export function Cell({ lead, fieldKey, onChange, onCommit, onStage }: CellProps) {
   const value = (lead[fieldKey] as string) || '';
 
   if (fieldKey === 'responsible') {
@@ -34,8 +36,12 @@ export function Cell({ lead, fieldKey, onChange, onCommit }: CellProps) {
   }
   if (fieldKey === 'lead_status') {
     return (
-      <TagSelect value={value} options={LEAD_STATUS_OPTIONS} colorClass={leadStatusColor(value)}
-        onCommit={(v) => { onChange(v); onCommit(v); }} />
+      <div>
+        <TagSelect value={value} options={leadStatusOptions(lead.processing_status, value)}
+          colorClass={leadStatusColor(value)}
+          onCommit={(v) => { onChange(v); onCommit(v); }} />
+        {onStage && <NoContactStage lead={lead} onStage={onStage} />}
+      </div>
     );
   }
   if (fieldKey === 'report_link') {

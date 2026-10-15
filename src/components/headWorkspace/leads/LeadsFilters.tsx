@@ -3,6 +3,7 @@ import {
   RESPONSIBLE_OPTIONS,
   PROCESSING_OPTIONS,
   LEAD_STATUS_OPTIONS,
+  NO_CONTACT_STATUS,
 } from '@/lib/leadsApi';
 
 interface LeadsFiltersProps {
@@ -212,7 +213,7 @@ export default function LeadsFilters({
                   className="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:border-amber-400 bg-white"
                 >
                   <option value="">Все</option>
-                  {LEAD_STATUS_OPTIONS.map((o) => (
+                  {[NO_CONTACT_STATUS, ...LEAD_STATUS_OPTIONS].map((o) => (
                     <option key={o} value={o}>{o}</option>
                   ))}
                 </select>

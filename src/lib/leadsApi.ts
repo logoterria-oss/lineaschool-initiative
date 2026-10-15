@@ -30,6 +30,7 @@ export interface Lead {
   status_changed_at?: string | null;
   archived?: boolean;
   archived_at?: string | null;
+  no_contact_stage?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -75,6 +76,29 @@ export const PROCESSING_OPTIONS = [
   'Оплачен абонемент',
   'Клиент добавлен в мессенджер',
 ];
+
+export const NO_CONTACT_STATUS = 'Связь через "Окно" не налажена';
+export const NO_CONTACT_FINAL = 'лид не вышел на связь';
+export const NO_REPLY_PROCESSING = 'Списались в "Окне" (ответ не получен)';
+
+/** Статус «Связь не налажена» доступен только неразобранным и тем, кто не ответил в «Окне». */
+export function canHaveNoContact(processing: string): boolean {
+  const p = (processing || '').trim();
+  return p === '' || p === NO_REPLY_PROCESSING;
+}
+
+/** Этапы дозвона: у не ответивших в «Окне» первым идёт сообщение в «Окно». */
+export function noContactStages(processing: string): string[] {
+  const base = ['отправлено СМС', 'звонок 1', 'звонок 2', NO_CONTACT_FINAL];
+  return (processing || '').trim() === NO_REPLY_PROCESSING
+    ? ['Отправлено сообщение в "Окно"', ...base]
+    : base;
+}
+
+export function leadStatusOptions(processing: string, current = ''): string[] {
+  const show = canHaveNoContact(processing) || current === NO_CONTACT_STATUS;
+  return show ? [NO_CONTACT_STATUS, ...LEAD_STATUS_OPTIONS] : LEAD_STATUS_OPTIONS;
+}
 
 export const LEAD_STATUS_OPTIONS = [
   'лид в работе',
