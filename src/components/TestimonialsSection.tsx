@@ -16,7 +16,7 @@ export default function TestimonialsSection() {
       id: 1,
       name: "Алёна (10 лет) и её мама Екатерина",
       description: "Дочка начала четко говорить",
-      videoUrl: "/IMG_1146 (1).mov",
+      videoUrl: "/review-1146.mov",
       posterUrl: "/img/524d8cc7-dbd7-43eb-b572-f226aa3bd4ed.webp",
       gradient: "from-green-400 to-teal-500"
     },
@@ -24,7 +24,7 @@ export default function TestimonialsSection() {
       id: 2,
       name: "Вероника (9 лет)",
       description: "Дочка стала говорить увереннее",
-      videoUrl: "/IMG_1145 (1).mov",
+      videoUrl: "/review-1145.mov",
       posterUrl: "/img/aa2deff0-fd00-4b4c-885e-1d594dabb2fa.webp",
       gradient: "from-green-400 to-teal-500"
     },
@@ -32,7 +32,7 @@ export default function TestimonialsSection() {
       id: 3,
       name: "Арсений (14 лет), Марк (10 лет) и их мама Елена",
       description: "Готовы к школе на 100%",
-      videoUrl: "/IMG_1149.MOV",
+      videoUrl: "/review-1149.mov",
       posterUrl: "/img/9ee7762b-6dde-4de8-bc8a-9404b8633499.webp",
       gradient: "from-green-400 to-teal-500"
     },
@@ -40,7 +40,7 @@ export default function TestimonialsSection() {
       id: 4,
       name: "Рома (11 лет)",
       description: "За 3 месяца сын заговорил четко",
-      videoUrl: "/IMG_1141 (1) (1).mov",
+      videoUrl: "/review-1141.mov",
       posterUrl: "https://cdn.poehali.dev/files/d84740ec-1f13-4c59-909a-686596b2be90.png",
       gradient: "from-green-400 to-teal-500"
     },
@@ -48,7 +48,7 @@ export default function TestimonialsSection() {
       id: 5,
       name: "Полина, мама Насти (10 лет)",
       description: "Проблемы с Р полностью решены",
-      videoUrl: "/IMG_1143 (1).mov",
+      videoUrl: "/review-1143.mov",
       posterUrl: "https://cdn.poehali.dev/files/95c1208c-115e-4433-8267-a088aefdbd86.png",
       gradient: "from-green-400 to-teal-500"
     },
@@ -56,7 +56,7 @@ export default function TestimonialsSection() {
       id: 6,
       name: "Риана (12 лет)",
       description: "Подготовились к школе за 2 месяца",
-      videoUrl: "/IMG_1144 (1).mov",
+      videoUrl: "/review-1144.mov",
       posterUrl: "/img/f9c45555-2e89-4491-a5be-deab8dae18ca.webp",
       gradient: "from-green-400 to-teal-500"
     },
@@ -64,7 +64,7 @@ export default function TestimonialsSection() {
       id: 7,
       name: "Мария, мама Ромы (11 лет)",
       description: "",
-      videoUrl: "/IMG_1156.MOV",
+      videoUrl: "/review-1156.mov",
       posterUrl: "/img/dcaa1950-dbe7-475a-8abc-1e3fc58a1585.webp",
       gradient: "from-green-400 to-teal-500"
     }
@@ -127,10 +127,10 @@ export default function TestimonialsSection() {
     "/5298690179890020349.jpg",
     "https://cdn.poehali.dev/projects/a085bb84-fdb7-4eab-976d-509a5a45c40e/bucket/aa0870fb-cd07-462b-aa6c-6449db0c424d.png",
     "/5298690179890020350.jpg",
-    "/Снимок экрана 2025-08-29 110658.png",
-    "/Снимок экрана 2025-08-29 113848.png",
-    "/Снимок экрана 2025-08-29 114544.png",
-    "/Снимок экрана 2025-08-29 114652.png"
+    "/review-screen-110658.png",
+    "/review-screen-113848.png",
+    "/review-screen-114544.png",
+    "/review-screen-114652.png"
   ];
 
   const nextPhotoReview = () => {
