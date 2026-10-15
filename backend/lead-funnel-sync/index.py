@@ -19,6 +19,7 @@ import psycopg2
 import requests
 
 from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID
+from diag_info import fetch_lessons, sync_diag_info, ST_PLANNED
 
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
@@ -188,12 +189,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     except ValueError:
         client_skip = 0
 
+    try:
+        diag_days = max(days, min(365, int(params.get("diag_days") or 60)))
+    except ValueError:
+        diag_days = 60
+
     token = _token()
-    with ThreadPoolExecutor(max_workers=2) as ex:
+    today = datetime.date.today()
+    with ThreadPoolExecutor(max_workers=4) as ex:
         f_diag = ex.submit(_done_diagnostics, token, days)
         f_reg = ex.submit(_done_regular_customers, token, client_days, client_skip)
+        f_plan = ex.submit(fetch_lessons, S20_HOST, _headers(token), today,
+                           today + datetime.timedelta(days=60), ST_PLANNED)
+        f_done = ex.submit(fetch_lessons, S20_HOST, _headers(token),
+                           today - datetime.timedelta(days=diag_days), today, ST_DONE)
         lessons = f_diag.result()
         regular = f_reg.result()
+        try:
+            planned_diag, done_diag = f_plan.result(), f_done.result()
+        except Exception as e:
+            print(f"lead-funnel-sync: диагностики для дат не получены: {e}")
+            planned_diag, done_diag = None, None
     cids = sorted({cid for ls in lessons for cid in _attended_customers(ls)})
 
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
@@ -207,11 +223,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             for _cid, name, phone in cur.fetchall():
                 moved += advance_lead(cur, ST_DIAG_DONE, BEFORE_DONE, phone=phone, name=name)
         clients = _mark_clients(cur, regular)
+        diag_stats = {}
+        if planned_diag is not None:
+            diag_stats = sync_diag_info(cur, SCHEMA, planned_diag, done_diag)
     finally:
         cur.close()
         conn.close()
 
     print(f"lead-funnel-sync: проведённых диагностик {len(lessons)}, учеников {len(cids)}, "
-          f"сдвинуто {moved}, новых клиентов {clients}")
-    return _json(200, {"ok": True, "done_lessons": len(lessons), "moved": moved + clients,
-                       "clients": clients})
+          f"сдвинуто {moved}, новых клиентов {clients}, даты/комментарии {diag_stats}")
+    return _json(200, {"ok": True, "done_lessons": len(lessons), "moved": moved + clients + sum(diag_stats.values()),
+                       "clients": clients, "diag": diag_stats})

@@ -6,6 +6,7 @@ import {
   PROCESSING_OPTIONS,
   leadStatusChoices,
   leadStatusClearable,
+  leadStatusEditable,
 } from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
 import { processingColor, leadStatusColor } from './leadColors';
@@ -38,10 +39,19 @@ export function Cell({ lead, fieldKey, onChange, onCommit, onStage }: CellProps)
   if (fieldKey === 'lead_status') {
     return (
       <div>
-        <TagSelect value={value} options={leadStatusChoices(lead.processing_status, value)}
-          allowEmpty={leadStatusClearable(lead.processing_status)}
-          colorClass={leadStatusColor(value)}
-          onCommit={(v) => { onChange(v); onCommit(v); }} />
+        {leadStatusEditable(lead.processing_status, value) ? (
+          <TagSelect value={value} options={leadStatusChoices(lead.processing_status, value)}
+            allowEmpty={leadStatusClearable(lead.processing_status)}
+            colorClass={leadStatusColor(value)}
+            onCommit={(v) => { onChange(v); onCommit(v); }} />
+        ) : (
+          <span
+            title="Статус лида ставится автоматически"
+            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap ${value ? leadStatusColor(value) : 'bg-gray-50 text-gray-400 border border-dashed border-gray-300'}`}
+          >
+            {value || '—'}
+          </span>
+        )}
         {onStage && <NoContactStage lead={lead} onStage={onStage} />}
       </div>
     );

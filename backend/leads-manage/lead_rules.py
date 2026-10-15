@@ -5,7 +5,8 @@
 - «Списались в "Окне" (ответ не получен)»: только «Связь через "Окно" не налажена».
 - От «ответ получен» до «Утверждено расписание»: по умолчанию «лид в работе»,
   если этап не менялся 3 дня и больше — «завис на этапе».
-- «Оплачен абонемент» и дальше: только «клиент».
+- «Оплачен абонемент»: «клиент», через 3 дня на этапе — «завис на этапе».
+- «Клиент добавлен в мессенджер»: только «клиент».
 - «нецелевой лид», «норма развития», «отказ», «игнор» — лид уходит в архив.
 Архивных лидов правила не трогают.
 """
@@ -27,7 +28,8 @@ MID = (
     'Проведена диагностика',
     'Утверждено расписание',
 )
-CLIENT_STAGES = ('Оплачен абонемент', 'Клиент добавлен в мессенджер')
+PAID = 'Оплачен абонемент'
+CLIENT_STAGES = (PAID, 'Клиент добавлен в мессенджер')
 STUCK_DAYS = 3
 
 
@@ -51,7 +53,11 @@ def apply_rules(cur, lead_id: Optional[int] = None) -> None:
     cur.execute(f"{upd}archived = TRUE, archived_at = CURRENT_TIMESTAMP "
                 f"WHERE {scope} AND {ps} NOT IN ({_in(CLIENT_STAGES)}) AND {ls} IN ({_in(CLOSING)})")
     cur.execute(f"{upd}lead_status = {_q(CLIENT)} "
-                f"WHERE {scope} AND {ps} IN ({_in(CLIENT_STAGES)}) AND {ls} <> {_q(CLIENT)}")
+                f"WHERE {scope} AND {ps} IN ({_in(CLIENT_STAGES)}) "
+                f"AND NOT ({ps} = {_q(PAID)} AND {ls} = {_q(STUCK)} AND {since}) "
+                f"AND {ls} <> {_q(CLIENT)}")
+    cur.execute(f"{upd}lead_status = {_q(STUCK)} "
+                f"WHERE {scope} AND {ps} = {_q(PAID)} AND {ls} = {_q(CLIENT)} AND {since}")
     cur.execute(f"{upd}lead_status = '' "
                 f"WHERE {scope} AND {ps} = '' AND {ls} NOT IN ('', {_q(NO_CONTACT)}, {_q(NO_SHOW)})")
     cur.execute(f"{upd}lead_status = {_q(NO_CONTACT)} "

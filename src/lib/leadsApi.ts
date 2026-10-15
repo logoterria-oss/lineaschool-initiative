@@ -31,6 +31,8 @@ export interface Lead {
   archived?: boolean;
   archived_at?: string | null;
   no_contact_stage?: string;
+  crm_diag_planned_at?: string;
+  crm_diag_done_at?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -112,6 +114,31 @@ export function leadStatusOptions(processing: string): string[] {
   if (p === '' || p === NO_REPLY_PROCESSING) return [NO_CONTACT_STATUS];
   if (CLIENT_STAGES.includes(p)) return [CLIENT_STATUS];
   return [IN_WORK_STATUS, ...CLOSING_STATUSES];
+}
+
+/** Есть ли что выбирать вручную: если вариант один и он уже стоит — список не нужен. */
+export function leadStatusEditable(processing: string, current: string): boolean {
+  if (leadStatusClearable(processing)) return true;
+  if (CLIENT_STAGES.includes((processing || '').trim())) return false;
+  return leadStatusOptions(processing).some((o) => o !== current);
+}
+
+/** Дата диагностики из CRM для карточки: запланированная или проведённая — по этапу. */
+export function diagDateLabel(l: Lead): { label: string; value: string } | null {
+  const p = (l.processing_status || '').trim();
+  const fmt = (v?: string) => {
+    const m = (v || '').match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
+    return m ? `${m[3]}.${m[2]}.${m[1].slice(2)}${m[4] ? ` ${m[4]}` : ''}` : '';
+  };
+  if (p.startsWith('Запланирована диагностика')) {
+    const v = fmt(l.crm_diag_planned_at);
+    return v ? { label: 'Диагностика', value: v } : null;
+  }
+  if (p === 'Проведена диагностика') {
+    const v = fmt(l.crm_diag_done_at);
+    return v ? { label: 'Провели диаг.', value: v } : null;
+  }
+  return null;
 }
 
 /** Варианты для выпадающего списка: текущее значение показываем, даже если вручную его не выбрать. */

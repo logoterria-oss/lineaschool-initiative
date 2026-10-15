@@ -83,7 +83,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "responsible, processing_status, lead_status, diag_date, report_link, "
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
-                "status_changed_at, archived, archived_at, no_contact_stage "
+                "status_changed_at, archived, archived_at, no_contact_stage, crm_diag_planned_at, crm_diag_done_at "
                 f"FROM leads WHERE {NOT_TEST} AND became_client_at IS NULL AND duplicate_of IS NULL ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
@@ -92,7 +92,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'contact_when', 'source', 'created_at', 'updated_at',
                     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
                     'landing_page', 'referrer', 'status_changed_at', 'archived', 'archived_at',
-                    'no_contact_stage']
+                    'no_contact_stage', 'crm_diag_planned_at', 'crm_diag_done_at']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}

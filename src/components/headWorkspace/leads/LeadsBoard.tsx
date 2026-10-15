@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { Lead, PROCESSING_OPTIONS, leadStatusChoices, leadStatusClearable } from '@/lib/leadsApi';
+import {
+  Lead, PROCESSING_OPTIONS, leadStatusChoices, leadStatusClearable, leadStatusEditable, diagDateLabel,
+} from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
 import { leadStatusColor } from './leadColors';
 import { isUntouched } from './leadUtils';
@@ -50,6 +52,8 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
   const [text, setText] = useState(lead.comment || '');
   const untouched = isUntouched(lead);
   const moved = fmtDate(lead.status_changed_at);
+  const diag = diagDateLabel(lead);
+  const editable = leadStatusEditable(lead.processing_status, lead.lead_status || '');
 
   return (
     <div
@@ -82,6 +86,13 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
           <div className="font-medium text-gray-700">{moved || '—'}</div>
         </div>
       </div>
+      {diag && (
+        <div className="mt-1.5 flex items-center gap-1 rounded-md bg-cyan-50 px-1.5 py-1 text-[11px] text-cyan-800">
+          <Icon name="CalendarCheck" size={12} className="shrink-0" />
+          <span className="text-cyan-600">{diag.label}:</span>
+          <span className="font-semibold">{diag.value}</span>
+        </div>
+      )}
 
       {onRestore && (
         <div className="mt-1 text-[11px] text-gray-400">
@@ -90,7 +101,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
       )}
 
       {/* Статус лида — меняется прямо на карточке */}
-      <div className="relative inline-block mt-2" title="Изменить статус лида">
+      <div className="relative inline-block mt-2" title={editable ? 'Изменить статус лида' : 'Статус лида ставится автоматически'}>
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
             lead.lead_status
@@ -99,9 +110,9 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
           }`}
         >
           {lead.lead_status || 'статус лида'}
-          <Icon name="ChevronDown" size={10} className="opacity-60" />
+          {editable && <Icon name="ChevronDown" size={10} className="opacity-60" />}
         </span>
-        <select
+        {editable && <select
           value={lead.lead_status || ''}
           onChange={(e) => onLeadStatus(e.target.value)}
           onMouseDown={(e) => e.stopPropagation()}
@@ -111,7 +122,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
           {leadStatusChoices(lead.processing_status, lead.lead_status || '').map((o) => (
             <option key={o} value={o}>{o}</option>
           ))}
-        </select>
+        </select>}
       </div>
       <div><NoContactStage lead={lead} onStage={onStage} compact /></div>
 
