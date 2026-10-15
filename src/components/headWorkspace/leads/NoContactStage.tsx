@@ -15,7 +15,7 @@ export default function NoContactStage({ lead, onStage, compact = false }: {
   const last = stages.length - 1;
 
   return (
-    <div className={`relative inline-flex ${compact ? 'mt-1' : 'mt-1 block'}`} title="Этап связи с лидом">
+    <div className="relative inline-flex mt-1" title="Этап связи с лидом">
       <span
         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
           compact ? 'text-[10px]' : 'text-xs'
