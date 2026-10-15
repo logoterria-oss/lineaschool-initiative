@@ -8,7 +8,7 @@ from email.header import decode_header
 from datetime import datetime, timezone, timedelta
 from html.parser import HTMLParser
 from payment_hook import send_payment_hook, mark_hook_result, is_diagnostic
-from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID
+from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID, BEFORE_SUBSCRIPTION, ST_SUBSCRIPTION
 
 CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -274,11 +274,12 @@ def _notify_interaction(conn, row: dict) -> None:
                 if found:
                     row = {**row, "phone": found[0]}
 
-        if is_diagnostic(row.get("plan")):
-            with conn.cursor() as fcur:
-                advance_lead(fcur, ST_DIAG_PAID, BEFORE_PAYMENT,
-                             phone=row.get("phone"), name=row.get("crm_name") or row.get("name"))
-            conn.commit()
+        diag = is_diagnostic(row.get("plan"))
+        with conn.cursor() as fcur:
+            advance_lead(fcur, ST_DIAG_PAID if diag else ST_SUBSCRIPTION,
+                         BEFORE_PAYMENT if diag else BEFORE_SUBSCRIPTION,
+                         phone=row.get("phone"), name=row.get("crm_name") or row.get("name"))
+        conn.commit()
 
         result = send_payment_hook(row)
         mark_hook_result(conn, row["order_id"], result)

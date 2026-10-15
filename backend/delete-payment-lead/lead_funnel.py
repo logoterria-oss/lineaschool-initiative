@@ -18,11 +18,13 @@ ST_DIAG_UNPAID = 'Запланирована диагностика (не опл
 ST_DIAG_PAID = 'Запланирована диагностика (оплачено)'
 ST_DIAG_DONE = 'Проведена диагностика'
 ST_SCHEDULE = 'Утверждено расписание'
+ST_SUBSCRIPTION = 'Оплачен абонемент'
 
 BEFORE_BOOKING = (ST_EMPTY, ST_NO_REPLY, ST_REPLIED, ST_FORM)
 BEFORE_PAYMENT = BEFORE_BOOKING + (ST_DIAG_UNPAID,)
 BEFORE_DONE = BEFORE_PAYMENT + (ST_DIAG_PAID,)
 BEFORE_SCHEDULE = BEFORE_DONE + (ST_DIAG_DONE,)
+BEFORE_SUBSCRIPTION = BEFORE_SCHEDULE + (ST_SCHEDULE,)
 
 
 def _q(v: str) -> str:
