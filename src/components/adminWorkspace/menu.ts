@@ -52,7 +52,20 @@ export const ADMIN_GROUPS: AdminGroup[] = [
  */
 const PERSONAL_ITEMS: Record<number, AdminItem[]> = {
   // Хорунжева Анна
-  14: [{ id: 'questionnaires', label: 'Анкеты родителей', kind: 'component', icon: 'ClipboardList' }],
+  14: [
+    { id: 'questionnaires', label: 'Анкеты родителей', kind: 'component', icon: 'ClipboardList' },
+    { id: 'leads-list', label: 'Список лидов', kind: 'component', icon: 'UserPlus' },
+  ],
+};
+
+/** Группы конкретного администратора: без пунктов, вынесенных в его личное меню */
+export const adminGroupsFor = (staffId?: number | null): AdminGroup[] => {
+  const extra = (staffId && PERSONAL_ITEMS[staffId]) || [];
+  if (!extra.length) return ADMIN_GROUPS;
+  const moved = new Set(extra.map((i) => i.id));
+  return ADMIN_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => !moved.has(i.id)) })).filter(
+    (g) => g.items.length > 0,
+  );
 };
 
 /** Меню конкретного администратора: общее + личные разделы после расписания */

@@ -4,7 +4,7 @@ import Icon from '@/components/ui/icon';
 import AdminHeader from '@/components/AdminHeader';
 import { logoutStaff, StaffRole, ROLE_LABELS } from '@/lib/staffApi';
 import { useRoleGuard } from '@/lib/useRoleGuard';
-import { adminMenuFor, ADMIN_GROUPS, AdminItem } from '@/components/adminWorkspace/menu';
+import { adminMenuFor, adminGroupsFor, AdminItem } from '@/components/adminWorkspace/menu';
 import ScheduleView from '@/components/headWorkspace/ScheduleView';
 import InteractionsView from '@/components/headWorkspace/InteractionsView';
 import VacationsView from '@/components/headWorkspace/VacationsView';
@@ -52,6 +52,7 @@ const AdminWorkspace = () => {
 
   const fullName = me?.full_name || 'Сотрудник';
   const menu = useMemo(() => adminMenuFor(me?.id), [me?.id]);
+  const groups = useMemo(() => adminGroupsFor(me?.id), [me?.id]);
   const role = (me?.role || null) as StaffRole | null;
 
   const onLogout = async () => {
@@ -207,7 +208,7 @@ const AdminWorkspace = () => {
           );
         })}
 
-        {ADMIN_GROUPS.map((group) => {
+        {groups.map((group) => {
           const open = openGroups.includes(group.id);
           return (
             <div key={group.id}>
