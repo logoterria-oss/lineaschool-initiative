@@ -10,6 +10,7 @@ Returns: {ok, done_lessons, moved, clients}
 import re
 from concurrent.futures import ThreadPoolExecutor
 import datetime
+import time
 import json
 import os
 from typing import Any, Dict, List
@@ -78,14 +79,19 @@ def _done_diagnostics(token: str, days: int) -> List[dict]:
                  or "диагност" in str(ls.get("lesson_type_name") or "").lower())]
 
 
-def _done_regular_customers(token: str, days: int) -> set:
+def _done_regular_customers(token: str, days: int, skip: int = 0) -> set:
     today = datetime.date.today()
     payload = {"date_from": (today - datetime.timedelta(days=days)).isoformat(),
-               "date_to": today.isoformat(), "status": ST_DONE, "pageSize": 200}
+               "date_to": (today - datetime.timedelta(days=skip)).isoformat(),
+               "status": ST_DONE, "pageSize": 200}
 
     def page(n):
-        r = requests.post(f"{S20_HOST}/v2api/1/lesson/index", json={**payload, "page": n},
-                          headers=_headers(token), timeout=25)
+        for attempt in range(4):
+            r = requests.post(f"{S20_HOST}/v2api/1/lesson/index", json={**payload, "page": n},
+                              headers=_headers(token), timeout=25)
+            if r.status_code != 429:
+                break
+            time.sleep(0.6 * (attempt + 1))
         r.raise_for_status()
         return r.json()
 
@@ -93,7 +99,7 @@ def _done_regular_customers(token: str, days: int) -> set:
     items = list(first.get("items", []))
     total = int(first.get("total") or 0)
     if items and len(items) < total:
-        with ThreadPoolExecutor(max_workers=8) as ex:
+        with ThreadPoolExecutor(max_workers=3) as ex:
             for data in ex.map(page, range(1, (total + 199) // 200)):
                 items.extend(data.get("items", []))
     cids = set()
@@ -176,11 +182,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         client_days = max(days, min(1095, int(params.get("client_days") or days)))
     except ValueError:
         client_days = days
+    try:
+        client_skip = max(0, min(client_days - 1, int(params.get("client_skip") or 0)))
+    except ValueError:
+        client_skip = 0
 
     token = _token()
     with ThreadPoolExecutor(max_workers=2) as ex:
         f_diag = ex.submit(_done_diagnostics, token, days)
-        f_reg = ex.submit(_done_regular_customers, token, client_days)
+        f_reg = ex.submit(_done_regular_customers, token, client_days, client_skip)
         lessons = f_diag.result()
         regular = f_reg.result()
     cids = sorted({cid for ls in lessons for cid in _attended_customers(ls)})
