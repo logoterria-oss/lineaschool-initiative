@@ -9,6 +9,7 @@ import psycopg2
 from typing import Dict, Any
 
 from window_hook import send_contacted
+from dedupe import hide_duplicates
 
 CONTACTED_PREFIX = 'Списались'
 
@@ -70,6 +71,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return build_stats(cur, params.get('from') or '', params.get('to') or '')
 
         if method == 'GET':
+            try:
+                hide_duplicates(cur)
+            except Exception as e:
+                print(f'leads-manage: дубли не проверены: {e}')
             cur.execute(
                 "SELECT id, parent_name, student_name, student_age, contact, request_date, "
                 "responsible, processing_status, lead_status, diag_date, report_link, "
