@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { Lead, PROCESSING_OPTIONS, leadStatusOptions } from '@/lib/leadsApi';
+import { Lead, PROCESSING_OPTIONS, leadStatusChoices, leadStatusClearable } from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
 import { leadStatusColor } from './leadColors';
 import { isUntouched } from './leadUtils';
@@ -107,8 +107,8 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
           onMouseDown={(e) => e.stopPropagation()}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         >
-          <option value="">—</option>
-          {leadStatusOptions(lead.processing_status, lead.lead_status).map((o) => (
+          {(leadStatusClearable(lead.processing_status) || !lead.lead_status) && <option value="">—</option>}
+          {leadStatusChoices(lead.processing_status, lead.lead_status || '').map((o) => (
             <option key={o} value={o}>{o}</option>
           ))}
         </select>

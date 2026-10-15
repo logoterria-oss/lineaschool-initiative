@@ -95,13 +95,43 @@ export function noContactStages(processing: string): string[] {
     : base;
 }
 
-export function leadStatusOptions(processing: string, current = ''): string[] {
-  const show = canHaveNoContact(processing) || current === NO_CONTACT_STATUS;
-  return show ? [NO_CONTACT_STATUS, ...LEAD_STATUS_OPTIONS] : LEAD_STATUS_OPTIONS;
+export const IN_WORK_STATUS = 'лид в работе';
+export const STUCK_STATUS = 'завис на этапе';
+export const CLIENT_STATUS = 'клиент';
+export const CLOSING_STATUSES = ['нецелевой лид', 'норма развития', 'отказ', 'игнор'];
+const CLIENT_STAGES = ['Оплачен абонемент', 'Клиент добавлен в мессенджер'];
+
+/** Можно ли очистить статус лида (пустое значение) на этом этапе. */
+export function leadStatusClearable(processing: string): boolean {
+  return (processing || '').trim() === '';
+}
+
+/** Какие статусы лида доступны на этом этапе воронки. Закрывающие отправляют лида в архив. */
+export function leadStatusOptions(processing: string): string[] {
+  const p = (processing || '').trim();
+  if (p === '' || p === NO_REPLY_PROCESSING) return [NO_CONTACT_STATUS];
+  if (CLIENT_STAGES.includes(p)) return [CLIENT_STATUS];
+  return [IN_WORK_STATUS, ...CLOSING_STATUSES];
+}
+
+/** Варианты для выпадающего списка: текущее значение показываем, даже если вручную его не выбрать. */
+export function leadStatusChoices(processing: string, current: string): string[] {
+  const opts = leadStatusOptions(processing);
+  return current && !opts.includes(current) ? [current, ...opts] : opts;
+}
+
+/** Статус лида, который ставится автоматически при переходе на этап. */
+export function defaultLeadStatus(processing: string, current: string): string {
+  const p = (processing || '').trim();
+  if (p === '') return current === NO_CONTACT_STATUS ? current : '';
+  if (p === NO_REPLY_PROCESSING) return NO_CONTACT_STATUS;
+  if (CLIENT_STAGES.includes(p)) return CLIENT_STATUS;
+  return IN_WORK_STATUS;
 }
 
 export const LEAD_STATUS_OPTIONS = [
   'лид в работе',
+  'завис на этапе',
   'клиент',
   'нецелевой лид',
   'лид не вышел на связь',
@@ -140,6 +170,20 @@ export async function createLead(lead: Partial<Lead>): Promise<number | null> {
   return data.id ?? null;
 }
 
+export interface LeadUpdateResult {
+  lead_status?: string | null;
+  archived?: boolean | null;
+  archived_at?: string | null;
+  status_changed_at?: string | null;
+}
+
+/** Сохраняет поля и возвращает итог после автоправил (статус лида, архив). */
+export async function updateLeadRules(id: number, patch: Partial<Lead>): Promise<LeadUpdateResult | null> {
+  const res = await fetch(URL, { method: 'PUT', headers: headers(), body: JSON.stringify({ id, ...patch }) });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export async function updateLead(id: number, patch: Partial<Lead>): Promise<boolean> {
   const res = await fetch(URL, { method: 'PUT', headers: headers(), body: JSON.stringify({ id, ...patch }) });
   return res.ok;
@@ -152,11 +196,8 @@ export async function setLeadArchived(id: number, archived: boolean): Promise<bo
 }
 
 /** Смена статуса обработки; возвращает дату перехода в новую колонку. */
-export async function moveLead(id: number, processing_status: string): Promise<string | null> {
-  const res = await fetch(URL, { method: 'PUT', headers: headers(), body: JSON.stringify({ id, processing_status }) });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.status_changed_at ?? null;
+export async function moveLead(id: number, processing_status: string): Promise<LeadUpdateResult | null> {
+  return updateLeadRules(id, { processing_status });
 }
 
 

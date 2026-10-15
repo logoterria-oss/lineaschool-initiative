@@ -4,7 +4,8 @@ import {
   Lead,
   RESPONSIBLE_OPTIONS,
   PROCESSING_OPTIONS,
-  leadStatusOptions,
+  leadStatusChoices,
+  leadStatusClearable,
 } from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
 import { processingColor, leadStatusColor } from './leadColors';
@@ -37,7 +38,8 @@ export function Cell({ lead, fieldKey, onChange, onCommit, onStage }: CellProps)
   if (fieldKey === 'lead_status') {
     return (
       <div>
-        <TagSelect value={value} options={leadStatusOptions(lead.processing_status, value)}
+        <TagSelect value={value} options={leadStatusChoices(lead.processing_status, value)}
+          allowEmpty={leadStatusClearable(lead.processing_status)}
           colorClass={leadStatusColor(value)}
           onCommit={(v) => { onChange(v); onCommit(v); }} />
         {onStage && <NoContactStage lead={lead} onStage={onStage} />}
@@ -113,8 +115,8 @@ function LinkCell({ value, onChange, onCommit }: {
   );
 }
 
-function TagSelect({ value, options, colorClass, onCommit }: {
-  value: string; options: string[]; colorClass: string; onCommit: (v: string) => void;
+function TagSelect({ value, options, colorClass, onCommit, allowEmpty = true }: {
+  value: string; options: string[]; colorClass: string; onCommit: (v: string) => void; allowEmpty?: boolean;
 }) {
   return (
     <div className="relative">
@@ -129,7 +131,7 @@ function TagSelect({ value, options, colorClass, onCommit }: {
         onChange={(e) => onCommit(e.target.value)}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       >
-        <option value="">—</option>
+        {(allowEmpty || !value) && <option value="">—</option>}
         {options.map((o) => (
           <option key={o} value={o}>{o}</option>
         ))}

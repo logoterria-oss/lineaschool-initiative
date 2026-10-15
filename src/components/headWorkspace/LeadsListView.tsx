@@ -9,6 +9,10 @@ import {
   createLead,
   updateLead,
   moveLead,
+  updateLeadRules,
+  defaultLeadStatus,
+  CLOSING_STATUSES,
+  type LeadUpdateResult,
   setLeadArchived,
   NO_CONTACT_FINAL,
 } from '@/lib/leadsApi';
@@ -130,13 +134,34 @@ export default function LeadsListView() {
   // Новые (необработанные) лиды — сверху, с кнопкой «Списались».
   const newLeads = useMemo(() => sortedLeads.filter(isUntouched), [sortedLeads]);
 
+  // Ответ сервера после автоправил: статус лида и архив могли смениться сами.
+  const applyResult = (id: number, r: LeadUpdateResult | null) => {
+    if (!r) return;
+    setLeads((prev) => prev.map((l) => (l.id === id ? {
+      ...l,
+      ...(r.status_changed_at ? { status_changed_at: r.status_changed_at } : {}),
+      ...(r.lead_status != null ? { lead_status: r.lead_status } : {}),
+      ...(r.archived != null ? { archived: r.archived, archived_at: r.archived_at ?? null } : {}),
+    } : l)));
+  };
+
   const moveToStatus = async (id: number, status: string) => {
     const now = new Date().toISOString();
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, processing_status: status, status_changed_at: now } : l)));
-    const changed = await moveLead(id, status);
-    if (changed) {
-      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status_changed_at: changed } : l)));
-    }
+    setLeads((prev) => prev.map((l) => (l.id === id ? {
+      ...l, processing_status: status, status_changed_at: now,
+      lead_status: defaultLeadStatus(status, l.lead_status || ''),
+    } : l)));
+    applyResult(id, await moveLead(id, status));
+  };
+
+  // Ручная смена статуса лида. Закрывающие статусы (отказ, игнор и т.п.) отправляют лида в архив.
+  const setLeadStatus = async (id: number, status: string) => {
+    const closing = CLOSING_STATUSES.includes(status);
+    const now = new Date().toISOString();
+    setLeads((prev) => prev.map((l) => (l.id === id ? {
+      ...l, lead_status: status, ...(closing ? { archived: true, archived_at: now } : {}),
+    } : l)));
+    applyResult(id, await updateLeadRules(id, { lead_status: status }));
   };
 
   // Этап дозвона. Последний — «лид не вышел на связь»: ставим этот статус лида и убираем в архив.
@@ -156,8 +181,12 @@ export default function LeadsListView() {
 
   const archiveLead = async (id: number, archived: boolean) => {
     const now = archived ? new Date().toISOString() : null;
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, archived, archived_at: now } : l)));
+    setLeads((prev) => prev.map((l) => (l.id === id ? {
+      ...l, archived, archived_at: now,
+      ...(!archived && CLOSING_STATUSES.includes(l.lead_status || '') ? { lead_status: '' } : {}),
+    } : l)));
     await setLeadArchived(id, archived);
+    if (!archived) fetchLeads().then(setLeads);
   };
 
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
@@ -212,6 +241,10 @@ export default function LeadsListView() {
   const save = (id: number, key: keyof Lead, value: string) => {
     if (key === 'processing_status') {
       moveToStatus(id, value);
+      return;
+    }
+    if (key === 'lead_status') {
+      setLeadStatus(id, value);
       return;
     }
     updateLead(id, { [key]: value });
@@ -306,7 +339,7 @@ export default function LeadsListView() {
           leads={visibleLeads}
           onMove={moveToStatus}
           onArchive={archiveLead}
-          onLeadStatus={(id, v) => { patch(id, 'lead_status', v); save(id, 'lead_status', v); }}
+          onLeadStatus={setLeadStatus}
           onStage={setStage}
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />

@@ -16,6 +16,7 @@ export function processingColor(status: string): string {
 export function leadStatusColor(status: string): string {
   const map: Record<string, string> = {
     'лид в работе': 'bg-gray-200 text-gray-800',
+    'завис на этапе': 'bg-orange-100 text-orange-800',
     'Связь через "Окно" не налажена': 'bg-amber-100 text-amber-800',
     'клиент': 'bg-green-100 text-green-800',
     'нецелевой лид': 'bg-red-100 text-red-700',

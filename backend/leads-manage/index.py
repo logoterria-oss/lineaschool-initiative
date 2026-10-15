@@ -10,6 +10,7 @@ from typing import Dict, Any
 
 from window_hook import send_contacted
 from dedupe import hide_duplicates
+from lead_rules import apply_rules, CLOSING
 
 CONTACTED_PREFIX = 'Списались'
 
@@ -76,6 +77,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 hide_duplicates(cur)
             except Exception as e:
                 print(f'leads-manage: дубли не проверены: {e}')
+            apply_rules(cur)
             cur.execute(
                 "SELECT id, parent_name, student_name, student_age, contact, request_date, "
                 "responsible, processing_status, lead_status, diag_date, report_link, "
@@ -118,6 +120,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     sets.append("archived = TRUE, archived_at = CURRENT_TIMESTAMP")
                 else:
                     sets.append("archived = FALSE, archived_at = NULL")
+                    # Вернули из архива — закрывающий статус снимаем, иначе лид сразу уйдёт обратно
+                    if 'lead_status' not in body:
+                        closing = ', '.join("'" + esc(c) + "'" for c in CLOSING)
+                        sets.append(f"lead_status = CASE WHEN lead_status IN ({closing}) THEN '' ELSE lead_status END")
             prev = None
             if 'processing_status' in body:
                 cur.execute(
@@ -139,6 +145,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(f"UPDATE leads SET {', '.join(sets)} WHERE id = {lead_id} RETURNING status_changed_at")
             row = cur.fetchone()
             changed = row[0].isoformat() if row and row[0] else None
+            apply_rules(cur, lead_id)
+            cur.execute(f"SELECT lead_status, archived, archived_at FROM leads WHERE id = {lead_id}")
+            after = cur.fetchone()
             new_status = str(body.get('processing_status') or '')
             window = None
             if (prev and new_status.startswith(CONTACTED_PREFIX)
@@ -146,6 +155,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 window = send_contacted(prev, new_status)
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'success': True, 'status_changed_at': changed,
+                                        'lead_status': after[0] if after else None,
+                                        'archived': after[1] if after else None,
+                                        'archived_at': after[2].isoformat() if after and after[2] else None,
                                         'window_sent': window.get('ok') if window else None}), 'isBase64Encoded': False}
 
         return {'statusCode': 405, 'headers': CORS,
