@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from lead_funnel import advance_lead, BEFORE_BOOKING, ST_DIAG_UNPAID
 from diag_hook import diag_payload, mark_diag_hook, send_diag_hook
 
 SCHEMA = 't_p93118852_lineaschool_initiati'
@@ -262,6 +263,7 @@ def public_book(cur, body):
     )
     booking = cur.fetchone()
     cur.execute(f"UPDATE {SCHEMA}.diag_slots SET booking_id = %s WHERE id = %s", (booking['id'], slot['id']))
+    advance_lead(cur, ST_DIAG_UNPAID, BEFORE_BOOKING, phone=phone, name=parent)
     # Сразу сообщаем «Окну»: админы увидят запись, не дожидаясь опроса
     hook = send_diag_hook(booking)
     mark_diag_hook(cur, booking['id'], hook, SCHEMA)

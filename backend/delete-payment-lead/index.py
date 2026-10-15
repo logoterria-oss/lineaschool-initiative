@@ -7,6 +7,7 @@ import json
 import os
 import psycopg2
 from typing import Dict, Any
+from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID
 
 ADMIN_PASSWORD = '426874'
 
@@ -78,11 +79,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if action == 'mark_paid':
             cur.execute(
                 f"UPDATE {schema}.payment_leads SET paid_at = NOW(), source = 'manual' "
-                f"WHERE id = %s RETURNING id",
+                f"WHERE id = %s RETURNING id, plan, name, crm_name",
                 (lead_id,)
             )
             row = cur.fetchone()
             conn.commit()
+            if row and 'диагностик' in str(row[1] or '').lower():
+                ph = None
+                if row[3]:
+                    cur.execute(f"SELECT phone FROM {schema}.crm_customers_cache "
+                                f"WHERE name = %s AND phone IS NOT NULL LIMIT 1", (row[3],))
+                    f = cur.fetchone()
+                    ph = f[0] if f else None
+                advance_lead(cur, ST_DIAG_PAID, BEFORE_PAYMENT, phone=ph, name=row[3] or row[2])
+                conn.commit()
             cur.close()
             conn.close()
             if not row:

@@ -9,7 +9,8 @@ import time
 import psycopg2
 from typing import Dict, Any
 from crm_match import find_customer
-from payment_hook import send_payment_hook, mark_hook_result
+from payment_hook import send_payment_hook, mark_hook_result, is_diagnostic
+from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID
 
 ADMIN_PASSWORD = '426874'
 
@@ -135,6 +136,12 @@ def _notify_interaction(conn, row: Dict[str, Any], schema: str) -> None:
                 found = cur.fetchone()
                 if found:
                     row = {**row, 'phone': found[0]}
+
+        if is_diagnostic(row.get('plan')):
+            with conn.cursor() as fcur:
+                advance_lead(fcur, ST_DIAG_PAID, BEFORE_PAYMENT,
+                             phone=row.get('phone'), name=row.get('crm_name') or row.get('name'))
+            conn.commit()
 
         result = send_payment_hook(row)
         mark_hook_result(conn, row['order_id'], result)
