@@ -85,7 +85,7 @@ def _done_regular_customers(token: str, days: int) -> set:
 
     def page(n):
         r = requests.post(f"{S20_HOST}/v2api/1/lesson/index", json={**payload, "page": n},
-                          headers=_headers(token), timeout=10)
+                          headers=_headers(token), timeout=25)
         r.raise_for_status()
         return r.json()
 
@@ -172,11 +172,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         days = max(1, min(60, int(params.get("days") or 14)))
     except ValueError:
         days = 14
+    try:
+        client_days = max(days, min(1095, int(params.get("client_days") or days)))
+    except ValueError:
+        client_days = days
 
     token = _token()
     with ThreadPoolExecutor(max_workers=2) as ex:
         f_diag = ex.submit(_done_diagnostics, token, days)
-        f_reg = ex.submit(_done_regular_customers, token, days)
+        f_reg = ex.submit(_done_regular_customers, token, client_days)
         lessons = f_diag.result()
         regular = f_reg.result()
     cids = sorted({cid for ls in lessons for cid in _attended_customers(ls)})
