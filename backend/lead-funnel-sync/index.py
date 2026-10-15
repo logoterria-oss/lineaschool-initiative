@@ -20,6 +20,7 @@ import requests
 
 from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID
 from diag_info import fetch_lessons, sync_diag_info, ST_PLANNED
+from schedule_info import fetch_planned_regular, sync_schedule
 
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
@@ -196,20 +197,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     token = _token()
     today = datetime.date.today()
-    with ThreadPoolExecutor(max_workers=4) as ex:
+    ex = ThreadPoolExecutor(max_workers=5)
+    if True:
         f_diag = ex.submit(_done_diagnostics, token, days)
         f_reg = ex.submit(_done_regular_customers, token, client_days, client_skip)
         f_plan = ex.submit(fetch_lessons, S20_HOST, _headers(token), today,
                            today + datetime.timedelta(days=60), ST_PLANNED)
         f_done = ex.submit(fetch_lessons, S20_HOST, _headers(token),
                            today - datetime.timedelta(days=diag_days), today, ST_DONE)
+        f_next = ex.submit(fetch_planned_regular, S20_HOST, _headers(token))
         lessons = f_diag.result()
         regular = f_reg.result()
+        try:
+            next_lessons = f_next.result(timeout=2.5)
+        except Exception as e:
+            print(f"lead-funnel-sync: ближайшие уроки не получены: {e}")
+            next_lessons = None
         try:
             planned_diag, done_diag = f_plan.result(), f_done.result()
         except Exception as e:
             print(f"lead-funnel-sync: диагностики для дат не получены: {e}")
             planned_diag, done_diag = None, None
+    ex.shutdown(wait=False, cancel_futures=True)
     cids = sorted({cid for ls in lessons for cid in _attended_customers(ls)})
 
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
@@ -226,6 +235,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         diag_stats = {}
         if planned_diag is not None:
             diag_stats = sync_diag_info(cur, SCHEMA, planned_diag, done_diag)
+        diag_stats.update(sync_schedule(cur, SCHEMA, next_lessons))
     finally:
         cur.close()
         conn.close()

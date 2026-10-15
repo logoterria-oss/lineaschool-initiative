@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import {
-  Lead, PROCESSING_OPTIONS, leadStatusChoices, leadStatusClearable, leadStatusEditable, diagDateLabel,
+  Lead, PROCESSING_OPTIONS, leadStatusChoices, leadStatusClearable, leadStatusEditable, leadDates,
 } from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
 import { leadStatusColor } from './leadColors';
@@ -52,7 +52,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
   const [text, setText] = useState(lead.comment || '');
   const untouched = isUntouched(lead);
   const moved = fmtDate(lead.status_changed_at);
-  const diag = diagDateLabel(lead);
+  const dates = leadDates(lead);
   const editable = leadStatusEditable(lead.processing_status, lead.lead_status || '');
 
   return (
@@ -86,11 +86,15 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
           <div className="font-medium text-gray-700">{moved || '—'}</div>
         </div>
       </div>
-      {diag && (
-        <div className="mt-1.5 flex items-center gap-1 rounded-md bg-cyan-50 px-1.5 py-1 text-[11px] text-cyan-800">
-          <Icon name="CalendarCheck" size={12} className="shrink-0" />
-          <span className="text-cyan-600">{diag.label}:</span>
-          <span className="font-semibold">{diag.value}</span>
+      {dates.length > 0 && (
+        <div className="mt-1.5 space-y-0.5">
+          {dates.map((d) => (
+            <div key={d.label} className="flex items-center gap-1 rounded-md bg-cyan-50 px-1.5 py-1 text-[11px] text-cyan-800">
+              <Icon name={d.icon} size={12} className="shrink-0" />
+              <span className="text-cyan-600">{d.label}:</span>
+              <span className="font-semibold">{d.value}</span>
+            </div>
+          ))}
         </div>
       )}
 

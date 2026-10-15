@@ -33,6 +33,7 @@ export interface Lead {
   no_contact_stage?: string;
   crm_diag_planned_at?: string;
   crm_diag_done_at?: string;
+  next_lesson_at?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -123,22 +124,24 @@ export function leadStatusEditable(processing: string, current: string): boolean
   return leadStatusOptions(processing).some((o) => o !== current);
 }
 
-/** Дата диагностики из CRM для карточки: запланированная или проведённая — по этапу. */
-export function diagDateLabel(l: Lead): { label: string; value: string } | null {
+/** Даты для карточки по этапу: диагностика (план/факт) и ближайший урок. */
+export function leadDates(l: Lead): { label: string; value: string; icon: string }[] {
   const p = (l.processing_status || '').trim();
   const fmt = (v?: string) => {
     const m = (v || '').match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
     return m ? `${m[3]}.${m[2]}.${m[1].slice(2)}${m[4] ? ` ${m[4]}` : ''}` : '';
   };
-  if (p.startsWith('Запланирована диагностика')) {
-    const v = fmt(l.crm_diag_planned_at);
-    return v ? { label: 'Диагностика', value: v } : null;
+  const out: { label: string; value: string; icon: string }[] = [];
+  const add = (label: string, raw: string | undefined, icon: string) => {
+    const v = fmt(raw);
+    if (v) out.push({ label, value: v, icon });
+  };
+  if (p.startsWith('Запланирована диагностика')) add('Диагностика', l.crm_diag_planned_at, 'CalendarClock');
+  if (p === 'Проведена диагностика' || p === 'Утверждено расписание') {
+    add('Провели диаг.', l.crm_diag_done_at, 'CalendarCheck');
   }
-  if (p === 'Проведена диагностика') {
-    const v = fmt(l.crm_diag_done_at);
-    return v ? { label: 'Провели диаг.', value: v } : null;
-  }
-  return null;
+  if (p === 'Утверждено расписание') add('Первый урок', l.next_lesson_at, 'GraduationCap');
+  return out;
 }
 
 /** Варианты для выпадающего списка: текущее значение показываем, даже если вручную его не выбрать. */
