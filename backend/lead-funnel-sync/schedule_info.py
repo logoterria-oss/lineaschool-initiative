@@ -152,6 +152,9 @@ def sync_schedule(cur, schema: str, crm_lessons: Optional[List[dict]]) -> Dict[s
         nxt = min(candidates) if candidates else ""
         if has_booking and status in BEFORE_SCHEDULE:
             moved.append(int(lead_id))
+        # СРМ не ответила — не стираем дату, которую уже знаем
+        if crm_lessons is None and not nxt:
+            continue
         if nxt != (cur_next or ""):
             dated.append((int(lead_id), nxt))
 

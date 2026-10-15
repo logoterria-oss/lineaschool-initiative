@@ -17,7 +17,7 @@ ST_PLANNED = 1
 ST_DONE = 3
 ST_CANCELED = 4
 DIAG_LESSON_TYPE = 3
-DIAG_DONE_STATUS = "Проведена диагностика"
+NOTE_STATUSES = ("Проведена диагностика", "Утверждено расписание")
 
 
 def is_diag(ls: dict) -> bool:
@@ -143,7 +143,7 @@ def sync_diag_info(cur, schema: str, planned: List[dict], done: List[dict]) -> D
         new_done = d["when"] if d and d["when"] != (cur_done or "") else None
         note, lesson = None, None
         if (d and d["note"] and d["id"] and d["id"] != (note_lesson or 0)
-                and status == DIAG_DONE_STATUS):
+                and status in NOTE_STATUSES):
             day = datetime.date.fromisoformat(d["when"][:10]).strftime("%d.%m.%Y")
             note, lesson = f"Диагностика {day}: {d['note']}", d["id"]
         if new_plan is None and new_done is None and note is None:
