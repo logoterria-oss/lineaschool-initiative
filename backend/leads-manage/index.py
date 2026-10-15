@@ -76,7 +76,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
                 "status_changed_at, archived, archived_at "
-                f"FROM leads WHERE {NOT_TEST} ORDER BY id ASC"
+                f"FROM leads WHERE {NOT_TEST} AND became_client_at IS NULL ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
                     'request_date', 'responsible', 'processing_status', 'lead_status',

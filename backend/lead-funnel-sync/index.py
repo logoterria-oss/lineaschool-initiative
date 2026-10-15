@@ -3,8 +3,12 @@ Business: Сверка воронки лидов с CRM — диагностик
 переводят лида в «Проведена диагностика». Лида находим по телефону ученика
 из кэша клиентов CRM, а без телефона — по ФИО (если совпадение одно).
 Args: event с httpMethod (GET), queryStringParameters {days: глубина, по умолчанию 14}
-Returns: {ok, done_lessons, moved}
+Ещё: ученик, у которого в CRM проведено обычное (не диагностическое) занятие,
+считается клиентом — помечаем лида became_client_at, и он пропадает из воронки.
+Returns: {ok, done_lessons, moved, clients}
 """
+import re
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import json
 import os
@@ -74,6 +78,80 @@ def _done_diagnostics(token: str, days: int) -> List[dict]:
                  or "диагност" in str(ls.get("lesson_type_name") or "").lower())]
 
 
+def _done_regular_customers(token: str, days: int) -> set:
+    today = datetime.date.today()
+    payload = {"date_from": (today - datetime.timedelta(days=days)).isoformat(),
+               "date_to": today.isoformat(), "status": ST_DONE, "pageSize": 200}
+
+    def page(n):
+        r = requests.post(f"{S20_HOST}/v2api/1/lesson/index", json={**payload, "page": n},
+                          headers=_headers(token), timeout=10)
+        r.raise_for_status()
+        return r.json()
+
+    first = page(0)
+    items = list(first.get("items", []))
+    total = int(first.get("total") or 0)
+    if items and len(items) < total:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for data in ex.map(page, range(1, (total + 199) // 200)):
+                items.extend(data.get("items", []))
+    cids = set()
+    for ls in items:
+        if int(ls.get("status") or 0) != ST_DONE:
+            continue
+        if int(ls.get("lesson_type_id") or 0) == DIAG_LESSON_TYPE \
+                or "диагност" in str(ls.get("lesson_type_name") or "").lower():
+            continue
+        cids.update(_attended_customers(ls))
+    return cids
+
+
+def _norm(v) -> str:
+    return " ".join(str(v or "").split()).lower()
+
+
+def _mark_clients(cur, cids: set) -> int:
+    if not cids:
+        return 0
+    cur.execute(f"SELECT id, name, phone FROM {SCHEMA}.crm_customers_cache "
+                f"WHERE id IN ({', '.join(str(c) for c in sorted(cids))})")
+    by_phone, by_name = {}, {}
+    for cid, name, phone in cur.fetchall():
+        digits = re.sub(r"\D", "", str(phone or ""))
+        if len(digits) >= 10:
+            by_phone[digits[-10:]] = cid
+        if len(_norm(name)) >= 5:
+            by_name.setdefault(_norm(name), set()).add(cid)
+
+    cur.execute(f"SELECT id, contact, parent_name, student_name FROM {SCHEMA}.leads "
+                f"WHERE became_client_at IS NULL")
+    leads = cur.fetchall()
+    name_count = {}
+    for _id, _c, pn, sn in leads:
+        for n in {_norm(pn), _norm(sn)} - {""}:
+            name_count[n] = name_count.get(n, 0) + 1
+
+    hits = []
+    for lead_id, contact, pn, sn in leads:
+        digits = re.sub(r"\D", "", str(contact or ""))
+        cid = by_phone.get(digits[-10:]) if len(digits) >= 10 else None
+        if cid is None:
+            for n in (_norm(sn), _norm(pn)):
+                if n in by_name and len(by_name[n]) == 1 and name_count.get(n) == 1:
+                    cid = next(iter(by_name[n]))
+                    break
+        if cid is not None:
+            hits.append((lead_id, cid))
+    for lead_id, cid in hits:
+        cur.execute(f"UPDATE {SCHEMA}.leads SET became_client_at = CURRENT_TIMESTAMP, "
+                    f"crm_customer_id = {int(cid)}, updated_at = CURRENT_TIMESTAMP "
+                    f"WHERE id = {int(lead_id)} AND became_client_at IS NULL")
+    if hits:
+        print(f"lead-funnel-sync: стали клиентами лиды {[h[0] for h in hits]}")
+    return len(hits)
+
+
 def _attended_customers(ls: dict) -> List[int]:
     ids = []
     details = ls.get("details") if isinstance(ls.get("details"), list) else []
@@ -95,23 +173,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     except ValueError:
         days = 14
 
-    lessons = _done_diagnostics(_token(), days)
+    token = _token()
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        f_diag = ex.submit(_done_diagnostics, token, days)
+        f_reg = ex.submit(_done_regular_customers, token, days)
+        lessons = f_diag.result()
+        regular = f_reg.result()
     cids = sorted({cid for ls in lessons for cid in _attended_customers(ls)})
-    if not cids:
-        return _json(200, {"ok": True, "done_lessons": len(lessons), "moved": 0})
 
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
     conn.autocommit = True
     cur = conn.cursor()
-    moved = 0
+    moved = clients = 0
     try:
-        cur.execute(f"SELECT id, name, phone FROM {SCHEMA}.crm_customers_cache "
-                    f"WHERE id IN ({', '.join(str(c) for c in cids)})")
-        for _cid, name, phone in cur.fetchall():
-            moved += advance_lead(cur, ST_DIAG_DONE, BEFORE_DONE, phone=phone, name=name)
+        if cids:
+            cur.execute(f"SELECT id, name, phone FROM {SCHEMA}.crm_customers_cache "
+                        f"WHERE id IN ({', '.join(str(c) for c in cids)})")
+            for _cid, name, phone in cur.fetchall():
+                moved += advance_lead(cur, ST_DIAG_DONE, BEFORE_DONE, phone=phone, name=name)
+        clients = _mark_clients(cur, regular)
     finally:
         cur.close()
         conn.close()
 
-    print(f"lead-funnel-sync: проведённых диагностик {len(lessons)}, учеников {len(cids)}, сдвинуто {moved}")
-    return _json(200, {"ok": True, "done_lessons": len(lessons), "moved": moved})
+    print(f"lead-funnel-sync: проведённых диагностик {len(lessons)}, учеников {len(cids)}, "
+          f"сдвинуто {moved}, новых клиентов {clients}")
+    return _json(200, {"ok": True, "done_lessons": len(lessons), "moved": moved + clients,
+                       "clients": clients})
