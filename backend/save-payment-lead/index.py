@@ -6,6 +6,7 @@ Returns: HTTP response with success status
 import json
 import os
 import psycopg2
+from lead_funnel import is_test_name
 import urllib.request
 from typing import Dict, Any
 from crm_match import find_customer
@@ -90,6 +91,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "plan = EXCLUDED.plan, amount = EXCLUDED.amount",
             (name, crm_name, '', '', plan, amount, order_id)
         )
+        if is_test_name(name, crm_name):
+            cur.execute("UPDATE payment_leads SET is_test = TRUE WHERE order_id = %s", (order_id,))
         
         conn.commit()
         cur.close()

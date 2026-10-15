@@ -232,7 +232,7 @@ def _base(cur):
     # Последний платёж школе (онлайн-оплата и ручные), сопоставленный с учеником CRM
     cur.execute(
         f"SELECT name, crm_name, plan, amount, (paid_at + interval '3 hours')::date AS d "
-        f"FROM {SCHEMA}.payment_leads WHERE paid_at IS NOT NULL "
+        f"FROM {SCHEMA}.payment_leads WHERE paid_at IS NOT NULL AND NOT is_test "
         f"AND paid_at > now() - interval '{PAYMENTS_DAYS} days' ORDER BY paid_at")
     payments = cur.fetchall()
     by_name = {}

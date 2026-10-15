@@ -152,7 +152,7 @@ def _load_subscriptions() -> list:
     cur.execute(
         f"SELECT name, plan, amount, paid_at "
         f"FROM {schema}.payment_leads "
-        f"WHERE paid_at IS NOT NULL "
+        f"WHERE paid_at IS NOT NULL AND NOT is_test "
         f"ORDER BY paid_at ASC"
     )
     all_rows = cur.fetchall()

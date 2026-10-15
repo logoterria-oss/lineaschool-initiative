@@ -93,7 +93,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Get all leads ordered by created_at DESC
         cur.execute(
             "SELECT id, name, plan, amount, order_id, created_at, paid_at, "
-            "transaction_id, source, crm_name FROM payment_leads ORDER BY created_at DESC"
+            "transaction_id, source, crm_name FROM payment_leads WHERE NOT is_test ORDER BY created_at DESC"
         )
         
         rows = cur.fetchall()
@@ -198,7 +198,7 @@ def _feed(dsn: str, status: str) -> Dict[str, Any]:
                p.paid_at, p.transaction_id, c.phone
         FROM {schema}.payment_leads p
         LEFT JOIN {schema}.crm_customers_cache c ON c.name = p.crm_name
-        WHERE p.paid_at IS NOT NULL {where}
+        WHERE p.paid_at IS NOT NULL AND NOT p.is_test {where}
         ORDER BY p.paid_at DESC
         LIMIT 200
     """)

@@ -8,6 +8,12 @@
 import re
 from typing import Any, Iterable
 
+TEST_RE = re.compile(r'(^|[^а-яёa-z0-9])(тест(ов(ый|ая|ое|ые|ич)?)?|test)([^а-яёa-z0-9]|$)')
+
+
+def is_test_name(*parts: Any) -> bool:
+    return bool(TEST_RE.search(' '.join(str(p or '') for p in parts).lower()))
+
 LEADS = 't_p93118852_lineaschool_initiati.leads'
 
 ST_EMPTY = ''
@@ -49,6 +55,9 @@ def advance_lead(cur, new_status: str, allowed_from: Iterable[str],
                  phone: Any = None, name: Any = None) -> int:
     """Возвращает число обновлённых лидов (0 или 1). Ошибки наружу не бросает."""
     try:
+        if is_test_name(name):
+            print(f'lead-funnel: тестовое имя «{name}», лида не трогаем')
+            return 0
         where = _target_sql(phone, name)
         if not where:
             print(f'lead-funnel: нет телефона и имени для «{new_status}»')

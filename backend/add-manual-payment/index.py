@@ -10,7 +10,7 @@ import psycopg2
 from typing import Dict, Any
 from crm_match import find_customer
 from payment_hook import send_payment_hook, mark_hook_result, is_diagnostic
-from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID, BEFORE_SUBSCRIPTION, ST_SUBSCRIPTION
+from lead_funnel import is_test_name, advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID, BEFORE_SUBSCRIPTION, ST_SUBSCRIPTION
 
 ADMIN_PASSWORD = '426874'
 
@@ -99,6 +99,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 (name, crm_name, '', '', plan, amount, order_id),
             )
         new_id, saved_paid_at = cur.fetchone()
+        if is_test_name(name, crm_name):
+            cur.execute("UPDATE payment_leads SET is_test = TRUE WHERE id = %s", (new_id,))
         conn.commit()
 
         # Оплата проведена — показываем карточку в «Окне взаимодействия».
