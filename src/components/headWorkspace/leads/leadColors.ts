@@ -15,10 +15,10 @@ export function processingColor(status: string): string {
 
 export function leadStatusColor(status: string): string {
   const map: Record<string, string> = {
-    'лид в работе': 'bg-gray-200 text-gray-800',
+    'лид в работе': 'bg-green-50 text-green-700 border border-green-200',
     'завис на этапе': 'bg-orange-100 text-orange-800',
     'Связь через "Окно" не налажена': 'bg-amber-100 text-amber-800',
-    'клиент': 'bg-green-100 text-green-800',
+    'клиент': 'bg-green-500 text-white',
     'нецелевой лид': 'bg-red-100 text-red-700',
     'лид не вышел на связь': 'bg-red-100 text-red-700',
     'норма развития': 'bg-red-100 text-red-700',
