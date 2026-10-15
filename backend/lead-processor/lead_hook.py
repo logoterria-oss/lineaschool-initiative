@@ -178,3 +178,47 @@ def lead_feed(status: str) -> Dict[str, Any]:
     cur.close()
     conn.close()
     return {'leads': leads}
+
+
+CONTACTED_STATUS = 'Списались (ответ не получен)'
+
+
+def mark_first_message(body: Dict[str, Any]) -> Dict[str, Any]:
+    """Окно написало лиду первое сообщение: запоминаем кто и когда.
+    Статус обработки меняем, только если лид ещё не обработан (пустой статус)."""
+    try:
+        lead_id = int(body.get('leadId') or 0)
+    except (TypeError, ValueError):
+        lead_id = 0
+    if lead_id <= 0:
+        return {'status': 400, 'body': {'ok': False, 'error': 'leadId required'}}
+    by = str(body.get('processedBy') or '')[:200].replace("'", "''")
+    sent_raw = str(body.get('sentAt') or '')
+    sent_sql = 'CURRENT_TIMESTAMP'
+    if sent_raw:
+        try:
+            from datetime import datetime
+            datetime.fromisoformat(sent_raw.replace('Z', '+00:00'))
+            sent_sql = "'" + sent_raw.replace("'", "") + "'::timestamptz"
+        except ValueError:
+            pass
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE leads SET "
+        f"first_message_at = COALESCE(first_message_at, {sent_sql}), "
+        f"first_message_by = COALESCE(NULLIF(first_message_by, ''), NULLIF('{by}', '')), "
+        "status_changed_at = CASE WHEN COALESCE(TRIM(processing_status), '') = '' "
+        "THEN CURRENT_TIMESTAMP ELSE status_changed_at END, "
+        "processing_status = CASE WHEN COALESCE(TRIM(processing_status), '') = '' "
+        f"THEN '{CONTACTED_STATUS}' ELSE processing_status END, "
+        f"updated_at = CURRENT_TIMESTAMP WHERE id = {lead_id} RETURNING processing_status"
+    )
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not row:
+        return {'status': 404, 'body': {'ok': False, 'error': 'lead not found'}}
+    print(f'first-message: leadId={lead_id} by={by!r} status={row[0]!r}')
+    return {'status': 200, 'body': {'ok': True}}

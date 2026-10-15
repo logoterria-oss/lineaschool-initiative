@@ -38,6 +38,15 @@
       "method": "GET",
       "path": "/?action=feed",
       "expectedStatus": 401
+    },
+    {
+      "name": "First message without service key",
+      "method": "POST",
+      "path": "/?action=first-message",
+      "body": {
+        "leadId": 227
+      },
+      "expectedStatus": 401
     }
   ]
 }
