@@ -1,0 +1,1 @@
+UPDATE t_p93118852_lineaschool_initiati.leads SET processing_status = 'Списались в "Окне" (ответ не получен)' WHERE processing_status = 'Списались (ответ не получен)';

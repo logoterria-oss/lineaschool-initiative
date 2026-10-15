@@ -17,7 +17,7 @@ const NONE = '';
 // Цвет заголовка и полоски колонки — по этапу воронки.
 const COLUMN_STYLE: Record<string, { title: string; bar: string }> = {
   [NONE]: { title: 'text-gray-700', bar: 'bg-gray-300' },
-  'Списались (ответ не получен)': { title: 'text-gray-600', bar: 'bg-gray-400' },
+  'Списались в "Окне" (ответ не получен)': { title: 'text-gray-600', bar: 'bg-gray-400' },
   'Списались (ответ получен)': { title: 'text-gray-800', bar: 'bg-gray-500' },
   'Заполнена анкета': { title: 'text-yellow-700', bar: 'bg-yellow-400' },
   'Запланирована диагностика (не оплачено)': { title: 'text-orange-600', bar: 'bg-orange-300' },

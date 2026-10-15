@@ -180,7 +180,7 @@ def lead_feed(status: str) -> Dict[str, Any]:
     return {'leads': leads}
 
 
-CONTACTED_STATUS = 'Списались (ответ не получен)'
+CONTACTED_STATUS = 'Списались в "Окне" (ответ не получен)'
 
 
 def mark_first_message(body: Dict[str, Any]) -> Dict[str, Any]:

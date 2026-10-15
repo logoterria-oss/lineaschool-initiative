@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Lead } from '@/lib/leadsApi';
 
-const CONTACTED_STATUS = 'Списались (ответ не получен)';
+const CONTACTED_STATUS = 'Списались в "Окне" (ответ не получен)';
 
 interface Props {
   leads: Lead[];

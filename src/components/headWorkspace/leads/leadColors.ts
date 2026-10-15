@@ -1,6 +1,6 @@
 export function processingColor(status: string): string {
   const map: Record<string, string> = {
-    'Списались (ответ не получен)': 'bg-gray-100 text-gray-700',
+    'Списались в "Окне" (ответ не получен)': 'bg-gray-100 text-gray-700',
     'Списались (ответ получен)': 'bg-gray-200 text-gray-800',
     'Заполнена анкета': 'bg-yellow-100 text-yellow-800',
     'Запланирована диагностика (не оплачено)': 'bg-orange-100 text-orange-800',
