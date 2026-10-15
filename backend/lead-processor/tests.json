@@ -56,6 +56,15 @@
         "leadId": 227
       },
       "expectedStatus": 401
+    },
+    {
+      "name": "Messenger added without service key",
+      "method": "POST",
+      "path": "/?action=messenger-added",
+      "body": {
+        "leadId": 227
+      },
+      "expectedStatus": 401
     }
   ]
 }
