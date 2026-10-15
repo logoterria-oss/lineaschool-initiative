@@ -140,7 +140,8 @@ def _mark_clients(cur, cids: set) -> int:
 
     hits = []
     for lead_id, contact, pn, sn in leads:
-        digits = re.sub(r"\D", "", str(contact or ""))
+        m = re.search(r"\+?\d[\d\s()\-]{8,}\d", str(contact or ""))
+        digits = re.sub(r"\D", "", m.group(0)) if m else ""
         cid = by_phone.get(digits[-10:]) if len(digits) >= 10 else None
         if cid is None:
             for n in (_norm(sn), _norm(pn)):
