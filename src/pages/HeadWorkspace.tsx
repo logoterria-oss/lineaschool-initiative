@@ -29,6 +29,7 @@ import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import SupervisionRates from '@/components/supervision/SupervisionRates';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
+import TodayTasksView from '@/components/adminShifts/TodayTasksView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import DiagSlotsControl from '@/components/diagBooking/DiagSlotsControl';
@@ -74,6 +75,7 @@ const HeadWorkspace = () => {
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'admin-shifts': return <AdminShiftsView />;
+      case 'admin-checklist': return <TodayTasksView />;
       case 'students-list': return <StudentsListView />;
       case 'leads': return <LeadsSection />;
       case 'interactions': return <InteractionsView />;

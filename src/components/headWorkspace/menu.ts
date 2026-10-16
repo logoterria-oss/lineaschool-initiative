@@ -37,6 +37,7 @@ export const HEAD_MENU: MenuGroup[] = [
     items: [
       { id: 'staff-list', label: 'Список сотрудников', kind: 'component', icon: 'Contact' },
       { id: 'admin-shifts', label: 'График работы админов', kind: 'component', icon: 'CalendarClock' },
+      { id: 'admin-checklist', label: 'Чек-лист администратора', kind: 'component', icon: 'ListChecks' },
       { id: 'rate', label: 'Ставка', kind: 'component', icon: 'Wallet' },
       { id: 'worktime', label: 'Рабочее время', kind: 'component', icon: 'Clock' },
       { id: 'work-log-all', label: 'Учёт рабочего времени сотрудников', kind: 'component', icon: 'Users' },
