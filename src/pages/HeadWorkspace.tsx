@@ -29,7 +29,6 @@ import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import SupervisionRates from '@/components/supervision/SupervisionRates';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
-import TodayTasksView from '@/components/adminShifts/TodayTasksView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import DiagSlotsControl from '@/components/diagBooking/DiagSlotsControl';
@@ -40,20 +39,13 @@ import WorkTimeView from '@/components/workLog/WorkTimeView';
 import StaffWorkTimeView from '@/components/workLog/StaffWorkTimeView';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 
-const CHECKLIST_ITEM: SubItem = {
-  id: 'admin-checklist',
-  label: 'Чек-лист администратора',
-  kind: 'component',
-  icon: 'ListChecks',
-};
-
 const HeadWorkspace = () => {
   const navigate = useNavigate();
   const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
   const onShift = useOnShiftAdmins();
   const { me, checking } = useRoleGuard('head');
-  const [openGroups, setOpenGroups] = useState<string[]>(['staff']);
-  const [active, setActive] = useState<SubItem | null>(CHECKLIST_ITEM);
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
+  const [active, setActive] = useState<SubItem | null>(null);
 
   const fullName = me?.full_name || 'Сотрудник';
   const role = (me?.role || null) as StaffRole | null;
@@ -82,7 +74,6 @@ const HeadWorkspace = () => {
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'admin-shifts': return <AdminShiftsView />;
-      case 'admin-checklist': return <TodayTasksView />;
       case 'students-list': return <StudentsListView />;
       case 'leads': return <LeadsSection />;
       case 'interactions': return <InteractionsView />;
