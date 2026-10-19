@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { ScheduleFinding } from '@/lib/adminShiftsApi';
-import { copyToClipboard } from '@/lib/payLinks';
+import { PaymentReminder, ScheduleFinding } from '@/lib/adminShiftsApi';
+import ReminderRow from './ReminderRow';
 import { MarkState } from './useShiftChecklist';
-import { ScheduleCheckState, findingKey } from './useScheduleChecks';
+import { ScheduleCheckState, findingKey, reminderKey } from './useScheduleChecks';
 
 interface Props {
   num: number;
@@ -19,6 +18,9 @@ interface Props {
   marks: Record<string, MarkState>;
   readOnly?: boolean;
   onMark: (key: string, p: MarkState) => void;
+  /** Пункт 3: общие напоминания об оплате */
+  reminders?: Record<string, PaymentReminder>;
+  onRemindersChange?: () => void;
 }
 
 const fmtShort = (d: string) =>
@@ -42,36 +44,6 @@ const findingNote = (f: ScheduleFinding): string => {
   return parts.join(' · ');
 };
 
-/** Ссылка на оплату рядом с учеником: копируем и отправляем родителю */
-const PayLinkButton = ({ url, label }: { url: string; label: string }) => {
-  const [copied, setCopied] = useState(false);
-
-  const copy = async (e: React.MouseEvent) => {
-    // Клик по ссылке не должен закрывать пункт чек-листа
-    e.stopPropagation();
-    const ok = await copyToClipboard(url);
-    if (!ok) {
-      window.prompt('Скопируйте ссылку:', url);
-      return;
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <span
-      onClick={copy}
-      role="button"
-      tabIndex={-1}
-      title={`${label}: ${url}`}
-      className="shrink-0 inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[10.5px] font-medium text-blue-700 hover:bg-blue-100"
-    >
-      <Icon name={copied ? 'Check' : 'Link'} size={11} />
-      {copied ? 'Скопировано' : 'Ссылка'}
-    </span>
-  );
-};
-
 /**
  * Пункт чек-листа с проверками по AlfaCRM («Вчерашний день», «Расписание на сегодня»).
  * Запрос в CRM тяжёлый, поэтому идёт только по общей кнопке «Проверить в CRM»
@@ -90,6 +62,8 @@ const ScheduleChecksCard = ({
   marks,
   readOnly,
   onMark,
+  reminders = {},
+  onRemindersChange = () => {},
 }: Props) => {
   const isYesterday = sections.some((s) => s.group === 'yesterday');
 
@@ -163,6 +137,20 @@ const ScheduleChecksCard = ({
                       const key = findingKey(s.key, f.id);
                       const m = marks[key] || { done: false, comment: '' };
                       const note = findingNote(f);
+                      if (s.group === 'balance') {
+                        return (
+                          <ReminderRow
+                            key={key}
+                            kind={s.key as 'm3a' | 'm3b'}
+                            finding={f}
+                            label={findingLabel(f)}
+                            note={note}
+                            reminder={reminders[reminderKey(s.key, f.crmCustomerId, f.fingerprint)]}
+                            readOnly={readOnly}
+                            onChange={onRemindersChange}
+                          />
+                        );
+                      }
                       return (
                         <div
                           key={key}
@@ -192,9 +180,6 @@ const ScheduleChecksCard = ({
                               <span className="block text-[10.5px] text-gray-400 mt-px">{note}</span>
                             )}
                           </span>
-                          {f.payUrl && !m.done && (
-                            <PayLinkButton url={f.payUrl} label={f.payLabel || 'Оплата'} />
-                          )}
                         </div>
                       );
                     })}

@@ -164,6 +164,10 @@ export interface ScheduleFinding {
   tariff?: string;
   payUrl?: string;
   payLabel?: string;
+  /** Пункт 3: карточка CRM, абонемент (меняется после продления) и текст для родителя */
+  crmCustomerId?: number;
+  fingerprint?: string;
+  message?: string;
 }
 
 /** Ближайший урок ученика: завтра или послезавтра */
@@ -319,3 +323,64 @@ export const KIND_META: Record<ShiftKind, { label: string; cls: string; dot: str
   vacation: { label: 'Отпуск', cls: 'bg-sky-100 text-sky-800 border-sky-200', dot: 'bg-sky-500' },
   sick: { label: 'Больничный', cls: 'bg-amber-100 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
 };
+/** Куда отправлено напоминание об оплате */
+export type ReminderChannel = 'interaction' | 'ls_messenger' | 'personal';
+
+export const REMINDER_CHANNELS: { id: ReminderChannel; label: string }[] = [
+  { id: 'interaction', label: 'Окно взаимодействия' },
+  { id: 'ls_messenger', label: 'ЛС-мессенджер' },
+  { id: 'personal', label: 'Личные сообщения' },
+];
+
+/** Отправленное напоминание об оплате — общее для всех админов */
+export interface PaymentReminder {
+  id: number;
+  crm_customer_id: number;
+  kind: 'm3a' | 'm3b';
+  fingerprint: string;
+  channel: ReminderChannel | null;
+  staff_name: string | null;
+  sent_at: string | null;
+  sent_date: string | null;
+}
+
+export interface ReminderTarget {
+  crm_customer_id: number;
+  kind: 'm3a' | 'm3b';
+  fingerprint: string;
+  student_name?: string;
+}
+
+/** Напоминания об оплате за последние 90 дней */
+export async function fetchReminders(): Promise<PaymentReminder[]> {
+  const r = await fetch(`${API_URL}?action=reminders`, { headers: authHeaders() });
+  if (!r.ok) return [];
+  const data = await r.json().catch(() => ({}));
+  return data.reminders || [];
+}
+
+/** Черновик перед открытием «Окна»: Окно вернёт его id после отправки */
+export async function createReminderDraft(
+  p: ReminderTarget & { message: string },
+): Promise<number | null> {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'reminder-draft', ...p }),
+  });
+  const data = await r.json().catch(() => ({}));
+  return data.reminder_id ?? null;
+}
+
+/** Ручная отметка: куда отправили напоминание, или снять отметку */
+export async function markReminder(
+  p: ReminderTarget & { done: boolean; channel?: ReminderChannel },
+): Promise<boolean> {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'reminder-mark', ...p }),
+  });
+  const data = await r.json().catch(() => ({}));
+  return !!data.ok;
+}

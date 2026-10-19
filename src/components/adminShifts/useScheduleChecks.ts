@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  PaymentReminder,
   ScheduleFinding,
   UpcomingLesson,
+  fetchReminders,
   fetchScheduleChecks,
 } from '@/lib/adminShiftsApi';
+import { reminderText } from '@/lib/paymentReminder';
 import { SCHEDULE_CHECKS, ScheduleCheckKey } from '@/lib/shiftChecklist';
 import { StudentRow, fetchStudents } from '@/lib/studentsApi';
 import { payLinkForTariff } from '@/lib/payLinks';
@@ -11,6 +14,10 @@ import { MarkState } from './useShiftChecklist';
 
 /** Ключ отметки по одной находке: «m2a:425» — подпункт и id из CRM */
 export const findingKey = (check: ScheduleCheckKey, id: number | string) => `${check}:${id}`;
+
+/** Ключ напоминания об оплате: подпункт, карточка CRM и абонемент */
+export const reminderKey = (kind: string, cid: number | undefined, fp: string | undefined) =>
+  `${kind}:${cid ?? ''}:${fp ?? ''}`;
 
 /** Группа проверок = пункт чек-листа */
 export type CheckGroup = 'yesterday' | 'schedule' | 'balance';
@@ -67,9 +74,18 @@ const tariffLabel = (name?: string) =>
     .trim();
 
 /** Находка пункта 3: ученик, его абонемент и ссылка на оплату */
-const balanceFinding = (s: StudentRow, lesson?: UpcomingLesson): ScheduleFinding => {
+const balanceFinding = (
+  kind: 'm3a' | 'm3b',
+  s: StudentRow,
+  lesson?: UpcomingLesson,
+): ScheduleFinding => {
   const link = payLinkForTariff(s.tariff);
+  const cid = s.crm_customer_id || s.id;
   return {
+    crmCustomerId: cid,
+    // Абонемент меняется после продления — тогда напоминание понадобится снова
+    fingerprint: `${s.tariff?.name || ''}|${s.tariff?.e_date || ''}`.slice(0, 200),
+    message: reminderText(kind, link?.url || '', lesson?.date),
     // Ключ по карточке CRM: у сиблингов id строки разные, а абонемент общий
     id: s.crm_customer_id || s.id,
     name: s.name,
@@ -96,8 +112,6 @@ export function useScheduleChecks(
   date: string,
   marks: Record<string, MarkState>,
   setMark: (key: string, p: MarkState) => void,
-  /** Находки, закрытые в прошлые дни, — повторно не показываем */
-  handledBefore: string[] = [],
 ) {
   const [checks, setChecks] = useState<Record<string, ScheduleFinding[]> | null>(null);
   const [yesterday, setYesterday] = useState('');
@@ -105,6 +119,34 @@ export function useScheduleChecks(
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [reminderList, setReminderList] = useState<PaymentReminder[]>([]);
+
+  // Напоминания об оплате общие для всех админов: подтягиваем при открытии,
+  // при возврате на вкладку (после «Окна») и раз в 20 секунд
+  const loadReminders = useCallback(async () => {
+    setReminderList(await fetchReminders());
+  }, []);
+  useEffect(() => {
+    loadReminders();
+    const onFocus = () => loadReminders();
+    window.addEventListener('focus', onFocus);
+    const t = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadReminders();
+    }, 20000);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.clearInterval(t);
+    };
+  }, [loadReminders]);
+
+  /** Последнее отправленное напоминание по каждому ученику и абонементу */
+  const reminders = useMemo(() => {
+    const map: Record<string, PaymentReminder> = {};
+    reminderList.forEach((r) => {
+      map[reminderKey(r.kind, r.crm_customer_id, r.fingerprint)] = r;
+    });
+    return map;
+  }, [reminderList]);
 
   // Подхватываем прошлый результат за эту дату, если он есть в сессии
   useEffect(() => {
@@ -183,13 +225,13 @@ export function useScheduleChecks(
 
       if (left === 1) {
         seen.add(cid);
-        lastOne.push(balanceFinding(s, byCustomer.get(cid)));
+        lastOne.push(balanceFinding('m3a', s, byCustomer.get(cid)));
         return;
       }
       // Занятия кончились, но урок уже завтра-послезавтра — напоминаем
       if (left <= 0 && byCustomer.has(cid)) {
         seen.add(cid);
-        runOut.push(balanceFinding(s, byCustomer.get(cid)));
+        runOut.push(balanceFinding('m3b', s, byCustomer.get(cid)));
       }
     });
 
@@ -200,20 +242,27 @@ export function useScheduleChecks(
 
   const sections = useMemo<ScheduleCheckState[]>(() => {
     if (!checks) return [];
-    const handled = new Set(handledBefore);
     const all: Record<string, ScheduleFinding[]> = { ...checks, ...balanceFindings };
 
     return SCHEDULE_CHECKS.map((meta) => {
       let findings = all[meta.key] || [];
-      // Напоминание об оплате отправляют один раз: ученика, по которому
-      // галку уже поставили в прошлые дни, сегодня не показываем.
+      let done: boolean;
       if (meta.group === 'balance') {
-        findings = findings.filter((f) => !handled.has(findingKey(meta.key, f.id)));
+        // Напоминание по этому абонементу уже ушло в прошлые дни — ученика не показываем.
+        // После продления абонемент другой, и при новом «последнем уроке» он появится снова.
+        findings = findings.filter((f) => {
+          const r = reminders[reminderKey(meta.key, f.crmCustomerId, f.fingerprint)];
+          return !r || r.sent_date === date;
+        });
+        done = findings.every(
+          (f) => !!reminders[reminderKey(meta.key, f.crmCustomerId, f.fingerprint)],
+        );
+      } else {
+        done = findings.every((f) => marks[findingKey(meta.key, f.id)]?.done);
       }
-      const done = findings.every((f) => marks[findingKey(meta.key, f.id)]?.done);
       return { ...meta, findings, clean: findings.length === 0, done };
     });
-  }, [checks, marks, balanceFindings, handledBefore]);
+  }, [checks, marks, balanceFindings, reminders, date]);
 
   /** Проверка уже сделана — есть данные из CRM */
   const checked = checks !== null;
@@ -253,5 +302,16 @@ export function useScheduleChecks(
     });
   }, [sections, loading, checked, marks, setMark]);
 
-  return { sections, sectionsFor, groupDone, yesterday, loading, failed, checked, reload: load };
+  return {
+    sections,
+    sectionsFor,
+    groupDone,
+    yesterday,
+    loading,
+    failed,
+    checked,
+    reload: load,
+    reminders,
+    reloadReminders: loadReminders,
+  };
 }

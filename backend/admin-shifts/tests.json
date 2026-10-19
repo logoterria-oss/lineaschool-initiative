@@ -110,6 +110,30 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Напоминания без входа закрыты",
+      "method": "GET",
+      "path": "/?action=reminders",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Подтверждение Окна без ключа закрыто",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "reminder-confirm",
+        "reminder_id": 1
+      },
+      "expectedStatus": 403,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

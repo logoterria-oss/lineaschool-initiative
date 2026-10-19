@@ -14,7 +14,7 @@ INTERACTION_HOOK_URL = (
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
+    "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token, X-Service-Key",
     "Access-Control-Max-Age": "86400",
 }
 
@@ -72,6 +72,8 @@ def handler(event: dict, context) -> dict:
                 return get_checklist(event)
             if act == "head-tasks":
                 return get_head_tasks(event)
+            if act == "reminders":
+                return get_reminders(event)
             return get_shifts(event)
         if method == "POST":
             body = json.loads(event.get("body") or "{}")
@@ -84,6 +86,12 @@ def handler(event: dict, context) -> dict:
                 return save_head_tasks(event, body)
             if act == "fill-template":
                 return fill_template(body)
+            if act == "reminder-draft":
+                return reminder_draft(event, body)
+            if act == "reminder-mark":
+                return reminder_mark(event, body)
+            if act == "reminder-confirm":
+                return reminder_confirm(event, body)
             return save_shift(event)
         if method == "DELETE":
             return delete_shift(event)
@@ -672,6 +680,157 @@ def delete_shift(event: dict) -> dict:
             else:
                 return _json(400, {"error": "id or staff_id+date required"})
             conn.commit()
+        return _json(200, {"ok": True})
+    finally:
+        conn.close()
+
+# ---------- Напоминания об оплате (пункт 3 чек-листа) ----------
+# Общие для всех админов: кто бы ни предупредил родителя, остальные видят отметку.
+# fingerprint — абонемент ученика (название + дата окончания): после продления
+# он меняется, и при следующем «последнем уроке» напоминание понадобится снова.
+
+REMINDER_KINDS = ("m3a", "m3b")
+REMINDER_CHANNELS = ("interaction", "ls_messenger", "personal")
+
+
+def _service_key_ok(event: dict) -> bool:
+    key = os.environ.get("INTERACTION_SERVICE_KEY")
+    if not key:
+        return False
+    for name, value in (event.get("headers") or {}).items():
+        if str(name).lower() == "x-service-key":
+            return str(value or "") == key
+    return False
+
+
+def _reminder_fields(body: dict):
+    try:
+        cid = int(body.get("crm_customer_id"))
+    except (TypeError, ValueError):
+        return None
+    kind = str(body.get("kind") or "")
+    if kind not in REMINDER_KINDS:
+        return None
+    fp = str(body.get("fingerprint") or "")[:200]
+    return cid, kind, fp
+
+
+def get_reminders(event: dict) -> dict:
+    """Отправленные напоминания об оплате за последние 90 дней — для всех админов."""
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if not _me(cur, event):
+                return _json(401, {"error": "Требуется вход"})
+            cur.execute(
+                f"SELECT DISTINCT ON (crm_customer_id, kind, fingerprint) "
+                f"id, crm_customer_id, kind, fingerprint, channel, staff_name, "
+                f"to_char(sent_at, 'YYYY-MM-DD\"T\"HH24:MI') AS sent_at, "
+                f"to_char(sent_at, 'YYYY-MM-DD') AS sent_date "
+                f"FROM {SCHEMA}.payment_reminders "
+                f"WHERE status = 'sent' AND sent_at >= {MSK_NOW} - interval '90 days' "
+                f"ORDER BY crm_customer_id, kind, fingerprint, sent_at DESC",
+                (),
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+            cur.execute(
+                f"SELECT id, crm_customer_id, kind, fingerprint FROM {SCHEMA}.payment_reminders "
+                f"WHERE status = 'draft' AND created_at >= {MSK_NOW} - interval '1 day'",
+                (),
+            )
+            drafts = [dict(r) for r in cur.fetchall()]
+        return _json(200, {"ok": True, "reminders": rows, "drafts": drafts})
+    finally:
+        conn.close()
+
+
+def reminder_draft(event: dict, body: dict) -> dict:
+    """Черновик напоминания перед открытием «Окна»: его id Окно вернёт после отправки."""
+    f = _reminder_fields(body)
+    if not f:
+        return _json(400, {"error": "crm_customer_id and kind required"})
+    cid, kind, fp = f
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            me = _me(cur, event)
+            if not me:
+                return _json(401, {"error": "Требуется вход"})
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.payment_reminders "
+                f"(crm_customer_id, kind, fingerprint, status, staff_id, staff_name, student_name, message) "
+                f"VALUES (%s, %s, %s, 'draft', %s, %s, %s, %s) RETURNING id",
+                (cid, kind, fp, me["id"], me["full_name"],
+                 str(body.get("student_name") or "")[:300], str(body.get("message") or "")[:4000]),
+            )
+            rid = cur.fetchone()["id"]
+            conn.commit()
+        return _json(200, {"ok": True, "reminder_id": rid})
+    finally:
+        conn.close()
+
+
+def reminder_mark(event: dict, body: dict) -> dict:
+    """Ручная отметка админа: куда отправлено напоминание (или снять отметку)."""
+    f = _reminder_fields(body)
+    if not f:
+        return _json(400, {"error": "crm_customer_id and kind required"})
+    cid, kind, fp = f
+    done = bool(body.get("done"))
+    channel = str(body.get("channel") or "")
+    if done and channel not in REMINDER_CHANNELS:
+        return _json(400, {"error": "channel required"})
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            me = _me(cur, event)
+            if not me:
+                return _json(401, {"error": "Требуется вход"})
+            if done:
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.payment_reminders "
+                    f"(crm_customer_id, kind, fingerprint, status, channel, staff_id, staff_name, "
+                    f"student_name, sent_at) VALUES (%s, %s, %s, 'sent', %s, %s, %s, %s, {MSK_NOW})",
+                    (cid, kind, fp, channel, me["id"], me["full_name"],
+                     str(body.get("student_name") or "")[:300]),
+                )
+            else:
+                cur.execute(
+                    f"UPDATE {SCHEMA}.payment_reminders SET status = 'cancelled' "
+                    f"WHERE crm_customer_id = %s AND kind = %s AND fingerprint = %s "
+                    f"AND status IN ('sent', 'draft')",
+                    (cid, kind, fp),
+                )
+            conn.commit()
+        return _json(200, {"ok": True})
+    finally:
+        conn.close()
+
+
+def reminder_confirm(event: dict, body: dict) -> dict:
+    """Ответ «Окна взаимодействия»: сообщение клиенту отправлено.
+
+    Заголовок X-Service-Key = INTERACTION_SERVICE_KEY.
+    Body: { action: 'reminder-confirm', reminder_id }
+    """
+    if not _service_key_ok(event):
+        return _json(403, {"error": "Неверный служебный ключ"})
+    try:
+        rid = int(body.get("reminder_id"))
+    except (TypeError, ValueError):
+        return _json(400, {"error": "reminder_id required"})
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                f"UPDATE {SCHEMA}.payment_reminders SET status = 'sent', channel = 'interaction', "
+                f"sent_at = {MSK_NOW} WHERE id = %s AND status IN ('draft', 'sent') RETURNING id",
+                (rid,),
+            )
+            row = cur.fetchone()
+            conn.commit()
+        if not row:
+            return _json(404, {"error": "Напоминание не найдено"})
         return _json(200, {"ok": True})
     finally:
         conn.close()
