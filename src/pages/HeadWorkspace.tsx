@@ -116,6 +116,7 @@ const HeadWorkspace = () => {
   }, [active, fullName]);
 
   const workLogActive = active?.id === 'work-log';
+  const checklistActive = active?.id === 'admin-checklist';
 
   const collapsed = false;
   const lbl = collapsed
@@ -209,14 +210,26 @@ const HeadWorkspace = () => {
         )}
       </a>
 
-      <button
-        onClick={() => setActive({ id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' })}
-        className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
-          workLogActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
-        }`}
-      >
-        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Учёт рабочего времени</span>
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActive(CHECKLIST_ITEM)}
+          className={`flex-1 flex items-center justify-center gap-1.5 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
+            checklistActive ? 'bg-sky-700' : 'bg-sky-600 hover:bg-sky-700'
+          }`}
+        >
+          <Icon name="ListChecks" size={16} className="flex-shrink-0" />
+          <span>Чек-лист</span>
+        </button>
+        <button
+          onClick={() => setActive({ id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' })}
+          className={`flex-1 flex items-center justify-center gap-1.5 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
+            workLogActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
+          }`}
+        >
+          <Icon name="ClipboardPen" size={16} className="flex-shrink-0" />
+          <span>Учёт времени</span>
+        </button>
+      </div>
 
       <OnShiftHint admins={onShift} />
 
