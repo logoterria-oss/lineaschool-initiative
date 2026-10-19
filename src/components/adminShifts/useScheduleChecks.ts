@@ -85,7 +85,7 @@ const balanceFinding = (
     crmCustomerId: cid,
     // Абонемент меняется после продления — тогда напоминание понадобится снова
     fingerprint: `${s.tariff?.name || ''}|${s.tariff?.e_date || ''}`.slice(0, 200),
-    message: reminderText(kind, link?.url || '', lesson?.date),
+    message: reminderText(kind, link?.url || ''),
     // Ключ по карточке CRM: у сиблингов id строки разные, а абонемент общий
     id: s.crm_customer_id || s.id,
     name: s.name,
