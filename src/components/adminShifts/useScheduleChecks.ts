@@ -114,8 +114,17 @@ export function useScheduleChecks(
     setFailed(false);
     // Список учеников нужен пункту 3: остаток занятий считается там же,
     // где и в разделе «Список учеников», — дважды одну логику не пишем.
+    // CRM ограничивает частоту запросов — при отказе пробуем ещё дважды с паузой
+    const checksWithRetry = async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt) await new Promise((r) => setTimeout(r, 2500 * attempt));
+        const res = await fetchScheduleChecks(date).catch(() => null);
+        if (res) return res;
+      }
+      return null;
+    };
     const [data, list] = await Promise.all([
-      fetchScheduleChecks(date),
+      checksWithRetry(),
       fetchStudents(true).catch(() => [] as StudentRow[]),
     ]);
     setStudents(list);

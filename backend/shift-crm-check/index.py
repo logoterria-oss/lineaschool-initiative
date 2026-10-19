@@ -55,7 +55,7 @@ def _headers(token: str = None) -> dict:
     return h
 
 
-RETRY_DELAYS = (0.7, 1.5)
+RETRY_DELAYS = (0.4, 0.8, 1.2)
 
 
 def _post(url: str, payload: dict, token: str = None) -> requests.Response:
@@ -82,81 +82,58 @@ def get_token() -> str:
     return r.json()["token"]
 
 
-def _lessons(token: str, date_from: str, date_to: str, status=None) -> List[dict]:
-    url = f"{S20_HOST}/v2api/1/lesson/index"
+def _pages(url: str, payload: dict, token: str) -> List[dict]:
     out, page = [], 0
     while True:
-        payload = {"date_from": date_from, "date_to": date_to, "page": page, "pageSize": 200}
-        if status is not None:
-            payload["status"] = status
-        data = _post(url, payload, token).json()
+        data = _post(url, {**payload, "page": page, "pageSize": 200}, token).json()
         items = data.get("items", [])
         out.extend(items)
-        if len(out) >= data.get("total", 0) or not items:
-            break
+        if len(items) < 200 or len(out) >= data.get("total", len(out)):
+            return out
         page += 1
-    return out
 
 
-def lessons_all(token: str, date_from: str, date_to: str) -> List[dict]:
-    """CRM по умолчанию отдаёт только проведённые — статусы запрашиваем отдельно."""
-    seen, out = set(), []
-    chunks = [_lessons(token, date_from, date_to, status=st)
-              for st in (None, ST_PLANNED, ST_CANCELLED)]
-    for chunk in chunks:
-        for ls in chunk:
-            lid = ls.get("id")
-            if lid in seen:
-                continue
-            seen.add(lid)
-            out.append(ls)
-    return out
+def fetch_all(token: str, date_from: str, date_to: str):
+    """Все срезы CRM разом: 9 независимых запросов параллельно.
+    Последовательные цепочки не укладывались в таймаут, а 20+ одновременных
+    запросов CRM отбивала ответом 429 — держим середину."""
+    lesson_url = f"{S20_HOST}/v2api/1/lesson/index"
+    group_url = f"{S20_HOST}/v2api/1/group/index"
+    cust_url = f"{S20_HOST}/v2api/1/customer/index"
+    jobs = {
+        "teachers": (f"{S20_HOST}/v2api/1/teacher/index", {}),
+        "g1": (group_url, {"is_active": 1}),
+        "g0": (group_url, {"is_active": 0}),
+        "c10": (cust_url, {"is_study": 1, "removed": 0}),
+        "c00": (cust_url, {"is_study": 0, "removed": 0}),
+        "c11": (cust_url, {"is_study": 1, "removed": 1}),
+    }
+    for st in (None, ST_PLANNED, ST_CANCELLED):
+        p = {"date_from": date_from, "date_to": date_to}
+        if st is not None:
+            p["status"] = st
+        jobs[f"l{st}"] = (lesson_url, p)
 
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futures = {k: pool.submit(_pages, u, p, token) for k, (u, p) in jobs.items()}
+        res = {k: f.result() for k, f in futures.items()}
 
-def get_teachers(token: str) -> Dict[int, str]:
-    r = _post(f"{S20_HOST}/v2api/1/teacher/index", {"page": 0, "pageSize": 200}, token)
-    return {t.get("id"): (t.get("name") or "").strip() for t in r.json().get("items", [])}
-
-
-def get_groups(token: str) -> Dict[int, str]:
-    """Названия групп. Берём и активные, и завершённые: урок может стоять
-    в группе, которую в CRM уже закрыли, — без имени строку не подписать."""
-    url = f"{S20_HOST}/v2api/1/group/index"
-    out: Dict[int, str] = {}
-    for is_active in (1, 0):
-        page = 0
-        while True:
-            r = _post(url, {"page": page, "pageSize": 200, "is_active": is_active}, token)
-            items = r.json().get("items", [])
-            for g in items:
-                gid = g.get("id")
-                if gid is not None and gid not in out:
-                    out[gid] = (g.get("name") or "").strip()
-            if len(items) < 200:
-                break
-            page += 1
-    return out
-
-
-def get_customers(token: str) -> Dict[int, dict]:
-    """Действующие ученики: имя и остаток на балансе."""
-    url = f"{S20_HOST}/v2api/1/customer/index"
-    out: Dict[int, dict] = {}
-    for is_study, removed in ((1, 0), (0, 0), (1, 1)):
-        page = 0
-        while True:
-            r = _post(url, {"page": page, "pageSize": 200,
-                            "is_study": is_study, "removed": removed}, token)
-            data = r.json()
-            items = data.get("items", [])
-            for c in items:
-                cid = c.get("id")
-                if cid is not None and cid not in out:
-                    out[cid] = c
-            if len(items) < 200 or not items:
-                break
-            page += 1
-    return out
+    teachers = {t.get("id"): (t.get("name") or "").strip() for t in res["teachers"]}
+    groups: Dict[int, str] = {}
+    for g in res["g1"] + res["g0"]:
+        if g.get("id") is not None and g["id"] not in groups:
+            groups[g["id"]] = (g.get("name") or "").strip()
+    customers: Dict[int, dict] = {}
+    for c in res["c10"] + res["c00"] + res["c11"]:
+        if c.get("id") is not None and c["id"] not in customers:
+            customers[c["id"]] = c
+    seen, lessons = set(), []
+    for ls in res["lNone"] + res[f"l{ST_PLANNED}"] + res[f"l{ST_CANCELLED}"]:
+        if ls.get("id") in seen:
+            continue
+        seen.add(ls.get("id"))
+        lessons.append(ls)
+    return teachers, groups, customers, lessons
 
 
 def _is_service(name: str) -> bool:
@@ -461,17 +438,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     try:
         token = get_token()
-        # Уроки за все четыре дня берём одним диапазоном и делим по датам:
-        # раньше на каждый день шли отдельные запросы, и CRM отвечала 429.
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            f_teachers = pool.submit(get_teachers, token)
-            f_groups = pool.submit(get_groups, token)
-            f_customers = pool.submit(get_customers, token)
-            f_lessons = pool.submit(lessons_all, token, yesterday, day_after)
-            teachers = f_teachers.result()
-            groups = f_groups.result()
-            customers = f_customers.result()
-            lessons = f_lessons.result()
+        # Уроки за все четыре дня берём одним диапазоном и делим по датам
+        teachers, groups, customers, lessons = fetch_all(token, yesterday, day_after)
     except Exception as e:
         print(f"CRM error: {e}")
         return _json(502, {"error": f"CRM error: {e}"})
