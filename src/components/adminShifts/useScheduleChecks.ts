@@ -58,6 +58,14 @@ const readCache = (date: string): CachedChecks | null => {
 /** Ученик действующий — архив и бросивших не дёргаем */
 const isActiveStudent = (s: StudentRow) => s.status_id !== 3 && s.status_id !== 2;
 
+/** Название абонемента из CRM без слова «Абонемент» и лишних кавычек */
+const tariffLabel = (name?: string) =>
+  String(name || '')
+    .replace(/^\s*(архивный\s+)?абонемент\s*/i, (_m, arch) => (arch ? 'Архивный ' : ''))
+    .replace(/["«»]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 /** Находка пункта 3: ученик, его абонемент и ссылка на оплату */
 const balanceFinding = (s: StudentRow, lesson?: UpcomingLesson): ScheduleFinding => {
   const link = payLinkForTariff(s.tariff);
@@ -65,10 +73,9 @@ const balanceFinding = (s: StudentRow, lesson?: UpcomingLesson): ScheduleFinding
     // Ключ по карточке CRM: у сиблингов id строки разные, а абонемент общий
     id: s.crm_customer_id || s.id,
     name: s.name,
-    tariff: s.tariff?.short_name || s.tariff?.name,
+    tariff: tariffLabel(s.tariff?.name) || 'абонемент не указан',
     paid_left: s.tariff?.paid_lessons_left,
     ...(lesson ? { time: `${fmtDay(lesson.date)} ${lesson.time}`.trim() } : {}),
-    ...(lesson ? { teacher: lesson.teacher } : {}),
     ...(link ? { payUrl: link.url, payLabel: link.label } : {}),
   };
 };
