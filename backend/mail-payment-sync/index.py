@@ -1,5 +1,6 @@
 import os
 import json
+import hashlib
 import imaplib
 import email
 import re
@@ -33,6 +34,15 @@ def handler(event: dict, context) -> dict:
     """Читает письма Т-Банка об оплатах, сопоставляет по OrderId и помечает заявки оплаченными"""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
+
+    if event.get("httpMethod") == "POST":
+        try:
+            body = json.loads(event.get("body") or "{}")
+        except ValueError:
+            body = {}
+        if body.get("TerminalKey"):
+            answer = handle_bank_notification(body)
+            return {"statusCode": 200, "headers": {**CORS, "Content-Type": "text/plain"}, "body": answer}
 
     try:
         result = sync_payments()
@@ -164,6 +174,64 @@ def sync_payments():
     if not payments:
         return {"ok": True, "matched": 0, "already_paid": 0, "not_found": len(unpaid_orders)}
 
+    matched, not_found = _apply_payments(dsn, payments, blocked_orders, blocked_tx, closed_months)
+    return {"ok": True, "matched": matched, "already_paid": 0, "not_found": not_found}
+
+
+def _tbank_token(params: dict, password: str) -> str:
+    """Подпись Т-Банка: корневые скалярные поля + Password, по алфавиту ключей."""
+    data = {k: v for k, v in params.items() if k != "Token" and not isinstance(v, (dict, list))}
+    data["Password"] = password
+    parts = []
+    for k in sorted(data):
+        v = data[k]
+        parts.append(("true" if v else "false") if isinstance(v, bool) else str(v))
+    return hashlib.sha256("".join(parts).encode()).hexdigest()
+
+
+def handle_bank_notification(body: dict) -> str:
+    """Уведомление Т-Банка об оплате: проверяем подпись и сразу закрываем заявку."""
+    password = (os.environ.get("TBANK_PASSWORD") or "").strip()
+    terminal = (os.environ.get("TBANK_TERMINAL_KEY") or "").strip()
+    if not password or body.get("TerminalKey") != terminal:
+        print("bank-notify: чужой терминал или нет пароля")
+        return "ERROR"
+    if _tbank_token(body, password) != body.get("Token"):
+        print(f"bank-notify: неверная подпись для {body.get('OrderId')}")
+        return "ERROR"
+
+    status = body.get("Status")
+    order_id = str(body.get("OrderId") or "")
+    print(f"bank-notify: {order_id} status={status} success={body.get('Success')}")
+    if status != "CONFIRMED" or not body.get("Success") or not order_id:
+        return "OK"
+
+    dsn = os.environ["DATABASE_URL"]
+    conn = psycopg2.connect(dsn)
+    try:
+        with conn.cursor() as cur:
+            blocked_orders, blocked_tx, closed_months = _load_guards(cur)
+    finally:
+        conn.close()
+    payment = {"order_id": order_id, "transaction_id": str(body.get("PaymentId") or ""),
+               "paid_at": datetime.utcnow()}
+    _apply_payments(dsn, [payment], blocked_orders, blocked_tx, closed_months)
+    return "OK"
+
+
+def _load_guards(cur):
+    cur.execute(f"SELECT order_id, transaction_id FROM {SCHEMA}.payment_blocklist")
+    blocked_orders, blocked_tx = set(), set()
+    for o, t in cur.fetchall():
+        if o:
+            blocked_orders.add(o)
+        if t:
+            blocked_tx.add(t)
+    cur.execute(f"SELECT month FROM {SCHEMA}.closed_months")
+    return blocked_orders, blocked_tx, {row[0] for row in cur.fetchall()}
+
+
+def _apply_payments(dsn, payments, blocked_orders, blocked_tx, closed_months):
     conn = psycopg2.connect(dsn)
     matched = 0
     not_found = 0
@@ -216,7 +284,7 @@ def sync_payments():
     finally:
         conn.close()
 
-    return {"ok": True, "matched": matched, "already_paid": 0, "not_found": not_found}
+    return matched, not_found
 
 
 def _fetch_batch(imap, msg_ids: list) -> dict:

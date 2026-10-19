@@ -11,6 +11,8 @@ from typing import Dict, Any
 import urllib.request
 import urllib.error
 
+NOTIFICATION_URL = 'https://functions.poehali.dev/af003b32-0a7b-432b-a657-9e8c28bfe436'
+
 # Сертификаты Минцифры (Russian Trusted CA). Т-Банк переходит на российский
 # доверенный УЦ, поэтому серверный запрос Init должен доверять этим корням,
 # иначе соединение упадёт с ошибкой проверки TLS-сертификата.
@@ -192,7 +194,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'TerminalKey': terminal_key,
         'Amount': amount,
         'OrderId': order_id,
-        'Description': description
+        'Description': description,
+        'NotificationURL': NOTIFICATION_URL,
     }
     
     # Add receipt if provided
@@ -204,6 +207,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     token_params = {
         'Amount': amount,  # Use int, not string
         'Description': description,
+        'NotificationURL': NOTIFICATION_URL,
         'OrderId': order_id,
         'Password': password,
         'TerminalKey': terminal_key

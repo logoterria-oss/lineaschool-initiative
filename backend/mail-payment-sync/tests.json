@@ -13,6 +13,13 @@
       "expectedStatus": 200,
       "expectedBody": {"ok": true},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Bank notification with bad token",
+      "method": "POST",
+      "path": "/",
+      "body": {"TerminalKey": "0000", "OrderId": "TEST", "Status": "CONFIRMED", "Success": true, "Token": "bad"},
+      "expectedStatus": 200
     }
   ]
 }
