@@ -123,7 +123,9 @@ const ScheduleChecksCard = ({
                   )}
                 </div>
 
-                {s.clean ? (
+                {s.unavailable ? (
+                  <div className="mt-1 ml-4 text-[12px] text-gray-400">{s.unavailable}</div>
+                ) : s.clean ? (
                   <div className="mt-1 ml-4 flex items-center gap-1.5 text-[12px] text-green-600">
                     <Icon name="Check" size={13} />
                     <span className="text-gray-400">{s.empty}</span>

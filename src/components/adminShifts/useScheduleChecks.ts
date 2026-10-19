@@ -42,6 +42,8 @@ export interface ScheduleCheckState {
   clean: boolean;
   /** Все находки разобраны (или находок нет) */
   done: boolean;
+  /** Данных для подпункта нет (ученики не загрузились) — ничего не решаем за админа */
+  unavailable?: string;
 }
 
 interface CachedChecks {
@@ -117,6 +119,8 @@ export function useScheduleChecks(
   const [yesterday, setYesterday] = useState('');
   const [upcoming, setUpcoming] = useState<UpcomingLesson[]>([]);
   const [students, setStudents] = useState<StudentRow[]>([]);
+  // Список учеников: не загружали / грузим / есть / не получили
+  const [studentsState, setStudentsState] = useState<'idle' | 'loading' | 'ok' | 'failed'>('idle');
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [reminderList, setReminderList] = useState<PaymentReminder[]>([]);
@@ -148,7 +152,21 @@ export function useScheduleChecks(
     return map;
   }, [reminderList]);
 
-  // Подхватываем прошлый результат за эту дату, если он есть в сессии
+  const loadStudents = useCallback(async () => {
+    setStudentsState('loading');
+    const list = await fetchStudents(true).catch(() => null);
+    // Пустой список — это сбой загрузки, а не «нет учеников»
+    if (list && list.length > 0) {
+      setStudents(list);
+      setStudentsState('ok');
+      return true;
+    }
+    setStudentsState('failed');
+    return false;
+  }, []);
+
+  // Подхватываем прошлый результат за эту дату, если он есть в сессии.
+  // Учеников в сессии не храним — догружаем, иначе пункт 3 решил бы, что напоминать некому.
   useEffect(() => {
     const cached = readCache(date);
     setChecks(cached?.checks ?? null);
@@ -156,7 +174,8 @@ export function useScheduleChecks(
     setUpcoming(cached?.upcoming ?? []);
     setFailed(false);
     setLoading(false);
-  }, [date]);
+    if (cached) loadStudents();
+  }, [date, loadStudents]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -172,11 +191,7 @@ export function useScheduleChecks(
       }
       return null;
     };
-    const [data, list] = await Promise.all([
-      checksWithRetry(),
-      fetchStudents(true).catch(() => [] as StudentRow[]),
-    ]);
-    setStudents(list);
+    const [data] = await Promise.all([checksWithRetry(), loadStudents()]);
     if (!data) {
       setFailed(true);
     } else {
@@ -197,7 +212,7 @@ export function useScheduleChecks(
       }
     }
     setLoading(false);
-  }, [date]);
+  }, [date, loadStudents]);
 
   /** Пункт 3: кому остался последний урок и у кого занятия кончились */
   const balanceFindings = useMemo(() => {
@@ -247,6 +262,13 @@ export function useScheduleChecks(
     return SCHEDULE_CHECKS.map((meta) => {
       let findings = all[meta.key] || [];
       let done: boolean;
+      if (meta.group === 'balance' && studentsState !== 'ok') {
+        const unavailable =
+          studentsState === 'failed'
+            ? 'Список учеников не загрузился — нажмите «Проверить в CRM» ещё раз'
+            : 'Загружаем учеников…';
+        return { ...meta, findings: [], clean: false, done: false, unavailable };
+      }
       if (meta.group === 'balance') {
         // Напоминание по этому абонементу уже ушло в прошлые дни — ученика не показываем.
         // После продления абонемент другой, и при новом «последнем уроке» он появится снова.
@@ -262,7 +284,7 @@ export function useScheduleChecks(
       }
       return { ...meta, findings, clean: findings.length === 0, done };
     });
-  }, [checks, marks, balanceFindings, reminders, date]);
+  }, [checks, marks, balanceFindings, reminders, date, studentsState]);
 
   /** Проверка уже сделана — есть данные из CRM */
   const checked = checks !== null;
@@ -281,6 +303,7 @@ export function useScheduleChecks(
     (group: CheckGroup) => {
       const list = sections.filter((s) => s.group === group);
       if (!checked) return !!marks[GROUP_ITEM_KEY[group]]?.done;
+      if (list.some((s) => s.unavailable)) return false;
       return list.length > 0 && list.every((s) => s.done);
     },
     [sections, checked, marks],
@@ -293,7 +316,8 @@ export function useScheduleChecks(
     if (loading || !checked || sections.length === 0) return;
     (['yesterday', 'schedule', 'balance'] as CheckGroup[]).forEach((group) => {
       const list = sections.filter((s) => s.group === group);
-      if (list.length === 0) return;
+      // Нет данных — отметку не трогаем, она остаётся за админом
+      if (list.length === 0 || list.some((s) => s.unavailable)) return;
       const itemKey = GROUP_ITEM_KEY[group];
       const allDone = list.every((s) => s.done);
       const cur = marks[itemKey];
