@@ -97,6 +97,7 @@ def handler(event: dict, context) -> dict:
             return delete_shift(event)
         return _json(405, {"error": "Method not allowed"})
     except Exception as e:
+        print(f"admin-shifts error: {type(e).__name__}: {e}")
         return _json(500, {"error": str(e)})
 
 

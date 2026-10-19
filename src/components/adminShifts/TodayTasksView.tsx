@@ -125,6 +125,7 @@ const TodayTasksView = () => {
                     onMark={setMark}
                     reminders={schedule.reminders}
                     onRemindersChange={schedule.reloadReminders}
+                    onRetryStudents={schedule.reloadStudents}
                   />
                 );
               }

@@ -21,6 +21,7 @@ interface Props {
   /** Пункт 3: общие напоминания об оплате */
   reminders?: Record<string, PaymentReminder>;
   onRemindersChange?: () => void;
+  onRetryStudents?: () => void;
 }
 
 const fmtShort = (d: string) =>
@@ -64,6 +65,7 @@ const ScheduleChecksCard = ({
   onMark,
   reminders = {},
   onRemindersChange = () => {},
+  onRetryStudents,
 }: Props) => {
   const isYesterday = sections.some((s) => s.group === 'yesterday');
 
@@ -124,7 +126,19 @@ const ScheduleChecksCard = ({
                 </div>
 
                 {s.unavailable ? (
-                  <div className="mt-1 ml-4 text-[12px] text-gray-400">{s.unavailable}</div>
+                  <div className="mt-1 ml-4 flex flex-wrap items-center gap-2 text-[12px] text-gray-400">
+                    <span>{s.unavailable}</span>
+                    {s.unavailable.startsWith('Список') && onRetryStudents && (
+                      <button
+                        type="button"
+                        onClick={onRetryStudents}
+                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[10.5px] font-medium text-gray-600 hover:bg-gray-50"
+                      >
+                        <Icon name="RefreshCw" size={11} />
+                        Загрузить ещё раз
+                      </button>
+                    )}
+                  </div>
                 ) : s.clean ? (
                   <div className="mt-1 ml-4 flex items-center gap-1.5 text-[12px] text-green-600">
                     <Icon name="Check" size={13} />

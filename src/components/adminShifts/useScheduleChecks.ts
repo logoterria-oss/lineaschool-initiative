@@ -126,7 +126,7 @@ export function useScheduleChecks(
   const [reminderList, setReminderList] = useState<PaymentReminder[]>([]);
 
   // Напоминания об оплате общие для всех админов: подтягиваем при открытии,
-  // при возврате на вкладку (после «Окна») и раз в 20 секунд
+  // при возврате на вкладку (после «Окна») и раз в минуту
   const loadReminders = useCallback(async () => {
     setReminderList(await fetchReminders());
   }, []);
@@ -136,7 +136,7 @@ export function useScheduleChecks(
     window.addEventListener('focus', onFocus);
     const t = window.setInterval(() => {
       if (document.visibilityState === 'visible') loadReminders();
-    }, 20000);
+    }, 60000);
     return () => {
       window.removeEventListener('focus', onFocus);
       window.clearInterval(t);
@@ -154,12 +154,16 @@ export function useScheduleChecks(
 
   const loadStudents = useCallback(async () => {
     setStudentsState('loading');
-    const list = await fetchStudents(true).catch(() => null);
-    // Пустой список — это сбой загрузки, а не «нет учеников»
-    if (list && list.length > 0) {
-      setStudents(list);
-      setStudentsState('ok');
-      return true;
+    // Список тяжёлый и иногда упирается в лимиты базы — пробуем трижды с паузой
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 3000 * attempt));
+      const list = await fetchStudents(true).catch(() => null);
+      // Пустой список — это сбой загрузки, а не «нет учеников»
+      if (list && list.length > 0) {
+        setStudents(list);
+        setStudentsState('ok');
+        return true;
+      }
     }
     setStudentsState('failed');
     return false;
@@ -265,7 +269,7 @@ export function useScheduleChecks(
       if (meta.group === 'balance' && studentsState !== 'ok') {
         const unavailable =
           studentsState === 'failed'
-            ? 'Список учеников не загрузился — нажмите «Проверить в CRM» ещё раз'
+            ? 'Список учеников не загрузился'
             : 'Загружаем учеников…';
         return { ...meta, findings: [], clean: false, done: false, unavailable };
       }
@@ -337,5 +341,6 @@ export function useScheduleChecks(
     reload: load,
     reminders,
     reloadReminders: loadReminders,
+    reloadStudents: loadStudents,
   };
 }
