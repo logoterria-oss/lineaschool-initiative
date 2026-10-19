@@ -214,7 +214,7 @@ const HeadWorkspace = () => {
         <button
           onClick={() => setActive(CHECKLIST_ITEM)}
           className={`flex-1 flex items-center justify-center gap-1.5 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors ${
-            checklistActive ? 'bg-sky-700' : 'bg-sky-600 hover:bg-sky-700'
+            checklistActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
           }`}
         >
           <Icon name="ListChecks" size={16} className="flex-shrink-0" />
