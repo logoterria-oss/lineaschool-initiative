@@ -46,7 +46,7 @@ const headers = () => {
 
 export async function loadStudents() {
   const r = await fetch(API, { headers: headers() });
-  const data = await r.json();
+  const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error === 'unauthorized' ? 'Войдите заново' : 'CRM не ответила, попробуйте позже');
   return data as { rows: CheckRow[]; tariffs: unknown[] };
 }
@@ -57,7 +57,7 @@ export async function checkBatch(rows: CheckRow[], tariffs: unknown[], refresh: 
     headers: headers(),
     body: JSON.stringify({ rows, tariffs }),
   });
-  const data = await r.json();
+  const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.rows) throw new Error('CRM не ответила');
   return data.rows as CheckRow[];
 }

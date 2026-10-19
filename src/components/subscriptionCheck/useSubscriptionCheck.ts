@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkBatch, CheckRow, loadStudents } from './subscriptionCheckApi';
 
 const BATCH = 4;
-const PARALLEL = 2;
+const PARALLEL = 1;
 const ATTEMPTS = 5;
 
 /**
@@ -73,14 +73,30 @@ export function useSubscriptionCheck(isVisible: (r: CheckRow) => boolean) {
     setLoading(true);
     setError('');
     try {
-      const base = await loadStudents();
+      // Первый запрос тяжёлый: CRM и база иногда отказывают при нагрузке — повторяем с паузой
+      let base: Awaited<ReturnType<typeof loadStudents>> | null = null;
+      let lastErr: unknown = null;
+      for (let a = 0; a < 3 && !base; a++) {
+        if (a) await new Promise((ok) => setTimeout(ok, 2500 * a));
+        if (id !== run.current) return;
+        try {
+          base = await loadStudents();
+        } catch (e) {
+          lastErr = e;
+          if (e instanceof Error && e.message === 'Войдите заново') break;
+        }
+      }
+      if (!base) throw lastErr;
       if (id !== run.current) return;
       tariffs.current = base.tariffs;
       setRows(base.rows);
       setLoading(false);
     } catch (e) {
       if (id === run.current) {
-        setError(e instanceof Error ? e.message : 'Ошибка загрузки');
+        const msg = e instanceof Error ? e.message : '';
+        setError(
+          msg === 'Войдите заново' ? msg : 'CRM сейчас перегружена — нажмите «Обновить из CRM» через минуту',
+        );
         setLoading(false);
       }
     }

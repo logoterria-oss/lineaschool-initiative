@@ -416,7 +416,7 @@ def _check(cur, rows, tariffs, refresh):
         diag = _diag_prices(tariffs)
         # CRM иногда отвечает медленно. Ждём не дольше дедлайна и отдаём то,
         # что успели: остальных фронт перезапросит, а не повиснет на таймауте.
-        ex = ThreadPoolExecutor(max_workers=8)
+        ex = ThreadPoolExecutor(max_workers=4)
         f_ct = {c: ex.submit(_customer_tariffs, token, c) for c in need}
         f_ls = {c: ex.submit(_last_lesson, token, c, diag) for c in need}
         wait(list(f_ct.values()) + list(f_ls.values()), timeout=max(0.5, CHECK_DEADLINE - (time.time() - t0)))
