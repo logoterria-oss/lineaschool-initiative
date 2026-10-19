@@ -40,7 +40,9 @@ export const payLinkForTariff = (
   tariff: { name?: string; per_week?: number | null; is_archived?: boolean } | null,
 ): PayLink | null => {
   if (!tariff) return null;
-  const perWeek = tariff.per_week ?? null;
+  // Новые абонементы в CRM называются «"3 ур./нед." (2гр.+1инд.)» — разбираем и их
+  const short = (tariff.name || '').match(/(\d+)\s*ур[^\d\s]*\.?\s*(?:в\s*)?\/?\s*нед/i);
+  const perWeek = tariff.per_week ?? (short ? Number(short[1]) : null);
 
   if (tariff.is_archived && perWeek === 2) {
     return PAY_LINKS.find((l) => l.url.endsWith('abonement-archive-2')) || null;
