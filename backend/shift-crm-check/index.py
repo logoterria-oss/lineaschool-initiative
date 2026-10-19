@@ -11,10 +11,19 @@ import re
 import json
 import datetime
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Dict, List
 
 import requests
+import psycopg2
+
+SCHEMA = "t_p93118852_lineaschool_initiati"
+# Сколько минут срез CRM считается свежим: справочники меняются редко,
+# ученики и уроки — чаще. Старые данные — запасной вариант, если CRM не ответила.
+FRESH_MIN = {"teachers": 360, "g1": 360, "g0": 360,
+             "c10": 10, "c00": 10, "c11": 10,
+             "lNone": 3, "l1": 3, "l2": 3}
+DEADLINE = 4.0
 
 S20_HOST = "https://11086.s20.online"
 S20_EMAIL = "abram.viktoriya.00@mail.ru"
@@ -114,9 +123,35 @@ def fetch_all(token: str, date_from: str, date_to: str):
             p["status"] = st
         jobs[f"l{st}"] = (lesson_url, p)
 
-    with ThreadPoolExecutor(max_workers=5) as pool:
-        futures = {k: pool.submit(_pages, u, p, token) for k, (u, p) in jobs.items()}
-        res = {k: f.result() for k, f in futures.items()}
+    t0 = time.time()
+    rng = f"{date_from}:{date_to}"
+    keys = {k: f"shiftcheck:{k}" + (f":{rng}" if k.startswith("l") else "") for k in jobs}
+    cache = _cache_read(list(keys.values()))
+    res: Dict[str, list] = {}
+    todo = {}
+    for k, ck in keys.items():
+        hit = cache.get(ck)
+        if hit and hit[1] < FRESH_MIN[k]:
+            res[k] = hit[0]
+        else:
+            todo[k] = jobs[k]
+
+    if todo:
+        # Ждём CRM не дольше дедлайна: не успела — берём прошлые данные
+        pool = ThreadPoolExecutor(max_workers=5)
+        futures = {k: pool.submit(_pages, u, p, token) for k, (u, p) in todo.items()}
+        wait(list(futures.values()), timeout=max(0.5, DEADLINE - (time.time() - t0)))
+        pool.shutdown(wait=False, cancel_futures=True)
+        fresh = {}
+        for k, f in futures.items():
+            if f.done() and f.exception() is None:
+                res[k] = fresh[k] = f.result()
+            elif cache.get(keys[k]):
+                print(f"stale {k}")
+                res[k] = cache[keys[k]][0]
+            else:
+                raise RuntimeError(f"CRM не ответила ({k})")
+        _cache_write({keys[k]: v for k, v in fresh.items()})
 
     teachers = {t.get("id"): (t.get("name") or "").strip() for t in res["teachers"]}
     groups: Dict[int, str] = {}
@@ -134,6 +169,56 @@ def fetch_all(token: str, date_from: str, date_to: str):
         seen.add(ls.get("id"))
         lessons.append(ls)
     return teachers, groups, customers, lessons
+
+
+def _db():
+    return psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=3)
+
+
+def _cache_read(keys: List[str]) -> Dict[str, tuple]:
+    """Срезы CRM из кеша: {ключ: (данные, возраст в минутах)}."""
+    try:
+        conn = _db()
+    except Exception as e:
+        print(f"cache read skipped: {e}")
+        return {}
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT cache_key, payload, EXTRACT(EPOCH FROM now() - updated_at) / 60 "
+                f"FROM {SCHEMA}.crm_json_cache WHERE cache_key = ANY(%s)",
+                (keys,),
+            )
+            return {k: (p if isinstance(p, list) else [], float(age)) for k, p, age in cur.fetchall()}
+    except Exception as e:
+        print(f"cache read failed: {e}")
+        return {}
+    finally:
+        conn.close()
+
+
+def _cache_write(items: Dict[str, list]) -> None:
+    if not items:
+        return
+    try:
+        conn = _db()
+    except Exception as e:
+        print(f"cache write skipped: {e}")
+        return
+    try:
+        with conn.cursor() as cur:
+            for k, v in items.items():
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.crm_json_cache (cache_key, payload, updated_at) "
+                    f"VALUES (%s, %s::jsonb, now()) ON CONFLICT (cache_key) DO UPDATE "
+                    f"SET payload = EXCLUDED.payload, updated_at = now()",
+                    (k, json.dumps(v, ensure_ascii=False, default=str)),
+                )
+        conn.commit()
+    except Exception as e:
+        print(f"cache write failed: {e}")
+    finally:
+        conn.close()
 
 
 def _is_service(name: str) -> bool:
