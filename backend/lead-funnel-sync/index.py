@@ -18,7 +18,8 @@ from typing import Any, Dict, List
 import psycopg2
 import requests
 
-from lead_funnel import advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID
+from lead_funnel import (advance_lead, BEFORE_PAYMENT, ST_DIAG_PAID,
+                         BEFORE_SUBSCRIPTION, ST_SUBSCRIPTION)
 from diag_info import fetch_lessons, sync_diag_info, ST_PLANNED
 from schedule_info import fetch_planned_regular, sync_schedule
 
@@ -161,6 +162,25 @@ def _mark_clients(cur, cids: set) -> int:
     return len(hits)
 
 
+def _catch_up_payments(cur, days: int) -> int:
+    """Досверка оплат: если в момент оплаты лида не нашли (нет карточки CRM),
+    двигаем его сейчас — по телефону из CRM или по ФИО."""
+    cur.execute(
+        f"SELECT p.plan, p.crm_name, p.name, c.phone FROM {SCHEMA}.payment_leads p "
+        f"LEFT JOIN LATERAL (SELECT phone FROM {SCHEMA}.crm_customers_cache "
+        f"WHERE name = p.crm_name AND phone IS NOT NULL LIMIT 1) c ON TRUE "
+        f"WHERE p.paid_at IS NOT NULL AND NOT p.is_test "
+        f"AND p.paid_at > NOW() - INTERVAL '{int(days)} days' ORDER BY p.paid_at"
+    )
+    moved = 0
+    for plan, crm_name, name, phone in cur.fetchall():
+        diag = "диагностик" in (plan or "").lower()
+        moved += advance_lead(cur, ST_DIAG_PAID if diag else ST_SUBSCRIPTION,
+                              BEFORE_PAYMENT if diag else BEFORE_SUBSCRIPTION,
+                              phone=phone, name=crm_name or name)
+    return moved
+
+
 def _attended_customers(ls: dict) -> List[int]:
     ids = []
     details = ls.get("details") if isinstance(ls.get("details"), list) else []
@@ -226,6 +246,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     moved = clients = 0
     try:
+        try:
+            moved += _catch_up_payments(cur, days)
+        except Exception as e:
+            print(f"lead-funnel-sync: досверка оплат не удалась: {e}")
         if cids:
             cur.execute(f"SELECT id, name, phone FROM {SCHEMA}.crm_customers_cache "
                         f"WHERE id IN ({', '.join(str(c) for c in cids)})")
