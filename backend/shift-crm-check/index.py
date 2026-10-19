@@ -10,6 +10,7 @@ import os
 import re
 import json
 import datetime
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List
 
@@ -54,6 +55,23 @@ def _headers(token: str = None) -> dict:
     return h
 
 
+RETRY_DELAYS = (0.7, 1.5)
+
+
+def _post(url: str, payload: dict, token: str = None) -> requests.Response:
+    """Запрос к CRM с повтором: на всплеск запросов CRM отвечает 429."""
+    for delay in RETRY_DELAYS + (None,):
+        t0 = time.time()
+        r = requests.post(url, json=payload, headers=_headers(token), timeout=30)
+        print(f"crm {url.rsplit('/', 2)[-2]} {payload.get('status', '')}{payload.get('is_study', '')} "
+              f"p{payload.get('page')} -> {r.status_code} {time.time() - t0:.2f}s")
+        if r.status_code != 429 or delay is None:
+            r.raise_for_status()
+            return r
+        time.sleep(delay)
+    return r
+
+
 def get_token() -> str:
     r = requests.post(
         f"{S20_HOST}/v2api/auth/login",
@@ -71,9 +89,7 @@ def _lessons(token: str, date_from: str, date_to: str, status=None) -> List[dict
         payload = {"date_from": date_from, "date_to": date_to, "page": page, "pageSize": 200}
         if status is not None:
             payload["status"] = status
-        r = requests.post(url, json=payload, headers=_headers(token), timeout=30)
-        r.raise_for_status()
-        data = r.json()
+        data = _post(url, payload, token).json()
         items = data.get("items", [])
         out.extend(items)
         if len(out) >= data.get("total", 0) or not items:
@@ -85,16 +101,8 @@ def _lessons(token: str, date_from: str, date_to: str, status=None) -> List[dict
 def lessons_all(token: str, date_from: str, date_to: str) -> List[dict]:
     """CRM по умолчанию отдаёт только проведённые — статусы запрашиваем отдельно."""
     seen, out = set(), []
-
-    def one(st):
-        try:
-            return _lessons(token, date_from, date_to, status=st)
-        except Exception as e:
-            print(f"lessons status={st} failed: {e}")
-            return []
-
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        chunks = list(pool.map(one, (None, ST_PLANNED, ST_CANCELLED)))
+    chunks = [_lessons(token, date_from, date_to, status=st)
+              for st in (None, ST_PLANNED, ST_CANCELLED)]
     for chunk in chunks:
         for ls in chunk:
             lid = ls.get("id")
@@ -106,9 +114,7 @@ def lessons_all(token: str, date_from: str, date_to: str) -> List[dict]:
 
 
 def get_teachers(token: str) -> Dict[int, str]:
-    r = requests.post(f"{S20_HOST}/v2api/1/teacher/index",
-                      json={"page": 0, "pageSize": 200}, headers=_headers(token), timeout=30)
-    r.raise_for_status()
+    r = _post(f"{S20_HOST}/v2api/1/teacher/index", {"page": 0, "pageSize": 200}, token)
     return {t.get("id"): (t.get("name") or "").strip() for t in r.json().get("items", [])}
 
 
@@ -120,9 +126,7 @@ def get_groups(token: str) -> Dict[int, str]:
     for is_active in (1, 0):
         page = 0
         while True:
-            r = requests.post(url, json={"page": page, "pageSize": 200, "is_active": is_active},
-                              headers=_headers(token), timeout=30)
-            r.raise_for_status()
+            r = _post(url, {"page": page, "pageSize": 200, "is_active": is_active}, token)
             items = r.json().get("items", [])
             for g in items:
                 gid = g.get("id")
@@ -141,10 +145,8 @@ def get_customers(token: str) -> Dict[int, dict]:
     for is_study, removed in ((1, 0), (0, 0), (1, 1)):
         page = 0
         while True:
-            r = requests.post(url, json={"page": page, "pageSize": 200,
-                                         "is_study": is_study, "removed": removed},
-                              headers=_headers(token), timeout=30)
-            r.raise_for_status()
+            r = _post(url, {"page": page, "pageSize": 200,
+                            "is_study": is_study, "removed": removed}, token)
             data = r.json()
             items = data.get("items", [])
             for c in items:
@@ -459,21 +461,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     try:
         token = get_token()
-        with ThreadPoolExecutor(max_workers=6) as pool:
+        # Уроки за все четыре дня берём одним диапазоном и делим по датам:
+        # раньше на каждый день шли отдельные запросы, и CRM отвечала 429.
+        with ThreadPoolExecutor(max_workers=4) as pool:
             f_teachers = pool.submit(get_teachers, token)
             f_groups = pool.submit(get_groups, token)
             f_customers = pool.submit(get_customers, token)
-            f_yest = pool.submit(lessons_all, token, yesterday, yesterday)
-            f_today = pool.submit(lessons_all, token, today, today)
-            f_next = pool.submit(lessons_all, token, tomorrow, day_after)
+            f_lessons = pool.submit(lessons_all, token, yesterday, day_after)
             teachers = f_teachers.result()
             groups = f_groups.result()
             customers = f_customers.result()
-            ls_yest = f_yest.result()
-            ls_today = f_today.result()
-            ls_next = f_next.result()
+            lessons = f_lessons.result()
     except Exception as e:
+        print(f"CRM error: {e}")
         return _json(502, {"error": f"CRM error: {e}"})
+
+    def on(*days):
+        return [ls for ls in lessons if str(ls.get("date") or "")[:10] in days]
+
+    ls_yest, ls_today, ls_next = on(yesterday), on(today), on(tomorrow, day_after)
 
     return _json(200, {
         "ok": True,
