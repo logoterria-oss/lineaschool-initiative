@@ -1,5 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Lead, NO_CONTACT_STATUS, WINDOW_STAGE, noContactStages } from '@/lib/leadsApi';
+
+const CALL_STAGES = ['звонок 1', 'звонок 2'];
 
 function fmt(v?: string | null): string {
   if (!v) return '';
@@ -17,6 +20,22 @@ export default function NoContactStage({ lead, onStage, onStageDate, compact = f
   onStageDate?: (stage: string, value: string) => void;
   compact?: boolean;
 }) {
+  const inputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [askTime, setAskTime] = useState('');
+
+  // Выбрали звонок — сразу открываем выбор даты и времени этого звонка
+  useEffect(() => {
+    if (!askTime) return;
+    const t = setTimeout(() => {
+      const el = inputs.current[askTime];
+      if (el) {
+        try { el.showPicker(); } catch { el.focus(); }
+      }
+      setAskTime('');
+    }, 50);
+    return () => clearTimeout(t);
+  }, [askTime, lead.no_contact_stage]);
+
   if ((lead.lead_status || '') !== NO_CONTACT_STATUS) return null;
   const stages = noContactStages(lead.processing_status);
   const value = lead.no_contact_stage || '';
@@ -45,7 +64,11 @@ export default function NoContactStage({ lead, onStage, onStageDate, compact = f
         </span>
         <select
           value={value}
-          onChange={(e) => onStage(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            onStage(v);
+            if (onStageDate && CALL_STAGES.includes(v)) setAskTime(v);
+          }}
           onMouseDown={(e) => e.stopPropagation()}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         >
@@ -75,6 +98,7 @@ export default function NoContactStage({ lead, onStage, onStageDate, compact = f
                   <label className="relative cursor-pointer font-medium text-gray-700 hover:text-amber-700" title="Изменить дату и время">
                     {shown || <span className="text-amber-600">указать</span>}
                     <input
+                      ref={(el) => { inputs.current[s] = el; }}
                       type="datetime-local"
                       value={dates[s] || ''}
                       disabled={!onStageDate}
