@@ -19,9 +19,10 @@ interface CellProps {
   onChange: (v: string) => void;
   onCommit: (v: string) => void;
   onStage?: (stage: string) => void;
+  onStageDate?: (stage: string, value: string) => void;
 }
 
-export function Cell({ lead, fieldKey, onChange, onCommit, onStage }: CellProps) {
+export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate }: CellProps) {
   const value = (lead[fieldKey] as string) || '';
 
   if (fieldKey === 'responsible') {
@@ -52,7 +53,7 @@ export function Cell({ lead, fieldKey, onChange, onCommit, onStage }: CellProps)
             {value || '—'}
           </span>
         )}
-        {onStage && <NoContactStage lead={lead} onStage={onStage} />}
+        {onStage && <NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} />}
       </div>
     );
   }

@@ -15,6 +15,8 @@ import {
   type LeadUpdateResult,
   setLeadArchived,
   NO_CONTACT_FINAL,
+  WINDOW_STAGE,
+  toLocalInput,
 } from '@/lib/leadsApi';
 import LeadsBoard from './leads/LeadsBoard';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
@@ -168,15 +170,29 @@ export default function LeadsListView() {
   const setStage = async (id: number, stage: string) => {
     if (stage === NO_CONTACT_FINAL) {
       const now = new Date().toISOString();
+      const lead = leads.find((l) => l.id === id);
+      const dates = { ...(lead?.no_contact_stage_dates || {}), [stage]: toLocalInput(new Date()) };
       setLeads((prev) => prev.map((l) => (l.id === id
-        ? { ...l, no_contact_stage: stage, lead_status: NO_CONTACT_FINAL, archived: true, archived_at: now }
+        ? { ...l, no_contact_stage: stage, no_contact_stage_dates: dates, lead_status: NO_CONTACT_FINAL, archived: true, archived_at: now }
         : l)));
-      await updateLead(id, { no_contact_stage: stage, lead_status: NO_CONTACT_FINAL });
+      await updateLead(id, { no_contact_stage: stage, no_contact_stage_dates: dates, lead_status: NO_CONTACT_FINAL });
       await setLeadArchived(id, true);
       return;
     }
-    patch(id, 'no_contact_stage', stage);
-    updateLead(id, { no_contact_stage: stage });
+    const lead = leads.find((l) => l.id === id);
+    const dates = { ...(lead?.no_contact_stage_dates || {}) };
+    // Новому этапу сразу ставим «сейчас» — время можно поправить вручную
+    if (stage && stage !== WINDOW_STAGE && !dates[stage]) dates[stage] = toLocalInput(new Date());
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, no_contact_stage: stage, no_contact_stage_dates: dates } : l)));
+    updateLead(id, { no_contact_stage: stage, no_contact_stage_dates: dates });
+  };
+
+  const setStageDate = (id: number, stage: string, value: string) => {
+    const lead = leads.find((l) => l.id === id);
+    const dates = { ...(lead?.no_contact_stage_dates || {}), [stage]: value };
+    if (!value) delete dates[stage];
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, no_contact_stage_dates: dates } : l)));
+    updateLead(id, { no_contact_stage_dates: dates });
   };
 
   const archiveLead = async (id: number, archived: boolean) => {
@@ -341,6 +357,7 @@ export default function LeadsListView() {
           onArchive={archiveLead}
           onLeadStatus={setLeadStatus}
           onStage={setStage}
+          onStageDate={setStageDate}
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />
       ) : (
@@ -356,6 +373,7 @@ export default function LeadsListView() {
               onSave={(k, v) => save(l.id, k, v)}
               onArchive={(a) => archiveLead(l.id, a)}
               onStage={(s) => setStage(l.id, s)}
+              onStageDate={(s, v) => setStageDate(l.id, s, v)}
             />
           ))}
         </div>
@@ -409,6 +427,7 @@ export default function LeadsListView() {
                           onChange={(v) => patch(l.id, c.key, v)}
                           onCommit={(v) => save(l.id, c.key, v)}
                           onStage={(s) => setStage(l.id, s)}
+                          onStageDate={(s, v) => setStageDate(l.id, s, v)}
                         />
                       </td>
                     ))}

@@ -14,6 +14,7 @@ interface Props {
   onArchive: (id: number, archived: boolean) => void;
   onLeadStatus: (id: number, status: string) => void;
   onStage: (id: number, stage: string) => void;
+  onStageDate: (id: number, stage: string, value: string) => void;
 }
 
 const NONE = '';
@@ -39,11 +40,12 @@ function fmtDate(iso?: string | null): string {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragEnd, onRestore }: {
+function LeadTile({ lead, onComment, onLeadStatus, onStage, onStageDate, onDragStart, onDragEnd, onRestore }: {
   lead: Lead;
   onComment: (c: string) => void;
   onLeadStatus: (s: string) => void;
   onStage: (s: string) => void;
+  onStageDate: (s: string, v: string) => void;
   onDragStart: () => void;
   onDragEnd?: () => void;
   onRestore?: () => void;
@@ -128,7 +130,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
           ))}
         </select>}
       </div>
-      <div><NoContactStage lead={lead} onStage={onStage} compact /></div>
+      <div><NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} compact /></div>
 
       <div className="mt-2 border-t border-gray-100 pt-1.5">
         {editing ? (
@@ -169,7 +171,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onDragStart, onDragE
 
 // Доска лидов: колонки по статусу обработки, как воронка в CRM.
 // Карточку можно перетащить в другую колонку — статус обработки сменится.
-export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLeadStatus, onStage }: Props) {
+export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLeadStatus, onStage, onStageDate }: Props) {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
   const [overArchive, setOverArchive] = useState(false);
@@ -232,6 +234,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLead
                 onComment={(c) => onComment(l.id, c)}
                 onLeadStatus={(v) => onLeadStatus(l.id, v)}
                 onStage={(v) => onStage(l.id, v)}
+                onStageDate={(st, v) => onStageDate(l.id, st, v)}
                 onRestore={() => onArchive(l.id, false)}
               />
             ))}
@@ -305,6 +308,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLead
                       onComment={(c) => onComment(l.id, c)}
                       onLeadStatus={(v) => onLeadStatus(l.id, v)}
                       onStage={(v) => onStage(l.id, v)}
+                      onStageDate={(st, v) => onStageDate(l.id, st, v)}
                     />
                   ))
                 )}

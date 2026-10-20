@@ -30,6 +30,17 @@ NOT_TEST = (
     "'(^|[^А-ЯЁа-яёA-Za-z0-9])([Тт][Ее][Сс][Тт]([Оо][Вв]([Ыы][Йй]|[Аа][Яя]|[Оо][Ее]|[Ыы][Ее]))?|[Tt][Ee][Ss][Tt])([^А-ЯЁа-яёA-Za-z0-9]|$)')"
 )
 
+# Время первого сообщения в «Окне» по телефону лида — только для «Связь через "Окно" не налажена».
+# Если переписки в «Окне» не нашлось — момент, когда лида перевели в «Списались в "Окне"».
+_LEAD_PHONE = "('7' || right(substring(leads.contact from '(?:\\+?[78])?\\d{10}'), 10))"
+WINDOW_FIRST_SQL = (
+    "CASE WHEN leads.lead_status = 'Связь через \"Окно\" не налажена' THEN COALESCE(("
+    "SELECT min(m.created_at) FROM interaction_messages m JOIN interaction_dialogs d ON d.id = m.dialog_id "
+    f"WHERE regexp_replace(COALESCE(d.phone, ''), '\\D', '', 'g') = {_LEAD_PHONE} "
+    f"OR d.chat_id = {_LEAD_PHONE}), "
+    "CASE WHEN leads.processing_status LIKE 'Списались%' THEN leads.status_changed_at END) END"
+)
+
 CORS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
@@ -83,7 +94,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "responsible, processing_status, lead_status, diag_date, report_link, "
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
-                "status_changed_at, archived, archived_at, no_contact_stage, crm_diag_planned_at, crm_diag_done_at, next_lesson_at "
+                "status_changed_at, archived, archived_at, no_contact_stage, no_contact_stage_dates, crm_diag_planned_at, crm_diag_done_at, next_lesson_at, "
+                f"{WINDOW_FIRST_SQL} "
                 f"FROM leads WHERE {NOT_TEST} AND became_client_at IS NULL AND duplicate_of IS NULL ORDER BY id ASC"
             )
             cols = ['id', 'parent_name', 'student_name', 'student_age', 'contact',
@@ -92,7 +104,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'contact_when', 'source', 'created_at', 'updated_at',
                     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
                     'landing_page', 'referrer', 'status_changed_at', 'archived', 'archived_at',
-                    'no_contact_stage', 'crm_diag_planned_at', 'crm_diag_done_at', 'next_lesson_at']
+                    'no_contact_stage', 'no_contact_stage_dates', 'crm_diag_planned_at', 'crm_diag_done_at', 'next_lesson_at',
+                    'window_first_at']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}
@@ -114,6 +127,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {'statusCode': 400, 'headers': CORS,
                         'body': json.dumps({'error': 'id required'}), 'isBase64Encoded': False}
             sets = [f"{f} = '{esc(body[f])}'" for f in FIELDS if f in body]
+            if isinstance(body.get('no_contact_stage_dates'), dict):
+                # Даты этапов дозвона: {этап: 'ГГГГ-ММ-ДД ЧЧ:ММ'}
+                dates = {str(k): str(v) for k, v in body['no_contact_stage_dates'].items() if v}
+                sets.append(f"no_contact_stage_dates = '{esc(json.dumps(dates, ensure_ascii=False))}'::jsonb")
             if 'archived' in body:
                 # Архив доски: лид убирается из колонок, но остаётся в таблице
                 if body['archived']:

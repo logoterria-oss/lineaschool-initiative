@@ -31,6 +31,10 @@ export interface Lead {
   archived?: boolean;
   archived_at?: string | null;
   no_contact_stage?: string;
+  /** Дата и время каждого этапа дозвона: {этап: 'ГГГГ-ММ-ДДTЧЧ:ММ'} */
+  no_contact_stage_dates?: Record<string, string> | null;
+  /** Первое сообщение в «Окне» — подставляется сервером автоматически */
+  window_first_at?: string | null;
   crm_diag_planned_at?: string;
   crm_diag_done_at?: string;
   next_lesson_at?: string;
@@ -83,6 +87,13 @@ export const PROCESSING_OPTIONS = [
 export const NO_CONTACT_STATUS = 'Связь через "Окно" не налажена';
 export const NO_CONTACT_FINAL = 'лид не вышел на связь';
 export const NO_REPLY_PROCESSING = 'Списались в "Окне" (ответ не получен)';
+export const WINDOW_STAGE = 'Отправлено сообщение в "Окно"';
+
+/** Локальные дата и время в формате поля ввода: ГГГГ-ММ-ДДTЧЧ:ММ */
+export function toLocalInput(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 
 /** Статус «Связь не налажена» доступен только неразобранным и тем, кто не ответил в «Окне». */
 export function canHaveNoContact(processing: string): boolean {
@@ -94,7 +105,7 @@ export function canHaveNoContact(processing: string): boolean {
 export function noContactStages(processing: string): string[] {
   const base = ['отправлено СМС', 'звонок 1', 'звонок 2', NO_CONTACT_FINAL];
   return (processing || '').trim() === NO_REPLY_PROCESSING
-    ? ['Отправлено сообщение в "Окно"', ...base]
+    ? [WINDOW_STAGE, ...base]
     : base;
 }
 
