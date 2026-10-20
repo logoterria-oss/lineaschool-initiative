@@ -19,6 +19,50 @@ CORS = {
 }
 
 
+class CachedCursor(RealDictCursor):
+    """Повторные одинаковые SELECT внутри одного запроса берём из памяти; любая запись сбрасывает кэш.
+    Так расчёт финмодели не упирается в лимит частоты запросов к базе."""
+
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._cache = {}
+        self._rows = None
+        self.db_calls = 0
+        self.cache_hits = 0
+
+    def execute(self, query, vars=None):
+        q = query.lstrip().upper()
+        is_read = q.startswith("SELECT") and " FOR UPDATE" not in q
+        if not is_read:
+            self._cache.clear()
+            self._rows = None
+            self.db_calls += 1
+            return super().execute(query, vars)
+        key = self.mogrify(query, vars)
+        if key in self._cache:
+            self.cache_hits += 1
+            self._rows = [dict(r) for r in self._cache[key]]
+            return None
+        self._rows = None
+        self.db_calls += 1
+        super().execute(query, vars)
+        rows = super().fetchall()
+        self._cache[key] = rows
+        self._rows = [dict(r) for r in rows]
+        return None
+
+    def fetchall(self):
+        if self._rows is None:
+            return super().fetchall()
+        rows, self._rows = self._rows, []
+        return rows
+
+    def fetchone(self):
+        if self._rows is None:
+            return super().fetchone()
+        return self._rows.pop(0) if self._rows else None
+
+
 def resp(code, payload):
     return {
         "statusCode": code,
@@ -3455,7 +3499,7 @@ def handler(event: dict, context) -> dict:
 
     conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=5)
     try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor(cursor_factory=CachedCursor)
         if not auth(cur, event):
             return resp(401, {"error": "Доступ только для руководителя"})
 
@@ -3567,4 +3611,7 @@ def handler(event: dict, context) -> dict:
 
         return resp(405, {"error": "Метод не поддерживается"})
     finally:
+        c_ = locals().get("cur")
+        if c_ is not None:
+            print(f"[db] calls={c_.db_calls} cached={c_.cache_hits}")
         conn.close()
