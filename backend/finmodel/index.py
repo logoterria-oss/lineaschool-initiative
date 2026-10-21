@@ -31,7 +31,8 @@ class CachedCursor(RealDictCursor):
         self.cache_hits = 0
 
     def execute(self, query, vars=None):
-        q = query.lstrip().upper()
+        raw = query.decode("utf-8", "ignore") if isinstance(query, (bytes, bytearray)) else str(query)
+        q = raw.lstrip().upper()
         is_read = q.startswith("SELECT") and " FOR UPDATE" not in q
         if not is_read:
             self._cache.clear()
