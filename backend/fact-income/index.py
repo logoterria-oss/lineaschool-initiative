@@ -5,6 +5,8 @@ import requests
 import psycopg2
 from datetime import date, datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
+import threading
+import time
 
 """
 Фактические доходы: сколько занятий проведено по каждому ученику и по какой цене.
@@ -64,14 +66,32 @@ def _headers(token=None):
     return h
 
 
+# CRM отвечает 429, если стучаться часто: ограничиваем одновременные запросы
+# и повторяем с паузой, а токен держим в тёплом экземпляре 10 минут.
+_CRM_SLOTS = threading.Semaphore(3)
+_TOKEN = {"value": None, "at": 0.0}
+
+
+def _crm_post(url, payload, token=None, timeout=20):
+    resp = None
+    for delay in (0, 0.6, 1.2):
+        if delay:
+            time.sleep(delay)
+        with _CRM_SLOTS:
+            resp = requests.post(url, json=payload, headers=_headers(token), timeout=timeout)
+        if resp.status_code != 429:
+            return resp
+    return resp
+
+
 def _token():
-    resp = requests.post(
-        f"{S20_HOST}/v2api/auth/login",
-        json={"email": S20_EMAIL, "api_key": os.environ["S20_API_KEY"]},
-        headers=_headers(), timeout=20,
-    )
+    if _TOKEN["value"] and time.time() - _TOKEN["at"] < 600:
+        return _TOKEN["value"]
+    resp = _crm_post(f"{S20_HOST}/v2api/auth/login",
+                     {"email": S20_EMAIL, "api_key": os.environ["S20_API_KEY"]})
     resp.raise_for_status()
-    return resp.json()["token"]
+    _TOKEN["value"], _TOKEN["at"] = resp.json()["token"], time.time()
+    return _TOKEN["value"]
 
 
 def _fetch_lessons(token, date_from, date_to, status=3):
@@ -84,7 +104,7 @@ def _fetch_lessons(token, date_from, date_to, status=3):
                    "page": p, "pageSize": page_size}
         if status is not None:
             payload["status"] = status
-        r = requests.post(url, json=payload, headers=_headers(token), timeout=40)
+        r = _crm_post(url, payload, token, timeout=20)
         r.raise_for_status()
         return r.json()
 
@@ -94,7 +114,7 @@ def _fetch_lessons(token, date_from, date_to, status=3):
     if not items or len(items) >= total:
         return items
     last = (total + page_size - 1) // page_size
-    with ThreadPoolExecutor(max_workers=8) as ex:
+    with ThreadPoolExecutor(max_workers=3) as ex:
         for data in ex.map(page, range(1, last)):
             items.extend(data.get("items", []))
     return items
@@ -107,9 +127,8 @@ def _fetch_customers(token):
     for is_study, removed in ((1, 0), (1, 1), (0, 0), (0, 1)):
         page = 0
         while True:
-            r = requests.post(url, json={"page": page, "pageSize": 200,
-                                         "is_study": is_study, "removed": removed},
-                              headers=_headers(token), timeout=30)
+            r = _crm_post(url, {"page": page, "pageSize": 200,
+                                "is_study": is_study, "removed": removed}, token)
             if r.status_code != 200:
                 break
             data = r.json()
@@ -392,7 +411,18 @@ def _cache_write(month, agg, lessons):
 def _build_year(token, months, refresh=False):
     monthly = {}
     lessons_count = {}
-    cached = {} if refresh else _cache_read(months)
+    cached = _cache_read(months)
+    now_m = datetime.now().strftime("%Y-%m")
+    # Будущие месяцы пусты — в CRM за ними не ходим. «Пересчитать» обновляет
+    # только текущий и прошлый месяц: закрытые месяцы не меняются, а полный
+    # пересчёт года упирается в лимит запросов CRM и не успевает за таймаут.
+    for m in months:
+        if m > now_m:
+            cached[m] = ({}, 0)
+    if refresh:
+        prev_m = (datetime.now().replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+        for m in (now_m, prev_m):
+            cached.pop(m, None)
     todo = [m for m in months if m not in cached]
     for m, (agg, cnt) in cached.items():
         monthly[m], lessons_count[m] = agg, cnt
