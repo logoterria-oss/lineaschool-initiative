@@ -15,6 +15,7 @@ const PNL_LINES: [string, string, Kind][] = [
   ['teachers', 'Педагоги', 'cost'],
   ['teacher_transfer_fees', 'Комиссия за переводы самозанятым', 'cost'],
   ['methodists', 'Дизайнеры метод.материалов', 'cost'],
+  ['ruo', 'Руководитель учебного отдела', 'cost'],
   ['admin', 'Администратор', 'cost'],
   ['advertising', 'Реклама', 'cost'],
   ['software_site', 'ПО: сайт', 'cost'],
