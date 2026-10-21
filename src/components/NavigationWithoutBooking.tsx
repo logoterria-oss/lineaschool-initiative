@@ -13,7 +13,7 @@ export default function NavigationWithoutBooking() {
         <div className="flex justify-end md:justify-between items-center h-14 sm:h-16 md:h-20 lg:h-24">
           <a href="/" className="flex items-center space-x-2 xs:space-x-2.5 sm:space-x-3 md:space-x-6 min-w-0 flex-shrink overflow-hidden order-2 md:order-1">
             <span className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-green-600 truncate order-1 md:order-2 md:ml-4">ЛинэяСтадис</span>
-            <div className="order-2 md:order-1">
+            <div className="order-2 md:order-1 pr-1 pb-1">
               <LineaStudiesLogo />
             </div>
           </a>
