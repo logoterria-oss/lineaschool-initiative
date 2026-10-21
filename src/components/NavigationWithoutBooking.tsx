@@ -11,9 +11,9 @@ export default function NavigationWithoutBooking() {
     <nav className="bg-white/95 backdrop-blur-md shadow-md border-b border-green-200 sticky top-0 z-50">
       <div className="max-w-[1400px] mx-auto px-2 sm:px-4 md:px-0 lg:px-0">
         <div className="flex justify-end md:justify-between items-center h-14 sm:h-16 md:h-20 lg:h-24">
-          <a href="/" className="flex items-center space-x-2 xs:space-x-2.5 sm:space-x-3 md:space-x-6 min-w-0 flex-shrink overflow-hidden order-2 md:order-1">
-            <span className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-green-600 truncate order-1 md:order-2 md:ml-4">ЛинэяСтадис</span>
-            <div className="order-2 md:order-1 pr-1 pb-1">
+          <a href="/" className="flex items-center space-x-2 xs:space-x-2.5 sm:space-x-3 md:space-x-6 min-w-0 flex-shrink order-2 md:order-1">
+            <span className="min-w-0 text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-green-600 truncate order-1 md:order-2 md:ml-4">ЛинэяСтадис</span>
+            <div className="order-2 md:order-1 flex-shrink-0 pr-1.5 pb-1.5">
               <LineaStudiesLogo />
             </div>
           </a>
