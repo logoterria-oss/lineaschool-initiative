@@ -10,6 +10,7 @@ type Kind = 'income' | 'cost' | 'subtotal' | 'total' | 'balance';
 
 const PNL_LINES: [string, string, Kind][] = [
   ['revenue', 'Выручка (проведённые занятия)', 'income'],
+  ['interest_income', 'Проценты по депозиту', 'income'],
   ['acquiring', 'Комиссии за приём оплат', 'cost'],
   ['teachers', 'Педагоги', 'cost'],
   ['teacher_transfer_fees', 'Комиссия за переводы самозанятым', 'cost'],
