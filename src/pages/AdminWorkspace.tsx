@@ -23,6 +23,7 @@ import LeadsSection from '@/components/diagBooking/LeadsSection';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import TodayTasksView from '@/components/adminShifts/TodayTasksView';
+import StaffTasksView from '@/components/staffTasks/StaffTasksView';
 import { buildInteractionUrl } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
@@ -86,6 +87,7 @@ const AdminWorkspace = () => {
       case 'leads-list': return <LeadsSection />;
       case 'staff-list': return <StaffListView readOnly />;
       case 'today-tasks': return <TodayTasksView />;
+      case 'tasks': return <StaffTasksView />;
       default: return <StubView label={active.label} />;
     }
   }, [active, fullName]);

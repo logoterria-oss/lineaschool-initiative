@@ -30,6 +30,7 @@ import SupervisionRates from '@/components/supervision/SupervisionRates';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
 import TodayTasksView from '@/components/adminShifts/TodayTasksView';
+import StaffTasksView from '@/components/staffTasks/StaffTasksView';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import DiagSlotsControl from '@/components/diagBooking/DiagSlotsControl';
@@ -83,6 +84,7 @@ const HeadWorkspace = () => {
     switch (active.id) {
       case 'admin-shifts': return <AdminShiftsView />;
       case 'admin-checklist': return <TodayTasksView />;
+      case 'tasks': return <StaffTasksView />;
       case 'students-list': return <StudentsListView />;
       case 'leads': return <LeadsSection />;
       case 'interactions': return <InteractionsView />;
