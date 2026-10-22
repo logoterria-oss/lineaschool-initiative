@@ -10,7 +10,6 @@ interface Props {
 const NewTaskForm = ({ assignees, onCreated }: Props) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [due, setDue] = useState('');
   const [urgency, setUrgency] = useState<Urgency>('medium');
   const [ids, setIds] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
@@ -24,10 +23,9 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
     setBusy(true);
     setError('');
     try {
-      await createTask({ title, description, due_date: due, urgency, assignee_ids: ids });
+      await createTask({ title, description, due_date: '', urgency, assignee_ids: ids });
       setTitle('');
       setDescription('');
-      setDue('');
       setUrgency('medium');
       setIds([]);
       onCreated();
@@ -95,15 +93,6 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
         </div>
       </div>
       <div className="flex flex-wrap items-end gap-3">
-        <label className="text-xs text-gray-500">
-          Срок
-          <input
-            type="date"
-            value={due}
-            onChange={(e) => setDue(e.target.value)}
-            className="block mt-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-900"
-          />
-        </label>
         <button
           disabled={busy}
           onClick={submit}

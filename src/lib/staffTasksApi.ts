@@ -21,6 +21,7 @@ export interface StaffTask {
   assignee_name: string;
   due_date: string | null;
   urgency: Urgency;
+  created_msk: string;
   status: 'open' | 'done';
   done_at: string | null;
   done_comment: string;

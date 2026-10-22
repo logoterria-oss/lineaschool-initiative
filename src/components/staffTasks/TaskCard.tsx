@@ -85,6 +85,9 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
             ) : (
               <span className="flex items-center gap-1"><Icon name="UserCheck" size={13} />от {task.author_name}</span>
             )}
+            {task.created_msk && (
+              <span className="flex items-center gap-1" title="Когда поставлена задача"><Icon name="Clock" size={13} />{task.created_msk}</span>
+            )}
             {task.due_date && (
               <span className={`flex items-center gap-1 ${overdue ? 'text-rose-600 font-medium' : ''}`}>
                 <Icon name="Calendar" size={13} />до {fmtDate(task.due_date)}{overdue && ' · просрочено'}

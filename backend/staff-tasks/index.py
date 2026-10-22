@@ -17,7 +17,8 @@ CORS = {
 
 FIELDS = (
     "t.id, t.title, t.description, t.author_id, a.full_name AS author_name, t.assignee_id, "
-    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at"
+    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, "
+    "to_char(t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Moscow', 'DD.MM.YYYY HH24:MI') AS created_msk"
 )
 FROM = (
     f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
@@ -178,6 +179,7 @@ def digest(cur):
         p['tasks'].append({
             'id': r['id'], 'title': r['title'], 'description': r['description'],
             'urgency': r['urgency'], 'due_date': r['due_date'], 'author_name': r['author_name'],
+            'created_msk': r['created_msk'],
         })
     today = date.today().isoformat()
     for p in people.values():
@@ -190,7 +192,7 @@ def digest(cur):
             lines.append(f"{i}. {URGENCY_LABELS.get(t['urgency'], '')} · {t['title']}{due}")
             if t['description']:
                 lines.append(f"   {t['description']}")
-            lines.append(f"   от: {t['author_name']}")
+            lines.append(f"   от: {t['author_name']}, поставлена {t['created_msk']}")
         lines += ['', 'Когда выполните — отметьте «Выполнено» в кабинете, и задача перестанет приходить.']
         p['text'] = '\n'.join(lines)
     return _json({'ok': True, 'date': today, 'recipients': list(people.values())})
