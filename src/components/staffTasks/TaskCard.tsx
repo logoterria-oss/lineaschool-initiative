@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
+import TaskAttachments from './TaskAttachments';
 import { StaffTask, URGENCY_OPTIONS, Urgency } from '@/lib/staffTasksApi';
 
 interface Props {
@@ -79,6 +80,11 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
             )}
           </div>
           {task.description && <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{task.description}</div>}
+          {task.attachments?.length > 0 && (
+            <div className="mt-2">
+              <TaskAttachments files={task.attachments} />
+            </div>
+          )}
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
             {showAssignee ? (
               <span className="flex items-center gap-1"><Icon name="User" size={13} />{task.assignee_name}</span>

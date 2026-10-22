@@ -1,8 +1,11 @@
 import os
 import json
+import base64
+import uuid
 from datetime import date
 from typing import Any, Dict, Optional
 
+import boto3
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -17,7 +20,7 @@ CORS = {
 
 FIELDS = (
     "t.id, t.title, t.description, t.author_id, a.full_name AS author_name, t.assignee_id, "
-    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, "
+    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments, "
     "to_char(t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Moscow', 'DD.MM.YYYY HH24:MI') AS created_msk"
 )
 FROM = (
@@ -97,11 +100,12 @@ def create_task(cur, conn, me, data):
     desc = (data.get('description') or '').strip()
     due = (data.get('due_date') or '').strip() or None
     urgency = _urgency(data.get('urgency'))
+    files = json.dumps(_clean_attachments(data.get('attachments')), ensure_ascii=False)
     for aid in ids:
         cur.execute(
-            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date, urgency) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            (title, desc, me['id'], int(aid), due, urgency),
+            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date, urgency, attachments) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)",
+            (title, desc, me['id'], int(aid), due, urgency, files),
         )
     conn.commit()
     return _json({'ok': True})
@@ -147,6 +151,46 @@ def delete_task(cur, conn, me, data):
     return _json({'ok': True})
 
 
+CDN_PREFIX = 'https://cdn.poehali.dev/projects/'
+MAX_FILE = 10 * 1024 * 1024
+
+
+def _clean_attachments(items) -> list:
+    out = []
+    for f in (items or [])[:10]:
+        url = str((f or {}).get('url') or '')
+        if not url.startswith(CDN_PREFIX):
+            continue
+        out.append({
+            'url': url,
+            'name': str(f.get('name') or 'файл')[:200],
+            'type': str(f.get('type') or '')[:100],
+            'size': int(f.get('size') or 0),
+        })
+    return out
+
+
+def upload_file(me, data):
+    raw = str(data.get('data') or '')
+    if ',' in raw and raw.startswith('data:'):
+        raw = raw.split(',', 1)[1]
+    body = base64.b64decode(raw)
+    if not body or len(body) > MAX_FILE:
+        return _json({'ok': False, 'message': 'Файл пустой или больше 10 МБ'}, 400)
+    name = str(data.get('name') or 'file')[:200]
+    ctype = str(data.get('type') or 'application/octet-stream')[:100]
+    ext = os.path.splitext(name)[1].lower()[:10]
+    key = f"staff-tasks/{me['id']}/{uuid.uuid4().hex}{ext}"
+    s3 = boto3.client(
+        's3', endpoint_url='https://bucket.poehali.dev',
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    )
+    s3.put_object(Bucket='files', Key=key, Body=body, ContentType=ctype)
+    url = f"{CDN_PREFIX}{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+    return _json({'ok': True, 'file': {'url': url, 'name': name, 'type': ctype, 'size': len(body)}})
+
+
 def _service_key_ok(event) -> bool:
     key = os.environ.get('INTERACTION_SERVICE_KEY')
     if not key:
@@ -180,6 +224,7 @@ def digest(cur):
             'id': r['id'], 'title': r['title'], 'description': r['description'],
             'urgency': r['urgency'], 'due_date': r['due_date'], 'author_name': r['author_name'],
             'created_msk': r['created_msk'],
+            'attachments': r['attachments'] or [],
         })
     today = date.today().isoformat()
     for p in people.values():
@@ -192,6 +237,8 @@ def digest(cur):
             lines.append(f"{i}. {URGENCY_LABELS.get(t['urgency'], '')} · {t['title']}{due}")
             if t['description']:
                 lines.append(f"   {t['description']}")
+            for f in t['attachments']:
+                lines.append(f"   📎 {f['name']}: {f['url']}")
             lines.append(f"   от: {t['author_name']}, поставлена {t['created_msk']}")
         lines += ['', 'Когда выполните — отметьте «Выполнено» в кабинете, и задача перестанет приходить.']
         p['text'] = '\n'.join(lines)
@@ -217,6 +264,8 @@ def handler(event: dict, context) -> dict:
             return list_tasks(cur, me)
         data = json.loads(event.get('body') or '{}')
         action = data.get('action')
+        if action == 'upload':
+            return upload_file(me, data)
         if action == 'create':
             return create_task(cur, conn, me, data)
         if action == 'update':

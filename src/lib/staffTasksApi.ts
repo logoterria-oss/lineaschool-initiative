@@ -11,6 +11,13 @@ export const URGENCY_OPTIONS: { value: Urgency; label: string; hint: string; act
   { value: 'low', label: 'Не срочно', hint: 'решить, когда появится свободное время', activeClass: 'bg-emerald-600 border-emerald-600 text-white', badgeClass: 'bg-emerald-100 text-emerald-700' },
 ];
 
+export interface TaskFile {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export interface StaffTask {
   id: number;
   title: string;
@@ -22,6 +29,7 @@ export interface StaffTask {
   due_date: string | null;
   urgency: Urgency;
   created_msk: string;
+  attachments: TaskFile[];
   status: 'open' | 'done';
   done_at: string | null;
   done_comment: string;
@@ -58,8 +66,21 @@ const post = async (body: object) => {
   return d;
 };
 
-export const createTask = (v: { title: string; description: string; due_date: string; urgency: Urgency; assignee_ids: number[] }) =>
+export const createTask = (v: { title: string; description: string; due_date: string; urgency: Urgency; assignee_ids: number[]; attachments: TaskFile[] }) =>
   post({ action: 'create', ...v });
+const readAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
+export const uploadTaskFile = async (file: File): Promise<TaskFile> => {
+  const data = await readAsDataUrl(file);
+  const d = await post({ action: 'upload', name: file.name, type: file.type, data });
+  return d.file as TaskFile;
+};
 export const setTaskUrgency = (id: number, urgency: Urgency) => post({ action: 'update', id, urgency });
 export const setTaskDone = (id: number, done: boolean, comment = '') => post({ action: 'status', id, done, comment });
 export const deleteTask = (id: number) => post({ action: 'delete', id });
