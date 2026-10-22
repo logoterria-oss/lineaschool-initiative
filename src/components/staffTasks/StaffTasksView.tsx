@@ -15,10 +15,7 @@ const StaffTasksView = () => {
 
   const load = useCallback(() => {
     fetchTasks()
-      .then((d) => {
-        setData(d);
-        setTab((t) => (d.can_assign && t === 'mine' && !d.mine.length ? 'given' : t));
-      })
+      .then(setData)
       .catch((e) => setError(e instanceof Error ? e.message : 'Ошибка загрузки'));
   }, []);
 
@@ -54,7 +51,7 @@ const StaffTasksView = () => {
         <h2 className="text-xl font-semibold text-gray-900">Задачи</h2>
         {data.can_assign && (
           <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
-            {([['given', `Поставленные мной (${data.given.filter((t) => t.status === 'open').length})`], ['mine', `Мне (${data.mine.filter((t) => t.status === 'open').length})`]] as [Tab, string][]).map(([k, l]) => (
+            {([['mine', `Мне (${data.mine.filter((t) => t.status === 'open').length})`], ['given', `Поставленные мной (${data.given.filter((t) => t.status === 'open').length})`]] as [Tab, string][]).map(([k, l]) => (
               <button
                 key={k}
                 onClick={() => setTab(k)}
@@ -67,7 +64,7 @@ const StaffTasksView = () => {
         )}
       </div>
 
-      {isGiven && <NewTaskForm assignees={data.assignees} onCreated={load} />}
+      {data.can_assign && <NewTaskForm assignees={data.assignees} onCreated={load} />}
 
       {isGiven && data.assignees.length > 0 && (
         <div className="flex flex-wrap gap-2 text-sm">
@@ -90,7 +87,7 @@ const StaffTasksView = () => {
       ) : (
         <div className="space-y-2">
           {open.map((t) => (
-            <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven ? onDelete : undefined} />
+            <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || t.author_id === t.assignee_id ? onDelete : undefined} />
           ))}
         </div>
       )}

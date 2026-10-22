@@ -56,27 +56,34 @@ def _task(cur, task_id: int):
 def list_tasks(cur, me):
     cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.assignee_id = %s {ORDER}", (me['id'],))
     mine = cur.fetchall()
-    given, assignees = [], []
-    if me['role'] == 'head':
-        cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.author_id = %s {ORDER}", (me['id'],))
-        given = cur.fetchall()
-        cur.execute(
-            f"SELECT id, full_name, role, job_title FROM {SCHEMA}.staff "
-            "WHERE status = 'active' AND role IN ('admin', 'head') AND id <> %s "
-            "AND full_name NOT ILIKE '%%тест%%' ORDER BY role DESC, full_name",
-            (me['id'],),
-        )
-        assignees = cur.fetchall()
-    return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': me['role'] == 'head'})
+    cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.author_id = %s AND t.assignee_id <> %s {ORDER}", (me['id'], me['id']))
+    given = cur.fetchall()
+    assignees = _assignees(cur, me)
+    return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': bool(assignees)})
+
+
+def _assignees(cur, me):
+    """Руководитель ставит задачи себе, другим руководителям и администраторам."""
+    if me['role'] != 'head':
+        return []
+    roles = ('admin', 'head')
+    cur.execute(
+        f"SELECT id, full_name, role, job_title FROM {SCHEMA}.staff "
+        "WHERE status = 'active' AND role IN %s AND full_name NOT ILIKE '%%тест%%' "
+        "ORDER BY (id = %s) DESC, role DESC, full_name",
+        (roles, me['id']),
+    )
+    return cur.fetchall()
 
 
 def create_task(cur, conn, me, data):
-    if me['role'] != 'head':
-        return _json({'ok': False, 'message': 'Ставить задачи может только руководитель'}, 403)
     title = (data.get('title') or '').strip()[:500]
     ids = data.get('assignee_ids') or ([data['assignee_id']] if data.get('assignee_id') else [])
     if not title or not ids:
         return _json({'ok': False, 'message': 'Укажите задачу и исполнителя'}, 400)
+    allowed = {a['id'] for a in _assignees(cur, me)}
+    if any(int(i) not in allowed for i in ids):
+        return _json({'ok': False, 'message': 'Этому сотруднику нельзя поставить задачу'}, 403)
     desc = (data.get('description') or '').strip()
     due = (data.get('due_date') or '').strip() or None
     for aid in ids:
