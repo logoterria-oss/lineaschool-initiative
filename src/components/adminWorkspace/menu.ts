@@ -18,7 +18,6 @@ export interface AdminGroup {
 
 /** Плоские разделы верхнего уровня (без подразделов) */
 export const ADMIN_MENU: AdminItem[] = [
-  { id: 'tasks', label: 'Мои задачи', kind: 'component', icon: 'SquareCheckBig' },
   { id: 'admin-shifts', label: 'График работы админов', kind: 'component', icon: 'CalendarClock' },
   { id: 'schedule', label: 'Расписание групп и свободные слоты', kind: 'component', icon: 'CalendarDays' },
   { id: 'payments-status', label: 'Статус оплат', kind: 'component', icon: 'CreditCard' },

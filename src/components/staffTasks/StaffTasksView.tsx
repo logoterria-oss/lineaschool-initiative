@@ -55,7 +55,7 @@ const StaffTasksView = () => {
         <h2 className="text-xl font-semibold text-gray-900">Задачи</h2>
         {data.can_assign && (
           <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
-            {([['mine', `Мне (${data.mine.filter((t) => t.status === 'open').length})`], ['given', `Поставленные мной (${data.given.filter((t) => t.status === 'open').length})`]] as [Tab, string][]).map(([k, l]) => (
+            {([['mine', `Мои (${data.mine.filter((t) => t.status === 'open').length})`], ['given', `Поставить задачу (${data.given.filter((t) => t.status === 'open').length})`]] as [Tab, string][]).map(([k, l]) => (
               <button
                 key={k}
                 onClick={() => setTab(k)}
@@ -68,7 +68,7 @@ const StaffTasksView = () => {
         )}
       </div>
 
-      {data.can_assign && <NewTaskForm assignees={data.assignees} onCreated={load} />}
+      {isGiven && <NewTaskForm assignees={data.assignees} onCreated={load} />}
 
       {isGiven && data.assignees.length > 0 && (
         <div className="flex flex-wrap gap-2 text-sm">

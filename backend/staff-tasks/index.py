@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import date
 from typing import Any, Dict, Optional
 
 import psycopg2
@@ -10,7 +11,7 @@ SCHEMA = 't_p93118852_lineaschool_initiati'
 CORS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token, X-Session-Id',
+    'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token, X-Session-Id, X-Service-Key',
     'Access-Control-Max-Age': '86400',
 }
 
@@ -145,6 +146,56 @@ def delete_task(cur, conn, me, data):
     return _json({'ok': True})
 
 
+def _service_key_ok(event) -> bool:
+    key = os.environ.get('INTERACTION_SERVICE_KEY')
+    if not key:
+        return False
+    for name, value in (event.get('headers') or {}).items():
+        if str(name).lower() == 'x-service-key':
+            return str(value or '') == key
+    return False
+
+
+URGENCY_LABELS = {'urgent': '🔴 Срочно', 'medium': '🟡 Средне', 'low': '🟢 Не срочно'}
+
+
+def digest(cur):
+    """Ежедневная сводка для «Окна взаимодействия»: открытые задачи каждого сотрудника одним сообщением."""
+    cur.execute(
+        f"SELECT {FIELDS}, s.phone AS assignee_phone {FROM} "
+        "WHERE t.status = 'open' AND s.status = 'active' "
+        "ORDER BY t.assignee_id, CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, "
+        "t.due_date NULLS LAST, t.created_at"
+    )
+    people: Dict[int, Dict[str, Any]] = {}
+    for r in cur.fetchall():
+        p = people.setdefault(r['assignee_id'], {
+            'staff_id': r['assignee_id'],
+            'full_name': r['assignee_name'],
+            'phone': ''.join(ch for ch in (r['assignee_phone'] or '') if ch.isdigit()),
+            'tasks': [],
+        })
+        p['tasks'].append({
+            'id': r['id'], 'title': r['title'], 'description': r['description'],
+            'urgency': r['urgency'], 'due_date': r['due_date'], 'author_name': r['author_name'],
+        })
+    today = date.today().isoformat()
+    for p in people.values():
+        lines = [f"Добрый день! Ваши открытые задачи ({len(p['tasks'])}):", '']
+        for i, t in enumerate(p['tasks'], 1):
+            due = ''
+            if t['due_date']:
+                d = t['due_date'].isoformat() if hasattr(t['due_date'], 'isoformat') else str(t['due_date'])
+                due = f" · до {d[8:10]}.{d[5:7]}" + (' — просрочено!' if d < today else '')
+            lines.append(f"{i}. {URGENCY_LABELS.get(t['urgency'], '')} · {t['title']}{due}")
+            if t['description']:
+                lines.append(f"   {t['description']}")
+            lines.append(f"   от: {t['author_name']}")
+        lines += ['', 'Когда выполните — отметьте «Выполнено» в кабинете, и задача перестанет приходить.']
+        p['text'] = '\n'.join(lines)
+    return _json({'ok': True, 'date': today, 'recipients': list(people.values())})
+
+
 def handler(event: dict, context) -> dict:
     """Задачи сотрудникам: руководитель ставит задачи РУО и администраторам, исполнители видят свои задачи и отмечают выполненные.
     GET — мои задачи (+ поставленные мной и список исполнителей для руководителя); POST action=create|update|status|delete."""
@@ -153,6 +204,10 @@ def handler(event: dict, context) -> dict:
     conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=5)
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
+        if (event.get('queryStringParameters') or {}).get('action') == 'digest':
+            if not _service_key_ok(event):
+                return _json({'ok': False, 'message': 'Неверный служебный ключ'}, 403)
+            return digest(cur)
         me = _me(cur, event)
         if not me:
             return _json({'ok': False, 'message': 'Нужно войти'}, 401)

@@ -1,4 +1,26 @@
-{"tests": [
-  {"name": "CORS preflight", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
-  {"name": "Без входа закрыто", "method": "GET", "path": "/", "expectedStatus": 401, "expectedBody": {"ok": false}, "bodyMatcher": "partial"}
-]}
+{
+ "tests": [
+  {
+   "name": "CORS preflight",
+   "method": "OPTIONS",
+   "path": "/",
+   "expectedStatus": 200
+  },
+  {
+   "name": "Без входа закрыто",
+   "method": "GET",
+   "path": "/",
+   "expectedStatus": 401,
+   "expectedBody": {
+    "ok": false
+   },
+   "bodyMatcher": "partial"
+  },
+  {
+   "name": "Сводка без ключа закрыта",
+   "method": "GET",
+   "path": "/?action=digest",
+   "expectedStatus": 403
+  }
+ ]
+}

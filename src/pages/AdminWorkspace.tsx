@@ -24,6 +24,7 @@ import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
 import TodayTasksView from '@/components/adminShifts/TodayTasksView';
 import StaffTasksView from '@/components/staffTasks/StaffTasksView';
+import TasksButton, { TASKS_ITEM } from '@/components/staffTasks/TasksButton';
 import { buildInteractionUrl } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
@@ -153,33 +154,36 @@ const AdminWorkspace = () => {
         <ShiftToggleButton staffName={fullName} />
       </div>
 
-      <a
-        href={buildInteractionUrl(onShift.map((a) => a.staff_id))}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={markAssignedSeen}
-        className="w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors bg-green-500 hover:bg-green-600"
-      >
-        <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
-        {newAssigned > 0 && (
-          <span
-            title="Новые чаты, где вас назначили ответственным"
-            className="inline-flex items-center gap-0.5 bg-amber-400 text-amber-900 text-[11px] font-bold rounded-full px-1.5 py-0.5"
-          >
-            <Icon name="Star" size={12} />
-            {newAssigned}
-          </span>
-        )}
-        {unread > 0 && (
-          <span
-            title="Непрочитанные сообщения в ваших чатах"
-            className="inline-flex items-center gap-0.5 bg-white text-green-700 text-[11px] font-bold rounded-full px-1.5 py-0.5"
-          >
-            <Icon name="Mail" size={12} />
-            {unread}
-          </span>
-        )}
-      </a>
+      <div className="flex gap-2">
+        <a
+          href={buildInteractionUrl(onShift.map((a) => a.staff_id))}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={markAssignedSeen}
+          className="flex-1 min-w-0 flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl shadow-sm transition-colors bg-green-500 hover:bg-green-600"
+        >
+          <span className={collapsed ? 'overflow-hidden whitespace-nowrap opacity-0 max-w-0 lg:group-hover:opacity-100 lg:group-hover:max-w-[200px] transition-all duration-200' : ''}>Окно взаимодействия</span>
+          {newAssigned > 0 && (
+            <span
+              title="Новые чаты, где вас назначили ответственным"
+              className="inline-flex items-center gap-0.5 bg-amber-400 text-amber-900 text-[11px] font-bold rounded-full px-1.5 py-0.5"
+            >
+              <Icon name="Star" size={12} />
+              {newAssigned}
+            </span>
+          )}
+          {unread > 0 && (
+            <span
+              title="Непрочитанные сообщения в ваших чатах"
+              className="inline-flex items-center gap-0.5 bg-white text-green-700 text-[11px] font-bold rounded-full px-1.5 py-0.5"
+            >
+              <Icon name="Mail" size={12} />
+              {unread}
+            </span>
+          )}
+        </a>
+        <TasksButton active={active?.id === 'tasks'} onClick={() => setActive(TASKS_ITEM)} refreshKey={active?.id} />
+      </div>
 
       <button
         onClick={() => setActive(CHECKLIST_ITEM)}
