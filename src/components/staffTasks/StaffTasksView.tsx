@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { StaffTask, TasksData, deleteTask, fetchTasks, setTaskDone } from '@/lib/staffTasksApi';
+import { StaffTask, TasksData, Urgency, deleteTask, fetchTasks, setTaskDone, setTaskUrgency } from '@/lib/staffTasksApi';
 import TaskCard from './TaskCard';
 import NewTaskForm from './NewTaskForm';
 
@@ -32,6 +32,10 @@ const StaffTasksView = () => {
 
   const onToggle = async (t: StaffTask, done: boolean, comment: string) => {
     await setTaskDone(t.id, done, comment);
+    load();
+  };
+  const onUrgency = async (t: StaffTask, u: Urgency) => {
+    await setTaskUrgency(t.id, u);
     load();
   };
   const onDelete = async (t: StaffTask) => {
@@ -87,7 +91,7 @@ const StaffTasksView = () => {
       ) : (
         <div className="space-y-2">
           {open.map((t) => (
-            <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || t.author_id === t.assignee_id ? onDelete : undefined} />
+            <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || t.author_id === t.assignee_id ? onDelete : undefined} onUrgency={isGiven || t.author_id === t.assignee_id ? onUrgency : undefined} />
           ))}
         </div>
       )}

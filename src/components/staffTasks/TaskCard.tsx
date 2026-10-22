@@ -1,23 +1,26 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { StaffTask } from '@/lib/staffTasksApi';
+import { StaffTask, URGENCY_OPTIONS, Urgency } from '@/lib/staffTasksApi';
 
 interface Props {
   task: StaffTask;
   showAssignee?: boolean;
   onToggle: (t: StaffTask, done: boolean, comment: string) => Promise<void>;
   onDelete?: (t: StaffTask) => Promise<void>;
+  onUrgency?: (t: StaffTask, u: Urgency) => Promise<void>;
 }
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 
-const TaskCard = ({ task, showAssignee, onToggle, onDelete }: Props) => {
+const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) => {
   const [comment, setComment] = useState('');
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const done = task.status === 'done';
   const today = new Date().toISOString().slice(0, 10);
   const overdue = !done && task.due_date && task.due_date < today;
+  const urg = URGENCY_OPTIONS.find((o) => o.value === task.urgency) || URGENCY_OPTIONS[1];
+  const [picking, setPicking] = useState(false);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -29,7 +32,7 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete }: Props) => {
   };
 
   return (
-    <div className={`bg-white rounded-xl border p-4 ${done ? 'border-gray-100 opacity-70' : overdue ? 'border-rose-200' : 'border-gray-200'}`}>
+    <div className={`bg-white rounded-xl border p-4 ${done ? 'border-gray-100 opacity-70' : overdue ? 'border-rose-200' : 'border-gray-200'} ${!done && task.urgency === 'urgent' ? 'border-l-4 border-l-red-500' : ''}`}>
       <div className="flex items-start gap-3">
         <button
           disabled={busy}
@@ -42,7 +45,36 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete }: Props) => {
           {done && <Icon name="Check" size={16} />}
         </button>
         <div className="flex-1 min-w-0">
-          <div className={`font-medium text-gray-900 ${done ? 'line-through' : ''}`}>{task.title}</div>
+          <div className="flex items-start gap-2 flex-wrap">
+            <div className={`font-medium text-gray-900 ${done ? 'line-through' : ''}`}>{task.title}</div>
+            {onUrgency && !done ? (
+              <span className="relative">
+                <button
+                  onClick={() => setPicking((v) => !v)}
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${urg.badgeClass}`}
+                  title="Изменить срочность"
+                >
+                  {urg.label}
+                </button>
+                {picking && (
+                  <span className="absolute z-10 left-0 top-6 bg-white border border-gray-200 rounded-lg shadow-md p-1 flex flex-col min-w-[140px]">
+                    {URGENCY_OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        onClick={() => { setPicking(false); if (o.value !== task.urgency) run(() => onUrgency(task, o.value)); }}
+                        className="text-left text-sm px-2 py-1.5 rounded hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <span className={`w-2 h-2 rounded-full ${o.activeClass.split(' ')[0]}`} />
+                        {o.label}
+                      </button>
+                    ))}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${urg.badgeClass}`}>{urg.label}</span>
+            )}
+          </div>
           {task.description && <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{task.description}</div>}
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
             {showAssignee ? (

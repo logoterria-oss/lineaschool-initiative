@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { Assignee, createTask } from '@/lib/staffTasksApi';
+import { Assignee, URGENCY_OPTIONS, Urgency, createTask } from '@/lib/staffTasksApi';
 
 interface Props {
   assignees: Assignee[];
@@ -11,6 +11,7 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [due, setDue] = useState('');
+  const [urgency, setUrgency] = useState<Urgency>('medium');
   const [ids, setIds] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -23,10 +24,11 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
     setBusy(true);
     setError('');
     try {
-      await createTask({ title, description, due_date: due, assignee_ids: ids });
+      await createTask({ title, description, due_date: due, urgency, assignee_ids: ids });
       setTitle('');
       setDescription('');
       setDue('');
+      setUrgency('medium');
       setIds([]);
       onCreated();
     } catch (e) {
@@ -72,6 +74,23 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
               </button>
             );
           })}
+        </div>
+      </div>
+      <div>
+        <div className="text-xs text-gray-500 mb-1.5">Срочность</div>
+        <div className="flex flex-wrap gap-2">
+          {URGENCY_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => setUrgency(o.value)}
+              className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+                urgency === o.value ? o.activeClass : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
       </div>
       <div className="flex flex-wrap items-end gap-3">

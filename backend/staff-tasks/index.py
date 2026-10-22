@@ -16,13 +16,13 @@ CORS = {
 
 FIELDS = (
     "t.id, t.title, t.description, t.author_id, a.full_name AS author_name, t.assignee_id, "
-    "s.full_name AS assignee_name, t.due_date, t.status, t.done_at, t.done_comment, t.created_at"
+    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at"
 )
 FROM = (
     f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
     f"JOIN {SCHEMA}.staff s ON s.id = t.assignee_id"
 )
-ORDER = "ORDER BY (t.status = 'done'), t.due_date NULLS LAST, t.created_at DESC"
+ORDER = "ORDER BY (t.status = 'done'), CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, t.due_date NULLS LAST, t.created_at DESC"
 
 
 def _json(payload: Dict[str, Any], code: int = 200) -> Dict[str, Any]:
@@ -46,6 +46,13 @@ def _me(cur, event) -> Optional[Dict[str, Any]]:
         (token,),
     )
     return cur.fetchone()
+
+
+URGENCIES = ('urgent', 'medium', 'low')
+
+
+def _urgency(value) -> str:
+    return value if value in URGENCIES else 'medium'
 
 
 def _task(cur, task_id: int):
@@ -87,11 +94,12 @@ def create_task(cur, conn, me, data):
         return _json({'ok': False, 'message': 'Этому сотруднику нельзя поставить задачу'}, 403)
     desc = (data.get('description') or '').strip()
     due = (data.get('due_date') or '').strip() or None
+    urgency = _urgency(data.get('urgency'))
     for aid in ids:
         cur.execute(
-            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date) "
-            "VALUES (%s, %s, %s, %s, %s)",
-            (title, desc, me['id'], int(aid), due),
+            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date, urgency) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (title, desc, me['id'], int(aid), due, urgency),
         )
     conn.commit()
     return _json({'ok': True})
@@ -105,9 +113,10 @@ def update_task(cur, conn, me, data):
     desc = data.get('description', t['description']) or ''
     due = data.get('due_date', t['due_date']) or None
     aid = int(data.get('assignee_id') or t['assignee_id'])
+    urgency = _urgency(data.get('urgency') or t['urgency'])
     cur.execute(
-        f"UPDATE {SCHEMA}.staff_tasks SET title=%s, description=%s, due_date=%s, assignee_id=%s WHERE id=%s",
-        (title, desc.strip(), due, aid, t['id']),
+        f"UPDATE {SCHEMA}.staff_tasks SET title=%s, description=%s, due_date=%s, assignee_id=%s, urgency=%s WHERE id=%s",
+        (title, desc.strip(), due, aid, urgency, t['id']),
     )
     conn.commit()
     return _json({'ok': True})

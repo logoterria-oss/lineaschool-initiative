@@ -3,6 +3,14 @@ import { getStaffToken } from '@/lib/staffApi';
 
 const URL = (func2url as Record<string, string>)['staff-tasks'];
 
+export type Urgency = 'urgent' | 'medium' | 'low';
+
+export const URGENCY_OPTIONS: { value: Urgency; label: string; activeClass: string; badgeClass: string }[] = [
+  { value: 'urgent', label: 'Срочно!', activeClass: 'bg-red-600 border-red-600 text-white', badgeClass: 'bg-red-100 text-red-700' },
+  { value: 'medium', label: 'Средне срочно', activeClass: 'bg-amber-500 border-amber-500 text-white', badgeClass: 'bg-amber-100 text-amber-800' },
+  { value: 'low', label: 'Не срочно', activeClass: 'bg-emerald-600 border-emerald-600 text-white', badgeClass: 'bg-emerald-100 text-emerald-700' },
+];
+
 export interface StaffTask {
   id: number;
   title: string;
@@ -12,6 +20,7 @@ export interface StaffTask {
   assignee_id: number;
   assignee_name: string;
   due_date: string | null;
+  urgency: Urgency;
   status: 'open' | 'done';
   done_at: string | null;
   done_comment: string;
@@ -48,7 +57,8 @@ const post = async (body: object) => {
   return d;
 };
 
-export const createTask = (v: { title: string; description: string; due_date: string; assignee_ids: number[] }) =>
+export const createTask = (v: { title: string; description: string; due_date: string; urgency: Urgency; assignee_ids: number[] }) =>
   post({ action: 'create', ...v });
+export const setTaskUrgency = (id: number, urgency: Urgency) => post({ action: 'update', id, urgency });
 export const setTaskDone = (id: number, done: boolean, comment = '') => post({ action: 'status', id, done, comment });
 export const deleteTask = (id: number) => post({ action: 'delete', id });

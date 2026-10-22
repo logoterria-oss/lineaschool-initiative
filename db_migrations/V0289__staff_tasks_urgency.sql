@@ -1,0 +1,1 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.staff_tasks ADD COLUMN urgency VARCHAR(10) NOT NULL DEFAULT 'medium';
