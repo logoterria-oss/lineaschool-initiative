@@ -84,11 +84,12 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
               key={o.value}
               type="button"
               onClick={() => setUrgency(o.value)}
-              className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+              className={`text-sm px-3 py-1.5 rounded-lg border transition-colors flex flex-col items-start text-left ${
                 urgency === o.value ? o.activeClass : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
             >
-              {o.label}
+              <span className="font-medium">{o.label}</span>
+              <span className={`text-[11px] leading-tight ${urgency === o.value ? 'text-white/85' : 'text-gray-500'}`}>{o.hint}</span>
             </button>
           ))}
         </div>

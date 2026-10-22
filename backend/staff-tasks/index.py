@@ -156,7 +156,7 @@ def _service_key_ok(event) -> bool:
     return False
 
 
-URGENCY_LABELS = {'urgent': '🔴 Срочно', 'medium': '🟡 Средне', 'low': '🟢 Не срочно'}
+URGENCY_LABELS = {'urgent': '🔴 Срочно (в течение дня)', 'medium': '🟡 Средне (в течение 3 дней)', 'low': '🟢 Не срочно (когда будет время)'}
 
 
 def digest(cur):

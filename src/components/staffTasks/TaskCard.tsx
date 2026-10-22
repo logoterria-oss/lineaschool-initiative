@@ -52,27 +52,30 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
                 <button
                   onClick={() => setPicking((v) => !v)}
                   className={`text-xs font-medium px-2 py-0.5 rounded-full ${urg.badgeClass}`}
-                  title="Изменить срочность"
+                  title={`${urg.hint} · нажмите, чтобы изменить`}
                 >
                   {urg.label}
                 </button>
                 {picking && (
-                  <span className="absolute z-10 left-0 top-6 bg-white border border-gray-200 rounded-lg shadow-md p-1 flex flex-col min-w-[140px]">
+                  <span className="absolute z-10 left-0 top-6 bg-white border border-gray-200 rounded-lg shadow-md p-1 flex flex-col min-w-[220px]">
                     {URGENCY_OPTIONS.map((o) => (
                       <button
                         key={o.value}
                         onClick={() => { setPicking(false); if (o.value !== task.urgency) run(() => onUrgency(task, o.value)); }}
-                        className="text-left text-sm px-2 py-1.5 rounded hover:bg-gray-50 flex items-center gap-2"
+                        className="text-left text-sm px-2 py-1.5 rounded hover:bg-gray-50 flex items-start gap-2"
                       >
-                        <span className={`w-2 h-2 rounded-full ${o.activeClass.split(' ')[0]}`} />
-                        {o.label}
+                        <span className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${o.activeClass.split(' ')[0]}`} />
+                        <span>
+                          <span className="block">{o.label}</span>
+                          <span className="block text-[11px] text-gray-500 leading-tight">{o.hint}</span>
+                        </span>
                       </button>
                     ))}
                   </span>
                 )}
               </span>
             ) : (
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${urg.badgeClass}`}>{urg.label}</span>
+              <span title={urg.hint} className={`text-xs font-medium px-2 py-0.5 rounded-full ${urg.badgeClass}`}>{urg.label}</span>
             )}
           </div>
           {task.description && <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{task.description}</div>}

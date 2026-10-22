@@ -5,10 +5,10 @@ const URL = (func2url as Record<string, string>)['staff-tasks'];
 
 export type Urgency = 'urgent' | 'medium' | 'low';
 
-export const URGENCY_OPTIONS: { value: Urgency; label: string; activeClass: string; badgeClass: string }[] = [
-  { value: 'urgent', label: 'Срочно!', activeClass: 'bg-red-600 border-red-600 text-white', badgeClass: 'bg-red-100 text-red-700' },
-  { value: 'medium', label: 'Средне срочно', activeClass: 'bg-amber-500 border-amber-500 text-white', badgeClass: 'bg-amber-100 text-amber-800' },
-  { value: 'low', label: 'Не срочно', activeClass: 'bg-emerald-600 border-emerald-600 text-white', badgeClass: 'bg-emerald-100 text-emerald-700' },
+export const URGENCY_OPTIONS: { value: Urgency; label: string; hint: string; activeClass: string; badgeClass: string }[] = [
+  { value: 'urgent', label: 'Срочно!', hint: 'решить в течение дня', activeClass: 'bg-red-600 border-red-600 text-white', badgeClass: 'bg-red-100 text-red-700' },
+  { value: 'medium', label: 'Средне срочно', hint: 'решить в течение 3х дней', activeClass: 'bg-amber-500 border-amber-500 text-white', badgeClass: 'bg-amber-100 text-amber-800' },
+  { value: 'low', label: 'Не срочно', hint: 'решить, когда появится свободное время', activeClass: 'bg-emerald-600 border-emerald-600 text-white', badgeClass: 'bg-emerald-100 text-emerald-700' },
 ];
 
 export interface StaffTask {
