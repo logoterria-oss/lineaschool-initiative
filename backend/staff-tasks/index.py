@@ -69,7 +69,8 @@ def _assignees(cur, me):
     roles = ('admin', 'head')
     cur.execute(
         f"SELECT id, full_name, role, job_title FROM {SCHEMA}.staff "
-        "WHERE status = 'active' AND role IN %s AND full_name NOT ILIKE '%%тест%%' "
+        "WHERE status = 'active' AND role IN %s AND full_name NOT LIKE '%%тест%%' AND full_name NOT LIKE '%%Тест%%' "
+        "AND coalesce(job_title, '') NOT LIKE '%%тест%%' "
         "ORDER BY (id = %s) DESC, role DESC, full_name",
         (roles, me['id']),
     )
