@@ -659,7 +659,7 @@ def delete_rule(cur, conn, body):
     return resp(200, {"ok": True, "updated": n})
 
 
-MANUAL_LINES = ("start_balance", "revenue", "variable", "fixed", "ano", "one_time", "tax", "interest", "body",
+MANUAL_LINES = ("start_balance", "revenue", "credit_in", "variable", "fixed", "ano", "one_time", "tax", "interest", "body",
                 "payout", "other", "end_balance")
 
 

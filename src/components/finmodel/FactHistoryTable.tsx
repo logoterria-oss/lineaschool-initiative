@@ -35,6 +35,7 @@ const PNL_LINES: [string, string, Kind][] = [
 const CF_LINES: [string, string, Kind][] = [
   ['start_balance', 'Остаток на начало', 'balance'],
   ['revenue', 'Поступления от учеников', 'income'],
+  ['credit_in', 'Кредит: получение', 'income'],
   ['variable', 'Переменные расходы', 'cost'],
   ['fixed', 'Постоянные расходы', 'cost'],
   ['ano', 'Расходы АНО', 'cost'],
