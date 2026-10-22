@@ -2,7 +2,7 @@ import os
 import json
 import base64
 import uuid
-from datetime import date
+from datetime import date, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import boto3
@@ -20,8 +20,7 @@ CORS = {
 
 FIELDS = (
     "t.id, t.title, t.description, t.author_id, a.full_name AS author_name, t.assignee_id, "
-    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments, "
-    "to_char(t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Moscow', 'DD.MM.YYYY HH24:MI') AS created_msk"
+    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments"
 )
 FROM = (
     f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
@@ -60,6 +59,16 @@ def _urgency(value) -> str:
     return value if value in URGENCIES else 'medium'
 
 
+MSK = timezone(timedelta(hours=3))
+
+
+def _with_msk(rows):
+    for r in rows:
+        c = r.get('created_at')
+        r['created_msk'] = c.replace(tzinfo=c.tzinfo or timezone.utc).astimezone(MSK).strftime('%d.%m.%Y %H:%M') if c else ''
+    return rows
+
+
 def _task(cur, task_id: int):
     cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.id = %s", (task_id,))
     return cur.fetchone()
@@ -67,9 +76,9 @@ def _task(cur, task_id: int):
 
 def list_tasks(cur, me):
     cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.assignee_id = %s {ORDER}", (me['id'],))
-    mine = cur.fetchall()
+    mine = _with_msk(cur.fetchall())
     cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.author_id = %s AND t.assignee_id <> %s {ORDER}", (me['id'], me['id']))
-    given = cur.fetchall()
+    given = _with_msk(cur.fetchall())
     assignees = _assignees(cur, me)
     return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': bool(assignees)})
 
@@ -213,7 +222,7 @@ def digest(cur):
         "t.due_date NULLS LAST, t.created_at"
     )
     people: Dict[int, Dict[str, Any]] = {}
-    for r in cur.fetchall():
+    for r in _with_msk(cur.fetchall()):
         p = people.setdefault(r['assignee_id'], {
             'staff_id': r['assignee_id'],
             'full_name': r['assignee_name'],
