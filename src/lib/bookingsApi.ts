@@ -172,8 +172,8 @@ export const fetchBookingSlots = async (
 export const fetchAllBookingSlots = async (token: string, startFrom: string) => {
   const load = async (type: LessonType) => {
     let last = await fetchBookingSlots(token, startFrom, type);
-    for (let i = 0; i < 2 && !last.link && !last.error; i++) {
-      await sleep(800);
+    for (let i = 0; i < 4 && !last.link && !last.error; i++) {
+      await sleep(1500);
       last = await fetchBookingSlots(token, startFrom, type);
     }
     return last;

@@ -324,6 +324,36 @@ def get_lessons_all_statuses(token: str, date_from: str, date_to: str, strict: b
     return out
 
 
+def _ind_week_lessons(token: str, date_from: str, date_to: str) -> list:
+    """Занятые уроки для окон записи: свежий кэш, иначе CRM не дольше 3 с, иначе последний сохранённый."""
+    key = f"ind_week_lessons:{date_from}:{date_to}"
+    hit = cache_get(key, 120)
+    if hit is not None:
+        return hit
+
+    def _load():
+        rows = get_lessons_all_statuses(token, date_from, date_to, strict=True)
+        rows = [l for l in rows if l.get("status") in (1, 3)]
+        cache_put(key, rows)
+        return rows
+
+    pool = ThreadPoolExecutor(max_workers=1)
+    fut = pool.submit(_load)
+    pool.shutdown(wait=False)
+    try:
+        return fut.result(timeout=3)
+    except Exception as e:
+        print(f"ind_week lessons slow/failed, using stale cache: {e}")
+    stale = cache_get(key)
+    if stale is not None:
+        return stale
+    try:
+        return fut.result()
+    except Exception as e:
+        print(f"ind_week lessons failed: {e}")
+        return []
+
+
 def _get_groups_raw(token: str) -> list:
     url = f"{S20_HOST}/v2api/1/group/index"
     resp = crm_post(url, json={"page": 0, "pageSize": 200, "is_active": 1},
@@ -1637,12 +1667,7 @@ def handler(event: dict, context) -> dict:
         absences = get_teacher_absences_from_db()
 
         # Берём запланированные (1) и проведённые (3) уроки — оба считаются занятыми
-        try:
-            booked_lessons = get_lessons_all_statuses(token, date_from, date_to)
-            # Оставляем только status=1 и status=3 (отменённые status=2 не считаем занятыми)
-            booked_lessons = [l for l in booked_lessons if l.get("status") in (1, 3)]
-        except Exception:
-            booked_lessons = []
+        booked_lessons = _ind_week_lessons(token, date_from, date_to)
 
         # booked_by_date[(date_str, teacher_id)] = [{time_from, time_to, lesson_id, is_group}]
         # Учитываем и индивидуальные, и групповые уроки: группа занимает педагога

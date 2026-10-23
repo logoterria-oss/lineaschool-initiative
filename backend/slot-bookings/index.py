@@ -136,13 +136,13 @@ def _fetch_free_slots(date_from: str, date_to: str) -> list:
         r = requests.get(
             SCHEDULE_URL,
             params={'mode': 'ind_week', 'date_from': date_from, 'date_to': date_to},
-            timeout=20,
+            timeout=4.3,
         )
         r.raise_for_status()
         return r.json().get('days', [])
     except Exception as e:
         print(f'schedule fetch failed: {e}')
-        return []
+        return None
 
 
 def _fetch_group_rows(date_from: str, date_to: str) -> Dict[str, Any]:
@@ -681,7 +681,10 @@ def handler(event: dict, context) -> dict:
                 )
 
                 if ind_future:
-                    ind_days = week_slots.build_individual(ind_future.result(), start, taken)
+                    raw_ind = ind_future.result()
+                    if raw_ind is None:
+                        return _resp(503, {'ok': False, 'retry': True})
+                    ind_days = week_slots.build_individual(raw_ind, start, taken)
                 if grp_future:
                     payload = grp_future.result() or {}
                     weeks_data = payload.get('weeks')
