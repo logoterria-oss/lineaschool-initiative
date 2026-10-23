@@ -77,10 +77,20 @@ def _task(cur, task_id: int):
     return cur.fetchone()
 
 
+def _is_on_shift(cur, staff_id: int) -> bool:
+    cur.execute(
+        f"SELECT 1 FROM {SCHEMA}.admin_shifts WHERE staff_id = %s AND shift_date = %s "
+        "AND started_at IS NOT NULL AND finished_at IS NULL",
+        (staff_id, datetime.now(MSK).date()),
+    )
+    return cur.fetchone() is not None
+
+
 def list_tasks(cur, me):
+    on_shift = me['role'] == 'admin' or _is_on_shift(cur, me['id'])
     cur.execute(
         f"SELECT {FIELDS} {FROM} WHERE (t.assignee_id = %s AND NOT t.for_shift) OR (t.for_shift AND %s) {ORDER}",
-        (me['id'], me['role'] == 'admin'),
+        (me['id'], on_shift),
     )
     mine = _with_msk(cur.fetchall())
     cur.execute(
@@ -89,7 +99,7 @@ def list_tasks(cur, me):
     )
     given = _with_msk(cur.fetchall())
     assignees = _assignees(cur, me)
-    return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': bool(assignees)})
+    return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': bool(assignees), 'on_shift': on_shift})
 
 
 def _assignees(cur, me):

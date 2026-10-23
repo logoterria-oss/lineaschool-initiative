@@ -89,9 +89,25 @@ const StaffTasksView = () => {
           {isGiven ? 'Открытых задач нет' : 'Задач пока нет — всё сделано'}
         </div>
       ) : (
-        <div className="space-y-2">
-          {open.map((t) => (
-            <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onDelete : undefined} onUrgency={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onUrgency : undefined} />
+        <div className="space-y-4">
+          {(isGiven
+            ? [{ key: 'all', title: '', items: open }]
+            : [
+                { key: 'personal', title: 'Мои задачи', items: open.filter((t) => !t.for_shift) },
+                { key: 'shift', title: 'Задачи для админа на смене', items: open.filter((t) => t.for_shift) },
+              ].filter((g) => g.items.length > 0)
+          ).map((g, _i, arr) => (
+            <div key={g.key} className="space-y-2">
+              {g.title && (arr.length > 1 || g.key === 'shift') && (
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Icon name={g.key === 'shift' ? 'Clock' : 'User'} size={16} className="text-purple-600" />
+                  {g.title} <span className="text-gray-400 font-normal">({g.items.length})</span>
+                </div>
+              )}
+              {g.items.map((t) => (
+                <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onDelete : undefined} onUrgency={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onUrgency : undefined} />
+              ))}
+            </div>
           ))}
         </div>
       )}

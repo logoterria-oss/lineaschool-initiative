@@ -51,6 +51,7 @@ export interface TasksData {
   given: StaffTask[];
   assignees: Assignee[];
   can_assign: boolean;
+  on_shift: boolean;
 }
 
 const headers = () => ({ 'Content-Type': 'application/json', 'X-Auth-Token': getStaffToken() || '' });
