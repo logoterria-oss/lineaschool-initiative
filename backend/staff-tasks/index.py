@@ -122,6 +122,8 @@ def _assignees(cur, me):
     heads = [p for p in people if p['role'] == 'head']
     admins = [p for p in people if p['role'] != 'head']
     shift = {'id': SHIFT_ID, 'full_name': 'Админ на смене', 'role': 'shift', 'job_title': None, 'label': 'Админ на смене'}
+    if me['role'] == 'teacher':
+        return heads + [shift]
     return heads + [shift] + admins
 
 
