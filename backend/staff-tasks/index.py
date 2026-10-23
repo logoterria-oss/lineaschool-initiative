@@ -349,6 +349,7 @@ def new_tasks(cur):
             'text': '\n'.join(lines),
         })
     messages += _solved_problems(cur)
+    print(f"new-tasks: отдано сообщений {len(messages)}: {[m['message_key'] for m in messages]}")
     return _json({'ok': True, 'messages': messages})
 
 
@@ -467,6 +468,7 @@ def mark_notified(cur, conn, data):
             (tuple(done_ids),),
         )
     conn.commit()
+    print(f"mark-notified: new={sorted(new_ids)} done={sorted(done_ids)}")
     return _json({'ok': True, 'marked': len(new_ids) + len(done_ids)})
 
 
@@ -479,6 +481,8 @@ def handler(event: dict, context) -> dict:
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         svc = (event.get('queryStringParameters') or {}).get('action')
+        if svc:
+            print(f"service call: {svc}")
         if svc in ('digest', 'new-tasks', 'mark-notified', 'shift-reminders', 'mark-shift-reminded'):
             if not _service_key_ok(event):
                 return _json({'ok': False, 'message': 'Неверный служебный ключ'}, 403)
