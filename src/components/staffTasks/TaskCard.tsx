@@ -86,6 +86,12 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
             </div>
           )}
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
+            {task.for_shift && !showAssignee && (
+              <span className="flex items-center gap-1 text-purple-700"><Icon name="Clock" size={13} />для админа на смене</span>
+            )}
+            {done && task.for_shift && task.done_by_name && (
+              <span className="flex items-center gap-1 text-emerald-700"><Icon name="CheckCheck" size={13} />выполнил(а) {task.done_by_name}</span>
+            )}
             {showAssignee ? (
               <span className="flex items-center gap-1"><Icon name="User" size={13} />{task.assignee_name}</span>
             ) : (

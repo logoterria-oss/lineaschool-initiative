@@ -45,7 +45,7 @@ const StaffTasksView = () => {
 
   const isGiven = tab === 'given';
   let list = isGiven ? data.given : data.mine;
-  if (isGiven && who !== 'all') list = list.filter((t) => t.assignee_id === who);
+  if (isGiven && who !== 'all') list = list.filter((t) => (who === 0 ? t.for_shift : !t.for_shift && t.assignee_id === who));
   const open = list.filter((t) => t.status === 'open');
   const done = list.filter((t) => t.status === 'done');
 
@@ -72,13 +72,13 @@ const StaffTasksView = () => {
 
       {isGiven && data.assignees.length > 0 && (
         <div className="flex flex-wrap gap-2 text-sm">
-          {[{ id: 'all' as const, full_name: 'Все' }, ...data.assignees].map((a) => (
+          {[{ id: 'all' as const, label: 'Все' }, ...data.assignees].map((a) => (
             <button
               key={a.id}
               onClick={() => setWho(a.id)}
               className={`px-3 py-1 rounded-full ${who === a.id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}
             >
-              {a.full_name}
+              {a.label}
             </button>
           ))}
         </div>
@@ -91,7 +91,7 @@ const StaffTasksView = () => {
       ) : (
         <div className="space-y-2">
           {open.map((t) => (
-            <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || t.author_id === t.assignee_id ? onDelete : undefined} onUrgency={isGiven || t.author_id === t.assignee_id ? onUrgency : undefined} />
+            <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onDelete : undefined} onUrgency={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onUrgency : undefined} />
           ))}
         </div>
       )}

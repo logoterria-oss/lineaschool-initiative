@@ -2,7 +2,7 @@ import os
 import json
 import base64
 import uuid
-from datetime import date, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import boto3
@@ -20,12 +20,15 @@ CORS = {
 
 FIELDS = (
     "t.id, t.title, t.description, t.author_id, a.full_name AS author_name, t.assignee_id, "
-    "s.full_name AS assignee_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments"
+    "CASE WHEN t.for_shift THEN 'Админ на смене' ELSE s.full_name END AS assignee_name, t.for_shift, "
+    "d.full_name AS done_by_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments"
 )
 FROM = (
     f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
-    f"JOIN {SCHEMA}.staff s ON s.id = t.assignee_id"
+    f"JOIN {SCHEMA}.staff s ON s.id = t.assignee_id LEFT JOIN {SCHEMA}.staff d ON d.id = t.done_by"
 )
+SHIFT_ID = 0
+SHIFT_ROLES = ('admin', 'head')
 ORDER = "ORDER BY (t.status = 'done'), CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, t.due_date NULLS LAST, t.created_at DESC"
 
 
@@ -75,9 +78,15 @@ def _task(cur, task_id: int):
 
 
 def list_tasks(cur, me):
-    cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.assignee_id = %s {ORDER}", (me['id'],))
+    cur.execute(
+        f"SELECT {FIELDS} {FROM} WHERE (t.assignee_id = %s AND NOT t.for_shift) OR (t.for_shift AND %s) {ORDER}",
+        (me['id'], me['role'] == 'admin'),
+    )
     mine = _with_msk(cur.fetchall())
-    cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.author_id = %s AND t.assignee_id <> %s {ORDER}", (me['id'], me['id']))
+    cur.execute(
+        f"SELECT {FIELDS} {FROM} WHERE t.author_id = %s AND (t.assignee_id <> %s OR t.for_shift) {ORDER}",
+        (me['id'], me['id']),
+    )
     given = _with_msk(cur.fetchall())
     assignees = _assignees(cur, me)
     return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': bool(assignees)})
@@ -95,7 +104,15 @@ def _assignees(cur, me):
         "ORDER BY (id = %s) DESC, role DESC, full_name",
         (roles, me['id']),
     )
-    return cur.fetchall()
+    people = []
+    for r in cur.fetchall():
+        fi = ' '.join((r['full_name'] or '').split()[:2])
+        title = r['job_title'] or ('Администратор' if r['role'] == 'admin' else 'Руководитель')
+        people.append({**r, 'label': f"{fi} ({title})"})
+    heads = [p for p in people if p['role'] == 'head']
+    admins = [p for p in people if p['role'] != 'head']
+    shift = {'id': SHIFT_ID, 'full_name': 'Админ на смене', 'role': 'shift', 'job_title': None, 'label': 'Админ на смене'}
+    return heads + [shift] + admins
 
 
 def create_task(cur, conn, me, data):
@@ -103,18 +120,20 @@ def create_task(cur, conn, me, data):
     ids = data.get('assignee_ids') or ([data['assignee_id']] if data.get('assignee_id') else [])
     if not title or not ids:
         return _json({'ok': False, 'message': 'Укажите задачу и исполнителя'}, 400)
+    ids = [int(i) for i in ids]
     allowed = {a['id'] for a in _assignees(cur, me)}
-    if any(int(i) not in allowed for i in ids):
+    if any(i not in allowed for i in ids):
         return _json({'ok': False, 'message': 'Этому сотруднику нельзя поставить задачу'}, 403)
     desc = (data.get('description') or '').strip()
     due = (data.get('due_date') or '').strip() or None
     urgency = _urgency(data.get('urgency'))
     files = json.dumps(_clean_attachments(data.get('attachments')), ensure_ascii=False)
     for aid in ids:
+        shift = aid == SHIFT_ID
         cur.execute(
-            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date, urgency, attachments) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)",
-            (title, desc, me['id'], int(aid), due, urgency, files),
+            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date, urgency, attachments, for_shift, notified_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)",
+            (title, desc, me['id'], me['id'] if shift else aid, due, urgency, files, shift, 'now' if shift else None),
         )
     conn.commit()
     return _json({'ok': True})
@@ -127,7 +146,7 @@ def update_task(cur, conn, me, data):
     title = (data.get('title') or t['title']).strip()[:500]
     desc = data.get('description', t['description']) or ''
     due = data.get('due_date', t['due_date']) or None
-    aid = int(data.get('assignee_id') or t['assignee_id'])
+    aid = t['assignee_id'] if t['for_shift'] else int(data.get('assignee_id') or t['assignee_id'])
     urgency = _urgency(data.get('urgency') or t['urgency'])
     cur.execute(
         f"UPDATE {SCHEMA}.staff_tasks SET title=%s, description=%s, due_date=%s, assignee_id=%s, urgency=%s WHERE id=%s",
@@ -139,13 +158,14 @@ def update_task(cur, conn, me, data):
 
 def set_status(cur, conn, me, data):
     t = _task(cur, int(data.get('id') or 0))
-    if not t or me['id'] not in (t['author_id'], t['assignee_id']):
+    allowed = t and (me['id'] in (t['author_id'], t['assignee_id']) or (t['for_shift'] and me['role'] in SHIFT_ROLES))
+    if not allowed:
         return _json({'ok': False, 'message': 'Задача не найдена'}, 404)
     done = bool(data.get('done'))
     comment = (data.get('comment') or '').strip()
     cur.execute(
-        f"UPDATE {SCHEMA}.staff_tasks SET status=%s, done_at=%s, done_comment=%s WHERE id=%s",
-        ('done' if done else 'open', 'now' if done else None, comment if done else '', t['id']),
+        f"UPDATE {SCHEMA}.staff_tasks SET status=%s, done_at=%s, done_comment=%s, done_by=%s WHERE id=%s",
+        ('done' if done else 'open', 'now' if done else None, comment if done else '', me['id'] if done else None, t['id']),
     )
     conn.commit()
     return _json({'ok': True})
@@ -217,7 +237,7 @@ def digest(cur):
     """Ежедневная сводка для «Окна взаимодействия»: открытые задачи каждого сотрудника одним сообщением."""
     cur.execute(
         f"SELECT {FIELDS}, s.phone AS assignee_phone {FROM} "
-        "WHERE t.status = 'open' AND s.status = 'active' "
+        "WHERE t.status = 'open' AND s.status = 'active' AND NOT t.for_shift "
         "ORDER BY t.assignee_id, CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, "
         "t.due_date NULLS LAST, t.created_at"
     )
@@ -269,14 +289,14 @@ def new_tasks(cur):
     """Новые задачи, о которых исполнитель ещё не уведомлён: готовый текст сообщения на каждую."""
     cur.execute(
         f"SELECT {FIELDS}, s.phone AS assignee_phone, s.role AS assignee_role {FROM} "
-        "WHERE t.status = 'open' AND t.notified_at IS NULL AND s.status = 'active' ORDER BY t.created_at"
+        "WHERE t.status = 'open' AND t.notified_at IS NULL AND s.status = 'active' AND NOT t.for_shift ORDER BY t.created_at"
     )
     fresh = _with_msk(cur.fetchall())
     messages = []
     for t in fresh:
         cur.execute(
             f"SELECT t.title, t.urgency FROM {SCHEMA}.staff_tasks t "
-            f"WHERE t.assignee_id = %s AND t.status = 'open' AND t.id <> %s ORDER BY {URG_ORDER}, t.created_at",
+            f"WHERE t.assignee_id = %s AND t.status = 'open' AND NOT t.for_shift AND t.id <> %s ORDER BY {URG_ORDER}, t.created_at",
             (t['assignee_id'], t['id']),
         )
         others = cur.fetchall()
@@ -301,6 +321,62 @@ def new_tasks(cur):
     return _json({'ok': True, 'messages': messages})
 
 
+def _task_line(t) -> str:
+    return f"{URGENCY_EMOJI.get(t['urgency'], '🟡')} {t['title']} ({SHORT_URGENCY.get(t['urgency'], 'средне срочно')})"
+
+
+def shift_reminders(cur):
+    """Напоминания админам, заступившим на смену: личные задачи + общие задачи для админа на смене."""
+    today = datetime.now(MSK).date()
+    cur.execute(
+        f"SELECT sh.id AS shift_id, s.id AS staff_id, s.full_name, s.phone, s.role FROM {SCHEMA}.admin_shifts sh "
+        f"JOIN {SCHEMA}.staff s ON s.id = sh.staff_id "
+        "WHERE sh.shift_date = %s AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
+        "AND sh.tasks_reminded_at IS NULL AND s.status = 'active' AND s.role IN %s",
+        (today, SHIFT_ROLES),
+    )
+    shifts = cur.fetchall()
+    if not shifts:
+        return _json({'ok': True, 'messages': []})
+    cur.execute(
+        f"SELECT t.title, t.urgency, t.description FROM {SCHEMA}.staff_tasks t "
+        f"WHERE t.for_shift AND t.status = 'open' ORDER BY {URG_ORDER}, t.created_at"
+    )
+    common = cur.fetchall()
+    messages = []
+    for sh in shifts:
+        cur.execute(
+            f"SELECT t.title, t.urgency FROM {SCHEMA}.staff_tasks t "
+            f"WHERE t.assignee_id = %s AND t.status = 'open' AND NOT t.for_shift ORDER BY {URG_ORDER}, t.created_at",
+            (sh['staff_id'],),
+        )
+        personal = cur.fetchall()
+        if not personal and not common:
+            continue
+        lines = ['Вы заступили на смену. Напоминаем о задачах:']
+        if personal:
+            lines += ['', 'Ваши задачи:'] + [_task_line(t) for t in personal]
+        if common:
+            lines += ['', 'Задачи для админа на смене:'] + [_task_line(t) for t in common]
+        lines += ['', f"Подробнее: {_tasks_link(sh['role'])}"]
+        messages.append({
+            'shift_id': sh['shift_id'],
+            'staff_id': sh['staff_id'],
+            'full_name': sh['full_name'],
+            'phone': ''.join(ch for ch in (sh['phone'] or '') if ch.isdigit()),
+            'text': '\n'.join(lines),
+        })
+    return _json({'ok': True, 'messages': messages})
+
+
+def mark_shift_reminded(cur, conn, data):
+    ids = [int(i) for i in (data.get('shift_ids') or []) if str(i).isdigit()]
+    if ids:
+        cur.execute(f"UPDATE {SCHEMA}.admin_shifts SET tasks_reminded_at = now() WHERE id IN %s", (tuple(ids),))
+        conn.commit()
+    return _json({'ok': True, 'marked': len(ids)})
+
+
 def mark_notified(cur, conn, data):
     ids = [int(i) for i in (data.get('task_ids') or []) if str(i).isdigit()]
     if ids:
@@ -318,13 +394,17 @@ def handler(event: dict, context) -> dict:
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         svc = (event.get('queryStringParameters') or {}).get('action')
-        if svc in ('digest', 'new-tasks', 'mark-notified'):
+        if svc in ('digest', 'new-tasks', 'mark-notified', 'shift-reminders', 'mark-shift-reminded'):
             if not _service_key_ok(event):
                 return _json({'ok': False, 'message': 'Неверный служебный ключ'}, 403)
             if svc == 'digest':
                 return digest(cur)
             if svc == 'new-tasks':
                 return new_tasks(cur)
+            if svc == 'shift-reminders':
+                return shift_reminders(cur)
+            if svc == 'mark-shift-reminded':
+                return mark_shift_reminded(cur, conn, json.loads(event.get('body') or '{}'))
             return mark_notified(cur, conn, json.loads(event.get('body') or '{}'))
         me = _me(cur, event)
         if not me:

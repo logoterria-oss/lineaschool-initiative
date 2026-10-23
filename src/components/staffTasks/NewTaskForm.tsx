@@ -113,8 +113,8 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
                   on ? 'bg-purple-600 border-purple-600 text-white' : 'bg-white border-gray-200 text-gray-700 hover:border-purple-300'
                 }`}
               >
-                {a.full_name}
-                {a.job_title && <span className={on ? 'text-purple-100' : 'text-gray-400'}> · {a.job_title}</span>}
+                {a.role === 'shift' && <Icon name="Clock" size={13} className="inline mr-1 -mt-0.5" />}
+                {a.label || a.full_name}
               </button>
             );
           })}

@@ -27,6 +27,12 @@
    "method": "GET",
    "path": "/?action=new-tasks",
    "expectedStatus": 403
+  },
+  {
+   "name": "Напоминания смены без ключа закрыты",
+   "method": "GET",
+   "path": "/?action=shift-reminders",
+   "expectedStatus": 403
   }
  ]
 }

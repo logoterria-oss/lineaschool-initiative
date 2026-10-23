@@ -26,6 +26,8 @@ export interface StaffTask {
   author_name: string;
   assignee_id: number;
   assignee_name: string;
+  for_shift: boolean;
+  done_by_name: string | null;
   due_date: string | null;
   urgency: Urgency;
   created_msk: string;
@@ -41,6 +43,7 @@ export interface Assignee {
   full_name: string;
   role: string;
   job_title: string | null;
+  label: string;
 }
 
 export interface TasksData {
