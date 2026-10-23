@@ -330,6 +330,8 @@ def new_tasks(cur):
         lines += ['', f"Подробнее: {_tasks_link(t['assignee_role'])}"]
         messages.append({
             'task_id': t['id'],
+            'message_key': f"task-{t['id']}-new",
+            'kind': 'new',
             'staff_id': t['assignee_id'],
             'full_name': t['assignee_name'],
             'phone': ''.join(ch for ch in (t['assignee_phone'] or '') if ch.isdigit()),
@@ -346,7 +348,8 @@ def _solved_problems(cur):
     cur.execute(
         f"SELECT t.id, t.title, t.done_comment, t.author_id, t.is_problem, a.full_name AS author_name, "
         f"a.phone AS author_phone, a.role AS author_role, "
-        f"d.full_name AS done_by_name, to_char(t.done_at + interval '3 hours', 'DD.MM.YYYY HH24:MI') AS done_msk "
+        f"d.full_name AS done_by_name, to_char(t.done_at + interval '3 hours', 'DD.MM.YYYY HH24:MI') AS done_msk, "
+        f"to_char(t.done_at, 'YYYYMMDDHH24MISS') AS done_stamp "
         f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
         f"LEFT JOIN {SCHEMA}.staff d ON d.id = t.done_by "
         "WHERE t.status = 'done' AND t.done_notified_at IS NULL AND a.status = 'active' "
@@ -366,6 +369,8 @@ def _solved_problems(cur):
         lines += ['', f"Подробнее: {link}"]
         out.append({
             'task_id': t['id'],
+            'message_key': f"task-{t['id']}-done-{t['done_stamp']}",
+            'kind': 'done',
             'staff_id': t['author_id'],
             'full_name': t['author_name'],
             'phone': ''.join(ch for ch in (t['author_phone'] or '') if ch.isdigit()),
@@ -434,16 +439,26 @@ def mark_shift_reminded(cur, conn, data):
 
 
 def mark_notified(cur, conn, data):
+    """Отметить отправленные сообщения. Лучше по message_keys; task_ids — для совместимости."""
+    new_ids, done_ids = set(), set()
+    for k in data.get('message_keys') or []:
+        parts = str(k).split('-')
+        if len(parts) >= 3 and parts[0] == 'task' and parts[1].isdigit():
+            (new_ids if parts[2] == 'new' else done_ids).add(int(parts[1]))
     ids = [int(i) for i in (data.get('task_ids') or []) if str(i).isdigit()]
     if ids:
-        cur.execute(f"UPDATE {SCHEMA}.staff_tasks SET notified_at = coalesce(notified_at, now()) WHERE id IN %s", (tuple(ids),))
+        new_ids.update(ids)
+        done_ids.update(ids)
+    if new_ids:
+        cur.execute(f"UPDATE {SCHEMA}.staff_tasks SET notified_at = now() WHERE id IN %s AND notified_at IS NULL AND status = 'open'", (tuple(new_ids),))
+    if done_ids:
         cur.execute(
             f"UPDATE {SCHEMA}.staff_tasks SET done_notified_at = now() "
             "WHERE id IN %s AND status = 'done' AND done_notified_at IS NULL",
-            (tuple(ids),),
+            (tuple(done_ids),),
         )
-        conn.commit()
-    return _json({'ok': True, 'marked': len(ids)})
+    conn.commit()
+    return _json({'ok': True, 'marked': len(new_ids) + len(done_ids)})
 
 
 def handler(event: dict, context) -> dict:
