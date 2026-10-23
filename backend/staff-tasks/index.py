@@ -254,6 +254,60 @@ def digest(cur):
     return _json({'ok': True, 'date': today, 'recipients': list(people.values())})
 
 
+SITE = 'https://lineaschool.ru'
+SHORT_URGENCY = {'urgent': 'срочно!', 'medium': 'средне срочно', 'low': 'не срочно'}
+URG_ORDER = "CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END"
+
+
+def _tasks_link(role: str) -> str:
+    page = 'head-workspace' if role == 'head' else 'admin-workspace'
+    return f"{SITE}/admin/{page}?section=tasks"
+
+
+def new_tasks(cur):
+    """Новые задачи, о которых исполнитель ещё не уведомлён: готовый текст сообщения на каждую."""
+    cur.execute(
+        f"SELECT {FIELDS}, s.phone AS assignee_phone, s.role AS assignee_role {FROM} "
+        "WHERE t.status = 'open' AND t.notified_at IS NULL AND s.status = 'active' ORDER BY t.created_at"
+    )
+    fresh = _with_msk(cur.fetchall())
+    messages = []
+    for t in fresh:
+        cur.execute(
+            f"SELECT t.title, t.urgency FROM {SCHEMA}.staff_tasks t "
+            f"WHERE t.assignee_id = %s AND t.status = 'open' AND t.id <> %s ORDER BY {URG_ORDER}, t.created_at",
+            (t['assignee_id'], t['id']),
+        )
+        others = cur.fetchall()
+        lines = [f"Новая задача - {SHORT_URGENCY.get(t['urgency'], 'средне срочно')}:", f"-{t['title']}"]
+        if t['description']:
+            lines.append(t['description'])
+        for f in t['attachments'] or []:
+            lines.append(f"📎 {f['name']}: {f['url']}")
+        if others:
+            lines += ['', 'Другие ваши задачи:']
+            lines += [f"-{o['title']} ({SHORT_URGENCY.get(o['urgency'], 'средне срочно')})" for o in others]
+        lines += ['', f"Подробнее: {_tasks_link(t['assignee_role'])}"]
+        messages.append({
+            'task_id': t['id'],
+            'staff_id': t['assignee_id'],
+            'full_name': t['assignee_name'],
+            'phone': ''.join(ch for ch in (t['assignee_phone'] or '') if ch.isdigit()),
+            'author_name': t['author_name'],
+            'created_msk': t['created_msk'],
+            'text': '\n'.join(lines),
+        })
+    return _json({'ok': True, 'messages': messages})
+
+
+def mark_notified(cur, conn, data):
+    ids = [int(i) for i in (data.get('task_ids') or []) if str(i).isdigit()]
+    if ids:
+        cur.execute(f"UPDATE {SCHEMA}.staff_tasks SET notified_at = now() WHERE id IN %s", (tuple(ids),))
+        conn.commit()
+    return _json({'ok': True, 'marked': len(ids)})
+
+
 def handler(event: dict, context) -> dict:
     """Задачи сотрудникам: руководитель ставит задачи РУО и администраторам, исполнители видят свои задачи и отмечают выполненные.
     GET — мои задачи (+ поставленные мной и список исполнителей для руководителя); POST action=create|update|status|delete."""
@@ -262,10 +316,15 @@ def handler(event: dict, context) -> dict:
     conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=5)
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        if (event.get('queryStringParameters') or {}).get('action') == 'digest':
+        svc = (event.get('queryStringParameters') or {}).get('action')
+        if svc in ('digest', 'new-tasks', 'mark-notified'):
             if not _service_key_ok(event):
                 return _json({'ok': False, 'message': 'Неверный служебный ключ'}, 403)
-            return digest(cur)
+            if svc == 'digest':
+                return digest(cur)
+            if svc == 'new-tasks':
+                return new_tasks(cur)
+            return mark_notified(cur, conn, json.loads(event.get('body') or '{}'))
         me = _me(cur, event)
         if not me:
             return _json({'ok': False, 'message': 'Нужно войти'}, 401)

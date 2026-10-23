@@ -46,7 +46,9 @@ const AdminWorkspace = () => {
   const { newAssigned, unread, markAssignedSeen } = useInteractionBadges();
   const onShift = useOnShiftAdmins();
   const { me, checking } = useRoleGuard('admin');
-  const [active, setActive] = useState<AdminItem | null>(CHECKLIST_ITEM);
+  const [active, setActive] = useState<AdminItem | null>(
+    new URLSearchParams(window.location.search).get('section') === 'tasks' ? TASKS_ITEM : CHECKLIST_ITEM,
+  );
   const [openGroups, setOpenGroups] = useState<string[]>([]);
 
   const toggleGroup = (id: string) =>

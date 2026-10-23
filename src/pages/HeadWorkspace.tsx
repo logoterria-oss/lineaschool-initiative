@@ -55,7 +55,9 @@ const HeadWorkspace = () => {
   const onShift = useOnShiftAdmins();
   const { me, checking } = useRoleGuard('head');
   const [openGroups, setOpenGroups] = useState<string[]>(['staff']);
-  const [active, setActive] = useState<SubItem | null>(CHECKLIST_ITEM);
+  const [active, setActive] = useState<SubItem | null>(
+    new URLSearchParams(window.location.search).get('section') === 'tasks' ? TASKS_ITEM : CHECKLIST_ITEM,
+  );
 
   const fullName = me?.full_name || 'Сотрудник';
   const role = (me?.role || null) as StaffRole | null;

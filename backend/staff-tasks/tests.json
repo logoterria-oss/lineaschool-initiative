@@ -21,6 +21,12 @@
    "method": "GET",
    "path": "/?action=digest",
    "expectedStatus": 403
+  },
+  {
+   "name": "Новые задачи без ключа закрыты",
+   "method": "GET",
+   "path": "/?action=new-tasks",
+   "expectedStatus": 403
   }
  ]
 }
