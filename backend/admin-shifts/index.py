@@ -23,7 +23,7 @@ SCHEMA = "t_p93118852_lineaschool_initiati"
 
 # Школа работает по Москве, а сервер живёт в UTC.
 # Все отметки смен и «сегодня» считаем в московском времени.
-MSK_NOW = "(now() AT TIME ZONE 'Europe/Moscow')"
+MSK_NOW = "(now()::timestamp + interval '3 hours')"
 MSK_TODAY = f"({MSK_NOW})::date"
 
 

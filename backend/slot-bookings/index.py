@@ -273,7 +273,7 @@ def _active_limits(cur) -> list:
     """Временные ограничения мест в группах (действуют ещё сегодня или позже)."""
     cur.execute(
         "SELECT id, weekday, time_from, teacher_id, group_id, max_size, date_from, date_to, created_by "
-        "FROM group_slot_limits WHERE date_to >= (now() AT TIME ZONE 'Europe/Moscow')::date "
+        "FROM group_slot_limits WHERE date_to >= (now()::timestamp + interval '3 hours')::date "
         "ORDER BY date_from"
     )
     return [dict(r) for r in cur.fetchall()]

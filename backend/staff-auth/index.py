@@ -703,7 +703,7 @@ def handle_service_assignees(conn, event):
             f"FROM {SCHEMA}.staff s "
             f"LEFT JOIN {SCHEMA}.admin_shifts sh "
             f"  ON sh.staff_id = s.id "
-            f" AND sh.shift_date = (now() AT TIME ZONE 'Europe/Moscow')::date "
+            f" AND sh.shift_date = (now()::timestamp + interval '3 hours')::date "
             f"WHERE s.status = 'active' AND s.password_hash <> '' "
             f"AND s.role = ANY(%s) ORDER BY s.role, s.full_name",
             (list(INTERACTION_ROLES),),
