@@ -103,8 +103,8 @@ def list_tasks(cur, me):
 
 
 def _assignees(cur, me):
-    """Руководитель ставит задачи себе, другим руководителям и администраторам; педагог сообщает им о проблемах."""
-    if me['role'] not in ('head', 'teacher'):
+    """Руководитель и админ ставят задачи себе, руководителям и администраторам; педагог сообщает им о проблемах."""
+    if me['role'] not in ('head', 'admin', 'teacher'):
         return []
     roles = ('admin', 'head')
     cur.execute(
