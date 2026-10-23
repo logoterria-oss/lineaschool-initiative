@@ -168,8 +168,9 @@ const BookingPage = () => {
     setSending(false);
 
     if (!res.ok) {
-      setError(res.message || 'Не удалось забронировать. Попробуйте ещё раз');
-      if (res.error === 'taken') load(startFrom);
+      const msg = res.message || 'Не удалось забронировать. Попробуйте ещё раз';
+      if (res.error === 'taken') await load(startFrom);
+      setError(msg);
       return;
     }
     setDone(true);

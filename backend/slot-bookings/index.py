@@ -773,7 +773,7 @@ def handler(event: dict, context) -> dict:
                         "SELECT id FROM slot_bookings WHERE EXTRACT(DOW FROM slot_date) = "
                         "EXTRACT(DOW FROM %s::date) AND time_from = %s "
                         "AND teacher_id = %s AND lesson_type = 'individual' "
-                        "AND status IN ('new', 'confirmed')",
+                        "AND (status = 'new' OR (status = 'confirmed' AND slot_date >= CURRENT_DATE))",
                         (slot_date, time_from, int(teacher_id)),
                     )
                     if cur.fetchone():
