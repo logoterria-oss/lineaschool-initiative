@@ -384,7 +384,7 @@ def _send_max(phone: str, text: str) -> bool:
 
 
 def push_pending(cur, conn):
-    """Сразу отправить сотрудникам все неотправленные уведомления о задачах."""
+    """Сразу отправить сотрудникам все неотправленные уведомления о задачах (через Wappi MAX)."""
     sent = []
     started = time.monotonic()
     for m in _pending_messages(cur):
