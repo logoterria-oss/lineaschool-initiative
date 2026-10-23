@@ -178,7 +178,7 @@ def set_status(cur, conn, me, data):
     done = bool(data.get('done'))
     comment = (data.get('comment') or '').strip()
     cur.execute(
-        f"UPDATE {SCHEMA}.staff_tasks SET status=%s, done_at=%s, done_comment=%s, done_by=%s WHERE id=%s",
+        f"UPDATE {SCHEMA}.staff_tasks SET status=%s, done_at=%s, done_comment=%s, done_by=%s, done_notified_at=NULL WHERE id=%s",
         ('done' if done else 'open', 'now' if done else None, comment if done else '', me['id'] if done else None, t['id']),
     )
     conn.commit()
@@ -337,7 +337,39 @@ def new_tasks(cur):
             'created_msk': t['created_msk'],
             'text': '\n'.join(lines),
         })
+    messages += _solved_problems(cur)
     return _json({'ok': True, 'messages': messages})
+
+
+def _solved_problems(cur):
+    """Педагогу: его проблему отметили решённой."""
+    cur.execute(
+        f"SELECT t.id, t.title, t.done_comment, t.author_id, a.full_name AS author_name, a.phone AS author_phone, "
+        f"d.full_name AS done_by_name, to_char(t.done_at + interval '3 hours', 'DD.MM.YYYY HH24:MI') AS done_msk "
+        f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
+        f"LEFT JOIN {SCHEMA}.staff d ON d.id = t.done_by "
+        "WHERE t.is_problem AND t.status = 'done' AND t.done_notified_at IS NULL AND a.status = 'active' "
+        "ORDER BY t.done_at"
+    )
+    out = []
+    for t in cur.fetchall():
+        who = ' '.join((t['done_by_name'] or '').split()[:2])
+        lines = ['✅ Ваша проблема решена:', f"-{t['title']}"]
+        if who:
+            lines.append(f"Решил(а): {who}")
+        if t['done_comment']:
+            lines.append(f"Комментарий: {t['done_comment']}")
+        lines += ['', f"Подробнее: {SITE}/admin/teacher"]
+        out.append({
+            'task_id': t['id'],
+            'staff_id': t['author_id'],
+            'full_name': t['author_name'],
+            'phone': ''.join(ch for ch in (t['author_phone'] or '') if ch.isdigit()),
+            'author_name': t['done_by_name'] or '',
+            'created_msk': t['done_msk'],
+            'text': '\n'.join(lines),
+        })
+    return out
 
 
 def _task_line(t) -> str:
@@ -400,7 +432,12 @@ def mark_shift_reminded(cur, conn, data):
 def mark_notified(cur, conn, data):
     ids = [int(i) for i in (data.get('task_ids') or []) if str(i).isdigit()]
     if ids:
-        cur.execute(f"UPDATE {SCHEMA}.staff_tasks SET notified_at = now() WHERE id IN %s", (tuple(ids),))
+        cur.execute(f"UPDATE {SCHEMA}.staff_tasks SET notified_at = coalesce(notified_at, now()) WHERE id IN %s", (tuple(ids),))
+        cur.execute(
+            f"UPDATE {SCHEMA}.staff_tasks SET done_notified_at = now() "
+            "WHERE id IN %s AND is_problem AND status = 'done' AND done_notified_at IS NULL",
+            (tuple(ids),),
+        )
         conn.commit()
     return _json({'ok': True, 'marked': len(ids)})
 
