@@ -256,6 +256,7 @@ def digest(cur):
 
 SITE = 'https://lineaschool.ru'
 SHORT_URGENCY = {'urgent': 'срочно!', 'medium': 'средне срочно', 'low': 'не срочно'}
+URGENCY_EMOJI = {'urgent': '🔴', 'medium': '🟡', 'low': '🟢'}
 URG_ORDER = "CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END"
 
 
@@ -279,14 +280,14 @@ def new_tasks(cur):
             (t['assignee_id'], t['id']),
         )
         others = cur.fetchall()
-        lines = [f"Новая задача - {SHORT_URGENCY.get(t['urgency'], 'средне срочно')}:", f"-{t['title']}"]
+        lines = [f"{URGENCY_EMOJI.get(t['urgency'], '🟡')} Новая задача - {SHORT_URGENCY.get(t['urgency'], 'средне срочно')}:", f"-{t['title']}"]
         if t['description']:
             lines.append(t['description'])
         for f in t['attachments'] or []:
             lines.append(f"📎 {f['name']}: {f['url']}")
         if others:
             lines += ['', 'Другие ваши задачи:']
-            lines += [f"-{o['title']} ({SHORT_URGENCY.get(o['urgency'], 'средне срочно')})" for o in others]
+            lines += [f"{URGENCY_EMOJI.get(o['urgency'], '🟡')} {o['title']} ({SHORT_URGENCY.get(o['urgency'], 'средне срочно')})" for o in others]
         lines += ['', f"Подробнее: {_tasks_link(t['assignee_role'])}"]
         messages.append({
             'task_id': t['id'],
