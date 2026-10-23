@@ -6,9 +6,11 @@ import TaskAttachments from './TaskAttachments';
 interface Props {
   assignees: Assignee[];
   onCreated: () => void;
+  problem?: boolean;
 }
 
-const NewTaskForm = ({ assignees, onCreated }: Props) => {
+const NewTaskForm = ({ assignees, onCreated, problem }: Props) => {
+  const [reporter, setReporter] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [urgency, setUrgency] = useState<Urgency>('medium');
@@ -43,12 +45,13 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
   const toggle = (id: number) => setIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const submit = async () => {
-    if (!title.trim()) return setError('Напишите задачу');
+    if (problem && !reporter.trim()) return setError('Укажите вашу фамилию и имя');
+    if (!title.trim()) return setError(problem ? 'Опишите проблему' : 'Напишите задачу');
     if (!ids.length) return setError('Выберите исполнителя');
     setBusy(true);
     setError('');
     try {
-      await createTask({ title, description, due_date: '', urgency, assignee_ids: ids, attachments: files });
+      await createTask({ title, description, due_date: '', urgency, assignee_ids: ids, attachments: files, reporter_name: problem ? reporter : undefined });
       setTitle('');
       setDescription('');
       setUrgency('medium');
@@ -65,12 +68,20 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
       <div className="font-medium text-gray-900 flex items-center gap-2">
-        <Icon name="Plus" size={18} className="text-purple-600" /> Новая задача
+        <Icon name={problem ? 'TriangleAlert' : 'Plus'} size={18} className="text-purple-600" /> {problem ? 'Сообщить о проблеме' : 'Новая задача'}
       </div>
+      {problem && (
+        <input
+          value={reporter}
+          onChange={(e) => setReporter(e.target.value)}
+          placeholder="Ваши фамилия и имя"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+        />
+      )}
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Что нужно сделать"
+        placeholder={problem ? 'В чём проблема' : 'Что нужно сделать'}
         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
       />
       <textarea
@@ -144,7 +155,7 @@ const NewTaskForm = ({ assignees, onCreated }: Props) => {
           onClick={submit}
           className="ml-auto bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50"
         >
-          {busy ? 'Сохраняю…' : 'Поставить задачу'}
+          {busy ? 'Отправляю…' : problem ? 'Отправить' : 'Поставить задачу'}
         </button>
       </div>
       {error && <div className="text-sm text-rose-600">{error}</div>}

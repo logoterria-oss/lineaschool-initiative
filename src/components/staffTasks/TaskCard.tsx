@@ -46,6 +46,11 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
           {done && <Icon name="Check" size={16} />}
         </button>
         <div className="flex-1 min-w-0">
+          {task.is_problem && (
+            <div className="flex items-center gap-1 text-xs font-medium text-amber-700 mb-1">
+              <Icon name="TriangleAlert" size={13} /> Проблема от педагога: {task.reporter_name}
+            </div>
+          )}
           <div className="flex items-start gap-2 flex-wrap">
             <div className={`font-medium text-gray-900 ${done ? 'line-through' : ''}`}>{task.title}</div>
             {onUrgency && !done ? (

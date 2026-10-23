@@ -5,6 +5,7 @@ import Icon from '@/components/ui/icon';
 import WorkScheduleSection from '@/components/teacher/WorkScheduleSection';
 import HomeworkControlSection from '@/components/teacher/HomeworkControlSection';
 import KpiSection from '@/components/teacher/KpiSection';
+import StaffTasksView from '@/components/staffTasks/StaffTasksView';
 import { logoutStaff } from '@/lib/staffApi';
 
 const SECTIONS = [
@@ -31,6 +32,14 @@ const SECTIONS = [
     color: 'text-orange-600',
     bg: 'bg-orange-100',
     border: 'border-orange-200 hover:border-orange-400',
+  },
+  {
+    id: 'problem',
+    label: 'Сообщить о проблеме',
+    icon: 'TriangleAlert' as const,
+    color: 'text-rose-600',
+    bg: 'bg-rose-100',
+    border: 'border-rose-200 hover:border-rose-400',
   },
 ];
 
@@ -107,6 +116,8 @@ const TeacherDashboard = () => {
 
           {/* Раздел: Оценка качества и KPI */}
           {activeSection === 'kpi' && <KpiSection />}
+
+          {activeSection === 'problem' && <StaffTasksView problemMode />}
 
         </div>
       </div>

@@ -21,7 +21,7 @@ CORS = {
 FIELDS = (
     "t.id, t.title, t.description, t.author_id, a.full_name AS author_name, t.assignee_id, "
     "CASE WHEN t.for_shift THEN 'Админ на смене' ELSE s.full_name END AS assignee_name, t.for_shift, "
-    "d.full_name AS done_by_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments"
+    "d.full_name AS done_by_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments, t.is_problem, t.reporter_name"
 )
 FROM = (
     f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
@@ -103,8 +103,8 @@ def list_tasks(cur, me):
 
 
 def _assignees(cur, me):
-    """Руководитель ставит задачи себе, другим руководителям и администраторам."""
-    if me['role'] != 'head':
+    """Руководитель ставит задачи себе, другим руководителям и администраторам; педагог сообщает им о проблемах."""
+    if me['role'] not in ('head', 'teacher'):
         return []
     roles = ('admin', 'head')
     cur.execute(
@@ -131,6 +131,10 @@ def create_task(cur, conn, me, data):
     if not title or not ids:
         return _json({'ok': False, 'message': 'Укажите задачу и исполнителя'}, 400)
     ids = [int(i) for i in ids]
+    problem = me['role'] == 'teacher'
+    reporter = (data.get('reporter_name') or '').strip()[:200]
+    if problem and not reporter:
+        return _json({'ok': False, 'message': 'Укажите фамилию и имя педагога'}, 400)
     allowed = {a['id'] for a in _assignees(cur, me)}
     if any(i not in allowed for i in ids):
         return _json({'ok': False, 'message': 'Этому сотруднику нельзя поставить задачу'}, 403)
@@ -141,9 +145,9 @@ def create_task(cur, conn, me, data):
     for aid in ids:
         shift = aid == SHIFT_ID
         cur.execute(
-            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date, urgency, attachments, for_shift, notified_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)",
-            (title, desc, me['id'], me['id'] if shift else aid, due, urgency, files, shift, 'now' if shift else None),
+            f"INSERT INTO {SCHEMA}.staff_tasks (title, description, author_id, assignee_id, due_date, urgency, attachments, for_shift, notified_at, is_problem, reporter_name) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s)",
+            (title, desc, me['id'], me['id'] if shift else aid, due, urgency, files, shift, 'now' if shift else None, problem, reporter if problem else ''),
         )
     conn.commit()
     return _json({'ok': True})
@@ -264,6 +268,7 @@ def digest(cur):
             'urgency': r['urgency'], 'due_date': r['due_date'], 'author_name': r['author_name'],
             'created_msk': r['created_msk'],
             'attachments': r['attachments'] or [],
+            'is_problem': r['is_problem'], 'reporter_name': r['reporter_name'],
         })
     today = date.today().isoformat()
     for p in people.values():
@@ -273,7 +278,8 @@ def digest(cur):
             if t['due_date']:
                 d = t['due_date'].isoformat() if hasattr(t['due_date'], 'isoformat') else str(t['due_date'])
                 due = f" · до {d[8:10]}.{d[5:7]}" + (' — просрочено!' if d < today else '')
-            lines.append(f"{i}. {URGENCY_LABELS.get(t['urgency'], '')} · {t['title']}{due}")
+            prefix = f"⚠️ Проблема от {t['reporter_name']}: " if t['is_problem'] else ''
+            lines.append(f"{i}. {URGENCY_LABELS.get(t['urgency'], '')} · {prefix}{t['title']}{due}")
             if t['description']:
                 lines.append(f"   {t['description']}")
             for f in t['attachments']:
@@ -305,19 +311,22 @@ def new_tasks(cur):
     messages = []
     for t in fresh:
         cur.execute(
-            f"SELECT t.title, t.urgency FROM {SCHEMA}.staff_tasks t "
+            f"SELECT t.title, t.urgency, t.is_problem, t.reporter_name FROM {SCHEMA}.staff_tasks t "
             f"WHERE t.assignee_id = %s AND t.status = 'open' AND NOT t.for_shift AND t.id <> %s ORDER BY {URG_ORDER}, t.created_at",
             (t['assignee_id'], t['id']),
         )
         others = cur.fetchall()
-        lines = [f"{URGENCY_EMOJI.get(t['urgency'], '🟡')} Новая задача - {SHORT_URGENCY.get(t['urgency'], 'средне срочно')}:", f"-{t['title']}"]
+        kind = 'Новая проблема от педагога' if t['is_problem'] else 'Новая задача'
+        lines = [f"{URGENCY_EMOJI.get(t['urgency'], '🟡')} {kind} - {SHORT_URGENCY.get(t['urgency'], 'средне срочно')}:", f"-{t['title']}"]
+        if t['is_problem']:
+            lines.append(f"Сообщил(а): {t['reporter_name']}")
         if t['description']:
             lines.append(t['description'])
         for f in t['attachments'] or []:
             lines.append(f"📎 {f['name']}: {f['url']}")
         if others:
             lines += ['', 'Другие ваши задачи:']
-            lines += [f"{URGENCY_EMOJI.get(o['urgency'], '🟡')} {o['title']} ({SHORT_URGENCY.get(o['urgency'], 'средне срочно')})" for o in others]
+            lines += [_task_line(o) for o in others]
         lines += ['', f"Подробнее: {_tasks_link(t['assignee_role'])}"]
         messages.append({
             'task_id': t['id'],
@@ -332,7 +341,8 @@ def new_tasks(cur):
 
 
 def _task_line(t) -> str:
-    return f"{URGENCY_EMOJI.get(t['urgency'], '🟡')} {t['title']} ({SHORT_URGENCY.get(t['urgency'], 'средне срочно')})"
+    prefix = f"⚠️ Проблема от {t['reporter_name']}: " if t.get('is_problem') else ''
+    return f"{URGENCY_EMOJI.get(t['urgency'], '🟡')} {prefix}{t['title']} ({SHORT_URGENCY.get(t['urgency'], 'средне срочно')})"
 
 
 def shift_reminders(cur):
@@ -349,14 +359,14 @@ def shift_reminders(cur):
     if not shifts:
         return _json({'ok': True, 'messages': []})
     cur.execute(
-        f"SELECT t.title, t.urgency, t.description FROM {SCHEMA}.staff_tasks t "
+        f"SELECT t.title, t.urgency, t.description, t.is_problem, t.reporter_name FROM {SCHEMA}.staff_tasks t "
         f"WHERE t.for_shift AND t.status = 'open' ORDER BY {URG_ORDER}, t.created_at"
     )
     common = cur.fetchall()
     messages = []
     for sh in shifts:
         cur.execute(
-            f"SELECT t.title, t.urgency FROM {SCHEMA}.staff_tasks t "
+            f"SELECT t.title, t.urgency, t.is_problem, t.reporter_name FROM {SCHEMA}.staff_tasks t "
             f"WHERE t.assignee_id = %s AND t.status = 'open' AND NOT t.for_shift ORDER BY {URG_ORDER}, t.created_at",
             (sh['staff_id'],),
         )

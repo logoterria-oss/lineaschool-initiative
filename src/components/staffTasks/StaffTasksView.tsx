@@ -6,10 +6,10 @@ import NewTaskForm from './NewTaskForm';
 
 type Tab = 'mine' | 'given';
 
-const StaffTasksView = () => {
+const StaffTasksView = ({ problemMode = false }: { problemMode?: boolean }) => {
   const [data, setData] = useState<TasksData | null>(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<Tab>('mine');
+  const [tab, setTab] = useState<Tab>(problemMode ? 'given' : 'mine');
   const [who, setWho] = useState<number | 'all'>('all');
   const [showDone, setShowDone] = useState(false);
 
@@ -52,8 +52,8 @@ const StaffTasksView = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-semibold text-gray-900">Задачи</h2>
-        {data.can_assign && (
+        <h2 className="text-xl font-semibold text-gray-900">{problemMode ? 'Мои обращения' : 'Задачи'}</h2>
+        {data.can_assign && !problemMode && (
           <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
             {([['mine', `Мои (${data.mine.filter((t) => t.status === 'open').length})`], ['given', `Поставить задачу (${data.given.filter((t) => t.status === 'open').length})`]] as [Tab, string][]).map(([k, l]) => (
               <button
@@ -68,7 +68,7 @@ const StaffTasksView = () => {
         )}
       </div>
 
-      {isGiven && <NewTaskForm assignees={data.assignees} onCreated={load} />}
+      {isGiven && <NewTaskForm assignees={data.assignees} onCreated={load} problem={problemMode} />}
 
       {isGiven && data.assignees.length > 0 && (
         <div className="flex flex-wrap gap-2 text-sm">
@@ -86,7 +86,7 @@ const StaffTasksView = () => {
 
       {open.length === 0 ? (
         <div className="bg-white rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-400">
-          {isGiven ? 'Открытых задач нет' : 'Задач пока нет — всё сделано'}
+          {problemMode ? 'Открытых обращений нет' : isGiven ? 'Открытых задач нет' : 'Задач пока нет — всё сделано'}
         </div>
       ) : (
         <div className="space-y-4">

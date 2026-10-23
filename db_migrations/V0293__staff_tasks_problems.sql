@@ -1,0 +1,2 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.staff_tasks ADD COLUMN is_problem BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE t_p93118852_lineaschool_initiati.staff_tasks ADD COLUMN reporter_name VARCHAR(200) NOT NULL DEFAULT '';

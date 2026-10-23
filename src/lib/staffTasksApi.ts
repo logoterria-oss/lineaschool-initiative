@@ -27,6 +27,8 @@ export interface StaffTask {
   assignee_id: number;
   assignee_name: string;
   for_shift: boolean;
+  is_problem: boolean;
+  reporter_name: string;
   done_by_name: string | null;
   due_date: string | null;
   urgency: Urgency;
@@ -70,7 +72,7 @@ const post = async (body: object) => {
   return d;
 };
 
-export const createTask = (v: { title: string; description: string; due_date: string; urgency: Urgency; assignee_ids: number[]; attachments: TaskFile[] }) =>
+export const createTask = (v: { title: string; description: string; due_date: string; urgency: Urgency; assignee_ids: number[]; attachments: TaskFile[]; reporter_name?: string }) =>
   post({ action: 'create', ...v });
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
