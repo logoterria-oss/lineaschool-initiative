@@ -9,6 +9,7 @@
 '''
 
 import re
+import unicodedata
 from typing import Optional, Tuple
 
 # Уменьшительные и разговорные формы → полное имя.
@@ -106,9 +107,23 @@ SURNAME_RE = re.compile(
 )
 
 
+# Латинские буквы, похожие на русские: в CRM их нередко вводят вперемешку
+_LOOKALIKE = str.maketrans({
+    'ë': 'е', 'è': 'е', 'é': 'е', 'e': 'е', 'a': 'а', 'o': 'о', 'p': 'р',
+    'c': 'с', 'x': 'х', 'y': 'у', 'k': 'к', 'm': 'м', 't': 'т', 'h': 'н', 'b': 'в',
+})
+
+
 def _clean(raw: Optional[str]) -> str:
     '''Нижний регистр, «ё» → «е», дефисы и лишние пробелы убраны.'''
-    s = (raw or '').lower().replace('ё', 'е')
+    s = unicodedata.normalize('NFC', (raw or '').lower())
+    # Похожие латинские буквы меняем только в словах с кириллицей,
+    # чтобы не испортить имя, целиком записанное латиницей
+    s = ' '.join(
+        w.translate(_LOOKALIKE) if re.search('[а-яё]', w) else w
+        for w in s.split()
+    )
+    s = s.replace('ё', 'е')
     s = re.sub(r'[^a-zа-я\s-]', ' ', s)
     s = s.replace('-', ' ')
     return re.sub(r'\s+', ' ', s).strip()
