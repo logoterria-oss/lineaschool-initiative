@@ -2,6 +2,10 @@ import os
 import json
 import base64
 import uuid
+import time
+import urllib.parse
+import urllib.request
+import urllib.error
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
@@ -312,6 +316,12 @@ def _tasks_link(role: str) -> str:
 
 def new_tasks(cur):
     """Новые задачи, о которых исполнитель ещё не уведомлён: готовый текст сообщения на каждую."""
+    messages = _pending_messages(cur)
+    print(f"new-tasks: отдано сообщений {len(messages)}: {[m['message_key'] for m in messages]}")
+    return _json({'ok': True, 'messages': messages})
+
+
+def _pending_messages(cur):
     cur.execute(
         f"SELECT {FIELDS}, s.phone AS assignee_phone, s.role AS assignee_role {FROM} "
         "WHERE t.status = 'open' AND t.notified_at IS NULL AND s.status = 'active' AND NOT t.for_shift ORDER BY t.created_at"
@@ -349,8 +359,42 @@ def new_tasks(cur):
             'text': '\n'.join(lines),
         })
     messages += _solved_problems(cur)
-    print(f"new-tasks: отдано сообщений {len(messages)}: {[m['message_key'] for m in messages]}")
-    return _json({'ok': True, 'messages': messages})
+    return messages
+
+
+def _send_max(phone: str, text: str) -> bool:
+    token = os.environ.get('WAPPI_API_TOKEN')
+    profile_id = os.environ.get('WAPPI_PROFILE_ID')
+    if not token or not profile_id or not phone:
+        return False
+    url = 'https://wappi.pro/maxapi/sync/message/send?' + urllib.parse.urlencode({'profile_id': profile_id})
+    req = urllib.request.Request(url, data=json.dumps({'body': text, 'recipient': phone}).encode('utf-8'), method='POST')
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('Authorization', token)
+    try:
+        with urllib.request.urlopen(req, timeout=3) as r:
+            r.read()
+        print(f"push OK -> {phone}")
+        return True
+    except urllib.error.HTTPError as e:
+        print(f"push HTTP {e.code} -> {phone}: {e.read().decode('utf-8', 'ignore')[:300]}")
+    except Exception as e:
+        print(f"push FAILED -> {phone}: {e}")
+    return False
+
+
+def push_pending(cur, conn):
+    """Сразу отправить сотрудникам все неотправленные уведомления о задачах."""
+    sent = []
+    started = time.monotonic()
+    for m in _pending_messages(cur):
+        if time.monotonic() - started > 2.5:
+            break
+        if _send_max(m['phone'], m['text']):
+            sent.append(m['message_key'])
+    if sent:
+        mark_notified(cur, conn, {'message_keys': sent})
+    return sent
 
 
 def _solved_problems(cur):
@@ -483,13 +527,15 @@ def handler(event: dict, context) -> dict:
         svc = (event.get('queryStringParameters') or {}).get('action')
         if svc:
             print(f"service call: {svc}")
-        if svc in ('digest', 'new-tasks', 'mark-notified', 'shift-reminders', 'mark-shift-reminded'):
+        if svc in ('digest', 'new-tasks', 'mark-notified', 'shift-reminders', 'mark-shift-reminded', 'push'):
             if not _service_key_ok(event):
                 return _json({'ok': False, 'message': 'Неверный служебный ключ'}, 403)
             if svc == 'digest':
                 return digest(cur)
             if svc == 'new-tasks':
                 return new_tasks(cur)
+            if svc == 'push':
+                return _json({'ok': True, 'sent': push_pending(cur, conn)})
             if svc == 'shift-reminders':
                 return shift_reminders(cur)
             if svc == 'mark-shift-reminded':
@@ -505,11 +551,17 @@ def handler(event: dict, context) -> dict:
         if action == 'upload':
             return upload_file(me, data)
         if action == 'create':
-            return create_task(cur, conn, me, data)
+            res = create_task(cur, conn, me, data)
+            if res['statusCode'] == 200:
+                push_pending(cur, conn)
+            return res
         if action == 'update':
             return update_task(cur, conn, me, data)
         if action == 'status':
-            return set_status(cur, conn, me, data)
+            res = set_status(cur, conn, me, data)
+            if res['statusCode'] == 200:
+                push_pending(cur, conn)
+            return res
         if action == 'delete':
             return delete_task(cur, conn, me, data)
         return _json({'ok': False, 'message': 'Неизвестное действие'}, 400)
