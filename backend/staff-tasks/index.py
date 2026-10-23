@@ -342,24 +342,28 @@ def new_tasks(cur):
 
 
 def _solved_problems(cur):
-    """Педагогу: его проблему отметили решённой."""
+    """Автору: его задачу выполнили или проблему решили (если закрыл не он сам)."""
     cur.execute(
-        f"SELECT t.id, t.title, t.done_comment, t.author_id, a.full_name AS author_name, a.phone AS author_phone, "
+        f"SELECT t.id, t.title, t.done_comment, t.author_id, t.is_problem, a.full_name AS author_name, "
+        f"a.phone AS author_phone, a.role AS author_role, "
         f"d.full_name AS done_by_name, to_char(t.done_at + interval '3 hours', 'DD.MM.YYYY HH24:MI') AS done_msk "
         f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
         f"LEFT JOIN {SCHEMA}.staff d ON d.id = t.done_by "
-        "WHERE t.is_problem AND t.status = 'done' AND t.done_notified_at IS NULL AND a.status = 'active' "
+        "WHERE t.status = 'done' AND t.done_notified_at IS NULL AND a.status = 'active' "
+        "AND t.done_by IS DISTINCT FROM t.author_id "
         "ORDER BY t.done_at"
     )
     out = []
     for t in cur.fetchall():
         who = ' '.join((t['done_by_name'] or '').split()[:2])
-        lines = ['✅ Ваша проблема решена:', f"-{t['title']}"]
+        problem = t['is_problem']
+        lines = ['✅ Ваша проблема решена:' if problem else '✅ Ваша задача выполнена:', f"-{t['title']}"]
         if who:
-            lines.append(f"Решил(а): {who}")
+            lines.append(f"{'Решил(а)' if problem else 'Выполнил(а)'}: {who}")
         if t['done_comment']:
             lines.append(f"Комментарий: {t['done_comment']}")
-        lines += ['', f"Подробнее: {SITE}/admin/teacher"]
+        link = f"{SITE}/admin/teacher" if t['author_role'] == 'teacher' else _tasks_link(t['author_role'])
+        lines += ['', f"Подробнее: {link}"]
         out.append({
             'task_id': t['id'],
             'staff_id': t['author_id'],
@@ -435,7 +439,7 @@ def mark_notified(cur, conn, data):
         cur.execute(f"UPDATE {SCHEMA}.staff_tasks SET notified_at = coalesce(notified_at, now()) WHERE id IN %s", (tuple(ids),))
         cur.execute(
             f"UPDATE {SCHEMA}.staff_tasks SET done_notified_at = now() "
-            "WHERE id IN %s AND is_problem AND status = 'done' AND done_notified_at IS NULL",
+            "WHERE id IN %s AND status = 'done' AND done_notified_at IS NULL",
             (tuple(ids),),
         )
         conn.commit()
