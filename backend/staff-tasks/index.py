@@ -14,7 +14,7 @@ SCHEMA = 't_p93118852_lineaschool_initiati'
 CORS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token, X-Session-Id, X-Service-Key',
+    'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token, X-Session-Id, X-Service-Key, X-Admin-Password',
     'Access-Control-Max-Age': '86400',
 }
 
@@ -28,6 +28,7 @@ FROM = (
     f"JOIN {SCHEMA}.staff s ON s.id = t.assignee_id LEFT JOIN {SCHEMA}.staff d ON d.id = t.done_by"
 )
 SHIFT_ID = 0
+SHARED_PASSWORD = '426874'
 SHIFT_ROLES = ('admin', 'head')
 ORDER = "ORDER BY (t.status = 'done'), CASE t.urgency WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, t.due_date NULLS LAST, t.created_at DESC"
 
@@ -45,6 +46,12 @@ def _me(cur, event) -> Optional[Dict[str, Any]]:
     headers = event.get('headers') or {}
     token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
     if not token:
+        pwd = headers.get('X-Admin-Password') or headers.get('x-admin-password')
+        if pwd and pwd == SHARED_PASSWORD:
+            cur.execute(
+                f"SELECT id, full_name, role FROM {SCHEMA}.staff WHERE phone = 'shared-teacher' AND status = 'system'"
+            )
+            return cur.fetchone()
         return None
     cur.execute(
         f"SELECT s.id, s.full_name, s.role FROM {SCHEMA}.staff_sessions ss "
@@ -354,7 +361,7 @@ def _solved_problems(cur):
         f"to_char(t.done_at, 'YYYYMMDDHH24MISS') AS done_stamp "
         f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
         f"LEFT JOIN {SCHEMA}.staff d ON d.id = t.done_by "
-        "WHERE t.status = 'done' AND t.done_notified_at IS NULL AND a.status = 'active' "
+        "WHERE t.status = 'done' AND t.done_notified_at IS NULL AND a.status = 'active' AND a.phone ~ '[0-9]' "
         "AND t.done_by IS DISTINCT FROM t.author_id "
         "ORDER BY t.done_at"
     )

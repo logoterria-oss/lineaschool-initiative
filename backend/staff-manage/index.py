@@ -101,7 +101,7 @@ def handle_list(conn, registered_only=False):
     # registered_only=True — только реально зарегистрированные учётки
     # (у них задан пароль). Импортированные из CRM записи без регистрации
     # имеют пустой password_hash и в список «Пользователи» не попадают.
-    where = "WHERE password_hash <> ''" if registered_only else ""
+    where = "WHERE password_hash <> '' AND status <> 'system'" if registered_only else "WHERE status <> 'system'"
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"SELECT {SELECT_FIELDS} FROM {SCHEMA}.staff {where} ORDER BY "

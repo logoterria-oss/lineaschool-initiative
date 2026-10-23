@@ -56,7 +56,11 @@ export interface TasksData {
   on_shift: boolean;
 }
 
-const headers = () => ({ 'Content-Type': 'application/json', 'X-Auth-Token': getStaffToken() || '' });
+const headers = (): Record<string, string> => {
+  const token = getStaffToken();
+  if (token) return { 'Content-Type': 'application/json', 'X-Auth-Token': token };
+  return { 'Content-Type': 'application/json', 'X-Admin-Password': sessionStorage.getItem('admin_password') || '' };
+};
 
 export const fetchTasks = async (): Promise<TasksData> => {
   const r = await fetch(URL, { headers: headers() });
