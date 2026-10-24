@@ -30,7 +30,7 @@ const NewTaskForm = ({ assignees, onCreated, problem }: Props) => {
           setError(`«${f.name}» больше 10 МБ`);
           continue;
         }
-        const up = await uploadTaskFile(f);
+        const up = await uploadTaskFile(f, !!problem);
         setFiles((p) => [...p, up]);
       }
     } catch (e) {

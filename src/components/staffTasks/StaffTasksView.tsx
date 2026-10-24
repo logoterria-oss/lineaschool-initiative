@@ -14,10 +14,10 @@ const StaffTasksView = ({ problemMode = false }: { problemMode?: boolean }) => {
   const [showDone, setShowDone] = useState(false);
 
   const load = useCallback(() => {
-    fetchTasks()
+    fetchTasks(problemMode)
       .then(setData)
       .catch((e) => setError(e instanceof Error ? e.message : 'Ошибка загрузки'));
-  }, []);
+  }, [problemMode]);
 
   useEffect(load, [load]);
 

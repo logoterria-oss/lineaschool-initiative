@@ -542,12 +542,19 @@ def handler(event: dict, context) -> dict:
                 return mark_shift_reminded(cur, conn, json.loads(event.get('body') or '{}'))
             return mark_notified(cur, conn, json.loads(event.get('body') or '{}'))
         me = _me(cur, event)
+        data = json.loads(event.get('body') or '{}') if event.get('httpMethod') == 'POST' else {}
+        action = data.get('action')
+        problem_mode = (event.get('queryStringParameters') or {}).get('problem') == '1'
+        # Сообщить о проблеме педагог может без входа: обращение идёт от общего аккаунта
+        if problem_mode and (not me or me['role'] == 'teacher') and (event.get('httpMethod') == 'GET' or action in ('create', 'upload')):
+            cur.execute(
+                f"SELECT id, full_name, role FROM {SCHEMA}.staff WHERE phone = 'shared-teacher' AND status = 'system'"
+            )
+            me = me or cur.fetchone()
         if not me:
             return _json({'ok': False, 'message': 'Нужно войти'}, 401)
         if event.get('httpMethod') == 'GET':
             return list_tasks(cur, me)
-        data = json.loads(event.get('body') or '{}')
-        action = data.get('action')
         if action == 'upload':
             return upload_file(me, data)
         if action == 'create':

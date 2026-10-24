@@ -62,22 +62,22 @@ const headers = (): Record<string, string> => {
   return { 'Content-Type': 'application/json', 'X-Admin-Password': sessionStorage.getItem('admin_password') || '' };
 };
 
-export const fetchTasks = async (): Promise<TasksData> => {
-  const r = await fetch(URL, { headers: headers() });
+export const fetchTasks = async (problem = false): Promise<TasksData> => {
+  const r = await fetch(problem ? `${URL}?problem=1` : URL, { headers: headers() });
   const d = await r.json();
   if (!r.ok) throw new Error(d.message || 'Ошибка загрузки');
   return d;
 };
 
-const post = async (body: object) => {
-  const r = await fetch(URL, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
+const post = async (body: object, problem = false) => {
+  const r = await fetch(problem ? `${URL}?problem=1` : URL, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
   const d = await r.json();
   if (!r.ok) throw new Error(d.message || 'Ошибка');
   return d;
 };
 
 export const createTask = (v: { title: string; description: string; due_date: string; urgency: Urgency; assignee_ids: number[]; attachments: TaskFile[]; reporter_name?: string }) =>
-  post({ action: 'create', ...v });
+  post({ action: 'create', ...v }, !!v.reporter_name);
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const r = new FileReader();
@@ -86,9 +86,9 @@ const readAsDataUrl = (file: File) =>
     r.readAsDataURL(file);
   });
 
-export const uploadTaskFile = async (file: File): Promise<TaskFile> => {
+export const uploadTaskFile = async (file: File, problem = false): Promise<TaskFile> => {
   const data = await readAsDataUrl(file);
-  const d = await post({ action: 'upload', name: file.name, type: file.type, data });
+  const d = await post({ action: 'upload', name: file.name, type: file.type, data }, problem);
   return d.file as TaskFile;
 };
 export const setTaskUrgency = (id: number, urgency: Urgency) => post({ action: 'update', id, urgency });
