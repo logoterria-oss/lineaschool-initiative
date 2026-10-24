@@ -1,4 +1,5 @@
 import os
+import gc
 import json
 import re
 import requests
@@ -255,6 +256,23 @@ def get_all_customers(token):
     return merged
 
 
+LESSON_KEEP = (
+    "id", "date", "lesson_date", "status", "lesson_type_name", "note", "topic",
+    "group_ids", "customer_ids", "client_ids", "student_ids",
+)
+
+
+def _slim_lesson(ls: dict) -> dict:
+    out = {k: ls.get(k) for k in LESSON_KEEP if k in ls}
+    det = ls.get("details")
+    if isinstance(det, list):
+        out["details"] = [
+            {"customer_id": d.get("customer_id"), "client_id": d.get("client_id")}
+            for d in det if isinstance(d, dict)
+        ]
+    return out
+
+
 def get_lessons(token, date_from, date_to, status=3):
     """Занятия за период.
 
@@ -275,7 +293,11 @@ def get_lessons(token, date_from, date_to, status=3):
             payload["status"] = status
         resp = crm_post(url, json=payload, headers=get_headers(token), timeout=30)
         resp.raise_for_status()
-        return resp.json()
+        data = resp.json()
+        # Урок из CRM тяжёлый, а занятий с 2024 года тысячи — держим в памяти
+        # только нужные поля, иначе функция не укладывается в лимит памяти
+        data["items"] = [_slim_lesson(x) for x in data.get("items") or []]
+        return data
 
     first = fetch_page(0)
     all_items = first.get("items", [])
@@ -288,7 +310,7 @@ def get_lessons(token, date_from, date_to, status=3):
     if not pages:
         return all_items
 
-    with ThreadPoolExecutor(max_workers=8) as ex:
+    with ThreadPoolExecutor(max_workers=4) as ex:
         for data in ex.map(fetch_page, pages):
             all_items.extend(data.get("items", []))
     return all_items
@@ -1496,7 +1518,7 @@ def handle_statuses(token):
     })
 
 
-def handle_list(token, name_filter=None):
+def handle_list(token, name_filter=None, raw=False):
     from concurrent.futures import ThreadPoolExecutor
 
     today = date.today()
@@ -1788,6 +1810,8 @@ def handle_list(token, name_filter=None):
     if name_filter:
         nf = name_filter.lower()
         items = [it for it in items if nf in (it.get("name") or "").lower()]
+    if raw:
+        return items
     return _json(200, {"items": items})
 
 
@@ -1873,6 +1897,8 @@ def _daily_write(key: str, items: list) -> None:
 
 
 def handler(event, context):
+    # Контейнер живёт между вызовами — сначала освобождаем память прошлого запуска
+    gc.collect()
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
@@ -1910,6 +1936,8 @@ def handler(event, context):
     if daily and params.get("refresh") != "1":
         saved = _daily_read(day_key)
         if saved is not None:
+            if params.get("brief") == "1":
+                return _json(200, {"ok": True, "count": len(saved)})
             return _json(200, {"items": saved, "daily": True})
 
     try:
@@ -1920,10 +1948,13 @@ def handler(event, context):
     if mode == "statuses":
         return handle_statuses(token)
     if mode == "list":
-        res = handle_list(token, None if daily else params.get("q"))
-        if daily and res.get("statusCode") == 200:
-            items = json.loads(res["body"]).get("items") or []
-            if items:
-                _daily_write(day_key, items)
-        return res
+        if not daily:
+            return handle_list(token, params.get("q"))
+        items = handle_list(token, None, raw=True)
+        if items:
+            _daily_write(day_key, items)
+        # Будильнику (cron) весь список не нужен — отвечаем коротко
+        if params.get("brief") == "1":
+            return _json(200, {"ok": True, "count": len(items)})
+        return _json(200, {"items": items, "daily": True})
     return _json(400, {"error": "unknown mode"})
