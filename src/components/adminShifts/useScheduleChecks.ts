@@ -8,7 +8,7 @@ import {
 } from '@/lib/adminShiftsApi';
 import { reminderText } from '@/lib/paymentReminder';
 import { SCHEDULE_CHECKS, ScheduleCheckKey } from '@/lib/shiftChecklist';
-import { StudentRow, fetchStudents } from '@/lib/studentsApi';
+import { StudentRow, fetchStudentsDaily } from '@/lib/studentsApi';
 import { payLinkForTariff } from '@/lib/payLinks';
 import { MarkState } from './useShiftChecklist';
 
@@ -136,10 +136,11 @@ export function useScheduleChecks(
 
   const loadStudents = useCallback(async () => {
     setStudentsState('loading');
-    // Список тяжёлый и иногда упирается в лимиты базы — пробуем трижды с паузой
+    // Список на день хранится на сервере; если утренний сбор не прошёл,
+    // его соберёт первый открывший — пробуем трижды с паузой
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt) await new Promise((r) => setTimeout(r, 3000 * attempt));
-      const list = await fetchStudents(true).catch(() => null);
+      const list = await fetchStudentsDaily().catch(() => null);
       // Пустой список — это сбой загрузки, а не «нет учеников»
       if (list && list.length > 0) {
         setStudents(list);

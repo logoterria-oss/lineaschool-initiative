@@ -1829,6 +1829,49 @@ def record_weekly_snapshot(items):
     conn.close()
 
 
+def _msk_today() -> str:
+    return (datetime.utcnow() + timedelta(hours=3)).strftime("%Y-%m-%d")
+
+
+def _daily_read(key: str):
+    try:
+        conn = db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT payload FROM {SCHEMA}.crm_json_cache WHERE cache_key = %s", (key,))
+                row = cur.fetchone()
+                return row[0] if row and row[0] else None
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"daily read failed: {e}")
+        return None
+
+
+def _daily_write(key: str, items: list) -> None:
+    try:
+        conn = db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.crm_json_cache (cache_key, payload, updated_at) "
+                    f"VALUES (%s, %s::jsonb, now()) ON CONFLICT (cache_key) DO UPDATE "
+                    f"SET payload = EXCLUDED.payload, updated_at = now()",
+                    (key, json.dumps(items, ensure_ascii=False, default=str)),
+                )
+                # Старые дневные срезы не копим
+                cur.execute(
+                    f"DELETE FROM {SCHEMA}.crm_json_cache WHERE cache_key LIKE 'students_daily:%%' "
+                    f"AND cache_key < %s",
+                    (f"students_daily:{(datetime.utcnow() - timedelta(days=3)).strftime('%Y-%m-%d')}",),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"daily write failed: {e}")
+
+
 def handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
@@ -1860,6 +1903,15 @@ def handler(event, context):
     if mode == "admins":
         return handle_admins()
 
+    # Список на день: собирается утром по расписанию и до следующего утра
+    # отдаётся из базы мгновенно, без похода в CRM
+    daily = mode == "list" and params.get("daily") == "1"
+    day_key = f"students_daily:{_msk_today()}"
+    if daily and params.get("refresh") != "1":
+        saved = _daily_read(day_key)
+        if saved is not None:
+            return _json(200, {"items": saved, "daily": True})
+
     try:
         token = get_token()
     except Exception as e:
@@ -1868,5 +1920,10 @@ def handler(event, context):
     if mode == "statuses":
         return handle_statuses(token)
     if mode == "list":
-        return handle_list(token, params.get("q"))
+        res = handle_list(token, None if daily else params.get("q"))
+        if daily and res.get("statusCode") == 200:
+            items = json.loads(res["body"]).get("items") or []
+            if items:
+                _daily_write(day_key, items)
+        return res
     return _json(400, {"error": "unknown mode"})

@@ -62,20 +62,17 @@ const AdminDashboardView = () => {
           )
         }
         actions={
-          <>
-            {schedule.checkedAt && !schedule.loading && (
-              <span className="text-[11px] text-gray-400">CRM проверена в {schedule.checkedAt}</span>
-            )}
-            <button
-              onClick={schedule.reload}
-              disabled={schedule.loading}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-              title="Перепроверить данные в AlfaCRM"
-            >
-              <Icon name="RefreshCw" size={13} className={schedule.loading ? 'animate-spin' : ''} />
-              {schedule.loading ? 'Смотрим CRM…' : 'Обновить'}
-            </button>
-          </>
+          schedule.loading ? (
+            <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <Icon name="Loader2" size={13} className="animate-spin" /> Загружаем данные дня…
+            </span>
+          ) : (
+            schedule.checkedAt && (
+              <span className="text-[11px] text-gray-400">
+                Данные CRM на {schedule.checkedAt} · обновятся завтра утром
+              </span>
+            )
+          )
         }
       >
         <div className="space-y-2">

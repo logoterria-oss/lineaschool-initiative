@@ -279,6 +279,24 @@ export const fetchStudents = async (force = false): Promise<StudentRow[]> => {
   return studentsInFlight;
 };
 
+/**
+ * Список учеников на сегодня для дашборда: собирается утром по расписанию
+ * и хранится на сервере до следующего утра — открывается мгновенно.
+ */
+export const fetchStudentsDaily = async (): Promise<StudentRow[]> => {
+  const url = `${API_URL}?mode=list&daily=1`;
+  let res = await fetch(url);
+  for (const wait of [2000, 5000]) {
+    if (res.ok || res.status < 500) break;
+    await new Promise((r) => setTimeout(r, wait));
+    res = await fetch(url);
+  }
+  if (!res.ok) throw new Error('Не удалось загрузить учеников');
+  const data = await res.json();
+  const items = (data.items as StudentRow[]) || [];
+  return items.map((it) => ({ ...it, name: normalizeStudentName(it.name) }));
+};
+
 export const saveVacation = async (
   studentId: number,
   fields: Partial<Omit<StudentVacation, 'id'>>,
