@@ -717,6 +717,11 @@ def _strip_emoji(name: str):
     return text, emojis
 
 
+def _is_patronymic(word: str) -> bool:
+    w = (word or "").lower().replace("ё", "е")
+    return len(w) > 5 and w.endswith(("овна", "евна", "ична", "инична", "ович", "евич", "ьич", "ьевич"))
+
+
 def _hw_surname_first(name: str) -> str:
     """CRM хранит имена как 'Имя Фамилия'. Переворачиваем в 'Фамилия Имя'.
     Эмодзи считаем частью имени и переносим в конец: '🖐 Никита Павленко' -> 'Павленко Никита 🖐'.
@@ -726,9 +731,17 @@ def _hw_surname_first(name: str) -> str:
         return (name or "").strip()
 
     parts = text.split()
+    patr = [i for i, p in enumerate(parts) if _is_patronymic(p)]
     # Составные имена сиблингов: содержат союз 'и' — фамилия уже в конце или общая
     if "и" in [p.lower() for p in parts]:
         result = text
+    # Есть отчество — по его месту понимаем порядок и отчество убираем:
+    # «Козина Евгения Алексеевна» -> «Козина Евгения»,
+    # «Матвей Юрьевич Андреев» -> «Андреев Матвей»
+    elif len(parts) == 3 and patr == [2]:
+        result = f"{parts[0]} {parts[1]}"
+    elif len(parts) == 3 and patr == [1]:
+        result = f"{parts[2]} {parts[0]}"
     elif len(parts) == 2:
         result = f"{parts[1]} {parts[0]}"
     # Три и более слова без 'и' — двойное имя/фамилия: переносим последнее слово вперёд
