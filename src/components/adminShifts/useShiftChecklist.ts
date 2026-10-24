@@ -3,6 +3,7 @@ import {
   ChecklistMark,
   HeadTask,
   fetchChecklist,
+  fetchDashMarks,
   moscowToday,
   saveChecklistMark,
 } from '@/lib/adminShiftsApi';
@@ -11,6 +12,9 @@ import { ChecklistBlock, ChecklistItem, checklistFor } from '@/lib/shiftChecklis
 export interface MarkState {
   done: boolean;
   comment: string;
+  /** Кто и во сколько отметил — на общем дашборде */
+  by?: string;
+  at?: string;
 }
 
 /** Событие, чтобы кнопка смены знала об изменении чек-листа */
@@ -24,14 +28,18 @@ export function useShiftChecklist(dateArg?: string) {
   const [handledBefore, setHandledBefore] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const items = useMemo(() => checklistFor(date), [date]);
+  // В отчёт смены идут пункты дашборда «Расписание и занятия» — их отметки общие
+  const items = useMemo(() => checklistFor(date).filter((i) => i.auto), [date]);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchChecklist(date);
+    const [data, dash] = await Promise.all([fetchChecklist(date), fetchDashMarks(date)]);
     const map: Record<string, MarkState> = {};
     (data.marks || []).forEach((m: ChecklistMark) => {
       map[m.item_key] = { done: !!m.done, comment: m.comment || '' };
+    });
+    (dash || []).forEach((m) => {
+      if (!m.item_key.startsWith('head-')) map[m.item_key] = { done: !!m.done, comment: m.comment || '' };
     });
     setMarks(map);
     setHeadTasks(data.head_tasks || []);

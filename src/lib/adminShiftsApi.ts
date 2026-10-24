@@ -186,14 +186,21 @@ export interface ScheduleChecks {
   checks: Record<string, ScheduleFinding[]>;
   /** Уроки завтра-послезавтра — для пункта «Остаток занятий» */
   upcoming: UpcomingLesson[];
+  /** Во сколько (МСК) сайт сходил в CRM */
+  checkedAt?: string;
 }
 
 /**
  * Автопроверки расписания по AlfaCRM для пункта 1 чек-листа:
  * непроведённые уроки за вчера, неоплаченные занятия, наслоения, малые группы.
  */
-export async function fetchScheduleChecks(date: string): Promise<ScheduleChecks | null> {
-  const r = await fetch(`${CRM_CHECK_URL}?date=${date}`, { headers: authHeaders() });
+export async function fetchScheduleChecks(
+  date: string,
+  refresh = false,
+): Promise<ScheduleChecks | null> {
+  const r = await fetch(`${CRM_CHECK_URL}?date=${date}${refresh ? '&refresh=1' : ''}`, {
+    headers: authHeaders(),
+  });
   if (!r.ok) return null;
   const data = await r.json().catch(() => null);
   if (!data || !data.ok) return null;
@@ -202,6 +209,7 @@ export async function fetchScheduleChecks(date: string): Promise<ScheduleChecks 
     yesterday: data.yesterday,
     checks: data.checks || {},
     upcoming: data.upcoming || [],
+    checkedAt: data.checked_at || '',
   };
 }
 
@@ -383,4 +391,35 @@ export async function markReminder(
   });
   const data = await r.json().catch(() => ({}));
   return !!data.ok;
+}
+
+/** Общая отметка дашборда: видна всем руководителям и админам */
+export interface DashMark {
+  item_key: string;
+  done: boolean;
+  comment: string;
+  done_by: string;
+  at: string;
+}
+
+export async function fetchDashMarks(date: string): Promise<DashMark[] | null> {
+  const r = await fetch(`${API_URL}?action=dash&date=${date}`, { headers: authHeaders() });
+  if (!r.ok) return null;
+  const data = await r.json().catch(() => ({}));
+  return data.marks || [];
+}
+
+export async function saveDashMark(p: {
+  date: string;
+  item_key: string;
+  done: boolean;
+  comment: string;
+}): Promise<string> {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'dash', ...p }),
+  });
+  const data = await r.json().catch(() => ({}));
+  return data.done_by || '';
 }

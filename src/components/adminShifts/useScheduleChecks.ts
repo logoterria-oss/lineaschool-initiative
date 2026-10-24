@@ -46,24 +46,6 @@ export interface ScheduleCheckState {
   unavailable?: string;
 }
 
-interface CachedChecks {
-  checks: Record<string, ScheduleFinding[]>;
-  yesterday: string;
-  upcoming: UpcomingLesson[];
-}
-
-const cacheKey = (date: string) => `schedule_checks_${date}`;
-
-/** Результат прошлой проверки за эту же дату — чтобы не ходить в CRM при каждом переходе по меню */
-const readCache = (date: string): CachedChecks | null => {
-  try {
-    const raw = sessionStorage.getItem(cacheKey(date));
-    return raw ? (JSON.parse(raw) as CachedChecks) : null;
-  } catch {
-    return null;
-  }
-};
-
 /** Ученик действующий — архив и бросивших не дёргаем */
 const isActiveStudent = (s: StudentRow) => s.status_id !== 3 && s.status_id !== 2;
 
@@ -169,54 +151,43 @@ export function useScheduleChecks(
     return false;
   }, []);
 
-  // Подхватываем прошлый результат за эту дату, если он есть в сессии.
-  // Учеников в сессии не храним — догружаем, иначе пункт 3 решил бы, что напоминать некому.
-  useEffect(() => {
-    const cached = readCache(date);
-    setChecks(cached?.checks ?? null);
-    setYesterday(cached?.yesterday ?? '');
-    setUpcoming(cached?.upcoming ?? []);
-    setFailed(false);
-    setLoading(false);
-    if (cached) loadStudents();
-  }, [date, loadStudents]);
+  const [checkedAt, setCheckedAt] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setFailed(false);
-    // Список учеников нужен пункту 3: остаток занятий считается там же,
-    // где и в разделе «Список учеников», — дважды одну логику не пишем.
-    // CRM ограничивает частоту запросов — при отказе пробуем ещё дважды с паузой
-    const checksWithRetry = async () => {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt) await new Promise((r) => setTimeout(r, 2500 * attempt));
-        const res = await fetchScheduleChecks(date).catch(() => null);
-        if (res) return res;
+  /**
+   * Проверка CRM делается раз в день и хранится на сервере для всех:
+   * первый, кто открыл дашборд, запускает её, остальные получают готовый
+   * результат. refresh — перепроверить по кнопке.
+   */
+  const load = useCallback(
+    async (refresh = false) => {
+      setLoading(true);
+      setFailed(false);
+      const checksWithRetry = async () => {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          if (attempt) await new Promise((r) => setTimeout(r, 2500 * attempt));
+          const res = await fetchScheduleChecks(date, refresh).catch(() => null);
+          if (res) return res;
+        }
+        return null;
+      };
+      const [data] = await Promise.all([checksWithRetry(), loadStudents()]);
+      if (!data) {
+        setFailed(true);
+      } else {
+        setChecks(data.checks);
+        setYesterday(data.yesterday);
+        setUpcoming(data.upcoming);
+        setCheckedAt(data.checkedAt || '');
       }
-      return null;
-    };
-    const [data] = await Promise.all([checksWithRetry(), loadStudents()]);
-    if (!data) {
-      setFailed(true);
-    } else {
-      setChecks(data.checks);
-      setYesterday(data.yesterday);
-      setUpcoming(data.upcoming);
-      try {
-        sessionStorage.setItem(
-          cacheKey(date),
-          JSON.stringify({
-            checks: data.checks,
-            yesterday: data.yesterday,
-            upcoming: data.upcoming,
-          }),
-        );
-      } catch {
-        /* сессия переполнена — не страшно, просто не кешируем */
-      }
-    }
-    setLoading(false);
-  }, [date, loadStudents]);
+      setLoading(false);
+    },
+    [date, loadStudents],
+  );
+
+  useEffect(() => {
+    setChecks(null);
+    load(false);
+  }, [load]);
 
   /** Пункт 3: кому остался последний урок и у кого занятия кончились */
   const balanceFindings = useMemo(() => {
@@ -338,7 +309,8 @@ export function useScheduleChecks(
     loading,
     failed,
     checked,
-    reload: load,
+    reload: () => load(true),
+    checkedAt,
     reminders,
     reloadReminders: loadReminders,
     reloadStudents: loadStudents,

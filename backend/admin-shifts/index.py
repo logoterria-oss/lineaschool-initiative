@@ -70,6 +70,8 @@ def handler(event: dict, context) -> dict:
                 return sync_interaction()
             if act == "checklist":
                 return get_checklist(event)
+            if act == "dash":
+                return get_dash(event)
             if act == "head-tasks":
                 return get_head_tasks(event)
             if act == "reminders":
@@ -82,6 +84,8 @@ def handler(event: dict, context) -> dict:
                 return mark_shift(event, body, act)
             if act == "checklist":
                 return save_checklist(event, body)
+            if act == "dash":
+                return save_dash(event, body)
             if act == "head-tasks":
                 return save_head_tasks(event, body)
             if act == "fill-template":
@@ -657,6 +661,62 @@ def save_checklist(event: dict, body: dict) -> dict:
             )
             conn.commit()
         return _json(200, {"ok": True})
+    finally:
+        conn.close()
+
+
+# Отметки дашборда общие для всех руководителей и админов: храним их под staff_id = 0
+DASH_STAFF = 0
+
+
+def get_dash(event: dict) -> dict:
+    """Общие отметки дашборда за день: что сделано и кем. ?action=dash&date=YYYY-MM-DD"""
+    params = event.get("queryStringParameters") or {}
+    date = str(params.get("date") or "")[:10]
+    if len(date) != 10:
+        return _json(400, {"error": "date required"})
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            me = _me(cur, event)
+            if not me:
+                return _json(401, {"error": "Требуется вход"})
+            cur.execute(
+                f"SELECT item_key, done, comment, done_by, to_char(updated_at, 'HH24:MI') AS at "
+                f"FROM {SCHEMA}.shift_checklist WHERE shift_date = %s AND staff_id = %s",
+                (date, DASH_STAFF),
+            )
+            marks = [dict(r) for r in cur.fetchall()]
+        return _json(200, {"ok": True, "marks": marks})
+    finally:
+        conn.close()
+
+
+def save_dash(event: dict, body: dict) -> dict:
+    """Отметка на общем дашборде. Body: { action: 'dash', date, item_key, done, comment }"""
+    date = str(body.get("date") or "")[:10]
+    item_key = str(body.get("item_key") or "")[:64]
+    if len(date) != 10 or not item_key:
+        return _json(400, {"error": "date and item_key required"})
+    done = bool(body.get("done"))
+    comment = str(body.get("comment") or "")[:1000]
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            me = _me(cur, event)
+            if not me:
+                return _json(401, {"error": "Требуется вход"})
+            who = " ".join((me.get("full_name") or "").split()[:2]) if done else ""
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.shift_checklist "
+                f"(shift_date, staff_id, item_key, done, comment, done_by) VALUES (%s, %s, %s, %s, %s, %s) "
+                f"ON CONFLICT (shift_date, staff_id, item_key) DO UPDATE SET "
+                f"done = EXCLUDED.done, comment = EXCLUDED.comment, done_by = EXCLUDED.done_by, "
+                f"updated_at = {MSK_NOW}",
+                (date, DASH_STAFF, item_key, done, comment, who),
+            )
+            conn.commit()
+        return _json(200, {"ok": True, "done_by": who})
     finally:
         conn.close()
 

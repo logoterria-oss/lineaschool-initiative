@@ -195,6 +195,12 @@ const ScheduleChecksCard = ({
                             {note && (
                               <span className="block text-[10.5px] text-gray-400 mt-px">{note}</span>
                             )}
+                            {m.done && m.by && (
+                              <span className="block text-[10.5px] text-green-700 mt-px">
+                                отметил(а) {m.by}
+                                {m.at ? ` в ${m.at}` : ''}
+                              </span>
+                            )}
                           </span>
                         </div>
                       );

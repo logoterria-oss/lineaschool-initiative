@@ -94,3 +94,10 @@ export const uploadTaskFile = async (file: File, problem = false): Promise<TaskF
 export const setTaskUrgency = (id: number, urgency: Urgency) => post({ action: 'update', id, urgency });
 export const setTaskDone = (id: number, done: boolean, comment = '') => post({ action: 'status', id, done, comment });
 export const deleteTask = (id: number) => post({ action: 'delete', id });
+/** Задачи «Админ на смене»: открытые и закрытые за последние сутки */
+export const fetchShiftTasks = async (): Promise<StaffTask[]> => {
+  const r = await fetch(`${URL}?shift=1`, { headers: headers() });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.message || 'Ошибка загрузки');
+  return d.tasks || [];
+};

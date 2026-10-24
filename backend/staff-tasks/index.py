@@ -113,6 +113,16 @@ def list_tasks(cur, me):
     return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': bool(assignees), 'on_shift': on_shift})
 
 
+def shift_tasks(cur, me):
+    """Все задачи «Админ на смене» — для дашборда руководителей и админов."""
+    if me['role'] not in SHIFT_ROLES:
+        return _json({'ok': False, 'message': 'Нет доступа'}, 403)
+    cur.execute(
+        f"SELECT {FIELDS} {FROM} WHERE t.for_shift AND (t.status = 'open' OR t.done_at > now() - interval '1 day') {ORDER}"
+    )
+    return _json({'ok': True, 'tasks': _with_msk(cur.fetchall())})
+
+
 def _assignees(cur, me):
     """Руководитель и админ ставят задачи себе, руководителям и администраторам; педагог сообщает им о проблемах."""
     if me['role'] not in ('head', 'admin', 'teacher'):
@@ -554,6 +564,8 @@ def handler(event: dict, context) -> dict:
         if not me:
             return _json({'ok': False, 'message': 'Нужно войти'}, 401)
         if event.get('httpMethod') == 'GET':
+            if (event.get('queryStringParameters') or {}).get('shift') == '1':
+                return shift_tasks(cur, me)
             return list_tasks(cur, me)
         if action == 'upload':
             return upload_file(me, data)

@@ -29,7 +29,7 @@ import SupervisionsView from '@/components/headWorkspace/SupervisionsView';
 import SupervisionRates from '@/components/supervision/SupervisionRates';
 import StubView from '@/components/headWorkspace/StubView';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';
-import TodayTasksView from '@/components/adminShifts/TodayTasksView';
+import AdminDashboardView from '@/components/dashboard/AdminDashboardView';
 import StaffTasksView from '@/components/staffTasks/StaffTasksView';
 import TasksButton, { TASKS_ITEM } from '@/components/staffTasks/TasksButton';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
@@ -44,9 +44,9 @@ import { useInteractionBadges } from '@/components/interaction/useInteractionBad
 
 const CHECKLIST_ITEM: SubItem = {
   id: 'admin-checklist',
-  label: 'Чек-лист администратора',
+  label: 'Даш-борд',
   kind: 'component',
-  icon: 'ListChecks',
+  icon: 'LayoutDashboard',
 };
 
 const HeadWorkspace = () => {
@@ -86,7 +86,7 @@ const HeadWorkspace = () => {
     if (active.kind === 'stub') return <StubView label={active.label} />;
     switch (active.id) {
       case 'admin-shifts': return <AdminShiftsView />;
-      case 'admin-checklist': return <TodayTasksView />;
+      case 'admin-checklist': return <AdminDashboardView />;
       case 'tasks': return <StaffTasksView />;
       case 'students-list': return <StudentsListView />;
       case 'leads': return <LeadsSection />;
@@ -225,8 +225,8 @@ const HeadWorkspace = () => {
             checklistActive ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
           }`}
         >
-          <Icon name="ListChecks" size={16} className="flex-shrink-0" />
-          <span>Чек-лист</span>
+          <Icon name="LayoutDashboard" size={16} className="flex-shrink-0" />
+          <span>Даш-борд</span>
         </button>
         <button
           onClick={() => setActive({ id: 'work-log', label: 'Учёт рабочего времени', kind: 'component', icon: 'ClipboardPen' })}

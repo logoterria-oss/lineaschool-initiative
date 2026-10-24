@@ -22,7 +22,7 @@ import QuestionnairesView from '@/components/headWorkspace/QuestionnairesView';
 import LeadsSection from '@/components/diagBooking/LeadsSection';
 import AdminShiftsView from '@/components/adminShifts/AdminShiftsView';
 import ShiftToggleButton from '@/components/adminShifts/ShiftToggleButton';
-import TodayTasksView from '@/components/adminShifts/TodayTasksView';
+import AdminDashboardView from '@/components/dashboard/AdminDashboardView';
 import StaffTasksView from '@/components/staffTasks/StaffTasksView';
 import TasksButton, { TASKS_ITEM } from '@/components/staffTasks/TasksButton';
 import { buildInteractionUrl } from '@/lib/interactionUrl';
@@ -36,9 +36,9 @@ import OnShiftHint from '@/components/interaction/OnShiftHint';
  */
 const CHECKLIST_ITEM: AdminItem = {
   id: 'today-tasks',
-  label: 'Чек-лист смены',
+  label: 'Даш-борд',
   kind: 'component',
-  icon: 'ListChecks',
+  icon: 'LayoutDashboard',
 };
 
 const AdminWorkspace = () => {
@@ -89,7 +89,7 @@ const AdminWorkspace = () => {
       case 'students-list': return <StudentsListView />;
       case 'leads-list': return <LeadsSection />;
       case 'staff-list': return <StaffListView readOnly />;
-      case 'today-tasks': return <TodayTasksView />;
+      case 'today-tasks': return <AdminDashboardView />;
       case 'tasks': return <StaffTasksView />;
       default: return <StubView label={active.label} />;
     }

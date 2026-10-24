@@ -1,0 +1,1 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.shift_checklist ADD COLUMN IF NOT EXISTS done_by text NOT NULL DEFAULT '';

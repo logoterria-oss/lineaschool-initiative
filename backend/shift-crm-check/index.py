@@ -521,6 +521,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     tomorrow = (d_today + datetime.timedelta(days=1)).isoformat()
     day_after = (d_today + datetime.timedelta(days=2)).isoformat()
 
+    # Проверка делается раз в день и хранится для всех: первый, кто открыл
+    # дашборд утром, запускает её, остальные видят сохранённый результат.
+    # refresh=1 — перепроверить по кнопке.
+    day_key = f"daily_checks:{today}"
+    if params.get("refresh") != "1":
+        saved = _cache_read([day_key]).get(day_key)
+        if saved and saved[0]:
+            return _json(200, saved[0][0])
+
     try:
         token = get_token()
         # Уроки за все четыре дня берём одним диапазоном и делим по датам
@@ -534,8 +543,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     ls_yest, ls_today, ls_next = on(yesterday), on(today), on(tomorrow, day_after)
 
-    return _json(200, {
+    msk_now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3)
+    result = {
         "ok": True,
+        "checked_at": msk_now.strftime("%H:%M"),
         "date": today,
         "yesterday": yesterday,
         "checks": {
@@ -550,4 +561,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Остаток занятий фронт берёт из таблицы учеников — там он считается
         # ровно так же, как в разделе «Список учеников».
         "upcoming": upcoming_lessons(ls_next, teachers, groups, customers, today),
-    })
+    }
+    # Кэш хранит списки — кладём результат дня одним элементом
+    _cache_write({day_key: [result]})
+    return _json(200, result)
