@@ -2,10 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import { Choice, GroupDayCard, IndividualDay, choiceKey } from '@/components/booking/DayCard';
+import { Choice, choiceKey } from '@/components/booking/DayCard';
 import StartDateScreen from '@/components/booking/StartDateScreen';
-import SectionHeader from '@/components/booking/SectionHeader';
-import EmptySection from '@/components/booking/EmptySection';
+import { GroupsSection, IndividualSection } from '@/components/booking/BookingSections';
+import BookingSummary from '@/components/booking/BookingSummary';
+import {
+  DoneScreen,
+  InvalidLinkScreen,
+  LimitReachedScreen,
+  LoadingScreen,
+  NetFailedScreen,
+} from '@/components/booking/BookingStatusScreens';
 import {
   BookingLink,
   FreeDay,
@@ -179,95 +186,15 @@ const BookingPage = () => {
     setDone(true);
   };
 
-  if (loading && !link && !error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center text-gray-500">
-          <Icon name="Loader2" size={36} className="animate-spin mx-auto mb-3" />
-          Загружаем…
-        </div>
-      </div>
-    );
-  }
+  if (loading && !link && !error) return <LoadingScreen />;
 
-  if (!link && netFailed) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md text-center">
-          <Icon name="WifiOff" size={40} className="mx-auto mb-4 text-gray-400" />
-          <h1 className="text-xl font-semibold text-gray-800 mb-2">Не удалось загрузить страницу</h1>
-          <p className="text-gray-500 text-sm mb-5">
-            Похоже, проблема со связью. Ссылка в порядке — попробуйте ещё раз.
-          </p>
-          <Button onClick={checkLink} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Icon name={loading ? 'Loader2' : 'RefreshCw'} size={16} className={loading ? 'animate-spin mr-2' : 'mr-2'} />
-            Повторить
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  if (!link && netFailed) return <NetFailedScreen loading={loading} onRetry={checkLink} />;
 
-  if (!link) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md text-center">
-          <Icon name="LinkOff" fallback="Link2Off" size={40} className="mx-auto mb-4 text-gray-400" />
-          <h1 className="text-xl font-semibold text-gray-800 mb-2">Ссылка недействительна</h1>
-          <p className="text-gray-500 text-sm">
-            {error || 'Напишите администратору за новой ссылкой.'}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (!link) return <InvalidLinkScreen error={error} />;
 
-  if (done) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md text-center">
-          <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-            <Icon name="Check" size={28} className="text-emerald-600" />
-          </div>
-          <h1 className="text-xl font-semibold text-gray-800 mb-3">
-            {chosen.length > 1 ? 'Занятия забронированы' : 'Время забронировано'}
-          </h1>
-          <div className="space-y-2 mb-3">
-            {chosen.map(({ pick: p, type }) => (
-              <p key={choiceKey(p)} className="text-gray-700">
-                {p.weekdayName} в {p.timeFrom}–{p.timeTo}
-                <br />
-                <span className="text-gray-500 text-sm">
-                  {type === 'groups' ? 'группа' : 'индивидуально'}, педагог {p.teacherName}
-                </span>
-              </p>
-            ))}
-          </div>
-          {/* Дата начала одна на все выбранные занятия */}
-          <p className="text-gray-600 text-sm mb-3">
-            Начало занятий с {startFrom.split('-').reverse().join('.')}
-          </p>
-          <p className="text-gray-500 text-sm">
-            Администратор свяжется с вами, чтобы подтвердить занятие.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (done) return <DoneScreen chosen={chosen} startFrom={startFrom} />;
 
-  if (limitReached) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md text-center">
-          <Icon name="CalendarCheck" size={36} className="mx-auto mb-3 text-emerald-600" />
-          <h2 className="font-semibold text-gray-800 mb-1">Занятие уже забронировано</h2>
-          <p className="text-gray-500 text-sm">
-            По этой ссылке запись уже сделана. Если нужно перенести — напишите администратору.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (limitReached) return <LimitReachedScreen />;
 
   // Шаг 1 — спрашиваем дату начала занятий
   if (!dateConfirmed) {
@@ -288,19 +215,6 @@ const BookingPage = () => {
   }
 
   const nothingFree = indDays.length === 0 && groupDays.length === 0;
-
-  // Группы делим на две половины недели: ребёнок обычно берёт по занятию
-  // из каждой, чтобы между уроками был перерыв. weekday: 0=ПН..6=ВС
-  const GROUP_HALVES = [
-    {
-      label: '1 половина недели (ПН–СР)',
-      days: groupDays.filter((d) => d.weekday <= 2),
-    },
-    {
-      label: '2 половина недели (ЧТ–ВС)',
-      days: groupDays.filter((d) => d.weekday >= 3),
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -342,86 +256,31 @@ const BookingPage = () => {
         ) : (
           <>
             {showGroups && (
-              <div className="mb-6">
-                <SectionHeader
-                  icon="Users"
-                  title="Групповые занятия"
-                  skipLabel="Без групповых"
-                  skipped={grp.skipped}
-                  count={grp.picks.length}
-                  onSkip={skip(setGrp)}
-                  open={openGrp}
-                  onToggleOpen={() => setOpenGrp((v) => !v)}
-                />
-                {!grp.skipped && openGrp && (
-                  <div className="space-y-3">
-                    {groupDays.length === 0 ? (
-                      <EmptySection failed={groupsFailed} onRetry={() => load(startFrom)} />
-                    ) : (
-                      <>
-                        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                          <Icon
-                            name="Info"
-                            size={16}
-                            className="text-amber-600 shrink-0 mt-0.5"
-                          />
-                          <p className="text-sm text-amber-900">
-                            Выберите по 1 занятию из 1 и 2 половины недели
-                          </p>
-                        </div>
-                        {GROUP_HALVES.map(({ label, days }) =>
-                          days.length === 0 ? null : (
-                            <div key={label} className="space-y-3">
-                              <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide pt-1">
-                                {label}
-                              </div>
-                              {days.map((day) => (
-                                <GroupDayCard
-                                  key={day.date}
-                                  day={day}
-                                  selected={grp.picks}
-                                  onToggle={toggle(setGrp)}
-                                />
-                              ))}
-                            </div>
-                          ),
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <GroupsSection
+                days={groupDays}
+                picks={grp.picks}
+                skipped={grp.skipped}
+                open={openGrp}
+                failed={groupsFailed}
+                onSkip={skip(setGrp)}
+                onToggleOpen={() => setOpenGrp((v) => !v)}
+                onToggle={toggle(setGrp)}
+                onRetry={() => load(startFrom)}
+              />
             )}
 
             {showInd && (
-              <div className="mb-6">
-                <SectionHeader
-                  icon="User"
-                  title="Индивидуальные занятия"
-                  skipLabel="Без индивидуальных"
-                  skipped={ind.skipped}
-                  count={ind.picks.length}
-                  onSkip={skip(setInd)}
-                  open={openInd}
-                  onToggleOpen={() => setOpenInd((v) => !v)}
-                />
-                {!ind.skipped && openInd && (
-                  <div className="space-y-3">
-                    {indDays.length === 0 ? (
-                      <EmptySection failed={indFailed} onRetry={() => load(startFrom)} />
-                    ) : (
-                      indDays.map((day) => (
-                        <IndividualDay
-                          key={day.date}
-                          day={day}
-                          selected={ind.picks}
-                          onToggle={toggle(setInd)}
-                        />
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
+              <IndividualSection
+                days={indDays}
+                picks={ind.picks}
+                skipped={ind.skipped}
+                open={openInd}
+                failed={indFailed}
+                onSkip={skip(setInd)}
+                onToggleOpen={() => setOpenInd((v) => !v)}
+                onToggle={toggle(setInd)}
+                onRetry={() => load(startFrom)}
+              />
             )}
 
             {nothingFree && (
@@ -435,62 +294,14 @@ const BookingPage = () => {
               </div>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-200 p-5 sticky bottom-4 shadow-sm">
-              {chosen.length > 0 ? (
-                <div className="mb-3">
-                  <div className="text-sm font-medium text-gray-800 mb-1.5">
-                    Выбрано занятий: {chosen.length}
-                  </div>
-                  <div className="space-y-1">
-                    {chosen.map(({ pick: p, type }) => (
-                      <div
-                        key={choiceKey(p)}
-                        className="flex items-center gap-2 text-sm text-gray-700"
-                      >
-                        <Icon
-                          name={type === 'groups' ? 'Users' : 'User'}
-                          size={14}
-                          className="text-emerald-600 shrink-0"
-                        />
-                        <span className="flex-1">
-                          {p.weekdayName} в {p.timeFrom}–{p.timeTo} — {p.teacherName}
-                        </span>
-                        <button
-                          onClick={() => (type === 'groups' ? toggle(setGrp) : toggle(setInd))(p)}
-                          className="text-gray-300 hover:text-red-500 shrink-0"
-                          title="Убрать"
-                        >
-                          <Icon name="X" size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-400 mb-3">Выберите время выше</div>
-              )}
-
-              {missing > 0 && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
-                  Отметьте время в каждом разделе (разделы раскрываются по нажатию на заголовок) или
-                  нажмите «Без групповых» / «Без индивидуальных».
-                </p>
-              )}
-              {missing === 0 && chosen.length === 0 && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
-                  Выберите хотя бы одно занятие — иначе бронировать нечего.
-                </p>
-              )}
-
-              <Button onClick={submit} disabled={!canSubmit} className="w-full gap-2">
-                {sending ? (
-                  <Icon name="Loader2" size={16} className="animate-spin" />
-                ) : (
-                  <Icon name="Check" size={16} />
-                )}
-                Забронировать
-              </Button>
-            </div>
+            <BookingSummary
+              chosen={chosen}
+              missing={missing}
+              canSubmit={canSubmit}
+              sending={sending}
+              onRemove={({ pick, type }) => (type === 'groups' ? toggle(setGrp) : toggle(setInd))(pick)}
+              onSubmit={submit}
+            />
           </>
         )}
       </div>
