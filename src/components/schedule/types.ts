@@ -273,8 +273,8 @@ export interface AgeGroupRule {
 export const AGE_GROUP_RULES: AgeGroupRule[] = [
   { weekdays: [0], time: '09:00', label: '9–10 лет (±1 год)' },
   { weekdays: [0], time: '18:00', label: '9–10 лет (±1 год)' },
-  { weekdays: [0], time: '19:00', label: '12+ лет' },
-  { weekdays: [0], time: '20:00', label: '9–10 лет (±1 год)' },
+  { weekdays: [0], time: '19:00', label: '9–10 лет (±1 год)' },
+  { weekdays: [0], time: '20:00', label: '12+ лет' },
 ];
 
 export const findAgeGroupRule = (weekday: number, time: string): AgeGroupRule | null => {

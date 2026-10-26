@@ -189,8 +189,8 @@ def build_individual(
 AGE_GROUP_RULES = [
     {'weekdays': (0,), 'time': '09:00', 'label': '9–10 лет (±1 год)'},
     {'weekdays': (0,), 'time': '18:00', 'label': '9–10 лет (±1 год)'},
-    {'weekdays': (0,), 'time': '19:00', 'label': '12+ лет'},
-    {'weekdays': (0,), 'time': '20:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (0,), 'time': '19:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (0,), 'time': '20:00', 'label': '12+ лет'},
 ]
 
 
