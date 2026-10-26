@@ -19,6 +19,7 @@ import {
   manualAge,
   shouldForceManualAge,
   findAgeGroupRule,
+  ageFitsRule,
 } from './types';
 import { Booking, GroupLimit, bookingHoldsSlot, fetchBookings, fetchGroupLimits } from '@/lib/bookingsApi';
 import GroupLimitsDialog from './GroupLimitsDialog';
@@ -34,6 +35,13 @@ const GroupsTab = () => {
   const [groupBookings, setGroupBookings] = useState<Booking[]>([]);
   const [limits, setLimits] = useState<GroupLimit[]>([]);
   const [limitsOpen, setLimitsOpen] = useState(false);
+  // Возраст ребёнка для подбора групп (null — показываем все)
+  const [childAge, setChildAge] = useState<number | null>(null);
+  const ageFits = (day: number, time: string, teacherId: number) => {
+    if (childAge == null) return true;
+    const rule = findAgeGroupRule(day, time, teacherId);
+    return !!rule && ageFitsRule(rule, childAge);
+  };
 
   const loadLimits = async () => setLimits(await fetchGroupLimits());
 
@@ -195,6 +203,34 @@ const GroupsTab = () => {
           </Button>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Icon name="Baby" fallback="User" size={14} className="text-gray-500" />
+            <select
+              value={childAge ?? ''}
+              onChange={(e) => setChildAge(e.target.value ? Number(e.target.value) : null)}
+              className={`h-8 rounded-md border px-2 text-sm ${
+                childAge != null ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-input bg-background text-gray-700'
+              }`}
+              title="Оставить только группы, подходящие по возрасту"
+            >
+              <option value="">Возраст ребёнка: все группы</option>
+              {Array.from({ length: 11 }, (_, i) => i + 6).map((a) => (
+                <option key={a} value={a}>
+                  Ребёнку {a} лет
+                </option>
+              ))}
+            </select>
+            {childAge != null && (
+              <button
+                type="button"
+                onClick={() => setChildAge(null)}
+                className="text-gray-400 hover:text-gray-600"
+                title="Сбросить фильтр"
+              >
+                <Icon name="X" size={14} />
+              </button>
+            )}
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -327,7 +363,7 @@ const GroupsTab = () => {
                       day < 6 ? 'border-r' : ''
                     }`}
                   >
-                    {items.length === 0 && (
+                    {items.filter(({ row }) => ageFits(day, row.time, row.teacher_id)).length === 0 && (
                       <div className="text-[11px] text-gray-300 text-center py-4">—</div>
                     )}
                     {items.map(({ row, cell }) => {
@@ -352,6 +388,9 @@ const GroupsTab = () => {
                       const isFull = capacity - cell.student_ids.length - booked.length <= 0;
                       const isDone = cell.status === 3;
                       const ageRule = findAgeGroupRule(day, row.time, row.teacher_id);
+                      // Фильтр по возрасту скрывает карточку уже после разбора броней,
+                      // чтобы бронь не «переезжала» в соседнюю группу
+                      if (!ageFits(day, row.time, row.teacher_id)) return null;
                       return (
                         <div
                           key={`${row.time}-${row.teacher_id}-${row.group_id}`}

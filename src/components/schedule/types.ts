@@ -300,6 +300,18 @@ export const AGE_GROUP_RULES: AgeGroupRule[] = [
   { weekdays: [5], time: '15:00', label: '9–10 лет (±1 год)' },
 ];
 
+/** Подходит ли группа ребёнку этого возраста.
+ * «9–10 лет (±1 год)» → 8–11 лет, «12+ лет» → от 12 лет. */
+export const ageFitsRule = (rule: AgeGroupRule, age: number): boolean => {
+  const nums = (rule.label.match(/\d+/g) || []).map(Number);
+  if (nums.length === 0) return false;
+  const pm = /±\s*(\d+)/.exec(rule.label);
+  const spread = pm ? Number(pm[1]) : 0;
+  const from = nums[0] - spread;
+  const to = rule.label.includes('+') ? Infinity : (nums[1] ?? nums[0]) + spread;
+  return age >= from && age <= to;
+};
+
 export const findAgeGroupRule = (
   weekday: number,
   time: string,
