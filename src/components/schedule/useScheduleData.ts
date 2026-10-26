@@ -9,10 +9,7 @@ import {
   addDays,
   fmtRu,
   buildGroupRowsFromLessons,
-  calcAge,
   formatStudentName,
-  manualAge,
-  shouldForceManualAge,
   findAgeGroupRule,
 } from './types';
 import { Booking, bookingHoldsSlot, fetchBookings } from '@/lib/bookingsApi';
@@ -491,23 +488,12 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       }
       if (startPeriod === -1) continue;
 
-      // Свободные места и состав группы берём из периода, с которого окно стартует
-      const week = groupWeeks[startPeriod];
-      const row = week.find((r) => r.time === c.time && r.teacher_id === c.teacherId);
-      const cell = row?.cells[String(c.dayOffset)];
       // Из свободных мест вычитаем заявки, которых ещё нет в CRM
       const free = groupFreeAt(startPeriod, c.dayOffset, c.time, c.teacherId) ?? 0;
       const weekday = weekdayOf(c.dayOffset); // 0=ПН..6=ВС
       // Группы с закреплённой возрастной категорией (см. AGE_GROUP_RULES)
       const rule = findAgeGroupRule(weekday, c.time);
-      const legacyMatveyTueThu = /мацвей|матвей/i.test(c.teacherName)
-        && (weekday === 1 || weekday === 3)
-        && c.time.slice(0, 5) === '18:45';
-      const ageLabel = rule
-        ? `рекомендуется для детей от ${rule.from} до ${rule.to} лет`
-        : legacyMatveyTueThu
-          ? 'рекомендуется для детей от 14 до 18 лет'
-          : groupAgeLabel(cell?.student_ids || []);
+      const ageLabel = rule ? `рекомендуемый возраст: ${rule.label}` : '';
       const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 
       byDay[c.dayOffset] ||= [];
@@ -538,29 +524,6 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
   };
 
   const fmtFrom = (d: Date) => `с ${fmtRu(d)}`;
-
-  // Средний возраст учеников группы по их student_ids
-  const groupAgeLabel = (studentIds: number[]): string => {
-    const ages: number[] = [];
-    for (const sid of studentIds) {
-      const c = customers[sid];
-      if (!c) continue;
-      const name = formatStudentName(c.name);
-      let age: number | null;
-      if (shouldForceManualAge(name)) {
-        age = manualAge(name);
-      } else {
-        age = calcAge(c.dob) ?? manualAge(name);
-      }
-      if (age != null) ages.push(age);
-    }
-    if (ages.length === 0) return '';
-    const avg = ages.reduce((a, b) => a + b, 0) / ages.length;
-    const avgRounded = Math.round(avg);
-    const from = Math.max(7, avgRounded - 2);
-    const to = avgRounded + 2;
-    return `рекомендуется для детей от ${from} до ${to} лет`;
-  };
 
   const indStableDays = ready ? buildIndStableDays() : [];
   const groupStableDays = ready ? buildGroupStableDays() : [];

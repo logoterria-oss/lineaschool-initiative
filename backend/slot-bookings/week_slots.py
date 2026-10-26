@@ -185,8 +185,12 @@ def build_individual(
 
 # Группы с закреплённой возрастной категорией. Возраст задаём здесь вручную:
 # автоматически по составу группы он больше не считается.
+# День недели: 0=ПН..6=ВС. Те же правила — в src/components/schedule/types.ts
 AGE_GROUP_RULES = [
-    {'weekdays': (1, 3), 'time': '19:00', 'from': 14, 'to': 18},  # ВТ и ЧТ — подростки
+    {'weekdays': (0,), 'time': '09:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (0,), 'time': '18:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (0,), 'time': '19:00', 'label': '12+ лет'},
+    {'weekdays': (0,), 'time': '20:00', 'label': '9–10 лет (±1 год)'},
 ]
 
 
@@ -195,7 +199,7 @@ def age_label(weekday: int, time: str) -> str:
     t = (time or '')[:5]
     for r in AGE_GROUP_RULES:
         if weekday in r['weekdays'] and r['time'] == t:
-            return f"рекомендуется для детей от {r['from']} до {r['to']} лет"
+            return f"рекомендуемый возраст: {r['label']}"
     return ''
 
 

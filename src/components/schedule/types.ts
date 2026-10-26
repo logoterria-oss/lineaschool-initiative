@@ -266,14 +266,15 @@ const FORCE_MANUAL_AGE = new Set(['Сеня Константинов', 'Рита
 export interface AgeGroupRule {
   weekdays: number[];
   time: string;
-  from: number;
-  to: number;
+  label: string;
 }
 
+// Те же правила продублированы в backend/slot-bookings/week_slots.py
 export const AGE_GROUP_RULES: AgeGroupRule[] = [
-  // Подростковые группы: ВТ 19:00, ЧТ и ПТ 18:00
-  { weekdays: [1], time: '19:00', from: 12, to: 16 },
-  { weekdays: [3, 4], time: '18:00', from: 12, to: 16 },
+  { weekdays: [0], time: '09:00', label: '9–10 лет (±1 год)' },
+  { weekdays: [0], time: '18:00', label: '9–10 лет (±1 год)' },
+  { weekdays: [0], time: '19:00', label: '12+ лет' },
+  { weekdays: [0], time: '20:00', label: '9–10 лет (±1 год)' },
 ];
 
 export const findAgeGroupRule = (weekday: number, time: string): AgeGroupRule | null => {
@@ -284,7 +285,6 @@ export const findAgeGroupRule = (weekday: number, time: string): AgeGroupRule | 
   return null;
 };
 
-export const ageRangeLabel = (from: number, to: number) => `${from}–${to} лет`;
 
 export const manualAge = (formattedName: string): number | null =>
   MANUAL_AGE[formattedName] ?? null;

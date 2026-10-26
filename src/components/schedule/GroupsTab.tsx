@@ -18,6 +18,7 @@ import {
   formatStudentName,
   manualAge,
   shouldForceManualAge,
+  findAgeGroupRule,
 } from './types';
 import { Booking, GroupLimit, bookingHoldsSlot, fetchBookings, fetchGroupLimits } from '@/lib/bookingsApi';
 import GroupLimitsDialog from './GroupLimitsDialog';
@@ -274,6 +275,12 @@ const GroupsTab = () => {
               </span>
               проведено
             </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block px-1 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-semibold">
+                9–10 лет
+              </span>
+              возраст группы
+            </span>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -344,6 +351,7 @@ const GroupsTab = () => {
                       const capacity = limit ? Math.min(MAX_GROUP_SIZE, limit.maxSize) : MAX_GROUP_SIZE;
                       const isFull = capacity - cell.student_ids.length - booked.length <= 0;
                       const isDone = cell.status === 3;
+                      const ageRule = findAgeGroupRule(day, row.time);
                       return (
                         <div
                           key={`${row.time}-${row.teacher_id}-${row.group_id}`}
@@ -362,6 +370,12 @@ const GroupsTab = () => {
                               </span>
                             )}
                           </div>
+                          {ageRule && (
+                            <div className="flex items-center justify-center gap-1 bg-indigo-50 border-b border-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                              <Icon name="Users" size={10} />
+                              {ageRule.label}
+                            </div>
+                          )}
                           <ol className="space-y-0.5 px-2 py-1.5">
                             {Array.from({
                               length: Math.max(
