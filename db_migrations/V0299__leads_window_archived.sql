@@ -1,0 +1,1 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN window_archived BOOLEAN NOT NULL DEFAULT FALSE;

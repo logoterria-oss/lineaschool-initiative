@@ -8,7 +8,7 @@ import os
 import psycopg2
 from typing import Dict, Any
 
-from window_hook import send_contacted
+from window_hook import send_contacted, sync_archive
 from dedupe import hide_duplicates
 from lead_rules import apply_rules, CLOSING
 
@@ -89,6 +89,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             except Exception as e:
                 print(f'leads-manage: дубли не проверены: {e}')
             apply_rules(cur)
+            try:
+                sync_archive(cur)
+            except Exception as e:
+                print(f'leads-manage: архив в «Окно» не передан: {e}')
             cur.execute(
                 "SELECT id, parent_name, student_name, student_age, contact, request_date, "
                 "responsible, processing_status, lead_status, diag_date, report_link, "
@@ -170,6 +174,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if (prev and new_status.startswith(CONTACTED_PREFIX)
                     and not str(prev.get('processing_status') or '').startswith(CONTACTED_PREFIX)):
                 window = send_contacted(prev, new_status)
+            try:
+                sync_archive(cur, lead_id)
+            except Exception as e:
+                print(f'leads-manage: архив в «Окно» не передан: {e}')
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'success': True, 'status_changed_at': changed,
                                         'lead_status': after[0] if after else None,
