@@ -207,6 +207,10 @@ AGE_GROUP_RULES = [
     {'weekdays': (4,), 'time': '17:00', 'label': '9–10 лет (±1 год)'},
     {'weekdays': (4,), 'time': '18:00', 'label': '9–10 лет (±1 год)', 'teacher': 'канкулов'},
     {'weekdays': (4,), 'time': '18:00', 'label': '12+ лет', 'teacher': 'мацвей'},
+    {'weekdays': (5,), 'time': '10:00', 'label': '11–12 лет (±1 год)'},
+    {'weekdays': (5,), 'time': '11:00', 'label': '8–9 лет (±1 год)'},
+    {'weekdays': (5,), 'time': '13:00', 'label': '8–9 лет (±1 год)'},
+    {'weekdays': (5,), 'time': '15:00', 'label': '9–10 лет (±1 год)'},
 ]
 
 
