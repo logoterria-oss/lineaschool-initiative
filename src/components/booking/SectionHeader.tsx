@@ -8,12 +8,20 @@ interface Props {
   /** Сколько окон выбрано в разделе */
   count?: number;
   onSkip: () => void;
+  /** Раздел раскрыт — если не передано, заголовок не сворачивается */
+  open?: boolean;
+  onToggleOpen?: () => void;
 }
 
 /** Заголовок раздела с кнопкой отказа: «Без индивидуальных» / «Без групповых» */
-const SectionHeader = ({ icon, title, skipLabel, skipped, count = 0, onSkip }: Props) => (
+const SectionHeader = ({ icon, title, skipLabel, skipped, count = 0, onSkip, open, onToggleOpen }: Props) => (
   <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
-    <div className="flex items-center gap-2">
+    <button
+      type="button"
+      onClick={onToggleOpen}
+      disabled={!onToggleOpen}
+      className="flex items-center gap-2 text-left disabled:cursor-default"
+    >
       <Icon name={icon} size={18} className="text-emerald-700" />
       <h2 className="text-lg font-bold text-gray-800">{title}</h2>
       {count > 0 && (
@@ -21,7 +29,14 @@ const SectionHeader = ({ icon, title, skipLabel, skipped, count = 0, onSkip }: P
           {count}
         </span>
       )}
-    </div>
+      {onToggleOpen && !skipped && (
+        <Icon
+          name="ChevronDown"
+          size={18}
+          className={`text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      )}
+    </button>
     <button
       type="button"
       onClick={onSkip}

@@ -58,6 +58,9 @@ const BookingPage = () => {
   const [ind, setInd] = useState<Section>(EMPTY);
   const [grp, setGrp] = useState<Section>(EMPTY);
   const [childName, setChildName] = useState('');
+  // Групповые показываем раскрытыми, индивидуальные — свёрнутыми
+  const [openGrp, setOpenGrp] = useState(true);
+  const [openInd, setOpenInd] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -338,35 +341,6 @@ const BookingPage = () => {
           </div>
         ) : (
           <>
-            {showInd && (
-              <div className="mb-6">
-                <SectionHeader
-                  icon="User"
-                  title="Индивидуальные занятия"
-                  skipLabel="Без индивидуальных"
-                  skipped={ind.skipped}
-                  count={ind.picks.length}
-                  onSkip={skip(setInd)}
-                />
-                {!ind.skipped && (
-                  <div className="space-y-3">
-                    {indDays.length === 0 ? (
-                      <EmptySection failed={indFailed} onRetry={() => load(startFrom)} />
-                    ) : (
-                      indDays.map((day) => (
-                        <IndividualDay
-                          key={day.date}
-                          day={day}
-                          selected={ind.picks}
-                          onToggle={toggle(setInd)}
-                        />
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
             {showGroups && (
               <div className="mb-6">
                 <SectionHeader
@@ -376,8 +350,10 @@ const BookingPage = () => {
                   skipped={grp.skipped}
                   count={grp.picks.length}
                   onSkip={skip(setGrp)}
+                  open={openGrp}
+                  onToggleOpen={() => setOpenGrp((v) => !v)}
                 />
-                {!grp.skipped && (
+                {!grp.skipped && openGrp && (
                   <div className="space-y-3">
                     {groupDays.length === 0 ? (
                       <EmptySection failed={groupsFailed} onRetry={() => load(startFrom)} />
@@ -411,6 +387,37 @@ const BookingPage = () => {
                           ),
                         )}
                       </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showInd && (
+              <div className="mb-6">
+                <SectionHeader
+                  icon="User"
+                  title="Индивидуальные занятия"
+                  skipLabel="Без индивидуальных"
+                  skipped={ind.skipped}
+                  count={ind.picks.length}
+                  onSkip={skip(setInd)}
+                  open={openInd}
+                  onToggleOpen={() => setOpenInd((v) => !v)}
+                />
+                {!ind.skipped && openInd && (
+                  <div className="space-y-3">
+                    {indDays.length === 0 ? (
+                      <EmptySection failed={indFailed} onRetry={() => load(startFrom)} />
+                    ) : (
+                      indDays.map((day) => (
+                        <IndividualDay
+                          key={day.date}
+                          day={day}
+                          selected={ind.picks}
+                          onToggle={toggle(setInd)}
+                        />
+                      ))
                     )}
                   </div>
                 )}
@@ -465,8 +472,8 @@ const BookingPage = () => {
 
               {missing > 0 && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
-                  Отметьте время в каждом разделе или нажмите «Без индивидуальных» / «Без
-                  групповых».
+                  Отметьте время в каждом разделе (разделы раскрываются по нажатию на заголовок) или
+                  нажмите «Без групповых» / «Без индивидуальных».
                 </p>
               )}
               {missing === 0 && chosen.length === 0 && (
