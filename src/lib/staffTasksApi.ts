@@ -18,6 +18,21 @@ export interface TaskFile {
   size: number;
 }
 
+export interface TaskComment {
+  id: number;
+  author_id: number;
+  author_name: string;
+  text: string;
+  created_msk: string;
+}
+
+export interface TaskOriginal {
+  title: string;
+  description: string;
+  due_date: string | null;
+  urgency: Urgency;
+}
+
 export interface StaffTask {
   id: number;
   title: string;
@@ -38,6 +53,9 @@ export interface StaffTask {
   done_at: string | null;
   done_comment: string;
   created_at: string;
+  comments?: TaskComment[];
+  original?: TaskOriginal | null;
+  edited_msk?: string;
 }
 
 export interface Assignee {
@@ -93,6 +111,9 @@ export const uploadTaskFile = async (file: File, problem = false): Promise<TaskF
 };
 export const setTaskUrgency = (id: number, urgency: Urgency) => post({ action: 'update', id, urgency });
 export const setTaskDone = (id: number, done: boolean, comment = '') => post({ action: 'status', id, done, comment });
+export const updateTask = (id: number, v: { title: string; description: string; due_date: string; urgency: Urgency }) =>
+  post({ action: 'update', id, ...v });
+export const addTaskComment = (id: number, text: string) => post({ action: 'comment', id, text });
 export const deleteTask = (id: number) => post({ action: 'delete', id });
 /** Задачи «Админ на смене»: открытые и закрытые за последние сутки */
 export const fetchShiftTasks = async (): Promise<StaffTask[]> => {

@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import TaskAttachments from './TaskAttachments';
+import TaskComments from './TaskComments';
+import TaskOriginal from './TaskOriginal';
+import TaskEditForm, { TaskEditValues } from './TaskEditForm';
 import { StaffTask, URGENCY_OPTIONS, Urgency } from '@/lib/staffTasksApi';
 
 interface Props {
@@ -9,11 +12,13 @@ interface Props {
   onToggle: (t: StaffTask, done: boolean, comment: string) => Promise<void>;
   onDelete?: (t: StaffTask) => Promise<void>;
   onUrgency?: (t: StaffTask, u: Urgency) => Promise<void>;
+  onEdit?: (t: StaffTask, v: TaskEditValues) => Promise<void>;
+  onComment?: (t: StaffTask, text: string) => Promise<void>;
 }
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 
-const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) => {
+const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency, onEdit, onComment }: Props) => {
   const [comment, setComment] = useState('');
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -22,6 +27,7 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
   const overdue = !done && task.due_date && task.due_date < today;
   const urg = URGENCY_OPTIONS.find((o) => o.value === task.urgency) || URGENCY_OPTIONS[1];
   const [picking, setPicking] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -51,6 +57,17 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
               <Icon name="TriangleAlert" size={13} /> Проблема от педагога: {task.reporter_name}
             </div>
           )}
+          {editing && onEdit ? (
+            <TaskEditForm
+              task={task}
+              onCancel={() => setEditing(false)}
+              onSave={async (v) => {
+                await onEdit(task, v);
+                setEditing(false);
+              }}
+            />
+          ) : (
+          <>
           <div className="flex items-start gap-2 flex-wrap">
             <div className={`font-medium text-gray-900 ${done ? 'line-through' : ''}`}>{task.title}</div>
             {onUrgency && !done ? (
@@ -85,6 +102,9 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
             )}
           </div>
           {task.description && <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{task.description}</div>}
+          </>
+          )}
+          <TaskOriginal task={task} />
           {task.attachments?.length > 0 && (
             <div className="mt-2">
               <TaskAttachments files={task.attachments} />
@@ -140,7 +160,18 @@ const TaskCard = ({ task, showAssignee, onToggle, onDelete, onUrgency }: Props) 
               </div>
             </div>
           )}
+          {onComment && <TaskComments comments={task.comments || []} onAdd={(text) => onComment(task, text)} />}
         </div>
+        {onEdit && !done && !editing && (
+          <button
+            disabled={busy}
+            onClick={() => setEditing(true)}
+            className="text-gray-300 hover:text-indigo-500 flex-shrink-0"
+            title="Редактировать"
+          >
+            <Icon name="Pencil" size={16} />
+          </button>
+        )}
         {onDelete && (
           <button
             disabled={busy}

@@ -25,7 +25,7 @@ CORS = {
 FIELDS = (
     "t.id, t.title, t.description, t.author_id, a.full_name AS author_name, t.assignee_id, "
     "CASE WHEN t.for_shift THEN 'Админ на смене' ELSE s.full_name END AS assignee_name, t.for_shift, "
-    "d.full_name AS done_by_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments, t.is_problem, t.reporter_name"
+    "d.full_name AS done_by_name, t.due_date, t.urgency, t.status, t.done_at, t.done_comment, t.created_at, t.attachments, t.is_problem, t.reporter_name, t.original, t.edited_at"
 )
 FROM = (
     f"FROM {SCHEMA}.staff_tasks t JOIN {SCHEMA}.staff a ON a.id = t.author_id "
@@ -83,6 +83,30 @@ def _with_msk(rows):
     return rows
 
 
+def _msk(c) -> str:
+    return c.replace(tzinfo=c.tzinfo or timezone.utc).astimezone(MSK).strftime('%d.%m.%Y %H:%M') if c else ''
+
+
+def _with_comments(cur, rows):
+    """Подгрузить комментарии ко всем задачам одним запросом."""
+    ids = tuple(r['id'] for r in rows)
+    by_task: Dict[int, list] = {}
+    if ids:
+        cur.execute(
+            f"SELECT c.id, c.task_id, c.author_id, s.full_name AS author_name, c.text, c.created_at "
+            f"FROM {SCHEMA}.staff_task_comments c JOIN {SCHEMA}.staff s ON s.id = c.author_id "
+            "WHERE c.task_id IN %s ORDER BY c.created_at, c.id",
+            (ids,),
+        )
+        for c in cur.fetchall():
+            c['created_msk'] = _msk(c['created_at'])
+            by_task.setdefault(c['task_id'], []).append(c)
+    for r in rows:
+        r['comments'] = by_task.get(r['id'], [])
+        r['edited_msk'] = _msk(r.get('edited_at'))
+    return rows
+
+
 def _task(cur, task_id: int):
     cur.execute(f"SELECT {FIELDS} {FROM} WHERE t.id = %s", (task_id,))
     return cur.fetchone()
@@ -103,12 +127,12 @@ def list_tasks(cur, me):
         f"SELECT {FIELDS} {FROM} WHERE (t.assignee_id = %s AND NOT t.for_shift) OR (t.for_shift AND %s) {ORDER}",
         (me['id'], on_shift),
     )
-    mine = _with_msk(cur.fetchall())
+    mine = _with_comments(cur, _with_msk(cur.fetchall()))
     cur.execute(
         f"SELECT {FIELDS} {FROM} WHERE t.author_id = %s AND (t.assignee_id <> %s OR t.for_shift) {ORDER}",
         (me['id'], me['id']),
     )
-    given = _with_msk(cur.fetchall())
+    given = _with_comments(cur, _with_msk(cur.fetchall()))
     assignees = _assignees(cur, me)
     return _json({'ok': True, 'mine': mine, 'given': given, 'assignees': assignees, 'can_assign': bool(assignees), 'on_shift': on_shift})
 
@@ -120,7 +144,7 @@ def shift_tasks(cur, me):
     cur.execute(
         f"SELECT {FIELDS} {FROM} WHERE t.for_shift AND (t.status = 'open' OR t.done_at > now() - interval '1 day') {ORDER}"
     )
-    return _json({'ok': True, 'tasks': _with_msk(cur.fetchall())})
+    return _json({'ok': True, 'tasks': _with_comments(cur, _with_msk(cur.fetchall()))})
 
 
 def _assignees(cur, me):
@@ -185,9 +209,16 @@ def update_task(cur, conn, me, data):
     due = data.get('due_date', t['due_date']) or None
     aid = t['assignee_id'] if t['for_shift'] else int(data.get('assignee_id') or t['assignee_id'])
     urgency = _urgency(data.get('urgency') or t['urgency'])
+    old_due = t['due_date'].isoformat() if t['due_date'] else None
+    new_due = due.isoformat() if hasattr(due, 'isoformat') else (str(due)[:10] if due else None)
+    changed = title != t['title'] or desc.strip() != (t['description'] or '') or new_due != old_due
+    original = t['original']
+    if changed and not original:
+        original = {'title': t['title'], 'description': t['description'] or '', 'due_date': old_due, 'urgency': t['urgency']}
     cur.execute(
-        f"UPDATE {SCHEMA}.staff_tasks SET title=%s, description=%s, due_date=%s, assignee_id=%s, urgency=%s WHERE id=%s",
-        (title, desc.strip(), due, aid, urgency, t['id']),
+        f"UPDATE {SCHEMA}.staff_tasks SET title=%s, description=%s, due_date=%s, assignee_id=%s, urgency=%s, "
+        "original=%s::jsonb, edited_at=CASE WHEN %s THEN now() ELSE edited_at END WHERE id=%s",
+        (title, desc.strip(), due, aid, urgency, json.dumps(original, ensure_ascii=False) if original else None, changed, t['id']),
     )
     conn.commit()
     return _json({'ok': True})
@@ -212,9 +243,61 @@ def delete_task(cur, conn, me, data):
     t = _task(cur, int(data.get('id') or 0))
     if not t or t['author_id'] != me['id']:
         return _json({'ok': False, 'message': 'Задача не найдена'}, 404)
+    cur.execute(f"DELETE FROM {SCHEMA}.staff_task_comments WHERE task_id = %s", (t['id'],))
     cur.execute(f"DELETE FROM {SCHEMA}.staff_tasks WHERE id = %s", (t['id'],))
     conn.commit()
     return _json({'ok': True})
+
+
+def add_comment(cur, conn, me, data):
+    """Комментарий к задаче: пишут автор и исполнитель, уведомление уходит второй стороне."""
+    t = _task(cur, int(data.get('id') or 0))
+    allowed = t and (me['id'] in (t['author_id'], t['assignee_id']) or (t['for_shift'] and me['role'] in SHIFT_ROLES))
+    if not allowed:
+        return _json({'ok': False, 'message': 'Задача не найдена'}, 404)
+    text = (data.get('text') or '').strip()[:3000]
+    if not text:
+        return _json({'ok': False, 'message': 'Напишите комментарий'}, 400)
+    if me['id'] != t['author_id']:
+        recipient = t['author_id']
+    elif t['for_shift'] or t['assignee_id'] == me['id']:
+        recipient = None
+    else:
+        recipient = t['assignee_id']
+    cur.execute(
+        f"INSERT INTO {SCHEMA}.staff_task_comments (task_id, author_id, recipient_id, text) VALUES (%s, %s, %s, %s)",
+        (t['id'], me['id'], recipient, text),
+    )
+    conn.commit()
+    return _json({'ok': True})
+
+
+def _comment_messages(cur):
+    """Неотправленные уведомления о новых комментариях."""
+    cur.execute(
+        f"SELECT c.id, c.task_id, c.text, c.recipient_id, t.title, t.is_problem, w.full_name AS writer_name, "
+        f"r.full_name AS recipient_name, r.phone AS recipient_phone, r.role AS recipient_role, c.created_at "
+        f"FROM {SCHEMA}.staff_task_comments c JOIN {SCHEMA}.staff_tasks t ON t.id = c.task_id "
+        f"JOIN {SCHEMA}.staff w ON w.id = c.author_id JOIN {SCHEMA}.staff r ON r.id = c.recipient_id "
+        "WHERE c.notified_at IS NULL AND r.status = 'active' ORDER BY c.created_at"
+    )
+    out = []
+    for c in cur.fetchall():
+        who = ' '.join((c['writer_name'] or '').split()[:2])
+        link = f"{SITE}/admin/teacher" if c['recipient_role'] == 'teacher' else _tasks_link(c['recipient_role'])
+        lines = [f"💬 Новый комментарий к {'обращению' if c['is_problem'] else 'задаче'}:", f"-{c['title']}", f"{who}: {c['text']}", '', f"Подробнее: {link}"]
+        out.append({
+            'task_id': c['task_id'],
+            'message_key': f"task-{c['task_id']}-comment-{c['id']}",
+            'kind': 'comment',
+            'staff_id': c['recipient_id'],
+            'full_name': c['recipient_name'],
+            'phone': ''.join(ch for ch in (c['recipient_phone'] or '') if ch.isdigit()),
+            'author_name': c['writer_name'],
+            'created_msk': _msk(c['created_at']),
+            'text': '\n'.join(lines),
+        })
+    return out
 
 
 CDN_PREFIX = 'https://cdn.poehali.dev/projects/'
@@ -369,6 +452,7 @@ def _pending_messages(cur):
             'text': '\n'.join(lines),
         })
     messages += _solved_problems(cur)
+    messages += _comment_messages(cur)
     return messages
 
 
@@ -504,11 +588,15 @@ def mark_shift_reminded(cur, conn, data):
 
 def mark_notified(cur, conn, data):
     """Отметить отправленные сообщения. Лучше по message_keys; task_ids — для совместимости."""
-    new_ids, done_ids = set(), set()
+    new_ids, done_ids, comment_ids = set(), set(), set()
     for k in data.get('message_keys') or []:
         parts = str(k).split('-')
-        if len(parts) >= 3 and parts[0] == 'task' and parts[1].isdigit():
+        if len(parts) >= 4 and parts[0] == 'task' and parts[2] == 'comment' and parts[3].isdigit():
+            comment_ids.add(int(parts[3]))
+        elif len(parts) >= 3 and parts[0] == 'task' and parts[1].isdigit():
             (new_ids if parts[2] == 'new' else done_ids).add(int(parts[1]))
+    if comment_ids:
+        cur.execute(f"UPDATE {SCHEMA}.staff_task_comments SET notified_at = now() WHERE id IN %s AND notified_at IS NULL", (tuple(comment_ids),))
     ids = [int(i) for i in (data.get('task_ids') or []) if str(i).isdigit()]
     if ids:
         new_ids.update(ids)
@@ -522,13 +610,13 @@ def mark_notified(cur, conn, data):
             (tuple(done_ids),),
         )
     conn.commit()
-    print(f"mark-notified: new={sorted(new_ids)} done={sorted(done_ids)}")
-    return _json({'ok': True, 'marked': len(new_ids) + len(done_ids)})
+    print(f"mark-notified: new={sorted(new_ids)} done={sorted(done_ids)} comments={sorted(comment_ids)}")
+    return _json({'ok': True, 'marked': len(new_ids) + len(done_ids) + len(comment_ids)})
 
 
 def handler(event: dict, context) -> dict:
     """Задачи сотрудникам: руководитель ставит задачи РУО и администраторам, исполнители видят свои задачи и отмечают выполненные.
-    GET — мои задачи (+ поставленные мной и список исполнителей для руководителя); POST action=create|update|status|delete."""
+    GET — мои задачи (+ поставленные мной и список исполнителей для руководителя); POST action=create|update|status|comment|delete."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
     conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=5)
@@ -578,6 +666,11 @@ def handler(event: dict, context) -> dict:
             return update_task(cur, conn, me, data)
         if action == 'status':
             res = set_status(cur, conn, me, data)
+            if res['statusCode'] == 200:
+                push_pending(cur, conn)
+            return res
+        if action == 'comment':
+            res = add_comment(cur, conn, me, data)
             if res['statusCode'] == 200:
                 push_pending(cur, conn)
             return res

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { StaffTask, TasksData, Urgency, deleteTask, fetchTasks, setTaskDone, setTaskUrgency } from '@/lib/staffTasksApi';
+import { StaffTask, TasksData, Urgency, addTaskComment, deleteTask, fetchTasks, setTaskDone, setTaskUrgency, updateTask } from '@/lib/staffTasksApi';
+import { TaskEditValues } from './TaskEditForm';
 import TaskCard from './TaskCard';
 import NewTaskForm from './NewTaskForm';
 
@@ -36,6 +37,14 @@ const StaffTasksView = ({ problemMode = false }: { problemMode?: boolean }) => {
   };
   const onUrgency = async (t: StaffTask, u: Urgency) => {
     await setTaskUrgency(t.id, u);
+    load();
+  };
+  const onEdit = async (t: StaffTask, v: TaskEditValues) => {
+    await updateTask(t.id, v);
+    load();
+  };
+  const onComment = async (t: StaffTask, text: string) => {
+    await addTaskComment(t.id, text);
     load();
   };
   const onDelete = async (t: StaffTask) => {
@@ -105,7 +114,7 @@ const StaffTasksView = ({ problemMode = false }: { problemMode?: boolean }) => {
                 </div>
               )}
               {g.items.map((t) => (
-                <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onDelete : undefined} onUrgency={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onUrgency : undefined} />
+                <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onDelete : undefined} onUrgency={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onUrgency : undefined} onEdit={isGiven || (!t.for_shift && t.author_id === t.assignee_id) ? onEdit : undefined} onComment={onComment} />
               ))}
             </div>
           ))}
@@ -120,7 +129,7 @@ const StaffTasksView = ({ problemMode = false }: { problemMode?: boolean }) => {
           {showDone && (
             <div className="space-y-2 mt-2">
               {done.map((t) => (
-                <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven ? onDelete : undefined} />
+                <TaskCard key={t.id} task={t} showAssignee={isGiven} onToggle={onToggle} onDelete={isGiven ? onDelete : undefined} onComment={onComment} />
               ))}
             </div>
           )}

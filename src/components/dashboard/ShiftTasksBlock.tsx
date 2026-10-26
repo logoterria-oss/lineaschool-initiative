@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import TaskCard from '@/components/staffTasks/TaskCard';
-import { StaffTask, fetchShiftTasks, setTaskDone } from '@/lib/staffTasksApi';
+import { StaffTask, addTaskComment, fetchShiftTasks, setTaskDone } from '@/lib/staffTasksApi';
 
 /** Задачи «Админ на смене»: открытые и закрытые за сутки, общие для всех */
 const ShiftTasksBlock = ({ onCount }: { onCount?: (n: number) => void }) => {
@@ -50,6 +50,10 @@ const ShiftTasksBlock = ({ onCount }: { onCount?: (n: number) => void }) => {
           task={t}
           onToggle={async (task, done, comment) => {
             await setTaskDone(task.id, done, comment);
+            load();
+          }}
+          onComment={async (task, text) => {
+            await addTaskComment(task.id, text);
             load();
           }}
         />
