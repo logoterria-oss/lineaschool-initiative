@@ -14,12 +14,7 @@ import {
   addDays,
   fmtRu,
   buildGroupRowsFromLessons,
-  calcAge,
   formatStudentName,
-  manualAge,
-  shouldForceManualAge,
-  findAgeGroupRule,
-  ageRangeLabel,
 } from './types';
 import { Booking, GroupLimit, bookingHoldsSlot, fetchBookings, fetchGroupLimits } from '@/lib/bookingsApi';
 import GroupLimitsDialog from './GroupLimitsDialog';
@@ -255,7 +250,7 @@ const GroupsTab = () => {
       {!groupsLoading && !groupsError && groupsData && groupsData.rows.length > 0 && (
         <>
           <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 flex-wrap">
-            <span>В ячейке — список учеников (до {groupsData.max_size}). В скобках возраст.</span>
+            <span>В ячейке — список учеников (до {groupsData.max_size}).</span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-block w-3 h-3 rounded bg-green-50 border border-green-300" />
               есть места
@@ -275,12 +270,6 @@ const GroupsTab = () => {
                 <Icon name="Check" size={9} />
               </span>
               проведено
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block px-1 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-semibold">
-                12–16 лет
-              </span>
-              возрастная группа
             </span>
           </div>
 
@@ -352,7 +341,6 @@ const GroupsTab = () => {
                       const capacity = limit ? Math.min(MAX_GROUP_SIZE, limit.maxSize) : MAX_GROUP_SIZE;
                       const isFull = capacity - cell.student_ids.length - booked.length <= 0;
                       const isDone = cell.status === 3;
-                      const ageRule = findAgeGroupRule(day, row.time);
                       return (
                         <div
                           key={`${row.time}-${row.teacher_id}-${row.group_id}`}
@@ -371,12 +359,6 @@ const GroupsTab = () => {
                               </span>
                             )}
                           </div>
-                          {ageRule && (
-                            <div className="flex items-center justify-center gap-1 bg-indigo-50 border-b border-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
-                              <Icon name="Users" size={10} />
-                              {ageRangeLabel(ageRule.from, ageRule.to)}
-                            </div>
-                          )}
                           <ol className="space-y-0.5 px-2 py-1.5">
                             {Array.from({
                               length: Math.max(
@@ -437,10 +419,6 @@ const GroupsTab = () => {
                               }
                               const c = customers[sid];
                               const name = formatStudentName(c?.name) || `id ${sid}`;
-                              const rawAge = calcAge(c?.dob);
-                              const age = shouldForceManualAge(name)
-                                ? manualAge(name)
-                                : rawAge ?? manualAge(name);
                               const isLead = c?.is_study === 0;
                               return (
                                 <li
@@ -450,12 +428,6 @@ const GroupsTab = () => {
                                 >
                                   {numNode}
                                   {name}
-                                  {age != null && (
-                                    <span className={isLead ? 'text-green-500' : 'text-gray-500'}>
-                                      {' '}
-                                      ({age})
-                                    </span>
-                                  )}
                                 </li>
                               );
                             })}
