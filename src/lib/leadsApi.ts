@@ -189,7 +189,7 @@ function headers(): Record<string, string> {
 }
 
 export async function fetchLeads(): Promise<Lead[]> {
-  const res = await fetch(URL, { headers: headers() });
+  const res = await fetch(URL, { headers: headers(), cache: 'no-store' });
   if (!res.ok) return [];
   const data = await res.json();
   return data.leads || [];

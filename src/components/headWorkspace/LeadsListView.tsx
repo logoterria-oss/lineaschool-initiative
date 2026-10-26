@@ -236,6 +236,25 @@ export default function LeadsListView() {
     });
   }, []);
 
+  // Вкладку держат открытой днями — подтягиваем новые заявки сами:
+  // при возвращении на вкладку и раз в 2 минуты, пока она на экране.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetchLeads().then((list) => {
+        if (list.length) setLeads(list);
+      });
+    };
+    const timer = window.setInterval(refresh, 120000);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
+
   const collectStats = async (from = dateFrom, to = dateTo) => {
     setStatsOpen(true);
     setStatsLoading(true);
