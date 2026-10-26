@@ -205,6 +205,8 @@ def mark_shift(event: dict, body: dict, act: str) -> dict:
 
             # Сразу сообщаем окну взаимодействия обновлённый состав смены
             hook = push_shift_to_interaction(cur)
+        if act == "start":
+            _push_staff_tasks()
         return _json(200, {
             "ok": True, **marks, "date": _msk_today(), "interaction": hook, "taken_from": taken_from,
         })
@@ -295,6 +297,22 @@ def push_shift_to_interaction(cur) -> dict:
     except Exception as e:
         print(f"shift-hook POST failed: {e} phones={phones}")
         return {"sent": False, "on_shift": phones, "error": str(e)}
+
+
+STAFF_TASKS_PUSH_URL = "https://functions.poehali.dev/19eccc97-9dce-4a13-b0d9-fa374f785591?action=push"
+
+
+def _push_staff_tasks() -> None:
+    """Заступившему на смену сразу уходят напоминание о задачах и задачи «Админ на смене»."""
+    key = os.environ.get("INTERACTION_SERVICE_KEY")
+    if not key:
+        return
+    req = urllib.request.Request(STAFF_TASKS_PUSH_URL, data=b"{}", headers={"Content-Type": "application/json", "X-Service-Key": key}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            print(f"staff-tasks push -> {resp.status} {resp.read().decode()[:200]}")
+    except Exception as e:
+        print(f"staff-tasks push failed: {e}")
 
 
 def sync_interaction() -> dict:

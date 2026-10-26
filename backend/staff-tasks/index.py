@@ -244,6 +244,7 @@ def delete_task(cur, conn, me, data):
     if not t or t['author_id'] != me['id']:
         return _json({'ok': False, 'message': 'Задача не найдена'}, 404)
     cur.execute(f"DELETE FROM {SCHEMA}.staff_task_comments WHERE task_id = %s", (t['id'],))
+    cur.execute(f"DELETE FROM {SCHEMA}.staff_task_shift_notices WHERE task_id = %s", (t['id'],))
     cur.execute(f"DELETE FROM {SCHEMA}.staff_tasks WHERE id = %s", (t['id'],))
     conn.commit()
     return _json({'ok': True})
@@ -451,9 +452,47 @@ def _pending_messages(cur):
             'created_msk': t['created_msk'],
             'text': '\n'.join(lines),
         })
+    messages += _shift_task_messages(cur)
     messages += _solved_problems(cur)
     messages += _comment_messages(cur)
     return messages
+
+
+def _shift_task_messages(cur):
+    """Задачи «Админ на смене»: каждому, кто сейчас на смене, — по одному сообщению на задачу.
+    Кто заступит позже, получит открытые задачи при старте смены."""
+    cur.execute(
+        f"SELECT {FIELDS}, sh.staff_id AS shift_staff_id, w.full_name AS shift_name, w.phone AS shift_phone, w.role AS shift_role "
+        f"{FROM} JOIN {SCHEMA}.admin_shifts sh ON sh.shift_date = %s AND sh.started_at IS NOT NULL AND sh.finished_at IS NULL "
+        f"JOIN {SCHEMA}.staff w ON w.id = sh.staff_id AND w.status = 'active' AND w.role IN %s "
+        f"WHERE t.for_shift AND t.status = 'open' AND sh.staff_id <> t.author_id AND NOT EXISTS ("
+        f"SELECT 1 FROM {SCHEMA}.staff_task_shift_notices n WHERE n.task_id = t.id AND n.staff_id = sh.staff_id) "
+        "ORDER BY t.created_at",
+        (datetime.now(MSK).date(), SHIFT_ROLES),
+    )
+    out = []
+    for t in _with_msk(cur.fetchall()):
+        kind = 'Новая проблема от педагога' if t['is_problem'] else 'Новая задача для админа на смене'
+        lines = [f"{URGENCY_EMOJI.get(t['urgency'], '🟡')} {kind} - {SHORT_URGENCY.get(t['urgency'], 'средне срочно')}:", f"-{t['title']}"]
+        if t['is_problem']:
+            lines.append(f"Сообщил(а): {t['reporter_name']}")
+        if t['description']:
+            lines.append(t['description'])
+        for f in t['attachments'] or []:
+            lines.append(f"📎 {f['name']}: {f['url']}")
+        lines += [f"от: {t['author_name']}, поставлена {t['created_msk']}", '', f"Подробнее: {_tasks_link(t['shift_role'])}"]
+        out.append({
+            'task_id': t['id'],
+            'message_key': f"task-{t['id']}-shift-{t['shift_staff_id']}",
+            'kind': 'shift',
+            'staff_id': t['shift_staff_id'],
+            'full_name': t['shift_name'],
+            'phone': ''.join(ch for ch in (t['shift_phone'] or '') if ch.isdigit()),
+            'author_name': t['author_name'],
+            'created_msk': t['created_msk'],
+            'text': '\n'.join(lines),
+        })
+    return out
 
 
 def _send_max(phone: str, text: str) -> bool:
@@ -481,13 +520,23 @@ def push_pending(cur, conn):
     """Сразу отправить сотрудникам все неотправленные уведомления о задачах (через Wappi MAX)."""
     sent = []
     started = time.monotonic()
+    reminded = []
+    for m in _shift_reminder_messages(cur):
+        if time.monotonic() - started > 2.5:
+            break
+        if _send_max(m['phone'], m['text']):
+            reminded.append(m['shift_id'])
+            sent.append(f"shift-{m['shift_id']}")
+    if reminded:
+        mark_shift_reminded(cur, conn, {'shift_ids': reminded})
     for m in _pending_messages(cur):
         if time.monotonic() - started > 2.5:
             break
         if _send_max(m['phone'], m['text']):
             sent.append(m['message_key'])
-    if sent:
-        mark_notified(cur, conn, {'message_keys': sent})
+    keys = [k for k in sent if k.startswith('task-')]
+    if keys:
+        mark_notified(cur, conn, {'message_keys': keys})
     return sent
 
 
@@ -536,6 +585,10 @@ def _task_line(t) -> str:
 
 def shift_reminders(cur):
     """Напоминания админам, заступившим на смену: личные задачи + общие задачи для админа на смене."""
+    return _json({'ok': True, 'messages': _shift_reminder_messages(cur)})
+
+
+def _shift_reminder_messages(cur):
     today = datetime.now(MSK).date()
     cur.execute(
         f"SELECT sh.id AS shift_id, s.id AS staff_id, s.full_name, s.phone, s.role FROM {SCHEMA}.admin_shifts sh "
@@ -546,7 +599,7 @@ def shift_reminders(cur):
     )
     shifts = cur.fetchall()
     if not shifts:
-        return _json({'ok': True, 'messages': []})
+        return []
     cur.execute(
         f"SELECT t.title, t.urgency, t.description, t.is_problem, t.reporter_name FROM {SCHEMA}.staff_tasks t "
         f"WHERE t.for_shift AND t.status = 'open' ORDER BY {URG_ORDER}, t.created_at"
@@ -575,26 +628,40 @@ def shift_reminders(cur):
             'phone': ''.join(ch for ch in (sh['phone'] or '') if ch.isdigit()),
             'text': '\n'.join(lines),
         })
-    return _json({'ok': True, 'messages': messages})
+    return messages
 
 
 def mark_shift_reminded(cur, conn, data):
     ids = [int(i) for i in (data.get('shift_ids') or []) if str(i).isdigit()]
     if ids:
         cur.execute(f"UPDATE {SCHEMA}.admin_shifts SET tasks_reminded_at = now() WHERE id IN %s", (tuple(ids),))
+        # В напоминании уже перечислены все открытые задачи смены — отдельно их не дублируем
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.staff_task_shift_notices (task_id, staff_id) "
+            f"SELECT t.id, sh.staff_id FROM {SCHEMA}.staff_tasks t CROSS JOIN {SCHEMA}.admin_shifts sh "
+            "WHERE sh.id IN %s AND t.for_shift AND t.status = 'open' ON CONFLICT DO NOTHING",
+            (tuple(ids),),
+        )
         conn.commit()
     return _json({'ok': True, 'marked': len(ids)})
 
 
 def mark_notified(cur, conn, data):
     """Отметить отправленные сообщения. Лучше по message_keys; task_ids — для совместимости."""
-    new_ids, done_ids, comment_ids = set(), set(), set()
+    new_ids, done_ids, comment_ids, shift_pairs = set(), set(), set(), set()
     for k in data.get('message_keys') or []:
         parts = str(k).split('-')
-        if len(parts) >= 4 and parts[0] == 'task' and parts[2] == 'comment' and parts[3].isdigit():
+        if len(parts) >= 4 and parts[0] == 'task' and parts[2] == 'shift' and parts[1].isdigit() and parts[3].isdigit():
+            shift_pairs.add((int(parts[1]), int(parts[3])))
+        elif len(parts) >= 4 and parts[0] == 'task' and parts[2] == 'comment' and parts[3].isdigit():
             comment_ids.add(int(parts[3]))
         elif len(parts) >= 3 and parts[0] == 'task' and parts[1].isdigit():
             (new_ids if parts[2] == 'new' else done_ids).add(int(parts[1]))
+    for task_id, staff_id in shift_pairs:
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.staff_task_shift_notices (task_id, staff_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+            (task_id, staff_id),
+        )
     if comment_ids:
         cur.execute(f"UPDATE {SCHEMA}.staff_task_comments SET notified_at = now() WHERE id IN %s AND notified_at IS NULL", (tuple(comment_ids),))
     ids = [int(i) for i in (data.get('task_ids') or []) if str(i).isdigit()]
@@ -610,8 +677,8 @@ def mark_notified(cur, conn, data):
             (tuple(done_ids),),
         )
     conn.commit()
-    print(f"mark-notified: new={sorted(new_ids)} done={sorted(done_ids)} comments={sorted(comment_ids)}")
-    return _json({'ok': True, 'marked': len(new_ids) + len(done_ids) + len(comment_ids)})
+    print(f"mark-notified: new={sorted(new_ids)} done={sorted(done_ids)} comments={sorted(comment_ids)} shift={sorted(shift_pairs)}")
+    return _json({'ok': True, 'marked': len(new_ids) + len(done_ids) + len(comment_ids) + len(shift_pairs)})
 
 
 def handler(event: dict, context) -> dict:
@@ -653,6 +720,7 @@ def handler(event: dict, context) -> dict:
             return _json({'ok': False, 'message': 'Нужно войти'}, 401)
         if event.get('httpMethod') == 'GET':
             if (event.get('queryStringParameters') or {}).get('shift') == '1':
+                push_pending(cur, conn)
                 return shift_tasks(cur, me)
             return list_tasks(cur, me)
         if action == 'upload':
@@ -663,7 +731,10 @@ def handler(event: dict, context) -> dict:
                 push_pending(cur, conn)
             return res
         if action == 'update':
-            return update_task(cur, conn, me, data)
+            res = update_task(cur, conn, me, data)
+            if res['statusCode'] == 200:
+                push_pending(cur, conn)
+            return res
         if action == 'status':
             res = set_status(cur, conn, me, data)
             if res['statusCode'] == 200:
