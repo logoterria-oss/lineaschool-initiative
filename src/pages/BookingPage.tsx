@@ -65,8 +65,8 @@ const BookingPage = () => {
   const [ind, setInd] = useState<Section>(EMPTY);
   const [grp, setGrp] = useState<Section>(EMPTY);
   const [childName, setChildName] = useState('');
-  // Групповые показываем раскрытыми, индивидуальные — свёрнутыми
-  const [openGrp, setOpenGrp] = useState(true);
+  // Оба раздела изначально свёрнуты — раскрываются по нажатию на заголовок
+  const [openGrp, setOpenGrp] = useState(false);
   const [openInd, setOpenInd] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
