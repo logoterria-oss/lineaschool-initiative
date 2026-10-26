@@ -42,14 +42,18 @@ const GroupsToolbar = ({
       </Button>
     </div>
     <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1.5">
-        <Icon name="Baby" fallback="User" size={14} className="text-gray-500" />
+      <div
+        className={`inline-flex items-center gap-1.5 h-9 rounded-md border px-3 text-sm font-medium transition-colors ${
+          childAge != null
+            ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+            : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+        }`}
+      >
+        <Icon name="Baby" fallback="User" size={14} className="shrink-0" />
         <select
           value={childAge ?? ''}
           onChange={(e) => onChildAgeChange(e.target.value ? Number(e.target.value) : null)}
-          className={`h-8 rounded-md border px-2 text-sm ${
-            childAge != null ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-input bg-background text-gray-700'
-          }`}
+          className="h-full bg-transparent outline-none cursor-pointer"
           title="Оставить только группы, подходящие по возрасту"
         >
           <option value="">Возраст ребёнка: все группы</option>
@@ -63,7 +67,7 @@ const GroupsToolbar = ({
           <button
             type="button"
             onClick={() => onChildAgeChange(null)}
-            className="text-gray-400 hover:text-gray-600"
+            className="shrink-0 text-indigo-400 hover:text-indigo-700"
             title="Сбросить фильтр"
           >
             <Icon name="X" size={14} />
