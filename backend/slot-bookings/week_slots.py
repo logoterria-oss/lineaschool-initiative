@@ -201,14 +201,22 @@ AGE_GROUP_RULES = [
     {'weekdays': (3,), 'time': '17:00', 'label': '10–11 лет (±1 год)'},
     {'weekdays': (3,), 'time': '18:00', 'label': '12+ лет'},
     {'weekdays': (3,), 'time': '19:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (4,), 'time': '09:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (4,), 'time': '14:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (4,), 'time': '16:00', 'label': '10–11 лет (±1 год)'},
+    {'weekdays': (4,), 'time': '17:00', 'label': '9–10 лет (±1 год)'},
+    {'weekdays': (4,), 'time': '18:00', 'label': '9–10 лет (±1 год)', 'teacher': 'канкулов'},
+    {'weekdays': (4,), 'time': '18:00', 'label': '12+ лет', 'teacher': 'мацвей'},
 ]
 
 
-def age_label(weekday: int, time: str) -> str:
-    '''Подпись о возрасте группы. Показываем только там, где возраст задан.'''
+def age_label(weekday: int, time: str, teacher_name: str = '') -> str:
+    '''Подпись о возрасте группы. Показываем только там, где возраст задан.
+    teacher в правиле — часть фамилии педагога, если в это время несколько групп.'''
     t = (time or '')[:5]
+    tn = (teacher_name or '').lower()
     for r in AGE_GROUP_RULES:
-        if weekday in r['weekdays'] and r['time'] == t:
+        if weekday in r['weekdays'] and r['time'] == t and r.get('teacher', '') in tn:
             return f"рекомендуемый возраст: {r['label']}"
     return ''
 
@@ -333,7 +341,7 @@ def build_groups(
             'free': weeks[first_free],
             'maxSize': max_size,
             'availableFrom': None,
-            'ageLabel': age_label(weekday, time),
+            'ageLabel': age_label(weekday, time, names.get((time, teacher, group), '')),
         }
 
     return _to_days(by_day, start, key='groups')

@@ -351,7 +351,7 @@ const GroupsTab = () => {
                       const capacity = limit ? Math.min(MAX_GROUP_SIZE, limit.maxSize) : MAX_GROUP_SIZE;
                       const isFull = capacity - cell.student_ids.length - booked.length <= 0;
                       const isDone = cell.status === 3;
-                      const ageRule = findAgeGroupRule(day, row.time);
+                      const ageRule = findAgeGroupRule(day, row.time, row.teacher_name);
                       return (
                         <div
                           key={`${row.time}-${row.teacher_id}-${row.group_id}`}
