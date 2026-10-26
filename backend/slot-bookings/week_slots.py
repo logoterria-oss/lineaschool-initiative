@@ -198,6 +198,9 @@ AGE_GROUP_RULES = [
     {'weekdays': (1,), 'time': '19:00', 'label': '12+ лет'},
     {'weekdays': (2,), 'time': '18:00', 'label': '8–9 лет (±1 год)'},
     {'weekdays': (2,), 'time': '19:00', 'label': '10–11 лет (±1 год)'},
+    {'weekdays': (3,), 'time': '17:00', 'label': '10–11 лет (±1 год)'},
+    {'weekdays': (3,), 'time': '18:00', 'label': '12+ лет'},
+    {'weekdays': (3,), 'time': '19:00', 'label': '9–10 лет (±1 год)'},
 ]
 
 
