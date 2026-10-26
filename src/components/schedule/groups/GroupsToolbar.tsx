@@ -57,7 +57,7 @@ const GroupsToolbar = ({
           title="Оставить только группы, подходящие по возрасту"
         >
           <option value="">Возраст ребёнка: все группы</option>
-          {Array.from({ length: 11 }, (_, i) => i + 6).map((a) => (
+          {Array.from({ length: 12 }, (_, i) => i + 7).map((a) => (
             <option key={a} value={a}>
               Ребёнку {a} лет
             </option>
