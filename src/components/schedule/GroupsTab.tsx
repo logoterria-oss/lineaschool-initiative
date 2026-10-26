@@ -14,7 +14,10 @@ import {
   addDays,
   fmtRu,
   buildGroupRowsFromLessons,
+  calcAge,
   formatStudentName,
+  manualAge,
+  shouldForceManualAge,
 } from './types';
 import { Booking, GroupLimit, bookingHoldsSlot, fetchBookings, fetchGroupLimits } from '@/lib/bookingsApi';
 import GroupLimitsDialog from './GroupLimitsDialog';
@@ -250,7 +253,7 @@ const GroupsTab = () => {
       {!groupsLoading && !groupsError && groupsData && groupsData.rows.length > 0 && (
         <>
           <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 flex-wrap">
-            <span>В ячейке — список учеников (до {groupsData.max_size}).</span>
+            <span>В ячейке — список учеников (до {groupsData.max_size}). В скобках возраст.</span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-block w-3 h-3 rounded bg-green-50 border border-green-300" />
               есть места
@@ -419,6 +422,10 @@ const GroupsTab = () => {
                               }
                               const c = customers[sid];
                               const name = formatStudentName(c?.name) || `id ${sid}`;
+                              const rawAge = calcAge(c?.dob);
+                              const age = shouldForceManualAge(name)
+                                ? manualAge(name)
+                                : rawAge ?? manualAge(name);
                               const isLead = c?.is_study === 0;
                               return (
                                 <li
@@ -428,6 +435,12 @@ const GroupsTab = () => {
                                 >
                                   {numNode}
                                   {name}
+                                  {age != null && (
+                                    <span className={isLead ? 'text-green-500' : 'text-gray-500'}>
+                                      {' '}
+                                      ({age})
+                                    </span>
+                                  )}
                                 </li>
                               );
                             })}
