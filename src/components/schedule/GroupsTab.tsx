@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import {
   S20_URL,
@@ -8,22 +7,18 @@ import {
   RawTeacher,
   Customer,
   MAX_GROUP_SIZE,
-  WEEKDAY_SHORT,
   fmtDate,
   getMonday,
   addDays,
-  fmtRu,
   buildGroupRowsFromLessons,
-  calcAge,
-  formatStudentName,
-  manualAge,
-  shouldForceManualAge,
   findAgeGroupRule,
   ageFitsRule,
 } from './types';
 import { Booking, GroupLimit, bookingHoldsSlot, fetchBookings, fetchGroupLimits } from '@/lib/bookingsApi';
 import GroupLimitsDialog from './GroupLimitsDialog';
-import { sameChild } from '@/lib/childName';
+import GroupsToolbar from './groups/GroupsToolbar';
+import GroupsLegend from './groups/GroupsLegend';
+import GroupsWeekGrid from './groups/GroupsWeekGrid';
 
 const GroupsTab = () => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
@@ -170,96 +165,19 @@ const GroupsTab = () => {
   return (
     <>
       {/* Навигация по неделе */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setWeekStart(addDays(weekStart, -7))}
-            className="gap-1"
-          >
-            <Icon name="ChevronLeft" size={14} />
-            Неделя
-          </Button>
-          <div className="text-sm font-medium text-gray-700 px-2">
-            {fmtRu(weekStart)} — {fmtRu(addDays(weekStart, 6))}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setWeekStart(addDays(weekStart, 7))}
-            className="gap-1"
-          >
-            Неделя
-            <Icon name="ChevronRight" size={14} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setWeekStart(getMonday(new Date()))}
-            className="text-xs"
-          >
-            Эта неделя
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <Icon name="Baby" fallback="User" size={14} className="text-gray-500" />
-            <select
-              value={childAge ?? ''}
-              onChange={(e) => setChildAge(e.target.value ? Number(e.target.value) : null)}
-              className={`h-8 rounded-md border px-2 text-sm ${
-                childAge != null ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-input bg-background text-gray-700'
-              }`}
-              title="Оставить только группы, подходящие по возрасту"
-            >
-              <option value="">Возраст ребёнка: все группы</option>
-              {Array.from({ length: 11 }, (_, i) => i + 6).map((a) => (
-                <option key={a} value={a}>
-                  Ребёнку {a} лет
-                </option>
-              ))}
-            </select>
-            {childAge != null && (
-              <button
-                type="button"
-                onClick={() => setChildAge(null)}
-                className="text-gray-400 hover:text-gray-600"
-                title="Сбросить фильтр"
-              >
-                <Icon name="X" size={14} />
-              </button>
-            )}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLimitsOpen(true)}
-            disabled={!groupsData?.rows.length}
-            className="gap-1.5"
-          >
-            <Icon name="SlidersHorizontal" size={14} />
-            Ограничить количество слотов
-            {limits.length > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-gray-200 text-gray-700 text-[11px] font-bold">
-                {limits.length}
-              </span>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              loadGroups();
-              loadLimits();
-            }}
-            className="gap-1.5"
-          >
-            <Icon name="RefreshCw" size={14} />
-            Обновить
-          </Button>
-        </div>
-      </div>
+      <GroupsToolbar
+        weekStart={weekStart}
+        onWeekChange={setWeekStart}
+        childAge={childAge}
+        onChildAgeChange={setChildAge}
+        limitsCount={limits.length}
+        limitsDisabled={!groupsData?.rows.length}
+        onOpenLimits={() => setLimitsOpen(true)}
+        onRefresh={() => {
+          loadGroups();
+          loadLimits();
+        }}
+      />
 
       <GroupLimitsDialog
         open={limitsOpen}
@@ -289,223 +207,15 @@ const GroupsTab = () => {
 
       {!groupsLoading && !groupsError && groupsData && groupsData.rows.length > 0 && (
         <>
-          <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 flex-wrap">
-            <span>В ячейке — список учеников (до {groupsData.max_size}). В скобках возраст.</span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded bg-green-50 border border-green-300" />
-              есть места
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded bg-red-50 border border-red-300" />
-              заполнено
-            </span>
-            <span className="inline-flex items-center gap-1 text-amber-700">
-              <span className="inline-block rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                бронь
-              </span>
-              ученика ещё нет в CRM
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500 text-white">
-                <Icon name="Check" size={9} />
-              </span>
-              проведено
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block px-1 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-semibold">
-                9–10 лет
-              </span>
-              возраст группы
-            </span>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-            <div className="grid grid-cols-7 min-w-[1280px]">
-              {/* Шапка: I и II половина недели */}
-              <div className="col-span-4 bg-gray-50 border-b border-r border-gray-200 px-3 py-2 text-center font-medium text-gray-700 text-sm">
-                I половина недели
-              </div>
-              <div className="col-span-3 bg-gray-50 border-b border-gray-200 px-3 py-2 text-center font-medium text-gray-700 text-sm">
-                II половина недели
-              </div>
-              {/* Шапка: дни недели + даты */}
-              {WEEKDAY_SHORT.map((wd, i) => (
-                <div
-                  key={wd}
-                  className={`bg-gray-50 border-b border-gray-200 px-2 py-2 text-center font-semibold text-gray-700 text-sm ${
-                    i < 6 ? 'border-r' : ''
-                  }`}
-                >
-                  <div>{wd}</div>
-                  <div className="text-[10px] font-normal text-gray-400">
-                    {fmtRu(addDays(weekStart, i))}
-                  </div>
-                </div>
-              ))}
-              {/* Колонки занятий */}
-              {WEEKDAY_SHORT.map((_, day) => {
-                // собрать все занятия этого дня недели из всех row, отсортировать по времени
-                const items = groupsData.rows
-                  .map((row) => ({ row, cell: row.cells[String(day)] }))
-                  .filter((x) => !!x.cell)
-                  .sort((a, b) => a.row.time.localeCompare(b.row.time));
-
-                // Бронь показываем один раз: если у педагога в это время две
-                // группы, она уходит в первую из них
-                const usedBookings = new Set<number>();
-                const weekNames = groupsData.rows.flatMap((r) =>
-                  Object.values(r.cells).flatMap((c) => (c?.student_ids || []).map((id) => customers[id]?.name || '')),
-                ).filter(Boolean);
-                return (
-                  <div
-                    key={day}
-                    className={`border-gray-200 p-1.5 flex flex-col gap-1.5 ${
-                      day < 6 ? 'border-r' : ''
-                    }`}
-                  >
-                    {items.filter(({ row }) => ageFits(day, row.time, row.teacher_id)).length === 0 && (
-                      <div className="text-[11px] text-gray-300 text-center py-4">—</div>
-                    )}
-                    {items.map(({ row, cell }) => {
-                      if (!cell) return null;
-                      // Брони этой группы: ребёнка в CRM ещё нет, но место занято.
-                      // Список уже очищен от тех, кого завели в CRM.
-                      const booked = groupBookings.filter((b) => {
-                        if (usedBookings.has(b.id)) return false;
-                        // Ребёнок уже стоит в расписании этой недели — бронь не дублируем
-                        if (weekNames.some((nm) => sameChild(b.childName, nm))) return false;
-                        // Бронь на будущую дату не занимает место в более ранних неделях
-                        const mine =
-                          (b.date || '') <= fmtDate(addDays(weekStart, 6)) &&
-                          b.timeFrom.slice(0, 5) === row.time &&
-                          Number(b.teacherId) === row.teacher_id &&
-                          new Date(`${b.date}T00:00:00`).getDay() === (day + 1) % 7;
-                        if (mine) usedBookings.add(b.id);
-                        return mine;
-                      });
-                      const limit = limitFor(day, row.time, row.teacher_id, row.group_id, cell.date);
-                      const capacity = limit ? Math.min(MAX_GROUP_SIZE, limit.maxSize) : MAX_GROUP_SIZE;
-                      const isFull = capacity - cell.student_ids.length - booked.length <= 0;
-                      const isDone = cell.status === 3;
-                      const ageRule = findAgeGroupRule(day, row.time, row.teacher_id);
-                      // Фильтр по возрасту скрывает карточку уже после разбора броней,
-                      // чтобы бронь не «переезжала» в соседнюю группу
-                      if (!ageFits(day, row.time, row.teacher_id)) return null;
-                      return (
-                        <div
-                          key={`${row.time}-${row.teacher_id}-${row.group_id}`}
-                          className={`rounded border text-[12px] overflow-hidden ${
-                            isFull ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                          }`}
-                        >
-                          <div className="relative text-center text-[11px] font-semibold text-gray-700 bg-amber-50 px-2 py-1 border-b border-gray-200">
-                            {row.time} ({row.teacher_name})
-                            {isDone && (
-                              <span
-                                className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white"
-                                title="Занятие проведено"
-                              >
-                                <Icon name="Check" size={10} />
-                              </span>
-                            )}
-                          </div>
-                          {ageRule && (
-                            <div className="flex items-center justify-center gap-1 bg-indigo-50 border-b border-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
-                              <Icon name="Users" size={10} />
-                              {ageRule.label}
-                            </div>
-                          )}
-                          <ol className="space-y-0.5 px-2 py-1.5">
-                            {Array.from({
-                              length: Math.max(
-                                MAX_GROUP_SIZE,
-                                cell.student_ids.length + booked.length,
-                              ),
-                            }).map((_, i) => {
-                              const sid = cell.student_ids[i];
-                              const overflow = i >= MAX_GROUP_SIZE;
-                              const numNode = overflow ? (
-                                <span
-                                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-semibold mr-1 align-middle"
-                                  title="Сверх лимита группы"
-                                >
-                                  {i + 1}
-                                </span>
-                              ) : (
-                                <>{i + 1}. </>
-                              );
-                              if (sid == null) {
-                                // Свободные строки занимаем бронями — они идут
-                                // сразу после учеников из CRM
-                                const bk = booked[i - cell.student_ids.length];
-                                if (bk) {
-                                  return (
-                                    <li key={i} className="text-amber-700">
-                                      {numNode}
-                                      {formatStudentName(bk.childName) || bk.childName}
-                                      <span
-                                        className="ml-1 inline-block rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-amber-700 align-middle"
-                                        title="Бронь: ученика ещё нет в CRM"
-                                      >
-                                        бронь
-                                      </span>
-                                    </li>
-                                  );
-                                }
-                                if (i >= capacity && i < MAX_GROUP_SIZE) {
-                                  return (
-                                    <li
-                                      key={i}
-                                      className="text-gray-400"
-                                      title={`Место закрыто до ${limit?.dateTo.split('-').reverse().join('.')}`}
-                                    >
-                                      {numNode}
-                                      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                                        <Icon name="Lock" size={10} />
-                                        закрыто
-                                      </span>
-                                    </li>
-                                  );
-                                }
-                                return (
-                                  <li key={i} className="text-gray-400">
-                                    {numNode}
-                                  </li>
-                                );
-                              }
-                              const c = customers[sid];
-                              const name = formatStudentName(c?.name) || `id ${sid}`;
-                              const rawAge = calcAge(c?.dob);
-                              const age = shouldForceManualAge(name)
-                                ? manualAge(name)
-                                : rawAge ?? manualAge(name);
-                              const isLead = c?.is_study === 0;
-                              return (
-                                <li
-                                  key={i}
-                                  className={isLead ? 'text-green-600' : 'text-gray-800'}
-                                  title={isLead ? 'Лид' : undefined}
-                                >
-                                  {numNode}
-                                  {name}
-                                  {age != null && (
-                                    <span className={isLead ? 'text-green-500' : 'text-gray-500'}>
-                                      {' '}
-                                      ({age})
-                                    </span>
-                                  )}
-                                </li>
-                              );
-                            })}
-                          </ol>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <GroupsLegend maxSize={groupsData.max_size} />
+          <GroupsWeekGrid
+            groupsData={groupsData}
+            weekStart={weekStart}
+            customers={customers}
+            groupBookings={groupBookings}
+            limitFor={limitFor}
+            ageFits={ageFits}
+          />
         </>
       )}
     </>
