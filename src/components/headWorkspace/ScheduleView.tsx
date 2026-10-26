@@ -62,8 +62,8 @@ const ScheduleView = ({ currentUser }: Props) => {
         </Button>
 
         {tab !== 'bookings' && (
-          <>
-            <Button onClick={() => setPdfMode('regular')} className="ml-auto gap-2 bg-green-600 hover:bg-green-700">
+          <div className="ml-auto flex flex-col gap-2">
+            <Button onClick={() => setPdfMode('regular')} className="gap-2 bg-green-600 hover:bg-green-700">
               <Icon name="FileDown" size={16} />
               Создать PDF (регулярное расписание)
             </Button>
@@ -71,7 +71,7 @@ const ScheduleView = ({ currentUser }: Props) => {
               <Icon name="CalendarClock" size={16} />
               Создать PDF (разовый перенос)
             </Button>
-          </>
+          </div>
         )}
       </div>
 
