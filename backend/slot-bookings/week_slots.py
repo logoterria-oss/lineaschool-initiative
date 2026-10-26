@@ -205,8 +205,8 @@ AGE_GROUP_RULES = [
     {'weekdays': (4,), 'time': '14:00', 'label': '9–10 лет (±1 год)'},
     {'weekdays': (4,), 'time': '16:00', 'label': '10–11 лет (±1 год)'},
     {'weekdays': (4,), 'time': '17:00', 'label': '9–10 лет (±1 год)'},
-    {'weekdays': (4,), 'time': '18:00', 'label': '9–10 лет (±1 год)', 'teacher': 'канкулов'},
-    {'weekdays': (4,), 'time': '18:00', 'label': '12+ лет', 'teacher': 'мацвей'},
+    {'weekdays': (4,), 'time': '18:00', 'label': '9–10 лет (±1 год)', 'teacher_ids': (17, 20)},
+    {'weekdays': (4,), 'time': '18:00', 'label': '12+ лет', 'teacher_ids': (15,)},
     {'weekdays': (5,), 'time': '10:00', 'label': '11–12 лет (±1 год)'},
     {'weekdays': (5,), 'time': '11:00', 'label': '8–9 лет (±1 год)'},
     {'weekdays': (5,), 'time': '13:00', 'label': '8–9 лет (±1 год)'},
@@ -214,13 +214,16 @@ AGE_GROUP_RULES = [
 ]
 
 
-def age_label(weekday: int, time: str, teacher_name: str = '') -> str:
+def age_label(weekday: int, time: str, teacher_id: int = 0) -> str:
     '''Подпись о возрасте группы. Показываем только там, где возраст задан.
-    teacher в правиле — часть фамилии педагога, если в это время несколько групп.'''
+    teacher_ids в правиле — номера педагога, если в это время несколько групп
+    (у Канкуловой номер в CRM и в графике разный — указаны оба).'''
     t = (time or '')[:5]
-    tn = (teacher_name or '').lower()
     for r in AGE_GROUP_RULES:
-        if weekday in r['weekdays'] and r['time'] == t and r.get('teacher', '') in tn:
+        ids = r.get('teacher_ids')
+        if ids and int(teacher_id or 0) not in ids:
+            continue
+        if weekday in r['weekdays'] and r['time'] == t:
             return f"рекомендуемый возраст: {r['label']}"
     return ''
 
@@ -345,7 +348,7 @@ def build_groups(
             'free': weeks[first_free],
             'maxSize': max_size,
             'availableFrom': None,
-            'ageLabel': age_label(weekday, time, names.get((time, teacher, group), '')),
+            'ageLabel': age_label(weekday, time, teacher),
         }
 
     return _to_days(by_day, start, key='groups')

@@ -492,7 +492,7 @@ export const useScheduleData = (mode: PdfMode = 'regular') => {
       const free = groupFreeAt(startPeriod, c.dayOffset, c.time, c.teacherId) ?? 0;
       const weekday = weekdayOf(c.dayOffset); // 0=ПН..6=ВС
       // Группы с закреплённой возрастной категорией (см. AGE_GROUP_RULES)
-      const rule = findAgeGroupRule(weekday, c.time, c.teacherName);
+      const rule = findAgeGroupRule(weekday, c.time, c.teacherId);
       const ageLabel = rule ? `рекомендуемый возраст: ${rule.label}` : '';
       const fromDate = startPeriod > 0 ? dateForSlot(startPeriod, c.dayOffset) : null;
 

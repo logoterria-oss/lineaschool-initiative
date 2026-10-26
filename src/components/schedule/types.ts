@@ -267,8 +267,9 @@ export interface AgeGroupRule {
   weekdays: number[];
   time: string;
   label: string;
-  // Часть фамилии педагога (без регистра) — если в это время несколько групп
-  teacher?: string;
+  // Номера педагога — если в это время несколько групп. У Канкуловой номер
+  // в CRM (17) и в графике (20) разный, поэтому указываем оба
+  teacherIds?: number[];
 }
 
 // Те же правила продублированы в backend/slot-bookings/week_slots.py
@@ -291,8 +292,8 @@ export const AGE_GROUP_RULES: AgeGroupRule[] = [
   { weekdays: [4], time: '14:00', label: '9–10 лет (±1 год)' },
   { weekdays: [4], time: '16:00', label: '10–11 лет (±1 год)' },
   { weekdays: [4], time: '17:00', label: '9–10 лет (±1 год)' },
-  { weekdays: [4], time: '18:00', label: '9–10 лет (±1 год)', teacher: 'канкулов' },
-  { weekdays: [4], time: '18:00', label: '12+ лет', teacher: 'мацвей' },
+  { weekdays: [4], time: '18:00', label: '9–10 лет (±1 год)', teacherIds: [17, 20] },
+  { weekdays: [4], time: '18:00', label: '12+ лет', teacherIds: [15] },
   { weekdays: [5], time: '10:00', label: '11–12 лет (±1 год)' },
   { weekdays: [5], time: '11:00', label: '8–9 лет (±1 год)' },
   { weekdays: [5], time: '13:00', label: '8–9 лет (±1 год)' },
@@ -302,13 +303,12 @@ export const AGE_GROUP_RULES: AgeGroupRule[] = [
 export const findAgeGroupRule = (
   weekday: number,
   time: string,
-  teacherName = '',
+  teacherId?: number,
 ): AgeGroupRule | null => {
   const t = (time || '').slice(0, 5);
-  const tn = (teacherName || '').toLowerCase();
   for (const r of AGE_GROUP_RULES) {
     if (!r.weekdays.includes(weekday) || r.time !== t) continue;
-    if (r.teacher && !tn.includes(r.teacher)) continue;
+    if (r.teacherIds && !r.teacherIds.includes(Number(teacherId))) continue;
     return r;
   }
   return null;
