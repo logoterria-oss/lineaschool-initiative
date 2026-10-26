@@ -39,6 +39,10 @@ CHECK_DEADLINE = 3.8
 # Проверенные вручную платежи CRM (id), которые не надо сверять с ценой абонемента:
 # 410 — Савелий Карцев, остаток перенесён с брата Саши
 OK_CRM_PAYMENTS = {410}
+# Ученики, чья оплата проверена вручную: платежи по эту дату включительно
+# не сверяем с абонементом. Новые оплаты проверяются как обычно.
+# 509 — Костя Корнюшин, оплатил по неверной ссылке, абонемент пересчитали
+OK_PAID_UNTIL = {509: date(2026, 10, 26)}
 MIN_PAY = 1000
 DIAG_LESSON_TYPE = 3
 
@@ -361,7 +365,10 @@ def _evaluate(row, ct, lesson, tariffs):
     # Сумму берём и из CRM, и из нашего платежа: если в CRM опечатка в сумме,
     # это уже показано в пункте 1, второй раз не ругаемся.
     paid = crm or our
+    ok_until = OK_PAID_UNTIL.get(int(row.get("customerId") or 0))
     if crm and not our and crm.get("id") in OK_CRM_PAYMENTS:
+        pass
+    elif paid and ok_until and paid["date"] <= ok_until:
         pass
     elif not paid:
         issues.append("Нет оплат абонемента за год")
