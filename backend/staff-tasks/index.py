@@ -291,6 +291,7 @@ def _comment_messages(cur):
             'task_id': c['task_id'],
             'message_key': f"task-{c['task_id']}-comment-{c['id']}",
             'kind': 'comment',
+            'is_problem': bool(c['is_problem']),
             'staff_id': c['recipient_id'],
             'full_name': c['recipient_name'],
             'phone': ''.join(ch for ch in (c['recipient_phone'] or '') if ch.isdigit()),
@@ -445,6 +446,7 @@ def _pending_messages(cur):
             'task_id': t['id'],
             'message_key': f"task-{t['id']}-new",
             'kind': 'new',
+            'is_problem': bool(t['is_problem']),
             'staff_id': t['assignee_id'],
             'full_name': t['assignee_name'],
             'phone': ''.join(ch for ch in (t['assignee_phone'] or '') if ch.isdigit()),
@@ -485,6 +487,7 @@ def _shift_task_messages(cur):
             'task_id': t['id'],
             'message_key': f"task-{t['id']}-shift-{t['shift_staff_id']}",
             'kind': 'shift',
+            'is_problem': bool(t['is_problem']),
             'staff_id': t['shift_staff_id'],
             'full_name': t['shift_name'],
             'phone': ''.join(ch for ch in (t['shift_phone'] or '') if ch.isdigit()),
@@ -495,49 +498,64 @@ def _shift_task_messages(cur):
     return out
 
 
-def _send_max(phone: str, text: str) -> bool:
-    token = os.environ.get('WAPPI_API_TOKEN')
-    profile_id = os.environ.get('WAPPI_PROFILE_ID')
-    if not token or not profile_id or not phone:
-        return False
-    url = 'https://wappi.pro/maxapi/sync/message/send?' + urllib.parse.urlencode({'profile_id': profile_id})
-    req = urllib.request.Request(url, data=json.dumps({'body': text, 'recipient': phone}).encode('utf-8'), method='POST')
+WINDOW_NOTIFY_URL = 'https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1?action=staff-notify'
+
+
+def _notify_kind(m) -> str:
+    if m.get('kind') == 'done':
+        return 'done'
+    if m.get('is_problem'):
+        return 'problem'
+    return 'new'
+
+
+def _send_via_window(messages) -> set:
+    """Передать уведомления «Окну взаимодействия» одним запросом; вернуть message_key успешно отправленных."""
+    key = os.environ.get('INTERACTION_SERVICE_KEY')
+    batch = [m for m in messages if m.get('phone')]
+    if not key or not batch:
+        return set()
+    payload = {'messages': [{
+        'staff_name': m.get('full_name') or '',
+        'phone': m['phone'],
+        'text': m['text'],
+        'message_key': m['message_key'],
+        'task_id': m.get('task_id'),
+        'kind': _notify_kind(m),
+    } for m in batch]}
+    req = urllib.request.Request(WINDOW_NOTIFY_URL, data=json.dumps(payload, ensure_ascii=False).encode('utf-8'), method='POST')
     req.add_header('Content-Type', 'application/json')
-    req.add_header('Authorization', token)
+    req.add_header('X-Service-Key', key)
     try:
-        with urllib.request.urlopen(req, timeout=3) as r:
-            r.read()
-        print(f"push OK -> {phone}")
-        return True
+        with urllib.request.urlopen(req, timeout=3.5) as r:
+            res = json.loads(r.read().decode('utf-8') or '{}')
     except urllib.error.HTTPError as e:
-        print(f"push HTTP {e.code} -> {phone}: {e.read().decode('utf-8', 'ignore')[:300]}")
+        print(f"staff-notify HTTP {e.code}: {e.read().decode('utf-8', 'ignore')[:300]}")
+        return set()
     except Exception as e:
-        print(f"push FAILED -> {phone}: {e}")
-    return False
+        print(f"staff-notify FAILED: {e}")
+        return set()
+    ok = {str(x.get('message_key')) for x in (res.get('results') or []) if x.get('ok')}
+    print(f"staff-notify: отправлено {len(ok)} из {len(batch)}: {sorted(ok)}")
+    return ok
 
 
 def push_pending(cur, conn):
-    """Сразу отправить сотрудникам все неотправленные уведомления о задачах (через Wappi MAX)."""
-    sent = []
-    started = time.monotonic()
-    reminded = []
-    for m in _shift_reminder_messages(cur):
-        if time.monotonic() - started > 2.5:
-            break
-        if _send_max(m['phone'], m['text']):
-            reminded.append(m['shift_id'])
-            sent.append(f"shift-{m['shift_id']}")
+    """Передать «Окну взаимодействия» все неотправленные уведомления о задачах — оно доставит их сотрудникам."""
+    shift_msgs = _shift_reminder_messages(cur)
+    for m in shift_msgs:
+        m['message_key'] = f"shift-{m['shift_id']}"
+    task_msgs = _pending_messages(cur)
+    ok = _send_via_window(shift_msgs + task_msgs)
+    if not ok:
+        return []
+    reminded = [m['shift_id'] for m in shift_msgs if m['message_key'] in ok]
     if reminded:
         mark_shift_reminded(cur, conn, {'shift_ids': reminded})
-    for m in _pending_messages(cur):
-        if time.monotonic() - started > 2.5:
-            break
-        if _send_max(m['phone'], m['text']):
-            sent.append(m['message_key'])
-    keys = [k for k in sent if k.startswith('task-')]
+    keys = [m['message_key'] for m in task_msgs if m['message_key'] in ok]
     if keys:
         mark_notified(cur, conn, {'message_keys': keys})
-    return sent
+    return sorted(ok)
 
 
 def _solved_problems(cur):
