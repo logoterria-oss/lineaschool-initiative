@@ -38,6 +38,15 @@ CORS = {
 WEEKDAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
 STATUS_LABELS = {'new': 'Новая', 'confirmed': 'Подтверждена', 'rejected': 'Отменена'}
 TIME_RE = re.compile(r'^([01]\d|2[0-3]):[0-5]\d$')
+# Больше 3 диагностик в день у одного педагога не ставим: день закрывается для записи
+DAILY_LIMIT = 3
+
+
+def _day_full_sql(alias: str) -> str:
+    return (
+        f"(SELECT count(*) FROM {SCHEMA}.diag_slots f WHERE f.slot_date = {alias}.slot_date "
+        f"AND f.created_by = {alias}.created_by AND f.booking_id IS NOT NULL) >= {DAILY_LIMIT}"
+    )
 
 
 def _resp(status: int, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -177,9 +186,10 @@ def public_slots(cur, params):
     if err:
         return err
     cur.execute(
-        f"SELECT id, slot_date, time_from, time_to, booking_id FROM {SCHEMA}.diag_slots "
-        f"WHERE booking_id IS NULL AND (slot_date + time_from::time) > {_msk_now_sql()} "
-        "ORDER BY slot_date, time_from"
+        f"SELECT s.id, s.slot_date, s.time_from, s.time_to, s.booking_id FROM {SCHEMA}.diag_slots s "
+        f"WHERE s.booking_id IS NULL AND (s.slot_date + s.time_from::time) > {_msk_now_sql()} "
+        f"AND NOT {_day_full_sql('s')} "
+        "ORDER BY s.slot_date, s.time_from"
     )
     return _resp(200, {'link': _link(link), 'limitReached': _limit_reached(link),
                        'slots': [_slot(r) for r in cur.fetchall()]})
@@ -239,10 +249,17 @@ def public_book(cur, body):
         slot_id = 0
 
     # Сначала занимаем окно одним запросом — двое родителей не возьмут одно время
+    cur.execute(f"SELECT slot_date, created_by FROM {SCHEMA}.diag_slots WHERE id = %s", (slot_id,))
+    target = cur.fetchone()
+    if target:
+        # Блокируем день педагога: две записи одновременно не превысят лимит
+        cur.execute("SELECT pg_advisory_lock(hashtext(%s))",
+                    (f"diag-day-{target['slot_date']}-{target['created_by']}",))
     cur.execute(
-        f"UPDATE {SCHEMA}.diag_slots SET booking_id = -1 "
-        f"WHERE id = %s AND booking_id IS NULL AND (slot_date + time_from::time) > {_msk_now_sql()} "
-        "RETURNING id, slot_date, time_from, time_to",
+        f"UPDATE {SCHEMA}.diag_slots s SET booking_id = -1 "
+        f"WHERE s.id = %s AND s.booking_id IS NULL AND (s.slot_date + s.time_from::time) > {_msk_now_sql()} "
+        f"AND NOT {_day_full_sql('s')} "
+        "RETURNING s.id, s.slot_date, s.time_from, s.time_to",
         (slot_id,),
     )
     slot = cur.fetchone()
