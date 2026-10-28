@@ -1,6 +1,9 @@
 """Финансовая модель: авансовые и фактические доходы — история, сезонность, прогноз по трём сценариям."""
 import os
 import json
+import hmac
+import hashlib
+import time
 import datetime
 from decimal import Decimal
 
@@ -14,7 +17,7 @@ MONTHS_RU = ["янв", "фев", "мар", "апр", "май", "июн", "июл
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
+    "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token, X-Fm-Token",
     "Access-Control-Max-Age": "86400",
 }
 
@@ -97,6 +100,35 @@ def msk_today():
 
 def current_month():
     return msk_today().strftime("%Y-%m")
+
+
+# Пароль на финмодель хранится только в виде хэша
+FM_PASS_SALT = "lineaschool-fm:"
+FM_PASS_HASH = "1014dcf0ae871c4475e4c85ba571d005bd98f289cc0e4cfbab1cb10fbb912b41"
+FM_TOKEN_DAYS = 7
+
+
+def _fm_sign(staff_id, exp):
+    return hmac.new(FM_PASS_HASH.encode(), f"{staff_id}:{exp}".encode(), hashlib.sha256).hexdigest()
+
+
+def fm_unlock(me, body):
+    pwd = str(body.get("password") or "")
+    given = hashlib.sha256((FM_PASS_SALT + pwd).encode()).hexdigest()
+    if not hmac.compare_digest(given, FM_PASS_HASH):
+        time.sleep(1)
+        return resp(403, {"error": "Неверный пароль", "locked": True})
+    exp = int(time.time()) + FM_TOKEN_DAYS * 86400
+    return resp(200, {"ok": True, "token": f"{exp}.{_fm_sign(me['id'], exp)}", "expires": exp})
+
+
+def fm_unlocked(me, event):
+    h = event.get("headers") or {}
+    token = h.get("X-Fm-Token") or h.get("x-fm-token") or ""
+    exp, _, sig = token.partition(".")
+    if not exp.isdigit() or int(exp) < time.time():
+        return False
+    return hmac.compare_digest(sig, _fm_sign(me["id"], int(exp)))
 
 
 def auth(cur, event):
@@ -3501,8 +3533,15 @@ def handler(event: dict, context) -> dict:
     conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=5)
     try:
         cur = conn.cursor(cursor_factory=CachedCursor)
-        if not auth(cur, event):
+        me = auth(cur, event)
+        if not me:
             return resp(401, {"error": "Доступ только для руководителя"})
+        if method == "POST":
+            body = json.loads(event.get("body") or "{}")
+            if body.get("action") == "unlock":
+                return fm_unlock(me, body)
+        if not fm_unlocked(me, event):
+            return resp(403, {"error": "Введите пароль финмодели", "locked": True})
 
         if method == "GET":
             action = (event.get("queryStringParameters") or {}).get("action") or "avans"

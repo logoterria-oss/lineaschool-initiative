@@ -173,6 +173,20 @@
         "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Разблокировка без входа закрыта",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "unlock",
+        "password": "wrong"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

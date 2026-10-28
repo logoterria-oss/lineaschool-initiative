@@ -1,11 +1,27 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { useFinModel } from '@/components/finmodel/page/useFinModel';
 import FinModelHeader from '@/components/finmodel/page/FinModelHeader';
 import FinModelTabsNav from '@/components/finmodel/page/FinModelTabsNav';
 import FinModelTabContent from '@/components/finmodel/page/FinModelTabContent';
+import FinModelLock from '@/components/finmodel/page/FinModelLock';
+import { FM_LOCK_EVENT, fmTokenValid } from '@/lib/finmodelApi';
 
 const FinModelPage = () => {
+  const [unlocked, setUnlocked] = useState(fmTokenValid);
+
+  useEffect(() => {
+    const lock = () => setUnlocked(false);
+    window.addEventListener(FM_LOCK_EVENT, lock);
+    return () => window.removeEventListener(FM_LOCK_EVENT, lock);
+  }, []);
+
+  if (!unlocked) return <FinModelLock onUnlock={() => setUnlocked(true)} />;
+  return <FinModelContent />;
+};
+
+const FinModelContent = () => {
   const navigate = useNavigate();
   const fm = useFinModel();
   const { data, fact, revenue, students, fixed, credit, ano, taxes, payouts, oneTime, loading, error, load } = fm;

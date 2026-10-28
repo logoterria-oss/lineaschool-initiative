@@ -6,11 +6,35 @@ const PAYMENT_REPORT = (func2url as Record<string, string>)['payment-report'];
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 /** Запрос к финмодели с повтором: при перегрузке базы (5xx / обрыв сети) ждём и пробуем снова. */
+export const FM_TOKEN_KEY = 'finmodel_token';
+export const FM_LOCK_EVENT = 'finmodel-locked';
+
+export const fmTokenValid = (): boolean => {
+  const exp = Number((localStorage.getItem(FM_TOKEN_KEY) || '').split('.')[0]);
+  return exp * 1000 > Date.now();
+};
+
+export const unlockFinModel = async (password: string): Promise<void> => {
+  const token = localStorage.getItem('staff_token') || '';
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Auth-Token': token } : {}) },
+    body: JSON.stringify({ action: 'unlock', password }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.token) throw new Error(data.error || 'Не удалось проверить пароль');
+  localStorage.setItem(FM_TOKEN_KEY, data.token);
+};
+
 const fmFetch = async (url: string, init?: RequestInit): Promise<Response> => {
   const delays = [1500, 3000, 5000];
   for (let i = 0; ; i++) {
     try {
       const r = await fetch(url, init);
+      if (r.status === 403 && url.startsWith(API)) {
+        localStorage.removeItem(FM_TOKEN_KEY);
+        window.dispatchEvent(new Event(FM_LOCK_EVENT));
+      }
       if (r.status < 500 || i >= delays.length) return r;
     } catch (e) {
       if (i >= delays.length) throw e;
@@ -81,6 +105,8 @@ const headers = (json = false): Record<string, string> => {
   const h: Record<string, string> = {};
   const token = localStorage.getItem('staff_token') || '';
   if (token) h['X-Auth-Token'] = token;
+  const fm = localStorage.getItem(FM_TOKEN_KEY);
+  if (fm) h['X-Fm-Token'] = fm;
   if (json) h['Content-Type'] = 'application/json';
   return h;
 };
