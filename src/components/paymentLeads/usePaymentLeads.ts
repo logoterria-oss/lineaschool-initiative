@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from "@/lib/router-compat";
 import { namesSimilar } from '@/lib/nameSimilarity';
 import { PaymentLead, BlockedPayment, GET_LEADS_URL, SYNC_URL, DELETE_URL, BLOCKLIST_URL } from './types';
 
@@ -8,7 +8,7 @@ export function usePaymentLeads(forceHead = false) {
   const location = useLocation();
   // Режим руководителя: либо переход из старого кабинета (/admin/head),
   // либо явное указание forceHead=true (новый кабинет руководителя).
-  const isHead = forceHead || location.state?.from === '/admin/head';
+  const isHead = forceHead || (location.state as { from?: string } | null)?.from === '/admin/head';
   const [leads, setLeads] = useState<PaymentLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);

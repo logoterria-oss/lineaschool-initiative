@@ -37,6 +37,7 @@ export interface DiagData {
   wordFormation: string[];
   grammaticalStructure: string;
   connectedSpeech: string[];
+  connectedSpeechOther?: string;
   nominativeFunction: string[];
   wordUnderstanding: string;
   complexConstructions: string;

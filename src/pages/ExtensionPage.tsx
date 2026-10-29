@@ -1,9 +1,18 @@
-import SEOHead from "@/components/SEOHead";
+import { seoHead } from "@/lib/seo";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Icon from "@/components/ui/icon";
+
+/** Мета-теги страницы расширения — для head() маршрута */
+export const extensionHead = () =>
+  seoHead({
+    title: "Расширение для Chrome - Помощник для дислексиков | ЛинэяСкул",
+    description: "Бесплатное расширение для Chrome, которое делает чтение в интернете комфортнее для людей с дислексией. Специальный шрифт, настройка интервалов и цветов.",
+    keywords: "дислексия, расширение chrome, шрифт для дислексии, OpenDyslexic, помощник чтения",
+    canonicalUrl: "https://lineaschool.ru/extension",
+  });
 
 export default function ExtensionPage() {
   const handleDownload = () => {
@@ -12,13 +21,6 @@ export default function ExtensionPage() {
 
   return (
     <>
-      <SEOHead
-        title="Расширение для Chrome - Помощник для дислексиков | ЛинэяСкул"
-        description="Бесплатное расширение для Chrome, которое делает чтение в интернете комфортнее для людей с дислексией. Специальный шрифт, настройка интервалов и цветов."
-        keywords="дислексия, расширение chrome, шрифт для дислексии, OpenDyslexic, помощник чтения"
-        canonicalUrl="https://lineaschool.ru/extension"
-      />
-      
       <div className="min-h-screen bg-white">
         <Navigation />
         

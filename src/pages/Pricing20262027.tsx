@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import CTASection from '@/components/CTASection';
@@ -6,39 +5,24 @@ import DiagnosticsSection from '@/components/pricing2026/DiagnosticsSection';
 import SubscriptionsSection from '@/components/pricing2026/SubscriptionsSection';
 import IndividualSection from '@/components/pricing2026/IndividualSection';
 
-export default function Pricing20262027() {
-  useEffect(() => {
-    document.title = 'Стоимость занятий 2026–2027 - ЛинэяСкул';
-
-    const setMeta = (attr: string, value: string, content: string) => {
-      let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, value);
-        document.head.appendChild(el);
-      }
-      el.content = content;
-    };
-
+/** Мета-теги страницы цен — для head() маршрута */
+export const pricing20262027Head = () => ({
+  meta: [
+    { title: 'Стоимость занятий 2026–2027 - ЛинэяСкул' },
     // Основная страница цен: открыта для поиска, чтобы родители попадали
     // именно на актуальные тарифы, а не на архив прошлого сезона.
-    setMeta('name', 'robots', 'index, follow');
-    setMeta(
-      'name',
-      'description',
-      'Стоимость онлайн-занятий по коррекции дислексии и дисграфии у детей 8–18 лет в 2026–2027 учебном году.',
-    );
-    setMeta('property', 'og:title', 'Стоимость занятий 2026–2027 - ЛинэяСкул');
-    setMeta('property', 'og:url', 'https://lineaschool.ru/price_2026-2027');
+    { name: 'robots', content: 'index, follow' },
+    {
+      name: 'description',
+      content: 'Стоимость онлайн-занятий по коррекции дислексии и дисграфии у детей 8–18 лет в 2026–2027 учебном году.',
+    },
+    { property: 'og:title', content: 'Стоимость занятий 2026–2027 - ЛинэяСкул' },
+    { property: 'og:url', content: 'https://lineaschool.ru/price_2026-2027' },
+  ],
+  links: [{ rel: 'canonical', href: 'https://lineaschool.ru/price_2026-2027' }],
+});
 
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.rel = 'canonical';
-      document.head.appendChild(canonical);
-    }
-    canonical.href = 'https://lineaschool.ru/price_2026-2027';
-  }, []);
+export default function Pricing20262027() {
 
   return (
     <div className="min-h-screen bg-white">

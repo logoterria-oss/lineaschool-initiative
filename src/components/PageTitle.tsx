@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from "@/lib/router-compat";
 
 /**
  * Названия вкладок браузера по адресу страницы.
@@ -54,6 +54,12 @@ const resolveTitle = (pathname: string): string | undefined => {
     (p) => p !== '/' && pathname.startsWith(`${p}/`),
   );
   return prefix ? TITLES[prefix] : undefined;
+};
+
+/** Название вкладки для head() маршрута (точный путь из TITLES). */
+export const titleHead = (path: string) => {
+  const title = resolveTitle(path);
+  return title ? { meta: [{ title }] } : {};
 };
 
 /**

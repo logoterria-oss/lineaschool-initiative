@@ -1,1 +1,0 @@
-ALTER TABLE t_p93118852_lineaschool_initiati.staff_tasks ADD COLUMN attachments JSONB NOT NULL DEFAULT '[]'::jsonb;

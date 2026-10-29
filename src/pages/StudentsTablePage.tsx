@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "@/lib/router-compat";
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
 import {

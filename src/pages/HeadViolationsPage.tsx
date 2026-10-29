@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "@/lib/router-compat";
 import AdminHeader from '@/components/AdminHeader';
 import Icon from '@/components/ui/icon';
 import TeacherViolationsManager from '@/components/violations/TeacherViolationsManager';

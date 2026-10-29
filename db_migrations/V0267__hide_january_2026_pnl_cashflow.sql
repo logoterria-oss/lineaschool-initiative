@@ -1,2 +1,0 @@
-UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET amount = 0, note = '', updated_at = now() WHERE month_id = '2026-01';
-UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount = 0, note = '', updated_at = now() WHERE month_id = '2026-01';

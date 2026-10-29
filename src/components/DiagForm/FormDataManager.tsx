@@ -85,7 +85,7 @@ export const useFormDataManager = () => {
     logopedist: ""
   });
 
-  const handleInputChange = (field: string, value: string | string[]) => {
+  const handleInputChange = (field: string, value: string | string[] | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "@/lib/router-compat";
 import Icon from '@/components/ui/icon';
 import PaymentReportModal from '@/components/PaymentReportModal';
 import RetentionReportModal from '@/components/RetentionReportModal';

@@ -1,1 +1,0 @@
-ALTER TABLE interaction_dialogs ADD COLUMN IF NOT EXISTS crm_label VARCHAR(255);

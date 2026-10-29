@@ -8,7 +8,7 @@ interface Props {
   primarySamples: string[];
   interimSamples: string[];
   interimSamplesDate: string | null;
-  fileRef: RefObject<HTMLInputElement>;
+  fileRef: RefObject<HTMLInputElement | null>;
   onImageClick: (src: string) => void;
   onRemoveSample: (idx: number) => void;
   onFiles: (files: FileList | null) => void;

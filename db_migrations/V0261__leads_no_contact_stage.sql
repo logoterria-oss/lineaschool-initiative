@@ -1,1 +1,0 @@
-ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS no_contact_stage TEXT NOT NULL DEFAULT '';

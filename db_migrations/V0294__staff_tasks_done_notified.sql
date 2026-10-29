@@ -1,2 +1,0 @@
-ALTER TABLE t_p93118852_lineaschool_initiati.staff_tasks ADD COLUMN done_notified_at TIMESTAMP NULL;
-UPDATE t_p93118852_lineaschool_initiati.staff_tasks SET done_notified_at = now() WHERE status = 'done';

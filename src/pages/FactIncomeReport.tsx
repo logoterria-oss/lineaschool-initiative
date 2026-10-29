@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import Icon from '@/components/ui/icon';
 import FactIncomeTable from '@/components/factIncome/FactIncomeTable';
 import {

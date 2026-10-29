@@ -1,1 +1,0 @@
-UPDATE site_question_clicks SET used_dialog_id = -1 WHERE used_dialog_id IS NULL;

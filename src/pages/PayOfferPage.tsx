@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link } from "@/lib/router-compat";
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,18 @@ import { getPromoDeadline } from '@/components/pricing2026/data';
 import PayOptionCard from '@/components/pay/PayOptionCard';
 import { getPayOffer } from '@/components/pay/offers';
 
+/** Мета-теги страницы оплаты — для head() маршрута */
+export const payOfferHead = (slug?: string) => {
+  const offer = getPayOffer(slug);
+  if (!offer) return {};
+  return {
+    meta: [
+      { title: `Оплата — ${offer.title} | ЛинэяСкул` },
+      { name: 'robots', content: 'noindex, nofollow' },
+    ],
+  };
+};
+
 /**
  * Страница оплаты одной услуги. Родитель приходит по прямой ссылке,
  * выбирает срок абонемента (если вариантов несколько) и оплачивает.
@@ -19,17 +31,6 @@ export default function PayOfferPage() {
   const offer = getPayOffer(slug);
   const [selected, setSelected] = useState(0);
   const payment = usePayment();
-
-  useEffect(() => {
-    if (!offer) return;
-    document.title = `Оплата — ${offer.title} | ЛинэяСкул`;
-
-    const robots = document.createElement('meta');
-    robots.name = 'robots';
-    robots.content = 'noindex, nofollow';
-    document.head.appendChild(robots);
-    return () => robots.remove();
-  }, [offer]);
 
   if (!offer) {
     return (

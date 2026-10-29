@@ -7,13 +7,14 @@ import Icon from '@/components/ui/icon';
 export interface SpeechTherapyReport {
   id: number;
   student_name: string;
-  student_age: number;
+  student_age: number | null;
   date_of_examination: string;
   therapist_name: string;
   diagnosis: string;
   recommendations: string;
   report_content: string;
   access_token: string;
+  report_link?: string;
   created_at: string;
   updated_at: string;
   diag_type?: string;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from "@/lib/router-compat";
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Choice, choiceKey } from '@/components/booking/DayCard';

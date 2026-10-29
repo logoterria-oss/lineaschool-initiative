@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "@/lib/router-compat";
 import Icon from '@/components/ui/icon';
 import { useFinModel } from '@/components/finmodel/page/useFinModel';
 import FinModelHeader from '@/components/finmodel/page/FinModelHeader';

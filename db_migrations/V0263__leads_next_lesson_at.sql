@@ -1,1 +1,0 @@
-ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS next_lesson_at TEXT NOT NULL DEFAULT '';

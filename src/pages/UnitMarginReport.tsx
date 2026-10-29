@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "@/lib/router-compat";
 import Icon from '@/components/ui/icon';
 import UnitMonthPicker from '@/components/unitMargin/UnitMonthPicker';
 import UnitRatesForm from '@/components/unitMargin/UnitRatesForm';

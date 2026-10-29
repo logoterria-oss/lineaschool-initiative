@@ -1,40 +1,25 @@
-import { useEffect } from 'react';
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import PricingSection from "@/components/PricingSection";
 import Icon from "@/components/ui/icon";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 
-export default function Pricing() {
-  useEffect(() => {
-    document.title = 'Архив цен - ЛинэяСкул';
-
-    const setMeta = (attr: string, value: string, content: string) => {
-      let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, value);
-        document.head.appendChild(el);
-      }
-      el.content = content;
-    };
-
+/** Мета-теги архива цен — для head() маршрута */
+export const pricingHead = () => ({
+  meta: [
+    { title: 'Архив цен - ЛинэяСкул' },
     // Архивный прайс: из поиска убираем, чтобы родители не попадали
     // на неактуальные цены из выдачи
-    setMeta('name', 'robots', 'noindex, nofollow');
-    setMeta('name', 'description', 'Архив цен прошлого сезона. Оплата недоступна, актуальные цены — в разделе «Стоимость занятий».');
-    setMeta('property', 'og:title', 'Архив цен - ЛинэяСкул');
-    setMeta('property', 'og:description', 'Архив цен прошлого сезона.');
-    setMeta('property', 'og:url', 'https://lineaschool.ru/archiv_price/history');
+    { name: 'robots', content: 'noindex, nofollow' },
+    { name: 'description', content: 'Архив цен прошлого сезона. Оплата недоступна, актуальные цены — в разделе «Стоимость занятий».' },
+    { property: 'og:title', content: 'Архив цен - ЛинэяСкул' },
+    { property: 'og:description', content: 'Архив цен прошлого сезона.' },
+    { property: 'og:url', content: 'https://lineaschool.ru/archiv_price/history' },
+  ],
+  links: [{ rel: 'canonical', href: 'https://lineaschool.ru/archiv_price/history' }],
+});
 
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.rel = 'canonical';
-      document.head.appendChild(canonical);
-    }
-    canonical.href = 'https://lineaschool.ru/archiv_price/history';
-  }, []);
+export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-white">

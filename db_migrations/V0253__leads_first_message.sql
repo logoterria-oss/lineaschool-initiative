@@ -1,2 +1,0 @@
-ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS first_message_at TIMESTAMPTZ NULL;
-ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS first_message_by TEXT NULL;

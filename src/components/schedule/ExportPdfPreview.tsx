@@ -3,7 +3,7 @@ import { ScheduleType, WEEKDAY_FULL } from './pdfExportUtils';
 import { IndStableDay, GroupStableDay } from './useScheduleData';
 
 interface ExportPdfPreviewProps {
-  printRef: React.RefObject<HTMLDivElement>;
+  printRef: React.RefObject<HTMLDivElement | null>;
   logoData: string;
   startDate: Date;
   type: ScheduleType;

@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface FinalData {
   recommendations: string[];
@@ -31,10 +31,13 @@ export default function FinalSection({ formData, onInputChange }: FinalProps) {
   };
 
   // Автоматически устанавливаем текущую дату при первой загрузке
-  if (!formData.diagnosisDate) {
-    const currentDate = new Date().toISOString().split('T')[0];
-    onInputChange("diagnosisDate", currentDate);
-  }
+  useEffect(() => {
+    if (!formData.diagnosisDate) {
+      const currentDate = new Date().toISOString().split('T')[0];
+      onInputChange("diagnosisDate", currentDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.diagnosisDate]);
 
   return (
     <section className="bg-gray-50 p-6 rounded-lg">

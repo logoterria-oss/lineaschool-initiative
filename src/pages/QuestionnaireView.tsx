@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams } from "@/lib/router-compat";
 import QuestionnaireDetails from '@/components/questionnaire/QuestionnaireDetails';
 
 /**

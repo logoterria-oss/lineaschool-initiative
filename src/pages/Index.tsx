@@ -1,6 +1,5 @@
-import SEOHead from "@/components/SEOHead";
 import { getPrimaryDiagnosticPrice } from "@/lib/diagnosticPrice";
-import YandexMetaTags from "@/components/YandexMetaTags";
+import { seoHead, YANDEX_META } from "@/lib/seo";
 import { organizationSchema, serviceSchema, faqSchema, webPageSchema } from "@/utils/structuredData";
 import Navigation from "@/components/Navigation";
 import SectionsNav from "@/components/SectionsNav";
@@ -17,7 +16,8 @@ import Footer from "@/components/Footer";
 import MobileFloatingButtons from "@/components/MobileFloatingButtons";
 import MobileOptimizedSpirals from "@/components/MobileOptimizedSpirals";
 
-export default function Index() {
+/** Мета-теги главной — для head() маршрута "/" */
+export const indexHead = () => {
   const combinedSchema = {
     "@context": "https://schema.org",
     "@graph": [
@@ -27,19 +27,20 @@ export default function Index() {
       webPageSchema
     ]
   };
+  const head = seoHead({
+    title: "Онлайн коррекция дислексии и дисграфии для детей 8-18 лет | ЛинэяСкул",
+    description: `Эффективная онлайн-коррекция дислексии и дисграфии для детей 8-18 лет. Нейрологопедический подход, 200+ довольных семей, от 970₽ за урок. Первичная диагностика — ${getPrimaryDiagnosticPrice().price}₽.`,
+    keywords: "дислексия, дисграфия, коррекция, логопед онлайн, нейрологопед, дети, обучение, дефектолог, нарушения чтения, нарушения письма",
+    ogImage: "https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png",
+    canonicalUrl: "https://lineaschool.ru",
+    structuredData: combinedSchema,
+  });
+  return { ...head, meta: [...head.meta, ...YANDEX_META] };
+};
 
+export default function Index() {
   return (
     <>
-      <SEOHead
-        title="Онлайн коррекция дислексии и дисграфии для детей 8-18 лет | ЛинэяСкул"
-        description={`Эффективная онлайн-коррекция дислексии и дисграфии для детей 8-18 лет. Нейрологопедический подход, 200+ довольных семей, от 970₽ за урок. Первичная диагностика — ${getPrimaryDiagnosticPrice().price}₽.`}
-        keywords="дислексия, дисграфия, коррекция, логопед онлайн, нейрологопед, дети, обучение, дефектолог, нарушения чтения, нарушения письма"
-        ogImage="https://cdn.poehali.dev/files/81420758-6ed0-43fe-b7e7-c6317caea682.png"
-        canonicalUrl="https://lineaschool.ru"
-        structuredData={combinedSchema}
-      />
-      <YandexMetaTags />
-      
       <div className="min-h-screen bg-white relative">
         <MobileOptimizedSpirals />
         <Navigation />

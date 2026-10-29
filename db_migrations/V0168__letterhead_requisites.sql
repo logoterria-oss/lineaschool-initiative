@@ -1,2 +1,0 @@
-ALTER TABLE letterhead_docs ADD COLUMN IF NOT EXISTS requisites JSONB;
-ALTER TABLE letterhead_docs ADD COLUMN IF NOT EXISTS show_signature BOOLEAN DEFAULT TRUE;

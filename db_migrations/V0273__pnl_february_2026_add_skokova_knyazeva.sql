@@ -1,3 +1,0 @@
-UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount=126350.00, note=note || '; + Скокова 2 200 (4 урока 16–28 фев, оплачено в марте с личной карты) + Князева 1 250 (2 урока 26 фев, оплачено 15.04 с личной карты) = 126 350', updated_at=now() WHERE month_id='2026-02' AND line='teachers';
-UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount=330515.19, note='Выручка 547 461 − расходы 216 945,81', updated_at=now() WHERE month_id='2026-02' AND line='pretax_profit';
-UPDATE t_p93118852_lineaschool_initiati.fm_pnl_fact_manual SET amount=299821.59, note='Прибыль до налогов 330 515,19 − налоговая нагрузка 30 693,60 (6% от поступлений)', updated_at=now() WHERE month_id='2026-02' AND line='net_profit';

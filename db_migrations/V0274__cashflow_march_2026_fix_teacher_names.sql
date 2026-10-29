@@ -1,1 +1,0 @@
-UPDATE t_p93118852_lineaschool_initiati.fm_cashflow_fact_manual SET note=replace(note,'Найденова','Шишаева'), updated_at=now() WHERE month_id='2026-03' AND line='variable';

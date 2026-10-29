@@ -15,7 +15,7 @@ const FinalSection = lazy(() => import("@/components/diag/FinalSection"));
 
 interface FormSectionsProps {
   formData: DiagFormData;
-  onInputChange: (field: string, value: string | string[]) => void;
+  onInputChange: (field: string, value: string | string[] | boolean) => void;
   /** Пропущенные пункты по разделам — для подсветки после предупреждения */
   missingBySection?: Record<string, string[]>;
 }

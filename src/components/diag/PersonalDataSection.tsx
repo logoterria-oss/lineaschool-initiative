@@ -23,7 +23,7 @@ interface PersonalDataSectionProps {
     schoolStartAge: string;
     kindergarten: string;
   };
-  onInputChange: (field: string, value: string) => void;
+  onInputChange: (field: string, value: string | string[]) => void;
 }
 
 const CITY_SEARCH_URL = 'https://functions.poehali.dev/41101c3b-0b75-4f91-81c7-e6d4031e76fd';

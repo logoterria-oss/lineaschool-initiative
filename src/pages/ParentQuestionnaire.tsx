@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import DiagFormNavigation from "@/components/diag/DiagFormNavigation";
 import Footer from "@/components/Footer";
 import PageContactInfo from "@/components/questionnaire/PageContactInfo";

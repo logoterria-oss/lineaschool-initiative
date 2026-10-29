@@ -1,7 +1,0 @@
-ALTER TABLE t_p93118852_lineaschool_initiati.leads
-  ADD COLUMN IF NOT EXISTS messenger_added_at TIMESTAMPTZ NULL,
-  ADD COLUMN IF NOT EXISTS messenger_added_by TEXT NULL,
-  ADD COLUMN IF NOT EXISTS messenger_order_id TEXT NULL,
-  ADD COLUMN IF NOT EXISTS crm_status TEXT NULL,
-  ADD COLUMN IF NOT EXISTS crm_label TEXT NULL,
-  ADD COLUMN IF NOT EXISTS crm_active BOOLEAN NULL;

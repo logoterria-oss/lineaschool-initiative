@@ -1,4 +1,5 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from "@/lib/router-compat";
 import Icon from '@/components/ui/icon';
 
 /**
@@ -31,10 +32,16 @@ const BackToAdminHome = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const role = sessionStorage.getItem('staff_role') || '';
+  const [role, setRole] = useState('');
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    setRole(sessionStorage.getItem('staff_role') || '');
+    setLoaded(true);
+  }, [pathname]);
   const target = ROLE_WORKSPACE[role] || '/admin/admin-workspace';
 
   const isStaffPage = pathname.startsWith('/admin') || STAFF_PATHS.includes(pathname);
+  if (!loaded) return null;
   if (!isStaffPage) return null;
   if (HIDDEN_PATHS.includes(pathname)) return null;
   if (isConclusionPage(pathname)) return null;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "@/lib/router-compat";
 import Icon from '@/components/ui/icon';
 
 const RETENTION_URL = 'https://functions.poehali.dev/4dc86795-cf29-4988-bffb-c2286ca74ff5';

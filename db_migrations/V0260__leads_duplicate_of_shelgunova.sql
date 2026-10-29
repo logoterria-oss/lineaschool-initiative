@@ -1,2 +1,0 @@
-ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS duplicate_of INTEGER NULL;
-UPDATE t_p93118852_lineaschool_initiati.leads SET duplicate_of = 232, updated_at = CURRENT_TIMESTAMP WHERE id = 227 AND parent_name = 'Шелгунова Анна Викторовна';

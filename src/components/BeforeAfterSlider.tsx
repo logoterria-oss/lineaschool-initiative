@@ -19,7 +19,7 @@ export default function BeforeAfterSlider({ examples }: BeforeAfterSliderProps) 
   const [isDragging, setIsDragging] = useState(false);
   const [autoAnimation, setAutoAnimation] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   const currentData = examples[currentExample];
   
