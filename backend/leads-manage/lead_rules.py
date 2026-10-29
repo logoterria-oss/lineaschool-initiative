@@ -5,6 +5,8 @@
 - «Списались в "Окне" (ответ не получен)»: только «Связь через "Окно" не налажена».
 - От «ответ получен» до «Утверждено расписание»: по умолчанию «лид в работе»,
   если этап не менялся 3 дня и больше — «завис на этапе».
+  На этапах «Запланирована диагностика» «завис» — только если день диагностики прошёл,
+  а лид так и не перешёл в «Проведена диагностика».
 - «Оплачен абонемент»: «клиент», через 3 дня на этапе — «завис на этапе».
 - «Клиент добавлен в мессенджер»: только «клиент».
 - «нецелевой лид», «норма развития», «отказ», «игнор» — лид уходит в архив.
@@ -27,6 +29,10 @@ MID = (
     'Запланирована диагностика (оплачено)',
     'Проведена диагностика',
     'Утверждено расписание',
+)
+DIAG_PLANNED = (
+    'Запланирована диагностика (не оплачено)',
+    'Запланирована диагностика (оплачено)',
 )
 PAID = 'Оплачен абонемент'
 CLIENT_STAGES = (PAID, 'Клиент добавлен в мессенджер')
@@ -62,8 +68,15 @@ def apply_rules(cur, lead_id: Optional[int] = None) -> None:
                 f"WHERE {scope} AND {ps} = '' AND {ls} NOT IN ('', {_q(NO_CONTACT)}, {_q(NO_SHOW)})")
     cur.execute(f"{upd}lead_status = {_q(NO_CONTACT)} "
                 f"WHERE {scope} AND {ps} = {_q(NO_REPLY)} AND {ls} NOT IN ({_q(NO_CONTACT)}, {_q(NO_SHOW)})")
+    # Этапы «Запланирована диагностика»: завис, только если день диагностики прошёл, а она не проведена.
+    # Без даты диагностики — общее правило 3 дней.
+    diag_day = "SUBSTRING(COALESCE(crm_diag_planned_at, '') FROM '^\\d{4}-\\d{2}-\\d{2}')"
+    msk_today = "(NOW() AT TIME ZONE 'Europe/Moscow')::date"
+    is_diag = f"{ps} IN ({_in(DIAG_PLANNED)})"
+    stuck_cond = (f"(CASE WHEN {is_diag} AND {diag_day} IS NOT NULL "
+                  f"THEN {diag_day}::date < {msk_today} ELSE {since} END)")
     cur.execute(f"{upd}lead_status = {_q(IN_WORK)} "
                 f"WHERE {scope} AND {ps} IN ({_in(MID)}) "
-                f"AND ({ls} NOT IN ({_q(IN_WORK)}, {_q(STUCK)}) OR ({ls} = {_q(STUCK)} AND NOT ({since})))")
+                f"AND ({ls} NOT IN ({_q(IN_WORK)}, {_q(STUCK)}) OR ({ls} = {_q(STUCK)} AND NOT {stuck_cond}))")
     cur.execute(f"{upd}lead_status = {_q(STUCK)} "
-                f"WHERE {scope} AND {ps} IN ({_in(MID)}) AND {ls} = {_q(IN_WORK)} AND {since}")
+                f"WHERE {scope} AND {ps} IN ({_in(MID)}) AND {ls} = {_q(IN_WORK)} AND {stuck_cond}")
