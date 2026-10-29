@@ -249,12 +249,6 @@ def public_book(cur, body):
         slot_id = 0
 
     # Сначала занимаем окно одним запросом — двое родителей не возьмут одно время
-    cur.execute(f"SELECT slot_date, created_by FROM {SCHEMA}.diag_slots WHERE id = %s", (slot_id,))
-    target = cur.fetchone()
-    if target:
-        # Блокируем день педагога: две записи одновременно не превысят лимит
-        cur.execute("SELECT pg_advisory_lock(hashtext(%s))",
-                    (f"diag-day-{target['slot_date']}-{target['created_by']}",))
     cur.execute(
         f"UPDATE {SCHEMA}.diag_slots s SET booking_id = -1 "
         f"WHERE s.id = %s AND s.booking_id IS NULL AND (s.slot_date + s.time_from::time) > {_msk_now_sql()} "
@@ -264,6 +258,17 @@ def public_book(cur, body):
     )
     slot = cur.fetchone()
     if not slot:
+        return _resp(409, {'error': 'taken', 'message': 'Это время уже заняли. Выберите другое.'})
+    # Две записи в одну секунду могли превысить дневной лимит педагога — тогда отдаём окно обратно
+    cur.execute(
+        f"SELECT (SELECT count(*) FROM {SCHEMA}.diag_slots f WHERE f.slot_date = s.slot_date "
+        f"AND f.created_by = s.created_by AND f.booking_id IS NOT NULL) > {DAILY_LIMIT} AS over "
+        f"FROM {SCHEMA}.diag_slots s WHERE s.id = %s",
+        (slot['id'],),
+    )
+    over = cur.fetchone()
+    if over and over['over']:
+        cur.execute(f"UPDATE {SCHEMA}.diag_slots SET booking_id = NULL WHERE id = %s AND booking_id = -1", (slot['id'],))
         return _resp(409, {'error': 'taken', 'message': 'Это время уже заняли. Выберите другое.'})
 
     messengers = body.get('messengers') or []
