@@ -104,9 +104,9 @@ const AdminDashboardView = () => {
         title="Лиды, с которыми нужно связаться"
         icon="UserPlus"
         color="bg-blue-100 text-blue-700"
-        badge={leadsCount > 0 && <Counter n={leadsCount} />}
+        badge={<Counter n={leadsCount} tone={leadsCount === 5 ? 'green' : 'amber'} />}
       >
-        <LeadsToContactBlock onCount={setLeadsCount} />
+        <LeadsToContactBlock marks={marks} onMark={setMark} onCount={setLeadsCount} />
       </DashSection>
 
       <DashSection num={3} title="Каникуляры, с которыми нужно связаться" icon="Palmtree" color="bg-orange-100 text-orange-700">
