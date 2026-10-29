@@ -9,6 +9,7 @@ import {
   leadStatusEditable,
 } from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
+import StuckStage from './StuckStage';
 import { processingColor, leadStatusColor } from './leadColors';
 import { isContactDue, isContactOverdue } from './leadUtils';
 import ContactWhenCell from './ContactWhenCell';
@@ -54,6 +55,7 @@ export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate 
           </span>
         )}
         {onStage && <NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} />}
+        <StuckStage lead={lead} onStage={onStage} />
       </div>
     );
   }

@@ -33,6 +33,9 @@ export interface Lead {
   no_contact_stage?: string;
   /** Дата и время каждого этапа дозвона: {этап: 'ГГГГ-ММ-ДДTЧЧ:ММ'} */
   no_contact_stage_dates?: Record<string, string> | null;
+  /** Этап дожима зависшего лида */
+  stuck_stage?: string;
+  stuck_stage_dates?: Record<string, string> | null;
   /** Первое сообщение в «Окне» — подставляется сервером автоматически */
   window_first_at?: string | null;
   crm_diag_planned_at?: string;
@@ -112,6 +115,13 @@ export function noContactStages(processing: string): string[] {
 export const IN_WORK_STATUS = 'лид в работе';
 export const STUCK_STATUS = 'завис на этапе';
 export const CLIENT_STATUS = 'клиент';
+export const STUCK_REMINDED = 'напомнили о себе';
+export const STUCK_CHECKED = 'уточнили актуальность диагностики';
+export const STUCK_STAGES = [STUCK_REMINDED, STUCK_CHECKED];
+/** Этапы воронки, на которых зависшего лида дожимают: от «ответ получен» до «Запланирована диагностика» */
+export const STUCK_FLOW_PROCESSING = PROCESSING_OPTIONS.slice(1, 5);
+export const hasStuckFlow = (l: { lead_status?: string; processing_status?: string }) =>
+  (l.lead_status || '').trim() === STUCK_STATUS && STUCK_FLOW_PROCESSING.includes((l.processing_status || '').trim());
 export const CLOSING_STATUSES = ['нецелевой лид', 'норма развития', 'отказ', 'игнор'];
 const CLIENT_STAGES = ['Оплачен абонемент', 'Клиент добавлен в мессенджер'];
 

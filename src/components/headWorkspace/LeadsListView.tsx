@@ -17,6 +17,8 @@ import {
   NO_CONTACT_FINAL,
   WINDOW_STAGE,
   toLocalInput,
+  STUCK_STAGES,
+  hasStuckFlow,
 } from '@/lib/leadsApi';
 import LeadsBoard from './leads/LeadsBoard';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
@@ -168,6 +170,17 @@ export default function LeadsListView() {
 
   // Этап дозвона. Последний — «лид не вышел на связь»: ставим этот статус лида и убираем в архив.
   const setStage = async (id: number, stage: string) => {
+    if (STUCK_STAGES.includes(stage) || (stage === '' && hasStuckFlow(leads.find((l) => l.id === id) || {}))) {
+      const lead = leads.find((l) => l.id === id);
+      const dates: Record<string, string> = {};
+      const old = lead?.stuck_stage_dates || {};
+      STUCK_STAGES.slice(0, STUCK_STAGES.indexOf(stage) + 1).forEach((s) => {
+        dates[s] = old[s] || toLocalInput(new Date());
+      });
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, stuck_stage: stage, stuck_stage_dates: dates } : l)));
+      updateLead(id, { stuck_stage: stage, stuck_stage_dates: dates });
+      return;
+    }
     if (stage === NO_CONTACT_FINAL) {
       const now = new Date().toISOString();
       const lead = leads.find((l) => l.id === id);

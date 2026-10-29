@@ -27,7 +27,9 @@ const fmtDue = (d: Date, now: Date) => {
 
 /** Ключ отметки: у дозвона — свой на каждый шаг, чтобы следующий звонок снова был не отмечен */
 const markKey = (g: LeadGroup, i: DashLead) =>
-  `lead:${g.key}:${i.lead.id}${g.key === 'contact' ? `:${i.lead.no_contact_stage || 'start'}` : ''}`;
+  `lead:${g.key}:${i.lead.id}${
+    g.key === 'contact' ? `:${i.lead.no_contact_stage || 'start'}` : g.key === 'stuck' && i.lead.stuck_stage ? `:${i.lead.stuck_stage}` : ''
+  }`;
 
 interface Props {
   marks: Record<string, MarkState>;

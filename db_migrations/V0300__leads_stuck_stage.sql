@@ -1,0 +1,2 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS stuck_stage text NOT NULL DEFAULT '';
+ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS stuck_stage_dates jsonb;

@@ -19,7 +19,7 @@ FIELDS = [
     'responsible', 'processing_status', 'lead_status', 'diag_date',
     'report_link', 'schedule', 'teachers', 'comment', 'contact_when', 'source',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
-    'no_contact_stage',
+    'no_contact_stage', 'stuck_stage',
 ]
 
 # Тестовые заявки: слово «тест»/«тестовый»/«test» в имени родителя, ребёнка или контакте.
@@ -98,7 +98,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "responsible, processing_status, lead_status, diag_date, report_link, "
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
-                "status_changed_at, archived, archived_at, no_contact_stage, no_contact_stage_dates, crm_diag_planned_at, crm_diag_done_at, next_lesson_at, "
+                "status_changed_at, archived, archived_at, no_contact_stage, no_contact_stage_dates, stuck_stage, stuck_stage_dates, crm_diag_planned_at, crm_diag_done_at, next_lesson_at, "
                 f"{WINDOW_FIRST_SQL} "
                 f"FROM leads WHERE {NOT_TEST} AND became_client_at IS NULL AND duplicate_of IS NULL ORDER BY id ASC"
             )
@@ -108,7 +108,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'contact_when', 'source', 'created_at', 'updated_at',
                     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
                     'landing_page', 'referrer', 'status_changed_at', 'archived', 'archived_at',
-                    'no_contact_stage', 'no_contact_stage_dates', 'crm_diag_planned_at', 'crm_diag_done_at', 'next_lesson_at',
+                    'no_contact_stage', 'no_contact_stage_dates', 'stuck_stage', 'stuck_stage_dates', 'crm_diag_planned_at', 'crm_diag_done_at', 'next_lesson_at',
                     'window_first_at']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
@@ -135,6 +135,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 # Даты этапов дозвона: {этап: 'ГГГГ-ММ-ДД ЧЧ:ММ'}
                 dates = {str(k): str(v) for k, v in body['no_contact_stage_dates'].items() if v}
                 sets.append(f"no_contact_stage_dates = '{esc(json.dumps(dates, ensure_ascii=False))}'::jsonb")
+            if isinstance(body.get('stuck_stage_dates'), dict):
+                sdates = {str(k): str(v) for k, v in body['stuck_stage_dates'].items() if v}
+                sets.append(f"stuck_stage_dates = '{esc(json.dumps(sdates, ensure_ascii=False))}'::jsonb")
             if 'archived' in body:
                 # Архив доски: лид убирается из колонок, но остаётся в таблице
                 if body['archived']:

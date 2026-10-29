@@ -1,4 +1,7 @@
-import { Lead, NO_CONTACT_FINAL, NO_CONTACT_STATUS, NO_REPLY_PROCESSING, STUCK_STATUS, WINDOW_STAGE } from '@/lib/leadsApi';
+import {
+  Lead, NO_CONTACT_FINAL, NO_CONTACT_STATUS, NO_REPLY_PROCESSING, STUCK_CHECKED, STUCK_REMINDED, STUCK_STATUS, WINDOW_STAGE,
+  hasStuckFlow,
+} from '@/lib/leadsApi';
 
 export const SHIFT_END_HOUR = 18;
 const HOUR = 3600_000;
@@ -106,9 +109,22 @@ export function buildLeadGroups(leads: Lead[], today: string, now = new Date()):
     .filter((l) => ps(l) === '' && ls(l) === '' && take(l))
     .map((l) => ({ lead: l, hint: 'Новый лид — не разобран' }));
 
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
   const stuck: DashLead[] = active
-    .filter((l) => ls(l) === STUCK_STATUS && take(l))
-    .map((l) => ({ lead: l, hint: `Завис на этапе «${ps(l) || 'не разобрано'}»` }));
+    .filter((l) => ls(l) === STUCK_STATUS)
+    .map((l): DashLead => {
+      const base = `Завис на этапе «${ps(l) || 'не разобрано'}»`;
+      if (!hasStuckFlow(l)) return { lead: l, hint: base };
+      const st = l.stuck_stage || '';
+      if (st === STUCK_REMINDED) {
+        const t = parse(l.stuck_stage_dates?.[STUCK_REMINDED]);
+        return { lead: l, hint: `${base} · уточнить актуальность диагностики`, due: t ? new Date(t.getTime() + 24 * HOUR) : now };
+      }
+      if (st === STUCK_CHECKED) return { lead: l, hint: '' };
+      return { lead: l, hint: `${base} · напомнить о себе` };
+    })
+    .filter((i) => i.hint && (!i.due || i.due.getTime() <= endOfToday.getTime()) && take(i.lead));
 
   return [
     { key: 'new', title: 'Новые лиды', icon: 'Sparkles', items: fresh },

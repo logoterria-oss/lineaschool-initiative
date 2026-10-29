@@ -7,6 +7,10 @@
   если этап не менялся 3 дня и больше — «завис на этапе».
   На этапах «Запланирована диагностика» «завис» — только если день диагностики прошёл,
   а лид так и не перешёл в «Проведена диагностика».
+  На этапах «ответ получен» и «Заполнена анкета» «завис» — уже через 1 день.
+- Зависшим от «ответ получен» до «Запланирована диагностика» — этапы дожима:
+  «напомнили о себе» → (через 1 день) «уточнили актуальность диагностики» →
+  (через 1 день без движения) статус «игнор» и архив.
 - «Оплачен абонемент»: «клиент», через 3 дня на этапе — «завис на этапе».
 - «Клиент добавлен в мессенджер»: только «клиент».
 - «нецелевой лид», «норма развития», «отказ», «игнор» — лид уходит в архив.
@@ -34,6 +38,12 @@ DIAG_PLANNED = (
     'Запланирована диагностика (не оплачено)',
     'Запланирована диагностика (оплачено)',
 )
+FAST_STUCK = ('Списались в "Окне" (ответ получен)', 'Заполнена анкета')
+FAST_STUCK_DAYS = 1
+STUCK_FLOW = MID[:4]
+REMINDED = 'напомнили о себе'
+CHECKED = 'уточнили актуальность диагностики'
+IGNORE = 'игнор'
 PAID = 'Оплачен абонемент'
 CLIENT_STAGES = (PAID, 'Клиент добавлен в мессенджер')
 STUCK_DAYS = 3
@@ -56,6 +66,13 @@ def apply_rules(cur, lead_id: Optional[int] = None) -> None:
     since = f"COALESCE(status_changed_at, created_at) < NOW() - INTERVAL '{STUCK_DAYS} days'"
     upd = "UPDATE leads SET updated_at = CURRENT_TIMESTAMP, "
 
+    msk_now = "(NOW() AT TIME ZONE 'Europe/Moscow')"
+    checked_at = f"(stuck_stage_dates->>{_q(CHECKED)})"
+    # Уточнили актуальность, прошёл день, а лид не сдвинулся — «игнор» и в архив
+    cur.execute(f"{upd}lead_status = {_q(IGNORE)} "
+                f"WHERE {scope} AND {ls} = {_q(STUCK)} AND {ps} IN ({_in(STUCK_FLOW)}) "
+                f"AND stuck_stage = {_q(CHECKED)} AND {checked_at} ~ '^\\d{{4}}-\\d{{2}}-\\d{{2}}[T ]\\d{{2}}:\\d{{2}}' "
+                f"AND REPLACE({checked_at}, 'T', ' ')::timestamp < {msk_now} - INTERVAL '1 day'")
     cur.execute(f"{upd}archived = TRUE, archived_at = CURRENT_TIMESTAMP "
                 f"WHERE {scope} AND {ps} NOT IN ({_in(CLIENT_STAGES)}) AND {ls} IN ({_in(CLOSING)})")
     cur.execute(f"{upd}lead_status = {_q(CLIENT)} "
@@ -73,10 +90,15 @@ def apply_rules(cur, lead_id: Optional[int] = None) -> None:
     diag_day = "SUBSTRING(COALESCE(crm_diag_planned_at, '') FROM '^\\d{4}-\\d{2}-\\d{2}')"
     msk_today = "(NOW() AT TIME ZONE 'Europe/Moscow')::date"
     is_diag = f"{ps} IN ({_in(DIAG_PLANNED)})"
+    fast_since = f"COALESCE(status_changed_at, created_at) < NOW() - INTERVAL '{FAST_STUCK_DAYS} days'"
     stuck_cond = (f"(CASE WHEN {is_diag} AND {diag_day} IS NOT NULL "
-                  f"THEN {diag_day}::date < {msk_today} ELSE {since} END)")
+                  f"THEN {diag_day}::date < {msk_today} "
+                  f"WHEN {ps} IN ({_in(FAST_STUCK)}) THEN {fast_since} ELSE {since} END)")
     cur.execute(f"{upd}lead_status = {_q(IN_WORK)} "
                 f"WHERE {scope} AND {ps} IN ({_in(MID)}) "
                 f"AND ({ls} NOT IN ({_q(IN_WORK)}, {_q(STUCK)}) OR ({ls} = {_q(STUCK)} AND NOT {stuck_cond}))")
     cur.execute(f"{upd}lead_status = {_q(STUCK)} "
                 f"WHERE {scope} AND {ps} IN ({_in(MID)}) AND {ls} = {_q(IN_WORK)} AND {stuck_cond}")
+    # Вышел из «завис на этапе» — этапы дожима начинаются заново
+    cur.execute(f"{upd}stuck_stage = '', stuck_stage_dates = NULL "
+                f"WHERE {scope} AND {ls} <> {_q(STUCK)} AND (stuck_stage <> '' OR stuck_stage_dates IS NOT NULL)")
