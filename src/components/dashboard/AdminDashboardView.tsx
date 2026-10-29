@@ -7,6 +7,7 @@ import { useScheduleChecks } from '@/components/adminShifts/useScheduleChecks';
 import DashSection from './DashSection';
 import DashStub from './DashStub';
 import ShiftTasksBlock from './ShiftTasksBlock';
+import LeadsToContactBlock from './LeadsToContactBlock';
 import { useDashMarks } from './useDashMarks';
 
 const fmtDate = (d: string) =>
@@ -37,6 +38,7 @@ const AdminDashboardView = () => {
   const { marks, setMark } = useDashMarks(date);
   const schedule = useScheduleChecks(date, marks, setMark);
   const [shiftOpen, setShiftOpen] = useState(0);
+  const [leadsCount, setLeadsCount] = useState(0);
 
   const doneItems = SCHEDULE_ITEMS.filter((i) => schedule.groupDone(i.auto!)).length;
 
@@ -97,8 +99,14 @@ const AdminDashboardView = () => {
         </div>
       </DashSection>
 
-      <DashSection num={2} title="Лиды, с которыми нужно связаться" icon="UserPlus" color="bg-blue-100 text-blue-700">
-        <DashStub text="Блок в настройке — скоро здесь появится список лидов" />
+      <DashSection
+        num={2}
+        title="Лиды, с которыми нужно связаться"
+        icon="UserPlus"
+        color="bg-blue-100 text-blue-700"
+        badge={leadsCount > 0 && <Counter n={leadsCount} />}
+      >
+        <LeadsToContactBlock onCount={setLeadsCount} />
       </DashSection>
 
       <DashSection num={3} title="Каникуляры, с которыми нужно связаться" icon="Palmtree" color="bg-orange-100 text-orange-700">
