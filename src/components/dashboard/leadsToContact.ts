@@ -95,6 +95,11 @@ export function buildLeadGroups(leads: Lead[], today: string, now = new Date()):
       const s = nextContactStep(l, now);
       return { lead: l, hint: s.action, due: s.due };
     })
+    .filter((i) => {
+      const endOfToday = new Date(now);
+      endOfToday.setHours(23, 59, 59, 999);
+      return i.due!.getTime() <= endOfToday.getTime();
+    })
     .sort((a, b) => a.due!.getTime() - b.due!.getTime());
 
   const fresh: DashLead[] = active
