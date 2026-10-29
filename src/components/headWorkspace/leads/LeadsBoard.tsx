@@ -132,7 +132,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onStageDate, onDragS
         </select>}
       </div>
       <div><NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} compact /></div>
-      <div><StuckStage lead={lead} onStage={lead.archived ? undefined : onStage} compact /></div>
+      <div><StuckStage lead={lead} onStage={lead.archived ? undefined : onStage} onStageDate={lead.archived ? undefined : onStageDate} compact /></div>
 
       <div className="mt-2 border-t border-gray-100 pt-1.5">
         {editing ? (

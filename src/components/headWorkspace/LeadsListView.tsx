@@ -201,6 +201,14 @@ export default function LeadsListView() {
   };
 
   const setStageDate = (id: number, stage: string, value: string) => {
+    if (STUCK_STAGES.includes(stage)) {
+      if (!value) return;
+      const lead = leads.find((l) => l.id === id);
+      const dates = { ...(lead?.stuck_stage_dates || {}), [stage]: value };
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, stuck_stage_dates: dates } : l)));
+      updateLead(id, { stuck_stage_dates: dates });
+      return;
+    }
     const lead = leads.find((l) => l.id === id);
     const dates = { ...(lead?.no_contact_stage_dates || {}), [stage]: value };
     if (!value) delete dates[stage];

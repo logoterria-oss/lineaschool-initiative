@@ -55,7 +55,7 @@ export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate 
           </span>
         )}
         {onStage && <NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} />}
-        <StuckStage lead={lead} onStage={onStage} />
+        <StuckStage lead={lead} onStage={onStage} onStageDate={onStageDate} />
       </div>
     );
   }

@@ -20,9 +20,10 @@ export function stuckNextAt(lead: Lead): Date | null {
 
 // Этапы дожима зависшего лида: «напомнили о себе» → через день «уточнили актуальность диагностики».
 // Через день после второго этапа без движения лид уходит в архив со статусом «игнор».
-export default function StuckStage({ lead, onStage, compact = false }: {
+export default function StuckStage({ lead, onStage, onStageDate, compact = false }: {
   lead: Lead;
   onStage?: (stage: string) => void;
+  onStageDate?: (stage: string, value: string) => void;
   compact?: boolean;
 }) {
   if (!hasStuckFlow(lead)) return null;
@@ -70,7 +71,21 @@ export default function StuckStage({ lead, onStage, compact = false }: {
             <div key={s} className="flex items-center gap-1 whitespace-nowrap">
               <Icon name="Clock" size={10} className="shrink-0 text-gray-400" />
               <span className="truncate max-w-[150px]" title={s}>{s}:</span>
-              <span className="font-medium text-gray-700">{fmt(parse(dates[s])) || '—'}</span>
+              {onStageDate ? (
+                <label className="relative cursor-pointer font-medium text-gray-700 hover:text-amber-700" title="Изменить дату и время">
+                  {fmt(parse(dates[s])) || <span className="text-amber-600">указать</span>}
+                  <input
+                    type="datetime-local"
+                    value={(dates[s] || '').replace(' ', 'T').slice(0, 16)}
+                    onChange={(e) => e.target.value && onStageDate(s, e.target.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </label>
+              ) : (
+                <span className="font-medium text-gray-700">{fmt(parse(dates[s])) || '—'}</span>
+              )}
             </div>
           ))}
           {idx === 0 && nextAt && (
