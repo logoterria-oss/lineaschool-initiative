@@ -17,6 +17,7 @@ export function leadStatusColor(status: string): string {
   const map: Record<string, string> = {
     'лид в работе': 'bg-green-50 text-green-700 border border-green-200',
     'завис на этапе': 'bg-orange-100 text-orange-800',
+    'особые условия': 'bg-violet-100 text-violet-800',
     'Связь через "Окно" не налажена': 'bg-amber-100 text-amber-800',
     'клиент': 'bg-green-500 text-white',
     'нецелевой лид': 'bg-red-100 text-red-700',

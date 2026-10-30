@@ -10,6 +10,7 @@ import {
 } from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
 import StuckStage from './StuckStage';
+import SpecialCondition from './SpecialCondition';
 import { processingColor, leadStatusColor } from './leadColors';
 import { isContactDue, isContactOverdue } from './leadUtils';
 import ContactWhenCell from './ContactWhenCell';
@@ -21,9 +22,10 @@ interface CellProps {
   onCommit: (v: string) => void;
   onStage?: (stage: string) => void;
   onStageDate?: (stage: string, value: string) => void;
+  onSpecial?: (value: string) => void;
 }
 
-export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate }: CellProps) {
+export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate, onSpecial }: CellProps) {
   const value = (lead[fieldKey] as string) || '';
 
   if (fieldKey === 'responsible') {
@@ -56,6 +58,7 @@ export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate 
         )}
         {onStage && <NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} />}
         <StuckStage lead={lead} onStage={onStage} onStageDate={onStageDate} />
+        <SpecialCondition lead={lead} onChange={lead.archived ? undefined : onSpecial} />
       </div>
     );
   }

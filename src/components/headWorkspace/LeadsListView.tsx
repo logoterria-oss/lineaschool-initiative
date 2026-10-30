@@ -294,6 +294,11 @@ export default function LeadsListView() {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, [key]: value } : l)));
   };
 
+  const setSpecial = (id: number, value: string) => {
+    patch(id, 'special_condition', value);
+    updateLead(id, { special_condition: value });
+  };
+
   const save = (id: number, key: keyof Lead, value: string) => {
     if (key === 'processing_status') {
       moveToStatus(id, value);
@@ -398,6 +403,7 @@ export default function LeadsListView() {
           onLeadStatus={setLeadStatus}
           onStage={setStage}
           onStageDate={setStageDate}
+          onSpecial={setSpecial}
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />
       ) : (
@@ -414,6 +420,7 @@ export default function LeadsListView() {
               onArchive={(a) => archiveLead(l.id, a)}
               onStage={(s) => setStage(l.id, s)}
               onStageDate={(s, v) => setStageDate(l.id, s, v)}
+              onSpecial={(v) => setSpecial(l.id, v)}
             />
           ))}
         </div>
@@ -468,6 +475,7 @@ export default function LeadsListView() {
                           onCommit={(v) => save(l.id, c.key, v)}
                           onStage={(s) => setStage(l.id, s)}
                           onStageDate={(s, v) => setStageDate(l.id, s, v)}
+                          onSpecial={(v) => setSpecial(l.id, v)}
                         />
                       </td>
                     ))}

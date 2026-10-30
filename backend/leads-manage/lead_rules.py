@@ -11,6 +11,8 @@
 - Зависшим от «ответ получен» до «Запланирована диагностика» — этапы дожима:
   «напомнили о себе» → (через 1 день) «уточнили актуальность диагностики» →
   (через 1 день без движения) статус «игнор» и архив.
+- «Проведена диагностика»: можно вручную поставить «особые условия» (ждут маткапитал,
+  ждут окошки или своя причина) — такой лид не переводится в «завис на этапе».
 - «Оплачен абонемент»: «клиент», через 3 дня на этапе — «завис на этапе».
 - «Клиент добавлен в мессенджер»: только «клиент».
 - «нецелевой лид», «норма развития», «отказ», «игнор» — лид уходит в архив.
@@ -22,6 +24,8 @@ NO_CONTACT = 'Связь через "Окно" не налажена'
 NO_SHOW = 'лид не вышел на связь'
 IN_WORK = 'лид в работе'
 STUCK = 'завис на этапе'
+SPECIAL = 'особые условия'
+DIAG_DONE = 'Проведена диагностика'
 CLIENT = 'клиент'
 CLOSING = ('нецелевой лид', 'норма развития', 'отказ', 'игнор')
 
@@ -96,9 +100,13 @@ def apply_rules(cur, lead_id: Optional[int] = None) -> None:
                   f"WHEN {ps} IN ({_in(FAST_STUCK)}) THEN {fast_since} ELSE {since} END)")
     cur.execute(f"{upd}lead_status = {_q(IN_WORK)} "
                 f"WHERE {scope} AND {ps} IN ({_in(MID)}) "
+                f"AND NOT ({ps} = {_q(DIAG_DONE)} AND {ls} = {_q(SPECIAL)}) "
                 f"AND ({ls} NOT IN ({_q(IN_WORK)}, {_q(STUCK)}) OR ({ls} = {_q(STUCK)} AND NOT {stuck_cond}))")
     cur.execute(f"{upd}lead_status = {_q(STUCK)} "
                 f"WHERE {scope} AND {ps} IN ({_in(MID)}) AND {ls} = {_q(IN_WORK)} AND {stuck_cond}")
     # Вышел из «завис на этапе» — этапы дожима начинаются заново
     cur.execute(f"{upd}stuck_stage = '', stuck_stage_dates = NULL "
                 f"WHERE {scope} AND {ls} <> {_q(STUCK)} AND (stuck_stage <> '' OR stuck_stage_dates IS NOT NULL)")
+    # Сняли «особые условия» — причину очищаем
+    cur.execute(f"{upd}special_condition = '' "
+                f"WHERE {scope} AND {ls} <> {_q(SPECIAL)} AND COALESCE(special_condition, '') <> ''")

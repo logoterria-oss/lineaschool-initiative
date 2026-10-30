@@ -4,7 +4,7 @@ import { Cell } from './LeadCells';
 import { COLS, isUntouched, isContactDue, isContactOverdue } from './leadUtils';
 
 // Мобильная карточка лида: все поля в столбик, редактируются теми же ячейками.
-export default function LeadCard({ lead, index, onPatch, onSave, onArchive, onStage, onStageDate }: {
+export default function LeadCard({ lead, index, onPatch, onSave, onArchive, onStage, onStageDate, onSpecial }: {
   lead: Lead;
   index: number;
   onPatch: (k: keyof Lead, v: string) => void;
@@ -12,6 +12,7 @@ export default function LeadCard({ lead, index, onPatch, onSave, onArchive, onSt
   onArchive: (archived: boolean) => void;
   onStage: (stage: string) => void;
   onStageDate?: (stage: string, value: string) => void;
+  onSpecial?: (value: string) => void;
 }) {
   const untouched = isUntouched(lead);
   const overdue = isContactOverdue(lead);
@@ -58,6 +59,7 @@ export default function LeadCard({ lead, index, onPatch, onSave, onArchive, onSt
                 onCommit={(v) => onSave(c.key, v)}
                 onStage={onStage}
                 onStageDate={onStageDate}
+                onSpecial={onSpecial}
               />
             </div>
           </div>

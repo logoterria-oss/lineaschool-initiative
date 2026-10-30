@@ -36,6 +36,8 @@ export interface Lead {
   /** Этап дожима зависшего лида */
   stuck_stage?: string;
   stuck_stage_dates?: Record<string, string> | null;
+  /** Причина «особых условий»: из списка или своя */
+  special_condition?: string;
   /** Первое сообщение в «Окне» — подставляется сервером автоматически */
   window_first_at?: string | null;
   crm_diag_planned_at?: string;
@@ -114,6 +116,9 @@ export function noContactStages(processing: string): string[] {
 
 export const IN_WORK_STATUS = 'лид в работе';
 export const STUCK_STATUS = 'завис на этапе';
+export const SPECIAL_STATUS = 'особые условия';
+export const DIAG_DONE_PROCESSING = 'Проведена диагностика';
+export const SPECIAL_PRESETS = ['ожидают маткапитал', 'ожидают окошки'];
 export const CLIENT_STATUS = 'клиент';
 export const STUCK_REMINDED = 'напомнили о себе';
 export const STUCK_CHECKED = 'уточнили актуальность диагностики';
@@ -135,6 +140,7 @@ export function leadStatusOptions(processing: string): string[] {
   const p = (processing || '').trim();
   if (p === '' || p === NO_REPLY_PROCESSING) return [NO_CONTACT_STATUS];
   if (CLIENT_STAGES.includes(p)) return [CLIENT_STATUS];
+  if (p === DIAG_DONE_PROCESSING) return [IN_WORK_STATUS, SPECIAL_STATUS, ...CLOSING_STATUSES];
   return [IN_WORK_STATUS, ...CLOSING_STATUSES];
 }
 
@@ -183,6 +189,7 @@ export function defaultLeadStatus(processing: string, current: string): string {
 export const LEAD_STATUS_OPTIONS = [
   'лид в работе',
   'завис на этапе',
+  'особые условия',
   'клиент',
   'нецелевой лид',
   'лид не вышел на связь',
