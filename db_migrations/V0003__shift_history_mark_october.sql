@@ -1,0 +1,1 @@
+INSERT INTO t_p93118852_lineaschool_initiati.crm_json_cache (cache_key, payload, updated_at) VALUES ('shift_history_sent', '{"date": "2026-10-29"}'::jsonb, now()) ON CONFLICT (cache_key) DO UPDATE SET payload = EXCLUDED.payload, updated_at = now();

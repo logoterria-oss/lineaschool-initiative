@@ -11,6 +11,13 @@ INTERACTION_HOOK_URL = (
     "https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1?action=shift-hook"
 )
 
+# История смен за прошедшие дни — для расчёта показателей админов в «Окне»
+INTERACTION_HISTORY_URL = (
+    "https://functions.poehali.dev/67e8d62d-902a-4e5e-9862-d18395a730b1?action=shift-history-hook"
+)
+HISTORY_START = "2026-10-01"
+HISTORY_MARK_KEY = "shift_history_sent"
+
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
@@ -62,6 +69,10 @@ def handler(event: dict, context) -> dict:
         if method == "GET":
             params = event.get("queryStringParameters") or {}
             act = str(params.get("action") or "")
+            if act == "shift-history":
+                return send_shift_history_now(params)
+            if act != "sync-interaction":
+                _maybe_send_history()
             if act == "my-shift":
                 return my_shift_state(event)
             if act == "on-shift":
@@ -297,6 +308,141 @@ def push_shift_to_interaction(cur) -> dict:
     except Exception as e:
         print(f"shift-hook POST failed: {e} phones={phones}")
         return {"sent": False, "on_shift": phones, "error": str(e)}
+
+
+def _history_payload(cur, d_from: str, d_to: str) -> list:
+    """Все смены с отметкой прихода за период: админы, руководитель и РУО.
+
+    Время в базе — московское, отдаём с поясом +03:00.
+    Незакрытая смена по правилам закрывается в 00:00 — отдаём конец её дня.
+    """
+    cur.execute(
+        "SELECT s.phone, sh.staff_name, to_char(sh.shift_date, 'YYYY-MM-DD') AS d, "
+        "to_char(sh.started_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS started_at, "
+        "to_char(sh.finished_at, 'YYYY-MM-DD\"T\"HH24:MI:SS') AS finished_at "
+        "FROM admin_shifts sh JOIN staff s ON s.id = sh.staff_id "
+        "WHERE sh.shift_date BETWEEN %s::date AND %s::date "
+        "AND sh.started_at IS NOT NULL AND s.role IN ('admin', 'head') "
+        "ORDER BY sh.shift_date, sh.started_at",
+        (d_from, d_to),
+    )
+    out = []
+    for r in cur.fetchall():
+        phone = _only_digits(r["phone"])
+        if not phone:
+            continue
+        item = {
+            "phone": phone,
+            "name": r["staff_name"],
+            "started_at": r["started_at"] + "+03:00",
+            "ended_at": (r["finished_at"] or f"{r['d']}T23:59:59") + "+03:00",
+        }
+        if not r["finished_at"]:
+            item["auto_closed"] = True
+        out.append(item)
+    return out
+
+
+def _post_history(cur, d_from: str, d_to: str) -> dict:
+    key = os.environ.get("INTERACTION_SERVICE_KEY")
+    if not key:
+        return {"sent": False, "error": "no_service_key"}
+    shifts = _history_payload(cur, d_from, d_to)
+    payload = json.dumps({"from": d_from, "to": d_to, "shifts": shifts}, ensure_ascii=False).encode()
+    req = urllib.request.Request(
+        INTERACTION_HISTORY_URL, data=payload,
+        headers={"Content-Type": "application/json", "X-Service-Key": key}, method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            code = resp.status
+            text = resp.read().decode(errors="replace")[:300]
+        print(f"shift-history-hook {d_from}..{d_to} -> {code} {text} shifts={len(shifts)}")
+        return {"sent": 200 <= code < 300, "status": code, "count": len(shifts), "response": text}
+    except urllib.error.HTTPError as e:
+        text = e.read().decode(errors="replace")[:300]
+        print(f"shift-history-hook {d_from}..{d_to} -> HTTP {e.code} {text}")
+        return {"sent": False, "status": e.code, "count": len(shifts), "error": text}
+    except Exception as e:
+        print(f"shift-history-hook {d_from}..{d_to} failed: {e}")
+        return {"sent": False, "count": len(shifts), "error": str(e)}
+
+
+def _msk_yesterday() -> str:
+    return (
+        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3) - datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+
+
+def _maybe_send_history() -> None:
+    """Раз в сутки, после 00:01 по Москве, отправляем «Окну» смены за прошедшие дни.
+
+    Отмечаем последний отправленный день; пропущенные дни догоняются одним запросом.
+    Срабатывает при первом обращении к графику смен после полуночи.
+    """
+    msk = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3)
+    if msk.hour == 0 and msk.minute < 1:
+        return
+    yesterday = _msk_yesterday()
+    conn = db_conn()
+    conn.autocommit = True
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT payload->>'date' AS d FROM {SCHEMA}.crm_json_cache WHERE cache_key = %s",
+                (HISTORY_MARK_KEY,),
+            )
+            row = cur.fetchone()
+            last = row["d"] if row else None
+            if last and last >= yesterday:
+                return
+            # Занимаем отметку сразу, чтобы параллельные вызовы не слали дубли
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.crm_json_cache (cache_key, payload, updated_at) "
+                f"VALUES (%s, %s::jsonb, now()) ON CONFLICT (cache_key) DO UPDATE "
+                f"SET payload = EXCLUDED.payload, updated_at = now() "
+                f"WHERE {SCHEMA}.crm_json_cache.payload->>'date' IS NOT DISTINCT FROM %s "
+                f"RETURNING cache_key",
+                (HISTORY_MARK_KEY, json.dumps({"date": yesterday}), last),
+            )
+            if not cur.fetchone():
+                return
+            d_from = (
+                (datetime.date.fromisoformat(last) + datetime.timedelta(days=1)).isoformat()
+                if last else HISTORY_START
+            )
+            res = _post_history(cur, d_from, yesterday)
+            if not res.get("sent"):
+                # Не дошло — вернём отметку назад, повторим при следующем обращении
+                if last:
+                    cur.execute(
+                        f"UPDATE {SCHEMA}.crm_json_cache SET payload = %s::jsonb WHERE cache_key = %s",
+                        (json.dumps({"date": last}), HISTORY_MARK_KEY),
+                    )
+                else:
+                    cur.execute(f"DELETE FROM {SCHEMA}.crm_json_cache WHERE cache_key = %s", (HISTORY_MARK_KEY,))
+    except Exception as e:
+        print(f"shift-history auto failed: {e}")
+    finally:
+        conn.close()
+
+
+def send_shift_history_now(params: dict) -> dict:
+    """Ручная отправка истории смен: ?action=shift-history&from=YYYY-MM-DD&to=YYYY-MM-DD"""
+    d_from = str(params.get("from") or "")[:10]
+    d_to = str(params.get("to") or "")[:10]
+    try:
+        datetime.date.fromisoformat(d_from)
+        datetime.date.fromisoformat(d_to)
+    except ValueError:
+        return _json(400, {"error": "from и to нужны в формате YYYY-MM-DD"})
+    conn = db_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            res = _post_history(cur, d_from, d_to)
+        return _json(200, {"ok": True, "from": d_from, "to": d_to, **res})
+    finally:
+        conn.close()
 
 
 STAFF_TASKS_PUSH_URL = "https://functions.poehali.dev/19eccc97-9dce-4a13-b0d9-fa374f785591?action=push"
