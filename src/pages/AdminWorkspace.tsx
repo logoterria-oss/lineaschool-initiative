@@ -29,6 +29,8 @@ import { buildInteractionUrl } from '@/lib/interactionUrl';
 import { useInteractionBadges } from '@/components/interaction/useInteractionBadges';
 import { useOnShiftAdmins } from '@/components/interaction/useOnShiftAdmins';
 import OnShiftHint from '@/components/interaction/OnShiftHint';
+import AdminRegulationView from '@/components/adminRegulation/AdminRegulationView';
+import AdminKpiView from '@/components/adminRegulation/AdminKpiView';
 
 /**
  * Чек-лист смены — то, с чего админ начинает рабочий день, поэтому
@@ -91,6 +93,8 @@ const AdminWorkspace = () => {
       case 'staff-list': return <StaffListView readOnly />;
       case 'today-tasks': return <AdminDashboardView />;
       case 'tasks': return <StaffTasksView />;
+      case 'regulations': return <AdminRegulationView />;
+      case 'my-kpi': return <AdminKpiView />;
       default: return <StubView label={active.label} />;
     }
   }, [active, fullName]);

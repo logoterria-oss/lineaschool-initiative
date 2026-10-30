@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Icon from '@/components/ui/icon';
 import { formatPrice, individualIndications, individualPlans } from './data';
 
@@ -11,8 +9,6 @@ const lessonsWord = (count: number) => {
 };
 
 export default function IndividualSection() {
-  const [isOpen, setIsOpen] = useState(false);
-
   return (
     <section className="mb-16">
       <div className="text-center mb-8">
@@ -20,11 +16,8 @@ export default function IndividualSection() {
       </div>
 
       <div className="border border-gray-200 rounded-xl overflow-hidden">
-        <Collapsible open={isOpen}>
-          <CollapsibleTrigger
-            className="w-full p-6 text-left hover:bg-gray-50 transition-colors"
-            onClick={() => setIsOpen((v) => !v)}
-          >
+        <details className="group">
+          <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer w-full p-6 text-left hover:bg-gray-50 transition-colors">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -48,17 +41,13 @@ export default function IndividualSection() {
                 </ul>
               </div>
 
-              <span
-                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  isOpen ? 'bg-green-500 text-white' : 'bg-green-100 text-green-600'
-                }`}
-              >
-                <Icon name={isOpen ? 'ChevronUp' : 'ChevronDown'} size={26} strokeWidth={3} />
+              <span className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-green-100 text-green-600 group-open:bg-green-500 group-open:text-white">
+                <Icon name="ChevronDown" size={26} strokeWidth={3} className="transition-transform group-open:rotate-180" />
               </span>
             </div>
-          </CollapsibleTrigger>
+          </summary>
 
-          <CollapsibleContent className="p-6 pt-0 bg-gray-50">
+          <div className="p-6 pt-0 bg-gray-50">
             <div>
               <div className="grid md:grid-cols-3 gap-6 pt-4">
                 {individualPlans.map((plan) => (
@@ -109,8 +98,8 @@ export default function IndividualSection() {
                 ))}
               </div>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
+          </div>
+        </details>
       </div>
     </section>
   );

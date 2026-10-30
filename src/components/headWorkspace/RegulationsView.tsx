@@ -6,6 +6,8 @@ import IndividualCriteriaTable from '@/components/teacher/IndividualCriteriaTabl
 import GroupCriteriaTable from '@/components/teacher/GroupCriteriaTable';
 import GroupKpiInfo from '@/components/teacher/GroupKpiInfo';
 import SavePdfBlock from '@/components/teacher/SavePdfBlock';
+import AdminRegulationView from '@/components/adminRegulation/AdminRegulationView';
+import AdminKpiView from '@/components/adminRegulation/AdminKpiView';
 
 type IconName = 'Users' | 'User' | 'ShieldCheck';
 
@@ -48,6 +50,11 @@ const TOP_BLOCKS: Block[] = [
 const TABS = [
   { id: 'regulation', label: 'Регламент' },
   { id: 'criteria', label: 'Критерии оценки' },
+  { id: 'kpi', label: 'KPI' },
+];
+
+const ADMIN_TABS = [
+  { id: 'regulation', label: 'Регламент' },
   { id: 'kpi', label: 'KPI' },
 ];
 
@@ -109,19 +116,26 @@ const RegulationsView = () => {
     );
   }
 
-  // Регламент администратора — заглушка
   if (block === 'admin') {
     return (
       <div>
         <BackButton onClick={reset} />
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-          <div className="inline-flex p-4 rounded-full bg-amber-100 mb-4">
-            <Icon name="ShieldCheck" size={32} className="text-amber-600" />
-          </div>
-          <p className="text-lg font-medium text-gray-500">
-            Раздел «Регламент администратора» в разработке
-          </p>
+        <div className="flex flex-wrap gap-2 mb-5">
+          {ADMIN_TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                tab === t.id
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-300'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
+        {tab === 'kpi' ? <AdminKpiView /> : <AdminRegulationView />}
       </div>
     );
   }

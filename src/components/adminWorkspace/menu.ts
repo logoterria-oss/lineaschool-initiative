@@ -30,7 +30,8 @@ export const ADMIN_MENU: AdminItem[] = [
   { id: 'reviews-improve', label: 'Что улучшить — отзывы', kind: 'component', icon: 'MessageSquareHeart' },
   { id: 'reviews-lesson', label: 'Бесплатный урок за отзыв', kind: 'component', icon: 'Gift' },
   { id: 'violations', label: 'Дисциплинарные нарушения педагогов', kind: 'component', icon: 'TriangleAlert' },
-  { id: 'regulations', label: 'Регламент работы администратора', kind: 'stub', icon: 'ScrollText' },
+  { id: 'regulations', label: 'Регламент работы администратора', kind: 'component', icon: 'ScrollText' },
+  { id: 'my-kpi', label: 'Мой KPI', kind: 'component', icon: 'Target' },
 ];
 
 /** Группы с подразделами */

@@ -1,18 +1,9 @@
-import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Icon from '@/components/ui/icon';
 import DiscountRibbon from './DiscountRibbon';
 import { formatPrice, pricingSections } from './data';
 
 export default function SubscriptionsSection() {
-  const [openSections, setOpenSections] = useState<number[]>([]);
-
-  const toggleSection = (index: number) =>
-    setOpenSections((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
-    );
-
   return (
     <section className="mb-24">
       <div className="text-center mb-8">
@@ -22,16 +13,11 @@ export default function SubscriptionsSection() {
       </div>
 
       <div className="space-y-6">
-        {pricingSections.map((section, sectionIndex) => {
-          const isOpen = openSections.includes(sectionIndex);
-
+        {pricingSections.map((section) => {
           return (
             <div key={section.title} className="border border-gray-200 rounded-xl overflow-hidden">
-              <Collapsible open={isOpen}>
-                <CollapsibleTrigger
-                  className="w-full p-6 text-left hover:bg-gray-50 transition-colors"
-                  onClick={() => toggleSection(sectionIndex)}
-                >
+              <details className="group">
+                <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer w-full p-6 text-left hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -55,23 +41,18 @@ export default function SubscriptionsSection() {
                         <p className="text-gray-600 text-sm sm:text-base">{section.description}</p>
                       )}
                     </div>
-                    <span
-                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                        isOpen
-                          ? 'bg-green-500 text-white'
-                          : 'bg-green-100 text-green-600'
-                      }`}
-                    >
+                    <span className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-green-100 text-green-600 group-open:bg-green-500 group-open:text-white">
                       <Icon
-                        name={isOpen ? 'ChevronUp' : 'ChevronDown'}
+                        name="ChevronDown"
                         size={26}
                         strokeWidth={3}
+                        className="transition-transform group-open:rotate-180"
                       />
                     </span>
                   </div>
-                </CollapsibleTrigger>
+                </summary>
 
-                <CollapsibleContent className="p-6 pt-0 bg-gray-50">
+                <div className="p-6 pt-0 bg-gray-50">
                   <div className="grid md:grid-cols-3 gap-6 pt-4">
                     {section.plans.map((plan) => (
                       <div key={plan.title} className="flex flex-col">
@@ -156,8 +137,8 @@ export default function SubscriptionsSection() {
                       </div>
                     ))}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                </div>
+              </details>
             </div>
           );
         })}
