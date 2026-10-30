@@ -1,20 +1,57 @@
 import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { listStaff, Staff } from '@/lib/staffApi';
-import { FIRST_QUARTER, KPI_METRICS, KpiMetric, Quarter, isTestStaff, quartersUntil } from './kpiSummary';
+import { fetchResponseStats, ResponseRow } from '@/lib/adminKpiApi';
+import {
+  Agg, FIRST_QUARTER, KPI_METRICS, KpiMetric, Quarter, TONE_CLASSES, avgOf, formatMinutes,
+  isTestStaff, quartersUntil, responseLevel,
+} from './kpiSummary';
+import ResponseMonths from './ResponseMonths';
 
 const shortName = (full: string) => full.split(' ').slice(0, 2).join(' ');
 
-const MetricCard = ({ metric, people, quarter }: { metric: KpiMetric; people: Staff[]; quarter: Quarter }) => {
+const onlyDigits = (p: string) => {
+  const d = (p || '').replace(/\D/g, '');
+  return d.length === 11 && d.startsWith('8') ? `7${d.slice(1)}` : d;
+};
+
+// Месячные данные сотрудника: по id, а если Окно не узнало сотрудника — по телефону
+const monthsFor = (rows: ResponseRow[], p: Staff): Record<string, Agg> => {
+  const phone = onlyDigits(p.phone);
+  const map: Record<string, Agg> = {};
+  rows
+    .filter((r) => r.staff_id === p.id || (!r.staff_id && phone && r.phone === phone))
+    .forEach((r) => {
+      const cur = map[r.month] || { dialogs: 0, total: 0 };
+      map[r.month] = { dialogs: cur.dialogs + r.dialogs, total: cur.total + r.total_minutes };
+    });
+  return map;
+};
+
+const MetricCard = ({
+  metric, people, quarter, rows,
+}: { metric: KpiMetric; people: Staff[]; quarter: Quarter; rows: ResponseRow[] }) => {
   const [openId, setOpenId] = useState<number | null>(null);
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-900">{metric.title}</h3>
-        <p className="text-xs text-gray-500">{metric.description} · до {metric.maxPoints} баллов</p>
+      <div className="px-4 py-3 border-b border-gray-100 flex items-start gap-3">
+        <div className="p-2 bg-emerald-100 rounded-lg">
+          <Icon name="Timer" size={18} className="text-emerald-600" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">{metric.title}</h3>
+          <p className="text-xs text-gray-500">{metric.description}. Пороги: ≤ 15 мин — 100 %, 15–30 мин — 50 %, &gt; 30 мин — 0 %</p>
+        </div>
       </div>
       {people.map((p) => {
         const open = openId === p.id;
+        const byMonth = monthsFor(rows, p);
+        const total = Object.values(byMonth).reduce(
+          (s, a) => ({ dialogs: s.dialogs + a.dialogs, total: s.total + a.total }),
+          { dialogs: 0, total: 0 },
+        );
+        const avg = avgOf(total);
+        const lvl = avg != null ? responseLevel(avg) : null;
         return (
           <div key={p.id} className="border-t border-gray-100 first:border-t-0">
             <button
@@ -22,17 +59,19 @@ const MetricCard = ({ metric, people, quarter }: { metric: KpiMetric; people: St
               className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50"
             >
               <span className="font-medium text-gray-800 flex-1">{shortName(p.full_name)}</span>
-              <span className="text-sm text-gray-400">— баллов</span>
+              {avg != null && lvl ? (
+                <>
+                  <span className="text-sm text-gray-700">{formatMinutes(avg)}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${TONE_CLASSES[lvl.tone]}`}>{lvl.label}</span>
+                </>
+              ) : (
+                <span className="text-sm text-gray-400">нет данных</span>
+              )}
               <Icon name={open ? 'ChevronUp' : 'ChevronDown'} size={16} className="text-gray-400" />
             </button>
             {open && (
-              <div className="px-4 pb-3 grid sm:grid-cols-3 gap-2">
-                {quarter.months.map((m) => (
-                  <div key={m.id} className="rounded-lg bg-gray-50 px-3 py-2">
-                    <div className="text-xs text-gray-500">{m.label}</div>
-                    <div className="text-sm text-gray-400">Нет данных</div>
-                  </div>
-                ))}
+              <div className="px-4 pb-3">
+                <ResponseMonths quarter={quarter} byMonth={byMonth} />
               </div>
             )}
           </div>
@@ -62,6 +101,15 @@ const AdminKpiSummaryView = () => {
   }, []);
 
   const quarter = quarters.find((q) => q.id === quarterId) || FIRST_QUARTER;
+  const [rows, setRows] = useState<ResponseRow[]>([]);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchResponseStats(quarter.from, quarter.to, true).then((res) => {
+      setRows(res?.rows || []);
+      setUpdatedAt(res?.updated_at || null);
+    });
+  }, [quarter.from, quarter.to]);
 
   return (
     <div className="space-y-4">
@@ -114,8 +162,13 @@ const AdminKpiSummaryView = () => {
               </p>
             </div>
           ) : (
-            KPI_METRICS.map((m) => <MetricCard key={m.id} metric={m} people={people} quarter={quarter} />)
+            KPI_METRICS.map((m) => <MetricCard key={m.id} metric={m} people={people} quarter={quarter} rows={rows} />)
           )}
+          <p className="text-xs text-gray-400">
+            {updatedAt
+              ? `Данные из «Окна взаимодействия», обновлены ${updatedAt.slice(8, 10)}.${updatedAt.slice(5, 7)} в ${updatedAt.slice(11, 16)}`
+              : 'Данные из «Окна взаимодействия» ещё не поступали'}
+          </p>
         </>
       )}
     </div>

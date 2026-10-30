@@ -10,11 +10,55 @@ export interface KpiMetric {
   id: string;
   title: string;
   description: string;
-  maxPoints: number;
 }
 
-// Метрики KPI администратора. Заполняются, когда утверждены критерии оценки.
-export const KPI_METRICS: KpiMetric[] = [];
+// Метрики KPI администратора
+export const KPI_METRICS: KpiMetric[] = [
+  {
+    id: 'response',
+    title: 'Скорость ответа',
+    description: 'Среднее время от первого сообщения родителя до ответа админа в «Окне взаимодействия»',
+  },
+];
+
+export interface ResponseLevel {
+  percent: number;
+  label: string;
+  tone: 'good' | 'mid' | 'bad';
+}
+
+// Пороги: ≤ 15 мин — 100 %, 15–30 мин — 50 %, > 30 мин — 0 %
+export const RESPONSE_THRESHOLDS = [
+  { range: '≤ 15 минут', percent: 100 },
+  { range: '15–30 минут', percent: 50 },
+  { range: '> 30 минут', percent: 0 },
+];
+
+export function responseLevel(avgMinutes: number): ResponseLevel {
+  if (avgMinutes <= 15) return { percent: 100, label: '100 %', tone: 'good' };
+  if (avgMinutes <= 30) return { percent: 50, label: '50 %', tone: 'mid' };
+  return { percent: 0, label: '0 %', tone: 'bad' };
+}
+
+export const TONE_CLASSES: Record<ResponseLevel['tone'], string> = {
+  good: 'bg-emerald-100 text-emerald-700',
+  mid: 'bg-amber-100 text-amber-700',
+  bad: 'bg-red-100 text-red-700',
+};
+
+export function formatMinutes(m: number): string {
+  if (m < 1) return `${Math.round(m * 60)} сек`;
+  if (m < 60) return `${Math.round(m * 10) / 10} мин`.replace('.', ',');
+  const h = Math.floor(m / 60);
+  return `${h} ч ${Math.round(m - h * 60)} мин`;
+}
+
+export interface Agg {
+  dialogs: number;
+  total: number;
+}
+
+export const avgOf = (a: Agg | undefined) => (a && a.dialogs > 0 ? a.total / a.dialogs : null);
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];

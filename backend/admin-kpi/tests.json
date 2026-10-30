@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Хук без ключа закрыт",
+      "method": "POST",
+      "path": "/?action=response-hook",
+      "body": {"days": []},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Показатели без входа закрыты",
+      "method": "GET",
+      "path": "/?action=response&from=2026-10-01&to=2026-12-31",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Даты обязательны",
+      "method": "GET",
+      "path": "/?action=response",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
