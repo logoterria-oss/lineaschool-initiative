@@ -112,7 +112,7 @@ const HeadWorkspace = () => {
       case 'worktime': return <WorkScheduleSection readOnly />;
       case 'work-log': return <WorkTimeView mode="head" />;
       case 'work-log-all': return <StaffWorkTimeView />;
-      case 'regulations': return <RegulationsView />;
+      case 'regulations': return <RegulationsView staffName={fullName} isHead />;
       case 'supervisions': return <SupervisionsView />;
       case 'rate': return <SupervisionRates />;
       case 'violations': return <TeacherViolationsManager withRole />;

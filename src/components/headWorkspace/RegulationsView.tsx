@@ -8,6 +8,8 @@ import GroupKpiInfo from '@/components/teacher/GroupKpiInfo';
 import SavePdfBlock from '@/components/teacher/SavePdfBlock';
 import AdminRegulationView from '@/components/adminRegulation/AdminRegulationView';
 import AdminKpiView from '@/components/adminRegulation/AdminKpiView';
+import MyKpiView from '@/components/adminRegulation/MyKpiView';
+import AdminKpiSummaryView from '@/components/adminRegulation/AdminKpiSummaryView';
 
 type IconName = 'Users' | 'User' | 'ShieldCheck';
 
@@ -55,7 +57,9 @@ const TABS = [
 
 const ADMIN_TABS = [
   { id: 'regulation', label: 'Регламент' },
-  { id: 'kpi', label: 'KPI' },
+  { id: 'kpi', label: 'Метрики KPI' },
+  { id: 'my', label: 'Мои показатели' },
+  { id: 'summary', label: 'Общая сводка', headOnly: true },
 ];
 
 const INDIVIDUAL_KPI_PROPS = {
@@ -92,7 +96,7 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </button>
 );
 
-const RegulationsView = () => {
+const RegulationsView = ({ staffName = '', isHead = true }: { staffName?: string; isHead?: boolean }) => {
   const [block, setBlock] = useState<'individual' | 'group' | 'admin' | null>(null);
   const [tab, setTab] = useState('regulation');
 
@@ -121,7 +125,7 @@ const RegulationsView = () => {
       <div>
         <BackButton onClick={reset} />
         <div className="flex flex-wrap gap-2 mb-5">
-          {ADMIN_TABS.map((t) => (
+          {ADMIN_TABS.filter((t) => !t.headOnly || isHead).map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
@@ -135,7 +139,15 @@ const RegulationsView = () => {
             </button>
           ))}
         </div>
-        {tab === 'kpi' ? <AdminKpiView /> : <AdminRegulationView />}
+        {tab === 'kpi' ? (
+          <AdminKpiView />
+        ) : tab === 'my' ? (
+          <MyKpiView staffName={staffName} />
+        ) : tab === 'summary' && isHead ? (
+          <AdminKpiSummaryView />
+        ) : (
+          <AdminRegulationView />
+        )}
       </div>
     );
   }

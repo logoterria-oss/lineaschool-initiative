@@ -7,8 +7,8 @@ const AdminKpiView = () => (
         <Icon name="Target" size={24} className="text-emerald-600" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Мой KPI</h2>
-        <p className="text-sm text-gray-500">Показатели и премия администратора</p>
+        <h2 className="text-xl font-bold text-gray-900">Метрики KPI</h2>
+        <p className="text-sm text-gray-500">Показатели, по которым оценивается работа администратора</p>
       </div>
     </div>
 
