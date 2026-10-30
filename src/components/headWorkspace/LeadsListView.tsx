@@ -1,231 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
-import {
-  Lead,
-  LeadSlot,
-  LeadsStats,
-  fetchLeads,
-  syncLeadFunnel,
-  fetchLeadsStats,
-  createLead,
-  updateLead,
-  moveLead,
-  updateLeadRules,
-  defaultLeadStatus,
-  CLOSING_STATUSES,
-  type LeadUpdateResult,
-  setLeadArchived,
-  NO_CONTACT_FINAL,
-  WINDOW_STAGE,
-  toLocalInput,
-  STUCK_STAGES,
-  hasStuckFlow,
-} from '@/lib/leadsApi';
+import { LeadsStats, fetchLeadsStats } from '@/lib/leadsApi';
 import LeadsBoard from './leads/LeadsBoard';
 import LeadsStatsPanel from './leads/LeadsStatsPanel';
 import LeadsFilters from './leads/LeadsFilters';
 import NewLeadsPanel from './leads/NewLeadsPanel';
-import LeadCard from './leads/LeadCard';
-import { Cell } from './leads/LeadCells';
-import {
-  EMPTY,
-  COLS,
-  isUntouched,
-  requestDateSortKey,
-  isoToSortKey,
-  isContactDue,
-  isContactOverdue,
-} from './leads/leadUtils';
+import LeadsTableView from './leads/LeadsTableView';
+import useLeadsData from './leads/useLeadsData';
+import useLeadsFilters from './leads/useLeadsFilters';
 
 export default function LeadsListView() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    leads, loading, load, moveToStatus, setLeadStatus, setStage, setStageDate,
+    archiveLead, patch, setSpecial, setSlots, save, addLead,
+  } = useLeadsData();
   const [stats, setStats] = useState<LeadsStats | null>(null);
   const [statsOpen, setStatsOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  // Фильтры таблицы (не связаны со статистикой)
-  const [fSearch, setFSearch] = useState('');
-  const [fResponsible, setFResponsible] = useState('');
-  const [fProcessing, setFProcessing] = useState('');
-  const [fLeadStatus, setFLeadStatus] = useState('');
-  const [fCampaign, setFCampaign] = useState('');
-  const [fDateFrom, setFDateFrom] = useState('');
-  const [fDateTo, setFDateTo] = useState('');
-  const [fUntouchedOnly, setFUntouchedOnly] = useState(false);
-  const [fContactDue, setFContactDue] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  // Вид: таблица или колонки по статусу обработки (запоминаем выбор)
-  const [view, setViewState] = useState<'table' | 'board'>(
-    () => (localStorage.getItem('leads_view') === 'table' ? 'table' : 'board'),
-  );
-  const setView = (v: 'table' | 'board') => {
-    setViewState(v);
-    localStorage.setItem('leads_view', v);
-  };
-
-  const resetFilters = () => {
-    setFSearch('');
-    setFResponsible('');
-    setFProcessing('');
-    setFLeadStatus('');
-    setFCampaign('');
-    setFDateFrom('');
-    setFDateTo('');
-    setFUntouchedOnly(false);
-    setFContactDue(false);
-  };
-
-  const activeFiltersCount =
-    (fSearch ? 1 : 0) +
-    (fResponsible ? 1 : 0) +
-    (fProcessing ? 1 : 0) +
-    (fLeadStatus ? 1 : 0) +
-    (fCampaign ? 1 : 0) +
-    (fDateFrom || fDateTo ? 1 : 0) +
-    (fUntouchedOnly ? 1 : 0) +
-    (fContactDue ? 1 : 0);
-  const hasActiveFilters = activeFiltersCount > 0;
+  const f = useLeadsFilters(leads);
+  const { visibleLeads, hasActiveFilters, resetFilters, view } = f;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
   const [tableWidth, setTableWidth] = useState(0);
-
-  // Сортируем по дате заявки: ближайшие/новые сверху, дальние снизу.
-  // При равных датах — новее по id. Лиды без даты уходят в самый низ.
-  const sortedLeads = useMemo(
-    () =>
-      [...leads].sort((a, b) => {
-        const ka = requestDateSortKey(a.request_date);
-        const kb = requestDateSortKey(b.request_date);
-        if (ka !== kb) return kb - ka;
-        return b.id - a.id;
-      }),
-    [leads],
-  );
-
-  const visibleLeads = useMemo(() => {
-    const q = fSearch.trim().toLowerCase();
-    const fromKey = isoToSortKey(fDateFrom);
-    const toKey = isoToSortKey(fDateTo);
-    return sortedLeads.filter((l) => {
-      if (q && !`${l.parent_name} ${l.student_name}`.toLowerCase().includes(q)) return false;
-      if (fResponsible && (l.responsible || '') !== fResponsible) return false;
-      if (fProcessing && (l.processing_status || '') !== fProcessing) return false;
-      if (fLeadStatus && (l.lead_status || '') !== fLeadStatus) return false;
-      if (fCampaign) {
-        const camp = (l.utm_campaign || '').trim();
-        if (fCampaign === '__none__' ? camp !== '' : camp !== fCampaign) return false;
-      }
-      if (fUntouchedOnly && !isUntouched(l)) return false;
-      if (fContactDue && !isContactDue(l) && !isContactOverdue(l)) return false;
-      if (fromKey > 0 || toKey > 0) {
-        const k = requestDateSortKey(l.request_date);
-        if (k < 0) return false;
-        if (fromKey > 0 && k < fromKey) return false;
-        if (toKey > 0 && k > toKey) return false;
-      }
-      return true;
-    });
-  }, [sortedLeads, fSearch, fResponsible, fProcessing, fLeadStatus, fCampaign, fDateFrom, fDateTo, fUntouchedOnly, fContactDue]);
-
-  const campaignOptions = useMemo(
-    () => Array.from(new Set(leads.map((l) => (l.utm_campaign || '').trim()).filter(Boolean))).sort(),
-    [leads],
-  );
-
-  // Новые (необработанные) лиды — сверху, с кнопкой «Списались».
-  const newLeads = useMemo(() => sortedLeads.filter(isUntouched), [sortedLeads]);
-
-  // Ответ сервера после автоправил: статус лида и архив могли смениться сами.
-  const applyResult = (id: number, r: LeadUpdateResult | null) => {
-    if (!r) return;
-    setLeads((prev) => prev.map((l) => (l.id === id ? {
-      ...l,
-      ...(r.status_changed_at ? { status_changed_at: r.status_changed_at } : {}),
-      ...(r.lead_status != null ? { lead_status: r.lead_status } : {}),
-      ...(r.archived != null ? { archived: r.archived, archived_at: r.archived_at ?? null } : {}),
-    } : l)));
-  };
-
-  const moveToStatus = async (id: number, status: string) => {
-    const now = new Date().toISOString();
-    setLeads((prev) => prev.map((l) => (l.id === id ? {
-      ...l, processing_status: status, status_changed_at: now,
-      lead_status: defaultLeadStatus(status, l.lead_status || ''),
-    } : l)));
-    applyResult(id, await moveLead(id, status));
-  };
-
-  // Ручная смена статуса лида. Закрывающие статусы (отказ, игнор и т.п.) отправляют лида в архив.
-  const setLeadStatus = async (id: number, status: string) => {
-    const closing = CLOSING_STATUSES.includes(status);
-    const now = new Date().toISOString();
-    setLeads((prev) => prev.map((l) => (l.id === id ? {
-      ...l, lead_status: status, ...(closing ? { archived: true, archived_at: now } : {}),
-    } : l)));
-    applyResult(id, await updateLeadRules(id, { lead_status: status }));
-  };
-
-  // Этап дозвона. Последний — «лид не вышел на связь»: ставим этот статус лида и убираем в архив.
-  const setStage = async (id: number, stage: string) => {
-    if (STUCK_STAGES.includes(stage) || (stage === '' && hasStuckFlow(leads.find((l) => l.id === id) || {}))) {
-      const lead = leads.find((l) => l.id === id);
-      const dates: Record<string, string> = {};
-      const old = lead?.stuck_stage_dates || {};
-      STUCK_STAGES.slice(0, STUCK_STAGES.indexOf(stage) + 1).forEach((s) => {
-        dates[s] = old[s] || toLocalInput(new Date());
-      });
-      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, stuck_stage: stage, stuck_stage_dates: dates } : l)));
-      updateLead(id, { stuck_stage: stage, stuck_stage_dates: dates });
-      return;
-    }
-    if (stage === NO_CONTACT_FINAL) {
-      const now = new Date().toISOString();
-      const lead = leads.find((l) => l.id === id);
-      const dates = { ...(lead?.no_contact_stage_dates || {}), [stage]: toLocalInput(new Date()) };
-      setLeads((prev) => prev.map((l) => (l.id === id
-        ? { ...l, no_contact_stage: stage, no_contact_stage_dates: dates, lead_status: NO_CONTACT_FINAL, archived: true, archived_at: now }
-        : l)));
-      await updateLead(id, { no_contact_stage: stage, no_contact_stage_dates: dates, lead_status: NO_CONTACT_FINAL });
-      await setLeadArchived(id, true);
-      return;
-    }
-    const lead = leads.find((l) => l.id === id);
-    const dates = { ...(lead?.no_contact_stage_dates || {}) };
-    // Новому этапу сразу ставим «сейчас» — время можно поправить вручную
-    if (stage && stage !== WINDOW_STAGE && !dates[stage]) dates[stage] = toLocalInput(new Date());
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, no_contact_stage: stage, no_contact_stage_dates: dates } : l)));
-    updateLead(id, { no_contact_stage: stage, no_contact_stage_dates: dates });
-  };
-
-  const setStageDate = (id: number, stage: string, value: string) => {
-    if (STUCK_STAGES.includes(stage)) {
-      if (!value) return;
-      const lead = leads.find((l) => l.id === id);
-      const dates = { ...(lead?.stuck_stage_dates || {}), [stage]: value };
-      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, stuck_stage_dates: dates } : l)));
-      updateLead(id, { stuck_stage_dates: dates });
-      return;
-    }
-    const lead = leads.find((l) => l.id === id);
-    const dates = { ...(lead?.no_contact_stage_dates || {}), [stage]: value };
-    if (!value) delete dates[stage];
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, no_contact_stage_dates: dates } : l)));
-    updateLead(id, { no_contact_stage_dates: dates });
-  };
-
-  const archiveLead = async (id: number, archived: boolean) => {
-    const now = archived ? new Date().toISOString() : null;
-    setLeads((prev) => prev.map((l) => (l.id === id ? {
-      ...l, archived, archived_at: now,
-      ...(!archived && CLOSING_STATUSES.includes(l.lead_status || '') ? { lead_status: '' } : {}),
-    } : l)));
-    await setLeadArchived(id, archived);
-    if (!archived) fetchLeads().then(setLeads);
-  };
 
   // Ширина внутренней «пустышки» верхней полосы = реальной ширине таблицы,
   // чтобы горизонтальный ползунок сверху совпадал с прокруткой таблицы.
@@ -245,38 +45,6 @@ export default function LeadsListView() {
     }
   };
 
-  const load = async () => {
-    setLoading(true);
-    setLeads(await fetchLeads());
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    load();
-    syncLeadFunnel().then((n) => {
-      if (n > 0) fetchLeads().then(setLeads);
-    });
-  }, []);
-
-  // Вкладку держат открытой днями — подтягиваем новые заявки сами:
-  // при возвращении на вкладку и раз в 2 минуты, пока она на экране.
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState !== 'visible') return;
-      fetchLeads().then((list) => {
-        if (list.length) setLeads(list);
-      });
-    };
-    const timer = window.setInterval(refresh, 120000);
-    document.addEventListener('visibilitychange', refresh);
-    window.addEventListener('focus', refresh);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', refresh);
-      window.removeEventListener('focus', refresh);
-    };
-  }, []);
-
   const collectStats = async (from = dateFrom, to = dateTo) => {
     setStatsOpen(true);
     setStatsLoading(true);
@@ -291,37 +59,6 @@ export default function LeadsListView() {
     collectStats(from, to);
   };
 
-  const patch = (id: number, key: keyof Lead, value: string) => {
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, [key]: value } : l)));
-  };
-
-  const setSpecial = (id: number, value: string) => {
-    patch(id, 'special_condition', value);
-    updateLead(id, { special_condition: value });
-  };
-
-  const setSlots = (id: number, slots: LeadSlot[]) => {
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, special_slots: slots } : l)));
-    updateLead(id, { special_slots: slots });
-  };
-
-  const save = (id: number, key: keyof Lead, value: string) => {
-    if (key === 'processing_status') {
-      moveToStatus(id, value);
-      return;
-    }
-    if (key === 'lead_status') {
-      setLeadStatus(id, value);
-      return;
-    }
-    updateLead(id, { [key]: value });
-  };
-
-  const addLead = async () => {
-    const id = await createLead(EMPTY);
-    if (id) load();
-  };
-
   return (
     <div>
       <LeadsFilters
@@ -329,33 +66,33 @@ export default function LeadsListView() {
         onCollectStats={() => collectStats()}
         onAddLead={addLead}
         onLoad={load}
-        filtersOpen={filtersOpen}
-        setFiltersOpen={setFiltersOpen}
+        filtersOpen={f.filtersOpen}
+        setFiltersOpen={f.setFiltersOpen}
         hasActiveFilters={hasActiveFilters}
-        activeFiltersCount={activeFiltersCount}
-        fSearch={fSearch}
-        setFSearch={setFSearch}
-        fResponsible={fResponsible}
-        setFResponsible={setFResponsible}
-        fProcessing={fProcessing}
-        setFProcessing={setFProcessing}
-        fLeadStatus={fLeadStatus}
-        setFLeadStatus={setFLeadStatus}
-        fCampaign={fCampaign}
-        setFCampaign={setFCampaign}
-        campaignOptions={campaignOptions}
-        fDateFrom={fDateFrom}
-        setFDateFrom={setFDateFrom}
-        fDateTo={fDateTo}
-        setFDateTo={setFDateTo}
-        fUntouchedOnly={fUntouchedOnly}
-        setFUntouchedOnly={setFUntouchedOnly}
-        fContactDue={fContactDue}
-        setFContactDue={setFContactDue}
+        activeFiltersCount={f.activeFiltersCount}
+        fSearch={f.fSearch}
+        setFSearch={f.setFSearch}
+        fResponsible={f.fResponsible}
+        setFResponsible={f.setFResponsible}
+        fProcessing={f.fProcessing}
+        setFProcessing={f.setFProcessing}
+        fLeadStatus={f.fLeadStatus}
+        setFLeadStatus={f.setFLeadStatus}
+        fCampaign={f.fCampaign}
+        setFCampaign={f.setFCampaign}
+        campaignOptions={f.campaignOptions}
+        fDateFrom={f.fDateFrom}
+        setFDateFrom={f.setFDateFrom}
+        fDateTo={f.fDateTo}
+        setFDateTo={f.setFDateTo}
+        fUntouchedOnly={f.fUntouchedOnly}
+        setFUntouchedOnly={f.setFUntouchedOnly}
+        fContactDue={f.fContactDue}
+        setFContactDue={f.setFContactDue}
         resetFilters={resetFilters}
         visibleCount={visibleLeads.length}
         view={view}
-        setView={setView}
+        setView={f.setView}
       />
 
       {statsOpen && (
@@ -372,7 +109,7 @@ export default function LeadsListView() {
         />
       )}
 
-      {!loading && <NewLeadsPanel leads={newLeads} />}
+      {!loading && <NewLeadsPanel leads={f.newLeads} />}
 
       {!loading && leads.length > 0 && hasActiveFilters && (
         <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
@@ -414,93 +151,21 @@ export default function LeadsListView() {
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />
       ) : (
-        <>
-        {/* Мобильный вид — карточки (таблица неудобна на узких экранах) */}
-        <div className="md:hidden space-y-3">
-          {visibleLeads.map((l, idx) => (
-            <LeadCard
-              key={l.id}
-              lead={l}
-              index={idx + 1}
-              onPatch={(k, v) => patch(l.id, k, v)}
-              onSave={(k, v) => save(l.id, k, v)}
-              onArchive={(a) => archiveLead(l.id, a)}
-              onStage={(s) => setStage(l.id, s)}
-              onStageDate={(s, v) => setStageDate(l.id, s, v)}
-              onSpecial={(v) => setSpecial(l.id, v)}
-              onSlots={(v) => setSlots(l.id, v)}
-            />
-          ))}
-        </div>
-
-        {/* Десктопный вид — таблица */}
-        <div className="hidden md:block border border-gray-200 rounded-xl overflow-hidden">
-          {/* Верхняя полоса горизонтальной прокрутки — сразу под шапкой действий */}
-          <div
-            ref={topBarRef}
-            onScroll={syncFromTop}
-            className="overflow-x-auto overflow-y-hidden"
-          >
-            <div style={{ width: tableWidth, height: 1 }} />
-          </div>
-          <div
-            ref={scrollRef}
-            onScroll={syncFromTable}
-            className="overflow-x-auto overflow-y-auto max-h-[65vh]"
-          >
-          <table className="min-w-full text-sm border-collapse">
-            <thead className="sticky top-0 z-30">
-              <tr className="bg-yellow-100">
-                <th className="px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 w-10 bg-yellow-100 sticky top-0 z-30">№</th>
-                {COLS.map((c, ci) => (
-                  <th
-                    key={c.key}
-                    className={`px-2 py-2 text-left font-bold text-gray-700 border-b border-gray-200 bg-yellow-100 sticky top-0 z-30 ${ci === 1 ? 'left-0 z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]' : ''} ${c.w}`}
-                  >
-                    {c.label}
-                  </th>
-                ))}
-                <th className="px-2 py-2 border-b border-gray-200 w-14 pr-6 bg-yellow-100 sticky top-0" />
-              </tr>
-            </thead>
-            <tbody>
-              {visibleLeads.map((l, idx) => {
-                const untouched = isUntouched(l);
-                const displayIdx = idx + 1;
-                const rowBg = untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-100' : 'bg-white';
-                return (
-                  <tr key={l.id} className={untouched ? 'bg-red-50' : idx % 2 ? 'bg-gray-50/50' : 'bg-white'}>
-                    <td className="px-2 py-1.5 text-gray-400 border-b border-gray-100 align-top">{displayIdx}</td>
-                    {COLS.map((c, ci) => (
-                      <td
-                        key={c.key}
-                        className={`px-1 py-1 border-b border-gray-100 align-top ${ci === 1 ? `sticky left-0 z-10 ${rowBg} shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]` : ''}`}
-                      >
-                        <Cell
-                          lead={l}
-                          fieldKey={c.key}
-                          onChange={(v) => patch(l.id, c.key, v)}
-                          onCommit={(v) => save(l.id, c.key, v)}
-                          onStage={(s) => setStage(l.id, s)}
-                          onStageDate={(s, v) => setStageDate(l.id, s, v)}
-                          onSpecial={(v) => setSpecial(l.id, v)}
-              onSlots={(v) => setSlots(l.id, v)}
-                        />
-                      </td>
-                    ))}
-                    <td className="px-1 py-1 pr-6 border-b border-gray-100 align-top text-center">
-                      <button onClick={() => archiveLead(l.id, !l.archived)} title={l.archived ? 'Вернуть из архива' : 'В архив'} className="text-gray-300 hover:text-amber-600">
-                        <Icon name={l.archived ? 'ArchiveRestore' : 'Archive'} size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </div>
-        </div>
-        </>
+        <LeadsTableView
+          visibleLeads={visibleLeads}
+          scrollRef={scrollRef}
+          topBarRef={topBarRef}
+          tableWidth={tableWidth}
+          syncFromTop={syncFromTop}
+          syncFromTable={syncFromTable}
+          patch={patch}
+          save={save}
+          archiveLead={archiveLead}
+          setStage={setStage}
+          setStageDate={setStageDate}
+          setSpecial={setSpecial}
+          setSlots={setSlots}
+        />
       )}
     </div>
   );
