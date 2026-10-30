@@ -1,0 +1,1 @@
+ALTER TABLE t_p93118852_lineaschool_initiati.leads ADD COLUMN IF NOT EXISTS special_slots JSONB;

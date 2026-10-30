@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import {
-  Lead, PROCESSING_OPTIONS, leadStatusChoices, leadStatusClearable, leadStatusEditable, leadDates,
+  Lead, LeadSlot, PROCESSING_OPTIONS, leadStatusChoices, leadStatusClearable, leadStatusEditable, leadDates,
 } from '@/lib/leadsApi';
 import NoContactStage from './NoContactStage';
 import StuckStage from './StuckStage';
@@ -18,6 +18,7 @@ interface Props {
   onStage: (id: number, stage: string) => void;
   onStageDate: (id: number, stage: string, value: string) => void;
   onSpecial: (id: number, value: string) => void;
+  onSlots: (id: number, slots: LeadSlot[]) => void;
 }
 
 const NONE = '';
@@ -43,13 +44,14 @@ function fmtDate(iso?: string | null): string {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-function LeadTile({ lead, onComment, onLeadStatus, onStage, onStageDate, onSpecial, onDragStart, onDragEnd, onRestore }: {
+function LeadTile({ lead, onComment, onLeadStatus, onStage, onStageDate, onSpecial, onSlots, onDragStart, onDragEnd, onRestore }: {
   lead: Lead;
   onComment: (c: string) => void;
   onLeadStatus: (s: string) => void;
   onStage: (s: string) => void;
   onStageDate: (s: string, v: string) => void;
   onSpecial: (v: string) => void;
+  onSlots: (s: LeadSlot[]) => void;
   onDragStart: () => void;
   onDragEnd?: () => void;
   onRestore?: () => void;
@@ -136,7 +138,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onStageDate, onSpeci
       </div>
       <div><NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} compact /></div>
       <div><StuckStage lead={lead} onStage={lead.archived ? undefined : onStage} onStageDate={lead.archived ? undefined : onStageDate} compact /></div>
-      <div><SpecialCondition lead={lead} onChange={lead.archived ? undefined : onSpecial} compact /></div>
+      <div><SpecialCondition lead={lead} onChange={lead.archived ? undefined : onSpecial} onSlots={onSlots} compact /></div>
 
       <div className="mt-2 border-t border-gray-100 pt-1.5">
         {editing ? (
@@ -177,7 +179,7 @@ function LeadTile({ lead, onComment, onLeadStatus, onStage, onStageDate, onSpeci
 
 // Доска лидов: колонки по статусу обработки, как воронка в CRM.
 // Карточку можно перетащить в другую колонку — статус обработки сменится.
-export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLeadStatus, onStage, onStageDate, onSpecial }: Props) {
+export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLeadStatus, onStage, onStageDate, onSpecial, onSlots }: Props) {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
   const [overArchive, setOverArchive] = useState(false);
@@ -241,6 +243,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLead
                 onLeadStatus={(v) => onLeadStatus(l.id, v)}
                 onStage={(v) => onStage(l.id, v)}
                 onSpecial={(v) => onSpecial(l.id, v)}
+                      onSlots={(v) => onSlots(l.id, v)}
                 onStageDate={(st, v) => onStageDate(l.id, st, v)}
                 onRestore={() => onArchive(l.id, false)}
               />
@@ -316,6 +319,7 @@ export default function LeadsBoard({ leads, onMove, onComment, onArchive, onLead
                       onLeadStatus={(v) => onLeadStatus(l.id, v)}
                       onStage={(v) => onStage(l.id, v)}
                       onSpecial={(v) => onSpecial(l.id, v)}
+                      onSlots={(v) => onSlots(l.id, v)}
                       onStageDate={(st, v) => onStageDate(l.id, st, v)}
                     />
                   ))

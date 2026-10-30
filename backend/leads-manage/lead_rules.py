@@ -25,6 +25,7 @@ NO_SHOW = 'лид не вышел на связь'
 IN_WORK = 'лид в работе'
 STUCK = 'завис на этапе'
 SPECIAL = 'особые условия'
+WAIT_SLOTS = 'ожидают окошки'
 DIAG_DONE = 'Проведена диагностика'
 CLIENT = 'клиент'
 CLOSING = ('нецелевой лид', 'норма развития', 'отказ', 'игнор')
@@ -110,3 +111,7 @@ def apply_rules(cur, lead_id: Optional[int] = None) -> None:
     # Сняли «особые условия» — причину очищаем
     cur.execute(f"{upd}special_condition = '' "
                 f"WHERE {scope} AND {ls} <> {_q(SPECIAL)} AND COALESCE(special_condition, '') <> ''")
+    # Окошки нужны только для «ожидают окошки»
+    cur.execute(f"{upd}special_slots = NULL "
+                f"WHERE {scope} AND special_slots IS NOT NULL "
+                f"AND ({ls} <> {_q(SPECIAL)} OR COALESCE(special_condition, '') <> {_q(WAIT_SLOTS)})")

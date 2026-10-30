@@ -98,7 +98,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "responsible, processing_status, lead_status, diag_date, report_link, "
                 "schedule, teachers, comment, contact_when, source, created_at, updated_at, "
                 "utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page, referrer, "
-                "status_changed_at, archived, archived_at, no_contact_stage, no_contact_stage_dates, stuck_stage, stuck_stage_dates, crm_diag_planned_at, crm_diag_done_at, next_lesson_at, special_condition, "
+                "status_changed_at, archived, archived_at, no_contact_stage, no_contact_stage_dates, stuck_stage, stuck_stage_dates, crm_diag_planned_at, crm_diag_done_at, next_lesson_at, special_condition, special_slots, "
                 f"{WINDOW_FIRST_SQL} "
                 f"FROM leads WHERE {NOT_TEST} AND became_client_at IS NULL AND duplicate_of IS NULL ORDER BY id ASC"
             )
@@ -109,7 +109,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
                     'landing_page', 'referrer', 'status_changed_at', 'archived', 'archived_at',
                     'no_contact_stage', 'no_contact_stage_dates', 'stuck_stage', 'stuck_stage_dates', 'crm_diag_planned_at', 'crm_diag_done_at', 'next_lesson_at',
-                    'special_condition', 'window_first_at']
+                    'special_condition', 'special_slots', 'window_first_at']
             rows = [row_to_dict(r, cols) for r in cur.fetchall()]
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'leads': rows}), 'isBase64Encoded': False}
@@ -138,6 +138,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if isinstance(body.get('stuck_stage_dates'), dict):
                 sdates = {str(k): str(v) for k, v in body['stuck_stage_dates'].items() if v}
                 sets.append(f"stuck_stage_dates = '{esc(json.dumps(sdates, ensure_ascii=False))}'::jsonb")
+            if isinstance(body.get('special_slots'), list):
+                # Удобные лиду дни и время: [{"days": ["пн"], "from": "16:00", "to": "18:00"}]
+                slots = []
+                for s in body['special_slots'][:20]:
+                    if not isinstance(s, dict):
+                        continue
+                    days = [str(d)[:3] for d in (s.get('days') or []) if d][:7]
+                    if days:
+                        slots.append({'days': days, 'from': str(s.get('from') or '')[:5], 'to': str(s.get('to') or '')[:5]})
+                sets.append(f"special_slots = '{esc(json.dumps(slots, ensure_ascii=False))}'::jsonb" if slots else "special_slots = NULL")
             if 'archived' in body:
                 # Архив доски: лид убирается из колонок, но остаётся в таблице
                 if body['archived']:

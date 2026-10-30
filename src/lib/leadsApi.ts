@@ -3,6 +3,12 @@ import { getStaffToken } from './staffApi';
 
 const URL = (func2url as Record<string, string>)['leads-manage'];
 
+export interface LeadSlot {
+  days: string[];
+  from: string;
+  to: string;
+}
+
 export interface Lead {
   id: number;
   parent_name: string;
@@ -38,6 +44,8 @@ export interface Lead {
   stuck_stage_dates?: Record<string, string> | null;
   /** Причина «особых условий»: из списка или своя */
   special_condition?: string;
+  /** Удобные лиду дни и время — для «ожидают окошки» */
+  special_slots?: LeadSlot[] | null;
   /** Первое сообщение в «Окне» — подставляется сервером автоматически */
   window_first_at?: string | null;
   crm_diag_planned_at?: string;
@@ -118,7 +126,9 @@ export const IN_WORK_STATUS = 'лид в работе';
 export const STUCK_STATUS = 'завис на этапе';
 export const SPECIAL_STATUS = 'особые условия';
 export const DIAG_DONE_PROCESSING = 'Проведена диагностика';
-export const SPECIAL_PRESETS = ['ожидают маткапитал', 'ожидают окошки'];
+export const WAIT_SLOTS = 'ожидают окошки';
+export const SPECIAL_PRESETS = ['ожидают маткапитал', WAIT_SLOTS];
+export const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 export const CLIENT_STATUS = 'клиент';
 export const STUCK_REMINDED = 'напомнили о себе';
 export const STUCK_CHECKED = 'уточнили актуальность диагностики';

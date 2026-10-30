@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import {
   Lead,
+  LeadSlot,
   RESPONSIBLE_OPTIONS,
   PROCESSING_OPTIONS,
   leadStatusChoices,
@@ -23,9 +24,10 @@ interface CellProps {
   onStage?: (stage: string) => void;
   onStageDate?: (stage: string, value: string) => void;
   onSpecial?: (value: string) => void;
+  onSlots?: (slots: LeadSlot[]) => void;
 }
 
-export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate, onSpecial }: CellProps) {
+export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate, onSpecial, onSlots }: CellProps) {
   const value = (lead[fieldKey] as string) || '';
 
   if (fieldKey === 'responsible') {
@@ -58,7 +60,7 @@ export function Cell({ lead, fieldKey, onChange, onCommit, onStage, onStageDate,
         )}
         {onStage && <NoContactStage lead={lead} onStage={onStage} onStageDate={onStageDate} />}
         <StuckStage lead={lead} onStage={onStage} onStageDate={onStageDate} />
-        <SpecialCondition lead={lead} onChange={lead.archived ? undefined : onSpecial} />
+        <SpecialCondition lead={lead} onChange={lead.archived ? undefined : onSpecial} onSlots={onSlots} />
       </div>
     );
   }

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
-import { Lead, SPECIAL_PRESETS, SPECIAL_STATUS } from '@/lib/leadsApi';
+import { Lead, LeadSlot, SPECIAL_PRESETS, SPECIAL_STATUS, WAIT_SLOTS } from '@/lib/leadsApi';
+import WishedSlots from './WishedSlots';
 
 const OTHER = '__other__';
 
 // Причина «особых условий»: ждут маткапитал, ждут окошки или своя — вводится вручную.
-export default function SpecialCondition({ lead, onChange, compact = false }: {
+export default function SpecialCondition({ lead, onChange, onSlots, compact = false }: {
   lead: Lead;
   onChange?: (value: string) => void;
+  onSlots?: (slots: LeadSlot[]) => void;
   compact?: boolean;
 }) {
   const value = lead.special_condition || '';
@@ -84,6 +86,9 @@ export default function SpecialCondition({ lead, onChange, compact = false }: {
           </select>
         )}
       </div>
+      {value === WAIT_SLOTS && (
+        <WishedSlots slots={lead.special_slots || []} onChange={onChange ? onSlots : undefined} compact={compact} />
+      )}
     </div>
   );
 }

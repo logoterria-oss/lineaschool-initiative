@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import {
   Lead,
+  LeadSlot,
   LeadsStats,
   fetchLeads,
   syncLeadFunnel,
@@ -299,6 +300,11 @@ export default function LeadsListView() {
     updateLead(id, { special_condition: value });
   };
 
+  const setSlots = (id: number, slots: LeadSlot[]) => {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, special_slots: slots } : l)));
+    updateLead(id, { special_slots: slots });
+  };
+
   const save = (id: number, key: keyof Lead, value: string) => {
     if (key === 'processing_status') {
       moveToStatus(id, value);
@@ -404,6 +410,7 @@ export default function LeadsListView() {
           onStage={setStage}
           onStageDate={setStageDate}
           onSpecial={setSpecial}
+          onSlots={setSlots}
           onComment={(id, c) => { patch(id, 'comment', c); save(id, 'comment', c); }}
         />
       ) : (
@@ -421,6 +428,7 @@ export default function LeadsListView() {
               onStage={(s) => setStage(l.id, s)}
               onStageDate={(s, v) => setStageDate(l.id, s, v)}
               onSpecial={(v) => setSpecial(l.id, v)}
+              onSlots={(v) => setSlots(l.id, v)}
             />
           ))}
         </div>
@@ -476,6 +484,7 @@ export default function LeadsListView() {
                           onStage={(s) => setStage(l.id, s)}
                           onStageDate={(s, v) => setStageDate(l.id, s, v)}
                           onSpecial={(v) => setSpecial(l.id, v)}
+              onSlots={(v) => setSlots(l.id, v)}
                         />
                       </td>
                     ))}
