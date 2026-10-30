@@ -49,6 +49,22 @@ def _day_full_sql(alias: str) -> str:
     )
 
 
+def _crm_match_sql(alias: str) -> str:
+    """Лид, которому админ поставил диагностику в CRM на время этого окна."""
+    return (
+        f"cl.duplicate_of IS NULL AND COALESCE(cl.archived, FALSE) = FALSE "
+        f"AND LENGTH(COALESCE(cl.crm_diag_planned_at, '')) >= 16 "
+        f"AND LEFT(cl.crm_diag_planned_at, 10) = to_char({alias}.slot_date, 'YYYY-MM-DD') "
+        f"AND SUBSTRING(cl.crm_diag_planned_at FROM 12 FOR 5) >= {alias}.time_from "
+        f"AND SUBSTRING(cl.crm_diag_planned_at FROM 12 FOR 5) < {alias}.time_to"
+    )
+
+
+def _crm_busy_sql(alias: str) -> str:
+    """Окно занято диагностикой, поставленной напрямую в CRM (не через ссылку записи)."""
+    return f"EXISTS (SELECT 1 FROM {SCHEMA}.leads cl WHERE {_crm_match_sql(alias)})"
+
+
 def _resp(status: int, payload: Dict[str, Any]) -> Dict[str, Any]:
     return {'statusCode': status, 'headers': {**CORS, 'Content-Type': 'application/json'},
             'body': json.dumps(payload, ensure_ascii=False, default=str), 'isBase64Encoded': False}
@@ -103,6 +119,8 @@ def _slot(r) -> Dict[str, Any]:
         'id': r['id'], 'date': _iso(d), 'dateRu': _ru(d), 'weekdayName': WEEKDAYS[d.weekday()],
         'timeFrom': r['time_from'], 'timeTo': r['time_to'], 'bookingId': r.get('booking_id'),
     }
+    if r.get('crm_lead_id') and not r.get('booking_id'):
+        out['crmBusy'] = True
     if r.get('child_name') is not None:
         out['childName'] = r['child_name']
         out['parentName'] = r['parent_name']
@@ -188,7 +206,7 @@ def public_slots(cur, params):
     cur.execute(
         f"SELECT s.id, s.slot_date, s.time_from, s.time_to, s.booking_id FROM {SCHEMA}.diag_slots s "
         f"WHERE s.booking_id IS NULL AND (s.slot_date + s.time_from::time) > {_msk_now_sql()} "
-        f"AND NOT {_day_full_sql('s')} "
+        f"AND NOT {_day_full_sql('s')} AND NOT {_crm_busy_sql('s')} "
         "ORDER BY s.slot_date, s.time_from"
     )
     return _resp(200, {'link': _link(link), 'limitReached': _limit_reached(link),
@@ -252,7 +270,7 @@ def public_book(cur, body):
     cur.execute(
         f"UPDATE {SCHEMA}.diag_slots s SET booking_id = -1 "
         f"WHERE s.id = %s AND s.booking_id IS NULL AND (s.slot_date + s.time_from::time) > {_msk_now_sql()} "
-        f"AND NOT {_day_full_sql('s')} "
+        f"AND NOT {_day_full_sql('s')} AND NOT {_crm_busy_sql('s')} "
         "RETURNING s.id, s.slot_date, s.time_from, s.time_to",
         (slot_id,),
     )
@@ -298,8 +316,12 @@ def admin_slots(cur):
     today = _msk_today(cur)
     cur.execute(
         f"SELECT s.id, s.slot_date, s.time_from, s.time_to, s.booking_id, "
-        f"b.child_name, b.parent_name FROM {SCHEMA}.diag_slots s "
+        f"COALESCE(b.child_name, crm.student_name) AS child_name, "
+        f"COALESCE(b.parent_name, crm.parent_name) AS parent_name, crm.id AS crm_lead_id "
+        f"FROM {SCHEMA}.diag_slots s "
         f"LEFT JOIN {SCHEMA}.diag_bookings b ON b.id = s.booking_id "
+        f"LEFT JOIN LATERAL (SELECT cl.id, cl.student_name, cl.parent_name FROM {SCHEMA}.leads cl "
+        f"WHERE {_crm_match_sql('s')} ORDER BY cl.id LIMIT 1) crm ON TRUE "
         "WHERE s.slot_date >= %s ORDER BY s.slot_date, s.time_from",
         (today,),
     )

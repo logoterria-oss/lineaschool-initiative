@@ -181,16 +181,16 @@ const DiagSlotsDialog = ({ open, onClose }: { open: boolean; onClose: () => void
                     {list.map((s) => (
                       <span
                         key={s.id}
-                        title={s.bookingId ? `Записан: ${s.childName || ''}` : 'Свободно'}
+                        title={s.bookingId || s.crmBusy ? `Записан${s.crmBusy ? ' в CRM' : ''}: ${s.childName || ''}` : 'Свободно'}
                         className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border ${
-                          s.bookingId
+                          s.bookingId || s.crmBusy
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                             : 'bg-white border-gray-200 text-gray-700'
                         }`}
                       >
                         {s.timeFrom}–{s.timeTo}
-                        {s.bookingId ? (
-                          <span className="font-medium truncate max-w-[110px]">· {s.childName}</span>
+                        {s.bookingId || s.crmBusy ? (
+                          <span className="font-medium truncate max-w-[110px]">· {s.childName}{s.crmBusy ? ' (CRM)' : ''}</span>
                         ) : (
                           <button onClick={() => remove(s)} className="text-gray-300 hover:text-red-500">
                             <Icon name="X" size={12} />

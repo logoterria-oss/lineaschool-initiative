@@ -29,6 +29,7 @@ export interface DiagSlot {
   timeFrom: string;
   timeTo: string;
   bookingId: number | null;
+  crmBusy?: boolean;
   childName?: string | null;
   parentName?: string | null;
 }
